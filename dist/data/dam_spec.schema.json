@@ -1,0 +1,412 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dam_spec.schema.json",
+ "title": "Dam geometry spec",
+ "type": "object",
+ "required": [
+  "spec_version",
+  "units",
+  "conventions",
+  "parameters",
+  "sections",
+  "foundation_surface",
+  "solids",
+  "voids",
+  "water",
+  "materials",
+  "assertions",
+  "unknowns"
+ ],
+ "properties": {
+  "spec_version": {
+   "type": "string",
+   "pattern": "^\\d+\\.\\d+\\.\\d+$"
+  },
+  "units": {
+   "type": "object",
+   "required": [
+    "length",
+    "density"
+   ]
+  },
+  "conventions": {
+   "type": "object",
+   "required": [
+    "doc_frame",
+    "model_frame",
+    "transform",
+    "bearings"
+   ]
+  },
+  "parameters": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "value",
+     "unit",
+     "grade",
+     "status",
+     "source"
+    ],
+    "properties": {
+     "value": {},
+     "unit": {
+      "type": "string"
+     },
+     "grade": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "source": {
+      "type": "string"
+     },
+     "range": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "note": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "sections": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "no",
+     "x_range"
+    ],
+    "properties": {
+     "no": {
+      "type": "integer"
+     },
+     "x_range": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    }
+   },
+   "minItems": 10,
+   "maxItems": 10
+  },
+  "foundation_surface": {
+   "type": "object",
+   "required": [
+    "type",
+    "points"
+   ],
+   "properties": {
+    "type": {
+     "const": "polyline_xz"
+    },
+    "points": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "minItems": 3
+    }
+   }
+  },
+  "solids": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "type",
+     "material"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "type": {
+      "enum": [
+       "extrusion_x",
+       "box"
+      ]
+     },
+     "material": {
+      "type": "string"
+     },
+     "x_range": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "x_ranges": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     },
+     "profile_yz": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      },
+      "minItems": 3
+     },
+     "boxes": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "x",
+        "y",
+        "z"
+       ],
+       "properties": {
+        "x": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "y": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "z": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "name": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "voids": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "type"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "type": {
+      "enum": [
+       "sweep_xz",
+       "box",
+       "chute"
+      ]
+     },
+     "path_xz": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     },
+     "width": {
+      "type": "number"
+     },
+     "height": {
+      "type": "number"
+     },
+     "wall_height": {
+      "type": "number"
+     },
+     "y": {
+      "oneOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2
+       }
+      ]
+     },
+     "boxes": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "x",
+        "y",
+        "z"
+       ],
+       "properties": {
+        "x": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "y": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "z": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "name": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "x": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "y_range": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "x_ranges": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     },
+     "floor_yz": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     },
+     "z": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    }
+   }
+  },
+  "water": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "material",
+     "y_range",
+     "z_top"
+    ]
+   }
+  },
+  "materials": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "density"
+    ],
+    "properties": {
+     "density": {
+      "type": "number"
+     }
+    }
+   }
+  },
+  "assertions": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "expr",
+     "expect"
+    ]
+   }
+  },
+  "unknowns": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  }
+ }
+}
