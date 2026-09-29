@@ -97,3 +97,61 @@
   color: #78939e;
   font-size: 12px;
 }
+.view-sidebar-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid #203542;
+  color: #a9bdc6;
+  font-size: 12px;
+}
+.view-sidebar-control select {
+  min-width: 0;
+  padding: 6px 26px 6px 8px;
+  border: 1px solid #31505e;
+  border-radius: 6px;
+  background: #0a1821;
+  color: #e9f2f5;
+}
+.scale { top: 18px; }
+#fluxLegend {
+  left: auto;
+  right: 14px;
+  bottom: 52px;
+  width: 300px;
+  z-index: 5;
+}
+#fluxLegend > i { width: 100%; }
+.orientation-strip {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 14px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  text-shadow: 0 1px 4px #000;
+  pointer-events: none;
+}
+.orientation-strip b:first-child { color: #70baff; }
+.orientation-strip b:nth-child(2) { color: #ffb577; }
+.orientation-strip span { display: inline-flex; align-items: center; gap: 5px; color: #bed0d7; }
+.orientation-strip i { width: 12px; height: 3px; display: inline-block; }
+.orientation-strip .axis-x { background: #49a7ff; }
+.orientation-strip .axis-y { background: #ff9f4a; }
+.orientation-strip .axis-z { background: #38d996; }
+@media (max-width: 1050px) {
+  #fluxLegend { width: 260px; }
+  .orientation-strip { gap: 12px; font-size: 11px; }
+}
+@media (max-width: 720px) {
+  .orientation-strip { overflow: hidden; bottom: 8px; }
+  #fluxLegend { right: 12px; width: min(260px, calc(100% - 24px)); }
+}
