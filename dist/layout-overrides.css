@@ -1,0 +1,81 @@
+.header-export {
+  margin-left: auto;
+  padding: 6px 12px;
+  border-color: #2a716b;
+  background: #10312f;
+  color: #dffbf7;
+}
+.header-export:hover { background: #10534f; }
+.view-control {
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 9px;
+  background: #071018e6;
+  border: 1px solid #294553;
+  border-radius: 8px;
+  color: #a9bdc6;
+  font-size: 12px;
+}
+.view-control select {
+  padding: 4px 26px 4px 7px;
+  border: 1px solid #31505e;
+  border-radius: 5px;
+  background: #0a1821;
+  color: #e9f2f5;
+}
+.compass {
+  position: absolute;
+  left: 128px;
+  top: 72px;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #42606c;
+  border-radius: 50%;
+  background: #071018d8;
+  pointer-events: none;
+}
+.compass b {
+  position: absolute;
+  left: 50%;
+  top: 1px;
+  transform: translateX(-50%);
+  color: #ff8379;
+  font-size: 10px;
+}
+.compass i {
+  position: absolute;
+  left: 18px;
+  top: 8px;
+  width: 4px;
+  height: 25px;
+  transform-origin: 50% 12px;
+}
+.compass i::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 12px solid #ff6259;
+}
+.compass i::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 3px;
+  height: 11px;
+  background: #8aa0aa;
+}
+.scale { top: 76px; }
+@media (max-width: 720px) {
+  .view-control { top: 10px; }
+  .compass { left: 122px; top: 66px; }
+}
