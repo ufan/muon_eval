@@ -118,9 +118,9 @@
 }
 .scale { top: 18px; }
 #fluxLegend {
-  left: auto;
-  right: 14px;
-  bottom: 52px;
+  left: auto !important;
+  right: 14px !important;
+  bottom: 12px !important;
   width: 300px;
   z-index: 5;
 }
@@ -132,16 +132,18 @@
   bottom: 14px;
   z-index: 4;
   display: flex;
-  align-items: center;
-  gap: 22px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
   white-space: nowrap;
   font-size: 12px;
   font-weight: 600;
   text-shadow: 0 1px 4px #000;
   pointer-events: none;
 }
-.orientation-strip b:first-child { color: #70baff; }
-.orientation-strip b:nth-child(2) { color: #ffb577; }
+.axis-definitions,
+.bank-directions { display: flex; align-items: center; gap: 22px; }
+.bank-directions b { color: #8ea5b2; font-weight: 600; }
 .orientation-strip span { display: inline-flex; align-items: center; gap: 5px; color: #bed0d7; }
 .orientation-strip i { width: 12px; height: 3px; display: inline-block; }
 .orientation-strip .axis-x { background: #49a7ff; }
@@ -149,7 +151,9 @@
 .orientation-strip .axis-z { background: #38d996; }
 @media (max-width: 1050px) {
   #fluxLegend { width: 260px; }
-  .orientation-strip { gap: 12px; font-size: 11px; }
+  .orientation-strip { font-size: 11px; }
+  .axis-definitions,
+  .bank-directions { gap: 12px; }
 }
 @media (max-width: 720px) {
   .orientation-strip { overflow: hidden; bottom: 8px; }
