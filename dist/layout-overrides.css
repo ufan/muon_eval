@@ -79,3 +79,21 @@
   .view-control { top: 10px; }
   .compass { left: 43px; top: 108px; }
 }
+.layer-adjust {
+  margin: -2px 0 9px 25px;
+  padding: 5px 8px 7px;
+  border-left: 2px solid #24434f;
+}
+.layer-adjust > div {
+  display: flex;
+  justify-content: space-between;
+  color: #8faab4;
+  font-size: 12px;
+}
+.layer-adjust output { color: #38dccd; }
+.layer-adjust input[type="range"] { width: 100%; margin: 5px 0 0; }
+.layer-note {
+  margin: -2px 0 8px 25px;
+  color: #78939e;
+  font-size: 12px;
+}
