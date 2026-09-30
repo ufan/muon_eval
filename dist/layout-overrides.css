@@ -137,7 +137,7 @@
   left: auto !important;
   right: 14px !important;
   bottom: 12px !important;
-  width: 300px;
+  width: 250px;
   z-index: 5;
 }
 #fluxLegend > i { width: 100%; }
@@ -166,15 +166,33 @@
 .orientation-strip .axis-y { background: #ff9f4a; }
 .orientation-strip .axis-z { background: #38d996; }
 @media (max-width: 1050px) {
-  #fluxLegend { width: 260px; }
+  #fluxLegend { width: 230px; }
   .orientation-strip { font-size: 11px; }
   .axis-definitions,
   .bank-directions { gap: 12px; }
 }
 @media (max-width: 720px) {
   .orientation-strip { overflow: hidden; bottom: 8px; }
-  #fluxLegend { right: 12px; width: min(260px, calc(100% - 24px)); }
+  #fluxLegend { right: 12px; width: min(230px, calc(100% - 24px)); }
 }
+
+.collapsible-section > h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-toggle {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #9fb6c1;
+  font-size: 14px;
+  line-height: 1;
+}
+.section-toggle:hover { background: #132a36; color: var(--cyan); }
+.collapsible-section.collapsed > :not(h2) { display: none; }
 
 /* Collapsible side panels and synchronized numeric angle controls. */
 .app {
