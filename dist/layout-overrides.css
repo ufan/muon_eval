@@ -188,22 +188,11 @@
 .app.left-collapsed > .left,
 .app.right-collapsed > .right { visibility: hidden; overflow: hidden; }
 .sidebar-toggle {
-  position: absolute;
-  top: 50%;
-  z-index: 9;
-  width: 22px;
-  height: 54px;
-  padding: 0;
-  transform: translateY(-50%);
-  border: 1px solid #31505e;
-  background: rgba(8, 26, 35, .94);
+  min-width: 76px;
+  border-color: #31505e;
   color: #bed0d7;
-  font-size: 18px;
-  line-height: 1;
 }
 .sidebar-toggle:hover { color: #fff; border-color: var(--cyan); }
-.toggle-left { left: 0; border-left: 0; border-radius: 0 7px 7px 0; }
-.toggle-right { right: 0; border-right: 0; border-radius: 7px 0 0 7px; }
 .angle-value {
   display: inline-flex !important;
   align-items: center;
