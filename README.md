@@ -1,6 +1,6 @@
-# 周宁下库大坝缪子部署交互评估
+# 坝体缪子部署交互评估
 
-浏览器内运行的 Three.js 静态应用，用于探索周宁下库大坝中缪子探测器的候选站点、姿态、材料路径和预期投影。
+浏览器内运行的 Three.js 静态应用，用于探索坝体缪子探测器的候选站点、姿态、材料路径和预期投影。当前内置周宁下库大坝作为首个数据集与验证案例；目标是逐步支持加载其他坝体几何。
 
 ## 快速开始
 
@@ -28,16 +28,18 @@ docker compose up -d --build
 
 ## 目录
 
+- `AGENTS.md`：跨坝体通用的代理开发规则与验证要求。
+- `CONTEXT.md`：使用场景、几何语义、术语及待完善领域上下文。
 - `dist/index.html`：页面与控件。
 - `dist/app.js`：三维场景、几何分类、射线、物理估算、投影和交互。
 - `dist/style.css`：基础样式。
 - `dist/projection.css`：投影窗与热云样式。
 - `dist/layout-overrides.css`：后续布局与响应式覆盖。
-- `dist/data/dam_spec.json`：坝体几何、材料、候选站点和工程参数的唯一数据源。
+- `dist/data/dam_spec.json`：当前周宁数据集的坝体几何、材料、候选站点和工程参数源。
 - `dist/data/dam_spec.schema.json`：规格 schema。
 - `dist/vendor/three/`：离线 Three.js 0.186.0。
 - `.openai/hosting.json`：ChatGPT Sites 项目绑定与发布目录。
-- `docs/`：架构、几何、路线图和迁移说明。
+- `docs/`：架构、当前数据集几何、路线图和迁移说明。
 
 ## 当前能力
 

@@ -8,7 +8,7 @@
 
 - `.git/`：提交历史、分支和远端信息；
 - `.openai/hosting.json`：现有 Sites 项目绑定；
-- `AGENTS.md`、`README.md` 和 `docs/`；
+- `AGENTS.md`、`CONTEXT.md`、`README.md` 和 `docs/`；
 - `dist/` 全部内容，包括本地 Three.js 和规格 JSON；
 - 离线及 Docker 部署脚本。
 
@@ -61,7 +61,7 @@
    codex -C "<新仓库绝对路径>"
    ```
 
-8. 在新项目聊天中要求代理先读取 `AGENTS.md`。
+8. 在新项目聊天中要求代理先读取 `AGENTS.md` 和 `CONTEXT.md`。
 9. 用一个小改动完成提交、Sites 保存版本和部署测试。
 10. 确认原 URL 已更新后，停止从旧目录发布；旧目录先归档，不立即删除。
 
