@@ -39,6 +39,7 @@ docker compose up -d --build
 - `dist/data/dam_spec.schema.json`：规格 schema。
 - `dist/vendor/three/`：离线 Three.js 0.186.0。
 - `.openai/hosting.json`：当前在线站点的可选托管绑定，不参与应用运行。
+- `docs/CALCULATION_MODELS.md`：计算链、公式、输出解释、参数与假定。
 - `docs/`：架构、当前数据集几何、路线图和迁移说明。
 
 ## 当前能力

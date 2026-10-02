@@ -21,8 +21,9 @@
 1. `CONTEXT.md`：通用使用场景、几何语义、术语和当前数据集。
 2. `README.md`：运行方式、当前能力和目录入口。
 3. `docs/ARCHITECTURE.md`：当前计算链和目标模块边界。
-4. 当前数据集的坐标与几何说明；现有周宁示例见 `docs/GEOMETRY_AND_COORDINATES.md`。
-5. `docs/ROADMAP.md` 和 `docs/MIGRATION_CHECKLIST.md`。
+4. `docs/CALCULATION_MODELS.md`：当前公式、参数、输出含义、假定和验证边界。
+5. 当前数据集的坐标与几何说明；现有周宁示例见 `docs/GEOMETRY_AND_COORDINATES.md`。
+6. `docs/ROADMAP.md` 和 `docs/MIGRATION_CHECKLIST.md`。
 
 开始修改前检查 `git status --short`，保留用户已有改动，不要假定工作树是干净的。
 
