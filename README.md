@@ -38,7 +38,7 @@ docker compose up -d --build
 - `dist/data/dam_spec.json`：当前周宁数据集的坝体几何、材料、候选站点和工程参数源。
 - `dist/data/dam_spec.schema.json`：规格 schema。
 - `dist/vendor/three/`：离线 Three.js 0.186.0。
-- `.openai/hosting.json`：ChatGPT Sites 项目绑定与发布目录。
+- `.openai/hosting.json`：当前在线站点的可选托管绑定，不参与应用运行。
 - `docs/`：架构、当前数据集几何、路线图和迁移说明。
 
 ## 当前能力
@@ -54,7 +54,7 @@ docker compose up -d --build
 - 预计计数、透射率、结构显著度和目标轮廓；
 - 投影像素悬停联动三维射线、体素和结构标记；
 - 站点评估指标、三维热云和 JSON 方案导出；
-- 本机、局域网、Docker/Nginx 和 ChatGPT Sites 部署。
+- 本机、局域网、Docker/Nginx 和静态站点托管部署。
 
 ## 最小检查
 
@@ -65,8 +65,8 @@ git diff --check
 
 详细规则见 `AGENTS.md`。
 
-## 当前生产 Site
+## 当前在线实例
 
 `https://zhouning-muon-deployment.zyong06.chatgpt.site/`
 
-Sites 项目 ID 存在 `.openai/hosting.json` 中。迁移仓库时不要丢失该关联。
+该地址只是当前托管实例，不构成开发环境或 AI 工具依赖。若需要继续发布到同一实例，迁移时保留 `.openai/hosting.json`；使用其他托管平台时可忽略该文件。
