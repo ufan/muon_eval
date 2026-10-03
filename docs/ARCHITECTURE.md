@@ -46,6 +46,7 @@ dam_spec.json
 - 投影计算按批次让出事件循环，避免页面长时间冻结。
 - 通量积分和原生斜率分箱带内存缓存。
 - 设备与候选站点状态保存在 `localStorage`。
+- v0.6.1 材料点分类由 `dist/modules/geometry-kernel.js` 提供；控制点回归入口为 `scripts/check-geometry-conformance.mjs`。
 
 ## 目标架构
 

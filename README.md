@@ -62,6 +62,7 @@ docker compose up -d --build
 
 ```powershell
 node --check dist/app.js
+node scripts/check-geometry-conformance.mjs
 git diff --check
 ```
 

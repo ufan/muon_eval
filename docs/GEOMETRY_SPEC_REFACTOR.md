@@ -130,6 +130,8 @@ C++/WASM 不应作为第一步。先建立纯 JavaScript 的一致性基线、�
 - 使用 Node 测试运行控制点与参考射线；
 - 将所有数据集特定边界和水体规则移入适配器或编译产物。
 
+当前已新增 `dist/modules/geometry-kernel.js`，材料点分类不再依赖 DOM 或 Three.js；`scripts/check-geometry-conformance.mjs` 会读取发布包控制点，忽略距地形面小于 5 m 的容差点，并要求材料一致率不低于 99.5%。首次接入 v0.6.1 的结果为 9437 点中 9427 点一致（99.894%）。剩余差异集中在近场网格边缘及参考读取器的近/远场切换位置，应在引入远场采样与正式 runtime IR 时消除，不能通过放宽材料规则掩盖。
+
 ### 阶段 C：编译后运行时
 
 - 加载场景 GLB 的 component metadata；
@@ -173,6 +175,7 @@ C++/WASM 不应作为第一步。先建立纯 JavaScript 的一致性基线、�
 - 导入 v0.6.1 主规格、schema、候选点、设备型号、现场条件、compiled manifest、近场/远场地形头和一致性基准；
 - 新增 `dist/modules/dataset-loader.js`，检查数据集引用并读取近场 float32 地形；
 - 浏览器材料查询开始使用近场有效地形；
+- 材料分类已抽取为无 DOM/Three.js 依赖的纯模块，并接入控制点一致性门槛；
 - 新增 `extrusion_z`、`sweep_y`、virtual、steel 的兼容处理；
 - 候选点从外置文件读取；
 - localStorage 与导出结果绑定数据集版本；
