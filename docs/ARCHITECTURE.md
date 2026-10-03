@@ -51,6 +51,8 @@ dam_spec.json
 
 保持原生 ES Modules，不急于引入框架：
 
+几何数据契约、Geometry IR、运行时产物与 DD4hep/GDML 后端的详细建议见 `GEOMETRY_SPEC_REFACTOR.md`。
+
 ```text
 src/
 ├─ domain/

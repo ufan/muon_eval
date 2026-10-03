@@ -1,0 +1,37 @@
+{
+ "format_version": "1.0",
+ "file": "terrain_far.f32",
+ "sha256": "9b7cd47d7a32b365f5b2c2c11ed8bfe49fa7eb83f2fc9a5890f02f5d17e5dfb5",
+ "dtype": "float32",
+ "byte_order": "little_endian",
+ "layout": "row_major",
+ "axis_order": [
+  "X",
+  "Y"
+ ],
+ "axis_meaning": {
+  "X": "模型坐标X（=文档y，向下游）",
+  "Y": "模型坐标Y（=文档x，沿坝轴向西北）"
+ },
+ "frame": "model_frame",
+ "unit": "m",
+ "shape": [
+  201,
+  201
+ ],
+ "origin": [
+  -3000.0,
+  -2900.0
+ ],
+ "spacing": [
+  30.0,
+  30.0
+ ],
+ "value": "Z（模型坐标）= 地面高程 − model_frame_z_offset",
+ "z_offset_applied": 198.0,
+ "nodata": null,
+ "interpolation": "bilinear",
+ "outside_policy": "clamp_to_edge",
+ "index_formula": "value[i][j] 位于 X=origin[0]+i·spacing[0], Y=origin[1]+j·spacing[1]",
+ "note": "配准后DEM原始值（建坝前），用于近场范围以外"
+}

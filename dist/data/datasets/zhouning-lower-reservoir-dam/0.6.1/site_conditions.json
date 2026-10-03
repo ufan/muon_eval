@@ -1,0 +1,65 @@
+{
+ "file_type": "site_conditions",
+ "format_version": "0.1",
+ "dataset_ref": {
+  "dataset_id": "zhouning-lower-reservoir-dam",
+  "dataset_version": "0.6.1"
+ },
+ "note": "按空间实体（entity_id）记录的现场条件事实：电源、网络、露天与否、净空等；更新频率高于几何，独立版本管理。unknown 表示未调查，不等于不可用。",
+ "conditions": [
+  {
+   "entity_id": "obs_room_upper",
+   "power": "yes",
+   "network": "yes",
+   "source_refs": [
+    "src_oral",
+    "src_photo_galleries"
+   ]
+  },
+  {
+   "entity_id": "gallery_upper",
+   "power": "unknown",
+   "network": "unknown",
+   "source_refs": [
+    "src_oral",
+    "src_photo_galleries"
+   ]
+  },
+  {
+   "entity_id": "obs_room_lower",
+   "power": "unknown",
+   "network": "unknown",
+   "source_refs": [
+    "src_oral",
+    "src_photo_galleries"
+   ]
+  },
+  {
+   "entity_id": "outlet_structures_S",
+   "power": "likely",
+   "network": "unknown",
+   "source_refs": [
+    "src_oral",
+    "src_photo_galleries"
+   ]
+  },
+  {
+   "entity_id": "outlet_structures_N",
+   "power": "likely",
+   "network": "unknown",
+   "source_refs": [
+    "src_oral",
+    "src_photo_galleries"
+   ]
+  },
+  {
+   "entity_id": "bank_platform_S",
+   "power": "unknown",
+   "network": "unknown",
+   "source_refs": [
+    "src_oral",
+    "src_photo_galleries"
+   ]
+  }
+ ]
+}
