@@ -132,13 +132,20 @@
   background: #0a1821;
   color: #e9f2f5;
 }
-.scale { top: 18px; }
-#fluxLegend {
-  left: auto !important;
-  right: 14px !important;
-  bottom: 12px !important;
-  width: 250px;
+.viewport-top-left {
+  position: absolute;
+  left: 14px;
+  top: 14px;
   z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.viewport-top-left .scale { position: static; }
+#fluxLegend {
+  position: static;
+  width: 250px;
 }
 #fluxLegend > i { width: 100%; }
 .orientation-strip {
@@ -173,7 +180,8 @@
 }
 @media (max-width: 720px) {
   .orientation-strip { overflow: hidden; bottom: 8px; }
-  #fluxLegend { right: 12px; width: min(230px, calc(100% - 24px)); }
+  .viewport-top-left { left: 12px; top: 12px; max-width: calc(100% - 24px); }
+  #fluxLegend { width: min(230px, 100%); }
 }
 
 .collapsible-section > h2 {
