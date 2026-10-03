@@ -14,6 +14,10 @@
         "header": "compiled/terrain_effective_near.json",
         "data": "compiled/terrain_effective_near.f32"
       },
+      "terrain_far": {
+        "header": "compiled/terrain_far.json",
+        "data": "compiled/terrain_far.f32"
+      },
       "conformance": {
         "points": "compiled/conformance_points.json",
         "rays": "compiled/conformance_rays.json"

@@ -33,16 +33,17 @@ export async function loadDefaultDataset(registryUrl = './data/datasets.json') {
   const entry = registry.datasets?.[id];
   if (!entry) throw new Error(`默认数据集 ${id} 未登记`);
   const base = resolveUrl(registryUrl, entry.base_url);
-  const [spec, candidates, detectorModels, siteConditions, compiledManifest, terrainNear] = await Promise.all([
+  const [spec, candidates, detectorModels, siteConditions, compiledManifest, terrainNear, terrainFar] = await Promise.all([
     fetchJson(resolveUrl(base, entry.spec)),
     fetchJson(resolveUrl(base, entry.deployment_candidates)),
     fetchJson(resolveUrl(base, entry.detector_models)),
     fetchJson(resolveUrl(base, entry.site_conditions)),
     fetchJson(resolveUrl(base, entry.compiled_manifest)),
-    loadTerrain(base, entry.terrain_near)
+    loadTerrain(base, entry.terrain_near),
+    loadTerrain(base, entry.terrain_far)
   ]);
   validateBundle(spec, id, candidates);
-  return { id, base, entry, spec, candidates, detectorModels, siteConditions, compiledManifest, terrainNear };
+  return { id, base, entry, spec, candidates, detectorModels, siteConditions, compiledManifest, terrainNear, terrainFar };
 }
 
 export function sampleTerrainModel(terrain, modelX, modelY) {

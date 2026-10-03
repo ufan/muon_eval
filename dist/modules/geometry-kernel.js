@@ -93,14 +93,16 @@ function targetsFor(solids, voids, material) {
   return targets;
 }
 
-export function createGeometryKernel({ spec, terrainNear, upstreamLevel = spec.parameters.water_up_level.value, cellSize = 5 }) {
+export function createGeometryKernel({ spec, terrainNear, terrainFar = null, upstreamLevel = spec.parameters.water_up_level.value, cellSize = 5 }) {
   const index = buildIndex(spec, cellSize);
   const foundation = [...new Map(spec.foundation_surface.points.map(([x, z]) => [x, Math.min(...spec.foundation_surface.points.filter(point => point[0] === x).map(point => point[1]))])).entries()].sort((a, b) => a[0] - b[0]);
   const waterRegions = Object.fromEntries(spec.water.filter(item => item.type === 'region').map(item => [item.id, item]));
   const entitiesAt = (collection, x) => index[collection].get(Math.floor(x / cellSize)) || [];
   const terrainAtDoc = (x, y) => {
-    const modelZ = sampleTerrainModel(terrainNear, y, x);
-    return modelZ === null ? null : modelZ + terrainNear.header.z_offset_applied;
+    const nearZ = sampleTerrainModel(terrainNear, y, x);
+    const source = nearZ === null && terrainFar ? terrainFar : terrainNear;
+    const modelZ = nearZ ?? (terrainFar ? sampleTerrainModel(terrainFar, y, x) : null);
+    return modelZ === null ? null : modelZ + source.header.z_offset_applied;
   };
   const foundationAt = x => {
     if (x <= foundation[0][0]) return foundation[0][1];
@@ -129,6 +131,21 @@ export function createGeometryKernel({ spec, terrainNear, upstreamLevel = spec.p
     return { material, targets: targetsFor(solids, voids, material) };
   };
   const classifyModel = (X, Y, Z, level = upstreamLevel) => classifyDoc(Y, X, Z + terrainNear.header.z_offset_applied, level);
-  return { classifyDoc, classifyModel, terrainAtDoc };
+  const traceRayModel = (origin, direction, length, step = 0.05, level = upstreamLevel) => {
+    const totals = { concrete: 0, water: 0, rock: 0, steel: 0, air: 0 };
+    const count = Math.ceil(length / step);
+    for (let i = 0; i < count; i++) {
+      const start = i * step, segment = Math.min(step, length - start), distance = start + segment / 2;
+      const material = classifyModel(
+        origin[0] + direction[0] * distance,
+        origin[1] + direction[1] * distance,
+        origin[2] + direction[2] * distance,
+        level
+      ).material;
+      totals[material] += segment;
+    }
+    return totals;
+  };
+  return { classifyDoc, classifyModel, traceRayModel, terrainAtDoc };
 }
 
