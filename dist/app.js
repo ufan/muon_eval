@@ -29,7 +29,20 @@ const docDirToScene=d=>new THREE.Vector3(-d.x,d.z,-d.y).normalize();
 const modelToDoc=c=>new THREE.Vector3(c.y,c.x,c.z+198);
 const docToModel=(x,y,z)=>({x:y,y:x,z:z-198});
 const modelDirToDoc=d=>new THREE.Vector3(d.y,d.x,d.z).normalize();
-function hydraulicCutoutShader(){const gl=n=>Number.isInteger(+n)?`${n}.0`:`${n}`,hydraulic=spec.voids.filter(q=>/^(spillway|outlet)/.test(q.id)),boxes=hydraulic.filter(q=>q.type==='box').flatMap(q=>q.boxes||[q]),boxExpr=boxes.map(b=>`(p.x>=${gl(b.x[0])}&&p.x<=${gl(b.x[1])}&&p.y>=${gl(b.y[0])}&&p.y<=${gl(b.y[1])}&&p.z>=${gl(b.z[0])}&&p.z<=${gl(b.z[1])})`).join('||')||'false',chute=hydraulic.find(q=>q.type==='chute');let chuteCode='bool inChute=false;';if(chute){const xr=chute.x_ranges.map(r=>`(p.x>=${gl(r[0])}&&p.x<=${gl(r[1])})`).join('||'),segments=chute.floor_yz.slice(0,-1).map((a,i)=>{const b=chute.floor_yz[i+1];return`if(p.y>=${gl(a[0])}&&p.y<=${gl(b[0])}) floorZ=mix(${gl(a[1])},${gl(b[1])},(p.y-${gl(a[0])})/${gl(b[0]-a[0])});`}).join('');chuteCode=`float floorZ=-1e6;${segments}float topZ=p.y<=37.5?298.0:306.0;bool inChute=(${xr})&&p.y>=${gl(chute.floor_yz[0][0])}&&p.y<=${gl(chute.floor_yz.at(-1)[0])}&&p.z>=floorZ&&p.z<=topZ;`}return`bool isHydraulicVoid(vec3 w){vec3 p=vec3(115.5-w.x,-w.z,w.y+198.0);bool inBox=${boxExpr};${chuteCode}return inBox||inChute;}`}
+function hydraulicCutoutShader(){
+ const gl=n=>Number.isInteger(+n)?`${n}.0`:`${n}`;
+ const hydraulic=spec.voids.filter(q=>q.semantics?.system==='flood_release'&&isPhysical(q));
+ const boxes=hydraulic.filter(q=>q.type==='box').flatMap(q=>q.boxes||[q]);
+ const boxExpr=boxes.map(b=>`(p.x>=${gl(b.x[0])}&&p.x<=${gl(b.x[1])}&&p.y>=${gl(b.y[0])}&&p.y<=${gl(b.y[1])}&&p.z>=${gl(b.z[0])}&&p.z<=${gl(b.z[1])})`).join('||')||'false';
+ const chuteCode=hydraulic.filter(q=>q.type==='chute').map((chute,index)=>{
+  const ranges=chute.x_ranges.map(r=>`(p.x>=${gl(r[0])}&&p.x<=${gl(r[1])})`).join('||');
+  const floor=`floorZ${index}`,top=`topZ${index}`;
+  const segments=chute.floor_yz.slice(0,-1).map((a,i)=>{const b=chute.floor_yz[i+1];return`if(p.y>=${gl(a[0])}&&p.y<=${gl(b[0])}) ${floor}=mix(${gl(a[1])},${gl(b[1])},(p.y-${gl(a[0])})/${gl(b[0]-a[0])});`}).join('');
+  const tops=(chute.void_top||[]).map(s=>`if(p.y>=${gl(s.y[0])}&&p.y<=${gl(s.y[1])}) ${top}=${gl(s.z_top)};`).join('');
+  return`float ${floor}=-1e6;float ${top}=-1e6;${segments}${tops}if((${ranges})&&p.y>=${gl(chute.floor_yz[0][0])}&&p.y<=${gl(chute.floor_yz.at(-1)[0])}&&p.z>=${floor}&&p.z<=${top}) inChute=true;`;
+ }).join('');
+ return`bool isHydraulicVoid(vec3 w){vec3 p=vec3(115.5-w.x,-w.z,w.y+198.0);bool inBox=${boxExpr};bool inChute=false;${chuteCode}return inBox||inChute;}`;
+}
 function enableHydraulicCutouts(material){material.onBeforeCompile=shader=>{const fn=hydraulicCutoutShader();shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vCutWorld;').replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvCutWorld=(modelMatrix*vec4(transformed,1.0)).xyz;');shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>\nvarying vec3 vCutWorld;\n${fn}`).replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(isHydraulicVoid(vCutWorld)) discard;')};material.customProgramCacheKey=()=>`hydraulic-cutouts-${spec.spec_version}`;return material}
 const mat=(color,opts={})=>{const material=new THREE.MeshStandardMaterial({color,roughness:.78,metalness:.02,...opts});return color===C.dam?enableHydraulicCutouts(material):material};
 function addEdges(mesh,color=C.edge,opacity=.5){const l=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry,25),new THREE.LineBasicMaterial({color,transparent:true,opacity}));mesh.add(l)}
@@ -66,7 +79,33 @@ function addSolids(){for(const section of spec.sections){const [x0,x1]=section.x
 function tunnelSegment(group,a,b,width,height,color,name){const p=P([a[0],a[1],a[2]+height/2]),q=P([b[0],b[1],b[2]+height/2]),d=q.clone().sub(p),len=d.length(),m=new THREE.Mesh(new THREE.BoxGeometry(len,height,width),mat(color,{transparent:true,opacity:.82,emissive:color,emissiveIntensity:.12}));m.name=name;m.position.copy(p.clone().add(q).multiplyScalar(.5));m.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),d.clone().normalize());group.add(m);addEdges(m,color,.7)}
 function addVoids(){for(const q of spec.voids){if(!['gallery','link_gallery','observation_room','elevator_shaft','access_adit'].includes(q.semantics?.class))continue;const color=q.id.includes('upper')?C.upper:q.id.includes('lower')?C.lower:q.id.includes('elevator')?C.shaft:C.outlet;if(q.type==='sweep_xz')q.path_xz.slice(0,-1).forEach((a,i)=>tunnelSegment(groups.gallery,[a[0],q.y,a[1]],[q.path_xz[i+1][0],q.y,q.path_xz[i+1][1]],q.width,q.height,color,q.id));else if(q.type==='sweep_y')q.path_yz.slice(0,-1).forEach((a,i)=>tunnelSegment(groups.gallery,[q.x,a[0],a[1]],[q.x,q.path_yz[i+1][0],q.path_yz[i+1][1]],q.width,q.height,color,q.id));else if(q.type==='box')for(const b of q.boxes||[q]){if(!b.x||!b.y||!b.z)continue;box(groups.gallery,q.id,b.x[0],b.x[1],b.y[0],b.y[1],b.z[0],b.z[1],color,.66)}}}
 function addTerrain(){const {header,values}=dataset.terrainNear,[nx,ny]=header.shape,step=4,ix=[],iy=[];for(let i=0;i<nx;i+=step)ix.push(i);if(ix.at(-1)!==nx-1)ix.push(nx-1);for(let j=0;j<ny;j+=step)iy.push(j);if(iy.at(-1)!==ny-1)iy.push(ny-1);const positions=[];for(const i of ix)for(const j of iy){const modelX=header.origin[0]+i*header.spacing[0],modelY=header.origin[1]+j*header.spacing[1],p=P([modelY,modelX,values[i*ny+j]+198]);positions.push(p.x,p.y,p.z)}const indices=[],cols=iy.length;for(let i=0;i<ix.length-1;i++)for(let j=0;j<iy.length-1;j++){const a=i*cols+j,b=a+cols,c=b+1,d=a+1;indices.push(a,b,c,a,c,d)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();const m=new THREE.Mesh(g,mat(C.rock,{transparent:true,opacity:.38,side:THREE.DoubleSide,depthWrite:false,flatShading:true}));m.name='近场有效地形（20 m 显示采样）';m.receiveShadow=true;groups.terrain.add(m)}
-function addHydraulicVoidBoundaries(){const chute=spec.voids.find(q=>q.id==='spillway_chutes'),bays=spec.voids.find(q=>q.id==='spillway_bays'),walls=spec.solids.find(q=>q.id==='spillway_piers_and_chute_walls'),material=new THREE.MeshStandardMaterial({color:C.dam,roughness:.82,metalness:.01,side:THREE.DoubleSide}),add=(name,points,idx)=>{const v=[];for(const q of points){const p=P(q);v.push(p.x,p.y,p.z)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));g.setIndex(idx);g.computeVertexNormals();const m=new THREE.Mesh(g,material);m.name=name;m.castShadow=m.receiveShadow=true;groups.dam.add(m);addEdges(m,C.edge,.55)};if(bays)for(const b of bays.boxes){const [x0,x1]=b.x,[y0,y1]=b.y,z=b.z[0]+.025;add('溢流孔底面',[[x0,y0,z],[x1,y0,z],[x1,y1,z],[x0,y1,z]],[0,1,2,0,2,3]);for(const x of [x0,x1])add('溢流孔侧壁',[[x,y0,b.z[0]],[x,y1,b.z[0]],[x,y1,b.z[1]],[x,y0,b.z[1]]],[0,1,2,0,2,3])}if(!chute)return;const path=[];for(let i=0;i<chute.floor_yz.length-1;i++){const a=chute.floor_yz[i],b=chute.floor_yz[i+1];path.push(a);if(a[0]<37.5&&b[0]>37.5)path.push([37.5,a[1]+(b[1]-a[1])*(37.5-a[0])/(b[0]-a[0])])}path.push(chute.floor_yz.at(-1));const downstreamTop=walls?.profile_yz?.slice(2,7)||[[37.5,298],[39.58,268],[72.78,228],[80,224],[94,222]],top=(y,downstream=false)=>{if(y<37.5||(y===37.5&&!downstream))return 306;for(let i=0;i<downstreamTop.length-1;i++){const a=downstreamTop[i],b=downstreamTop[i+1];if(y>=a[0]&&y<=b[0])return a[1]+(b[1]-a[1])*(y-a[0])/(b[0]-a[0])}return downstreamTop.at(-1)[1]};for(const [x0,x1] of chute.x_ranges)for(let i=0;i<path.length-1;i++){const [y0,z0]=path[i],[y1,z1]=path[i+1],f0=z0+.025,f1=z1+.025;add('溢流泄槽底板',[[x0,y0,f0],[x1,y0,f0],[x1,y1,f1],[x0,y1,f1]],[0,1,2,0,2,3]);for(const x of [x0,x1])add('溢流泄槽侧壁',[[x,y0,z0],[x,y1,z1],[x,y1,top(y1)],[x,y0,top(y0,y0===37.5&&y1>37.5)]],[0,1,2,0,2,3])}}
+function addHydraulicVoidBoundaries(){
+ const material=new THREE.MeshStandardMaterial({color:C.dam,roughness:.82,metalness:.01,side:THREE.DoubleSide});
+ const add=(name,points,idx)=>{const v=[];for(const q of points){const p=P(q);v.push(p.x,p.y,p.z)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));g.setIndex(idx);g.computeVertexNormals();const m=new THREE.Mesh(g,material);m.name=name;m.castShadow=m.receiveShadow=true;groups.dam.add(m);addEdges(m,C.edge,.55)};
+ const hydraulic=spec.voids.filter(q=>q.semantics?.system==='flood_release'&&isPhysical(q));
+ for(const bay of hydraulic.filter(q=>q.semantics?.class==='spillway_bay'&&q.type==='box'))for(const b of bay.boxes||[bay]){
+  const [x0,x1]=b.x,[y0,y1]=b.y,z=b.z[0]+.025;
+  add(`${bay.id}底面`,[[x0,y0,z],[x1,y0,z],[x1,y1,z],[x0,y1,z]],[0,1,2,0,2,3]);
+  for(const x of [x0,x1])add(`${bay.id}侧壁`,[[x,y0,b.z[0]],[x,y1,b.z[0]],[x,y1,b.z[1]],[x,y0,b.z[1]]],[0,1,2,0,2,3]);
+ }
+ for(const chute of hydraulic.filter(q=>q.semantics?.class==='spillway_chute'&&q.type==='chute')){
+  const yMin=chute.floor_yz[0][0],yMax=chute.floor_yz.at(-1)[0];
+  const ys=[...new Set([...chute.floor_yz.map(p=>p[0]),...(chute.void_top||[]).flatMap(s=>s.y)])].filter(y=>y>=yMin&&y<=yMax).sort((a,b)=>a-b);
+  const path=ys.map(y=>[y,interpFloor(chute.floor_yz,y)]);
+  for(const [x0,x1] of chute.x_ranges)for(let i=0;i<path.length-1;i++){
+   const [y0,z0]=path[i],[y1,z1]=path[i+1],f0=z0+.025,f1=z1+.025,zTop=voidTopAt(chute,(y0+y1)/2);
+   add(`${chute.id}底板`,[[x0,y0,f0],[x1,y0,f0],[x1,y1,f1],[x0,y1,f1]],[0,1,2,0,2,3]);
+   for(const x of [x0,x1])add(`${chute.id}侧壁`,[[x,y0,z0],[x,y1,z1],[x,y1,zTop],[x,y0,zTop]],[0,1,2,0,2,3]);
+  }
+ }
+ const outletClasses=new Set(['outlet_conduit','gate_chamber','outlet_tunnel','outlet_channel']);
+ for(const q of hydraulic.filter(q=>outletClasses.has(q.semantics?.class)&&q.type==='box'))for(const b of q.boxes||[q]){
+  const [x0,x1]=b.x,[y0,y1]=b.y,[z0,z1]=b.z,e=.025;
+  add(`${q.id}底板`,[[x0,y0,z0+e],[x1,y0,z0+e],[x1,y1,z0+e],[x0,y1,z0+e]],[0,1,2,0,2,3]);
+  for(const x of [x0+e,x1-e])add(`${q.id}侧壁`,[[x,y0,z0],[x,y1,z0],[x,y1,z1],[x,y0,z1]],[0,1,2,0,2,3]);
+  if(q.semantics?.enclosure==='closed')add(`${q.id}顶板`,[[x0,y0,z1-e],[x0,y1,z1-e],[x1,y1,z1-e],[x1,y0,z1-e]],[0,1,2,0,2,3]);
+ }
+}
 function waterMesh(name,level,upstream){const g=new THREE.PlaneGeometry(231,upstream?300:206);const m=new THREE.Mesh(g,mat(upstream?C.upwater:C.downwater,{transparent:true,opacity:.38,roughness:.18,metalness:.08,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(0,level-198,upstream?150:-197);m.name=name;return m}
 function axes(){const g=new THREE.Group(),o=P([18,-4,210]);for(const [q,c] of [[P([18,26,210]),0x49a7ff],[P([48,-4,210]),0xff9f4a],[P([18,-4,235]),0x38d996]]){const d=q.clone().sub(o);g.add(new THREE.ArrowHelper(d.clone().normalize(),o,d.length(),c,5,2.5))}return g}
 function defaultCandidates(){return dataset.candidates.candidates.map((d,i)=>{const p=d.example_position||d.geometry?.position||[d.geometry?.x,Array.isArray(d.geometry?.y)?(d.geometry.y[0]+d.geometry.y[1])/2:d.geometry?.y,d.geometry?.z_floor],m=docToModel(p[0],p[1],p[2]+.4);return{id:d.id,name:d.names?.zh||d.id,...m,az:[0,345,2,220,230,225][i]??0,el:[25,30,42,20,20,18][i]??25}})}

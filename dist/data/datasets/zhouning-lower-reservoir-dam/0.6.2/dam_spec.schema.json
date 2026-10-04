@@ -1,0 +1,758 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dam_spec.schema.json",
+ "title": "Dam geometry spec",
+ "type": "object",
+ "required": [
+  "assertions",
+  "conventions",
+  "dataset_id",
+  "dataset_version",
+  "foundation_surface",
+  "materials",
+  "parameters",
+  "relations",
+  "schema_id",
+  "schema_version",
+  "sections",
+  "solids",
+  "sources",
+  "spec_version",
+  "states",
+  "units",
+  "unknowns",
+  "vocabulary",
+  "voids",
+  "water"
+ ],
+ "properties": {
+  "spec_version": {
+   "type": "string",
+   "pattern": "^\\d+\\.\\d+\\.\\d+$"
+  },
+  "units": {
+   "type": "object",
+   "required": [
+    "length",
+    "density"
+   ]
+  },
+  "conventions": {
+   "type": "object",
+   "required": [
+    "doc_frame",
+    "model_frame",
+    "transform",
+    "bearings"
+   ]
+  },
+  "parameters": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "value",
+     "unit",
+     "grade",
+     "status",
+     "source"
+    ],
+    "properties": {
+     "value": {},
+     "unit": {
+      "type": "string"
+     },
+     "grade": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "source": {
+      "type": "string"
+     },
+     "range": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "note": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "sections": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "no",
+     "x_range"
+    ],
+    "properties": {
+     "no": {
+      "type": "integer"
+     },
+     "x_range": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    }
+   },
+   "minItems": 10,
+   "maxItems": 10
+  },
+  "foundation_surface": {
+   "type": "object",
+   "required": [
+    "type",
+    "points"
+   ],
+   "properties": {
+    "type": {
+     "const": "polyline_xz"
+    },
+    "points": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "minItems": 3
+    }
+   }
+  },
+  "solids": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "material",
+     "semantics",
+     "type"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "type": {
+      "enum": [
+       "extrusion_x",
+       "extrusion_z",
+       "box"
+      ]
+     },
+     "material": {
+      "type": "string"
+     },
+     "x_range": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "x_ranges": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     },
+     "profile_yz": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      },
+      "minItems": 3
+     },
+     "boxes": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "x",
+        "y",
+        "z"
+       ],
+       "properties": {
+        "x": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "y": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "z": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "name": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "semantics": {
+      "type": "object",
+      "required": [
+       "class",
+       "category",
+       "system",
+       "imaging_role",
+       "names"
+      ],
+      "properties": {
+       "class": {
+        "enum": [
+         "access_adit",
+         "bank_platform",
+         "bridge_deck",
+         "crest",
+         "dam_body",
+         "detector_site",
+         "elevator_shaft",
+         "gallery",
+         "gate_chamber",
+         "link_gallery",
+         "observation_room",
+         "outlet_channel",
+         "outlet_conduit",
+         "outlet_gate",
+         "outlet_structure",
+         "outlet_tunnel",
+         "pier",
+         "pier_nose",
+         "portal_marker",
+         "reference_point",
+         "reservoir",
+         "road_bridge",
+         "rock",
+         "second_dam",
+         "spillway_bay",
+         "spillway_body",
+         "spillway_chute",
+         "spillway_gate",
+         "tailwater",
+         "upstream_corbel",
+         "widened_block"
+        ]
+       },
+       "imaging_role": {
+        "enum": [
+         "background",
+         "detector_site",
+         "reference_void",
+         "target",
+         "time_varying_mass"
+        ]
+       },
+       "system": {
+        "enum": [
+         "dam",
+         "flood_release",
+         "gallery",
+         "ground",
+         "monitoring",
+         "reference",
+         "vertical_transport",
+         "water"
+        ]
+       },
+       "names": {
+        "type": "object",
+        "required": [
+         "zh",
+         "en"
+        ]
+       },
+       "side": {
+        "enum": [
+         "south",
+         "north",
+         "center"
+        ]
+       },
+       "sections": {
+        "type": "array",
+        "items": {
+         "type": "integer",
+         "minimum": 1,
+         "maximum": 10
+        }
+       }
+      }
+     },
+     "plan_xy": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      },
+      "minItems": 3
+     },
+     "realization": {
+      "enum": [
+       "solid",
+       "virtual"
+      ]
+     }
+    }
+   }
+  },
+  "voids": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "semantics",
+     "type"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "type": {
+      "enum": [
+       "sweep_xz",
+       "sweep_y",
+       "box",
+       "chute"
+      ]
+     },
+     "path_xz": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     },
+     "width": {
+      "type": "number"
+     },
+     "height": {
+      "type": "number"
+     },
+     "wall_height": {
+      "type": "number"
+     },
+     "y": {
+      "oneOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2
+       }
+      ]
+     },
+     "boxes": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "x",
+        "y",
+        "z"
+       ],
+       "properties": {
+        "x": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "y": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "z": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "name": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "x": {
+      "oneOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2
+       }
+      ]
+     },
+     "y_range": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "x_ranges": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     },
+     "floor_yz": {
+      "type": "array",
+      "items": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     },
+     "z": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "semantics": {
+      "type": "object",
+      "required": [
+       "class",
+       "category",
+       "system",
+       "imaging_role",
+       "names"
+      ],
+      "properties": {
+       "class": {
+        "enum": [
+         "access_adit",
+         "bank_platform",
+         "bridge_deck",
+         "crest",
+         "dam_body",
+         "detector_site",
+         "elevator_shaft",
+         "gallery",
+         "gate_chamber",
+         "link_gallery",
+         "observation_room",
+         "outlet_channel",
+         "outlet_conduit",
+         "outlet_gate",
+         "outlet_structure",
+         "outlet_tunnel",
+         "pier",
+         "pier_nose",
+         "portal_marker",
+         "reference_point",
+         "reservoir",
+         "road_bridge",
+         "rock",
+         "second_dam",
+         "spillway_bay",
+         "spillway_body",
+         "spillway_chute",
+         "spillway_gate",
+         "tailwater",
+         "upstream_corbel",
+         "widened_block"
+        ]
+       },
+       "imaging_role": {
+        "enum": [
+         "background",
+         "detector_site",
+         "reference_void",
+         "target",
+         "time_varying_mass"
+        ]
+       },
+       "system": {
+        "enum": [
+         "dam",
+         "flood_release",
+         "gallery",
+         "ground",
+         "monitoring",
+         "reference",
+         "vertical_transport",
+         "water"
+        ]
+       },
+       "names": {
+        "type": "object",
+        "required": [
+         "zh",
+         "en"
+        ]
+       },
+       "side": {
+        "enum": [
+         "south",
+         "north",
+         "center"
+        ]
+       },
+       "sections": {
+        "type": "array",
+        "items": {
+         "type": "integer",
+         "minimum": 1,
+         "maximum": 10
+        }
+       }
+      }
+     },
+     "realization": {
+      "enum": [
+       "solid",
+       "virtual"
+      ]
+     }
+    }
+   }
+  },
+  "water": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "material",
+     "semantics",
+     "z_top"
+    ]
+   }
+  },
+  "materials": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "density"
+    ],
+    "properties": {
+     "density": {
+      "type": "number"
+     }
+    }
+   }
+  },
+  "assertions": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "type"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "type": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "unknowns": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "subject",
+     "status",
+     "description"
+    ],
+    "properties": {
+     "status": {
+      "enum": [
+       "open",
+       "partially_resolved",
+       "resolved"
+      ]
+     }
+    }
+   }
+  },
+  "relations": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "from",
+     "to",
+     "type"
+    ],
+    "properties": {
+     "type": {
+      "enum": [
+       "accessible_from",
+       "attached_to",
+       "connects_to",
+       "covers",
+       "discharges_to",
+       "hydraulically_connected",
+       "located_in",
+       "part_of",
+       "retains",
+       "separates",
+       "upstream_of"
+      ]
+     }
+    }
+   }
+  },
+  "vocabulary": {
+   "type": "object",
+   "required": [
+    "classes",
+    "imaging_roles",
+    "systems",
+    "relation_types"
+   ]
+  },
+  "states": {
+   "type": "object"
+  },
+  "nodes": {
+   "type": "array"
+  },
+  "markers": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "type",
+     "realization",
+     "position",
+     "semantics"
+    ],
+    "properties": {
+     "type": {
+      "enum": [
+       "point",
+       "frame"
+      ]
+     },
+     "realization": {
+      "const": "virtual"
+     },
+     "position": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+     }
+    }
+   }
+  },
+  "sources": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "type",
+     "redistributable"
+    ]
+   }
+  },
+  "dataset_id": {
+   "type": "string"
+  },
+  "dataset_version": {
+   "type": "string"
+  },
+  "schema_id": {
+   "type": "string"
+  },
+  "schema_version": {
+   "type": "string"
+  },
+  "release_id": {
+   "type": "string"
+  }
+ }
+}

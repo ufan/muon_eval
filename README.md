@@ -40,7 +40,7 @@ docker compose up -d --build
 - `dist/vendor/three/`：离线 Three.js 0.186.0。
 - `.openai/hosting.json`：当前在线站点的可选托管绑定，不参与应用运行。
 - `docs/CALCULATION_MODELS.md`：计算链、公式、输出解释、参数与假定。
-- `docs/GEOMETRY_SPEC_REFACTOR.md`：v0.6.1 几何规范评估、Geometry IR、地形/射线与 DD4hep/GDML 重构路线。
+- `docs/GEOMETRY_SPEC_REFACTOR.md`：v0.6.x 几何规范评估、Geometry IR、地形/射线与 DD4hep/GDML 重构路线。
 - `docs/`：架构、当前数据集几何、路线图和迁移说明。
 
 ## 当前能力

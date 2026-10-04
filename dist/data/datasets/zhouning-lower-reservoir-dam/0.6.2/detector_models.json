@@ -1,0 +1,35 @@
+{
+ "file_type": "detector_models",
+ "format_version": "0.1",
+ "note": "探测器型号参数（仪器属性，与坝体几何无关）",
+ "models": {
+  "gen1": {
+   "layers": 3,
+   "active_area_m": [
+    0.4,
+    0.4
+   ],
+   "layer_spacing_m": 0.15,
+   "strip_pitch_mm": 1.6,
+   "efficiency_per_layer": 0.95,
+   "box_main_m": [
+    0.7,
+    0.45,
+    0.8
+   ],
+   "mass_kg": 85,
+   "power_W": 800,
+   "phase": "阶段一，2台"
+  },
+  "gen2": {
+   "layers": 3,
+   "active_area_m": [
+    0.384,
+    0.384
+   ],
+   "layer_spacing_m": 0.1,
+   "strip_pitch_mm": 1.0,
+   "phase": "阶段二，3台正常尺寸+1台小尺寸（小尺寸参数待定）"
+  }
+ }
+}

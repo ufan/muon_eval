@@ -1,7 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { createGeometryKernel } from '../dist/modules/geometry-kernel.js';
 
-const base = new URL('../dist/data/datasets/zhouning-lower-reservoir-dam/0.6.1/', import.meta.url);
+const registry = JSON.parse(await readFile(new URL('../dist/data/datasets.json', import.meta.url), 'utf8'));
+const entry = registry.datasets[registry.default_dataset];
+if (!entry) throw new Error(`Default dataset ${registry.default_dataset} is not registered`);
+const base = new URL(`../dist/data/${entry.base_url.replace(/^\.\//, '')}`, import.meta.url);
 const readJson = async relative => JSON.parse(await readFile(new URL(relative, base), 'utf8'));
 const [spec, header, farHeader, reference, rayReference] = await Promise.all([
   readJson('dam_spec.json'),
