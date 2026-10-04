@@ -61,6 +61,10 @@ function solidContains(x,y,z){if(z<foundationAt(x)-1e-6)return false;for(const s
 function interpPath(path,x){for(let i=0;i<path.length-1;i++){const [a,za]=path[i],[b,zb]=path[i+1];if(inRange(x,[Math.min(a,b),Math.max(a,b)])&&Math.abs(b-a)>1e-8)return za+(zb-za)*(x-a)/(b-a)}return null}
 function interpFloor(path,y){for(let i=0;i<path.length-1;i++){const [a,za]=path[i],[b,zb]=path[i+1];if(inRange(y,[a,b]))return za+(zb-za)*(y-a)/(b-a)}return null}
 function voidTopAt(q,y){const segment=q.void_top?.find(s=>inRange(y,s.y));return segment?.z_top??306}
+function chuteWallTopAt(q,y,floor){
+ const voidTop=voidTopAt(q,y),deckEnd=spec.parameters?.spillway_deck_y?.value?.[1],wallHeight=spec.parameters?.chute_wall_height?.value;
+ return Number.isFinite(deckEnd)&&Number.isFinite(wallHeight)&&y>=deckEnd-1e-6?Math.min(voidTop,floor+wallHeight):voidTop;
+}
 function voidContains(x,y,z){for(const q of spec.voids){if(!isPhysical(q))continue;if(q.type==='box'){const bs=q.boxes||[q];for(const b of bs)if(b.x&&b.y&&b.z&&inRange(x,b.x)&&inRange(y,b.y)&&inRange(z,b.z))return true}else if(q.type==='sweep_xz'){const f=interpPath(q.path_xz,x);if(f!==null&&Math.abs(y-q.y)<=q.width/2&&z>=f&&z<=f+q.height)return true}else if(q.type==='sweep_y'){const f=interpPath(q.path_yz,y);if(f!==null&&Math.abs(x-q.x)<=q.width/2&&z>=f&&z<=f+q.height)return true}else if(q.type==='chute'&&q.x_ranges.some(r=>inRange(x,r))){const f=interpFloor(q.floor_yz,y);if(f!==null&&z>=f&&z<=voidTopAt(q,y))return true}}return false}
 function tailLevel(){return spec?.parameters?.water_tail_level?.value??210}
 function tailDisplayLevel(){return spec?.parameters?.platform_bottom_elev?.value??tailLevel()}
@@ -93,9 +97,9 @@ function addHydraulicVoidBoundaries(){
   const ys=[...new Set([...chute.floor_yz.map(p=>p[0]),...(chute.void_top||[]).flatMap(s=>s.y)])].filter(y=>y>=yMin&&y<=yMax).sort((a,b)=>a-b);
   const path=ys.map(y=>[y,interpFloor(chute.floor_yz,y)]);
   for(const [x0,x1] of chute.x_ranges)for(let i=0;i<path.length-1;i++){
-   const [y0,z0]=path[i],[y1,z1]=path[i+1],f0=z0+.025,f1=z1+.025,zTop=voidTopAt(chute,(y0+y1)/2);
+   const [y0,z0]=path[i],[y1,z1]=path[i+1],f0=z0+.025,f1=z1+.025,zTop0=chuteWallTopAt(chute,y0,z0),zTop1=chuteWallTopAt(chute,y1,z1);
    add(`${chute.id}底板`,[[x0,y0,f0],[x1,y0,f0],[x1,y1,f1],[x0,y1,f1]],[0,1,2,0,2,3]);
-   for(const x of [x0,x1])add(`${chute.id}侧壁`,[[x,y0,z0],[x,y1,z1],[x,y1,zTop],[x,y0,zTop]],[0,1,2,0,2,3]);
+   for(const x of [x0,x1])add(`${chute.id}侧壁`,[[x,y0,z0],[x,y1,z1],[x,y1,zTop1],[x,y0,zTop0]],[0,1,2,0,2,3]);
   }
  }
  const outletClasses=new Set(['outlet_conduit','gate_chamber','outlet_tunnel','outlet_channel']);
