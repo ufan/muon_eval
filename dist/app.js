@@ -107,7 +107,11 @@ function addHydraulicVoidBoundaries(){
   const [x0,x1]=b.x,[y0,y1]=b.y,[z0,z1]=b.z,e=.025;
   add(`${q.id}底板`,[[x0,y0,z0+e],[x1,y0,z0+e],[x1,y1,z0+e],[x0,y1,z0+e]],[0,1,2,0,2,3]);
   for(const x of [x0+e,x1-e])add(`${q.id}侧壁`,[[x,y0,z0],[x,y1,z0],[x,y1,z1],[x,y0,z1]],[0,1,2,0,2,3]);
-  if(q.semantics?.enclosure==='closed')add(`${q.id}顶板`,[[x0,y0,z1-e],[x0,y1,z1-e],[x1,y1,z1-e],[x1,y0,z1-e]],[0,1,2,0,2,3]);
+  if(q.semantics?.enclosure==='closed'){
+   add(`${q.id}顶板`,[[x0,y0,z1-e],[x0,y1,z1-e],[x1,y1,z1-e],[x1,y0,z1-e]],[0,1,2,0,2,3]);
+   const roofTop=Math.max(z1,...spec.solids.filter(s=>s.semantics?.class==='outlet_structure'&&s.type==='box').flatMap(s=>s.boxes||[s]).filter(s=>s.x&&s.y&&inRange((x0+x1)/2,s.x)&&inRange((y0+y1)/2,s.y)).map(s=>s.z[1]));
+   if(roofTop>z1+e)for(const y of [y0,y1])add(`${q.id}顶板厚度断面`,[[x0,y,z1],[x1,y,z1],[x1,y,roofTop],[x0,y,roofTop]],[0,1,2,0,2,3]);
+  }
  }
 }
 function waterSurfaceMesh(water,level,color){
