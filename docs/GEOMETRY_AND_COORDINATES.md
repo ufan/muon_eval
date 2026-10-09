@@ -24,7 +24,7 @@ y_doc = X
 z_doc = Z + 198
 ```
 
-### Three.js 场景坐标
+### Legacy Three.js 场景坐标
 
 Three.js 使用 Y 轴竖直。当前转换函数 `P([x_doc,y_doc,z_doc])` 为：
 
@@ -35,6 +35,14 @@ scene.z = -y_doc
 ```
 
 方向向量必须使用对应的方向转换函数，不得把点变换直接用于向量。
+
+### 主应用 compiled 路径
+
+v0.7 候选参考点仍来自显式 doc_frame sidecar，通过 Geometry IR 的点变换进入 model_frame；不额外加旧应用的 0.4 m 示例站点偏移。默认姿态是平台初始值，不冒充 sidecar 的部署建议。
+
+GLB/BVH 位置、索引与射线均在 model_frame；编译视图仅作 Z-up → Y-up 旋转，即 `scene = (X, Z, -Y)`，无模型坐标平移或比例变化。方向只旋转，不接受高程偏移。场景使用与 BVH 相同的模型缓冲；显示隐藏或透明度不会改变材料分类、路径和积分。
+
+legacy 的程序化裁剪、网格显示和目标反事实启发式不用于此路径。compiled 只加载已发布的冻结工况，不从连续水位滑条修改网格；源实体目标/显著度未提供。主应用 UI 用声明的 model_frame 标签，不将固定屏幕左右方向当作岸别事实。
 
 ## 2. 几何语义
 

@@ -245,3 +245,7 @@
   .app > .left,
   .app > .right { visibility: visible !important; }
 }
+.application-selection label{display:grid;gap:5px;font-size:12px}
+.application-selection select{width:100%;min-width:0;font:inherit;padding:6px;background:#08131b;color:#e9f2f5;border:1px solid #294250;border-radius:5px}
+.application-selection [hidden]{display:none}
+.application-selection .hint{overflow-wrap:anywhere}
