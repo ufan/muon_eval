@@ -70,6 +70,15 @@ docker compose up -d --build
 
 ## 最小检查
 
+开发工具只用于检查，应用本身无需构建或 Node。安装 Node 22+ 后：
+
+```bash
+npm install
+npm run check
+```
+
+`npm run check` 依次执行语法检查、类型检查（首行带 `// @ts-check` 的模块）、单元测试和几何一致性脚本；CI 在每个 PR 上运行同一命令及数据集发布门禁。也可逐条运行：
+
 ```powershell
 node --check dist/app.js
 node scripts/check-geometry-conformance.mjs

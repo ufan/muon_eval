@@ -15,7 +15,7 @@ app.js：发布/后端/工况选择与依赖装配
   └─ main-page → legacy 或 compiled-scene-view / projection-canvas-view / main-pattern-view
 ```
 
-发布目录固定为 `dist/`，运行时不访问 CDN 或后端 API。
+发布目录固定为 `dist/`，运行时不访问 CDN 或后端 API。根目录 `package.json` 只提供开发检查（JSDoc 类型检查、测试和几何脚本），不参与运行或发布；框架与构建策略见 `AGENTS.md` 的架构约束。
 
 本文记录当前实现与目标边界，不记录任务完成流水。长期几何设计原则见 [GEOMETRY_SPEC_REFACTOR](GEOMETRY_SPEC_REFACTOR.md)；未完成工作仅在 [ROADMAP](ROADMAP.md) 维护。
 
