@@ -1,0 +1,28 @@
+{
+ "points_agreement_all": 0.998,
+ "points_agreement_far_from_terrain": 0.9999,
+ "points_far_from_terrain": 9437,
+ "ray_errors_m": {
+  "concrete": {
+   "median": 0.012,
+   "p95": 0.049,
+   "max": 0.075
+  },
+  "steel": {
+   "median": 0.0,
+   "p95": 0.0,
+   "max": 0.022
+  },
+  "water": {
+   "median": 0.0,
+   "p95": 0.038,
+   "max": 2.828
+  },
+  "rock": {
+   "median": 0.0,
+   "p95": 0.425,
+   "max": 2.882
+  }
+ },
+ "pass": true
+}

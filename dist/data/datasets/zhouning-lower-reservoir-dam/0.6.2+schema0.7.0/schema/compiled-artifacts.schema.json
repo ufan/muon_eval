@@ -1,0 +1,712 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "compiled-artifacts.schema.json",
+ "title": "编译产物格式（v0.1.0）",
+ "x_version": "0.1.0",
+ "$defs": {
+  "component": {
+   "type": "object",
+   "properties": {
+    "component_id": {
+     "type": "string"
+    },
+    "source_entity_id": {
+     "type": "string"
+    },
+    "material_id": {
+     "enum": [
+      "concrete",
+      "rock",
+      "water",
+      "air",
+      "steel"
+     ]
+    },
+    "scenario_id": {
+     "type": "string"
+    },
+    "role": {
+     "enum": [
+      "solid",
+      "void",
+      "filled_void",
+      "water_body",
+      "steel"
+     ]
+    },
+    "state_dependent": {
+     "type": "boolean"
+    },
+    "flags": {
+     "type": "object",
+     "properties": {
+      "physics": {
+       "type": "boolean"
+      },
+      "display": {
+       "type": "boolean"
+      },
+      "pick": {
+       "type": "boolean"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "physics",
+      "display",
+      "pick"
+     ]
+    },
+    "frame": {
+     "const": "model_frame"
+    },
+    "id": {
+     "type": "string"
+    },
+    "enclosure": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "material": {
+     "type": "string"
+    },
+    "density": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "triangles": {
+     "type": "integer"
+    },
+    "volume_m3": {
+     "type": "number"
+    },
+    "watertight": {
+     "type": "boolean"
+    },
+    "semantics_ref": {
+     "type": "string"
+    },
+    "assembly_id": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "component_id",
+    "source_entity_id",
+    "material_id",
+    "scenario_id",
+    "role",
+    "state_dependent",
+    "flags",
+    "frame",
+    "triangles",
+    "volume_m3",
+    "watertight"
+   ]
+  },
+  "manifest": {
+   "type": "object",
+   "properties": {
+    "manifest_version": {
+     "const": "0.3"
+    },
+    "dataset_id": {
+     "type": "string"
+    },
+    "dataset_version": {
+     "type": "string"
+    },
+    "release_id": {
+     "type": "string"
+    },
+    "schema_id": {
+     "type": "string"
+    },
+    "schema_version": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "spec_file": {
+       "type": "string"
+      },
+      "spec_sha256": {
+       "type": "string",
+       "pattern": "^[0-9a-f]{64}$"
+      },
+      "assets": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "role": {
+          "type": "string"
+         },
+         "path": {
+          "type": "string"
+         },
+         "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+         }
+        },
+        "additionalProperties": false,
+        "required": [
+         "role",
+         "path",
+         "sha256"
+        ]
+       },
+       "minItems": 1
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "spec_file",
+      "spec_sha256",
+      "assets"
+     ]
+    },
+    "compiler": {
+     "type": "object",
+     "properties": {
+      "name": {
+       "type": "string"
+      },
+      "script_sha256": {
+       "type": "string",
+       "pattern": "^[0-9a-f]{64}$"
+      },
+      "reader_sha256": {
+       "type": "string",
+       "pattern": "^[0-9a-f]{64}$"
+      },
+      "tools": {
+       "type": "object",
+       "additionalProperties": {
+        "type": "string"
+       }
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "name",
+      "script_sha256",
+      "reader_sha256",
+      "tools"
+     ]
+    },
+    "compile_settings": {
+     "type": "object",
+     "required": [
+      "precision"
+     ]
+    },
+    "compiled_at_utc": {
+     "type": "string"
+    },
+    "frame": {
+     "type": "object"
+    },
+    "scenarios": {
+     "type": "object",
+     "minProperties": 1,
+     "additionalProperties": {
+      "type": "object",
+      "properties": {
+       "variables": {
+        "type": "object"
+       },
+       "glb": {
+        "type": "string"
+       },
+       "gdml": {
+        "type": "string"
+       },
+       "components": {
+        "type": "array",
+        "items": {
+         "$ref": "#/$defs/component"
+        },
+        "minItems": 1
+       }
+      },
+      "additionalProperties": false,
+      "required": [
+       "variables",
+       "glb",
+       "gdml",
+       "components"
+      ]
+     }
+    },
+    "materials": {
+     "type": "object"
+    },
+    "markers": {
+     "type": "array",
+     "items": {
+      "type": "object"
+     }
+    },
+    "virtual_elements": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "compile_checks": {
+     "type": "object",
+     "properties": {
+      "closed_voids_enclosed": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "id": {
+          "type": "string"
+         },
+         "samples": {
+          "type": "integer"
+         },
+         "enclosed_fraction": {
+          "type": "number"
+         },
+         "pass": {
+          "type": "boolean"
+         }
+        },
+        "additionalProperties": false,
+        "required": [
+         "id",
+         "samples",
+         "enclosed_fraction",
+         "pass"
+        ]
+       }
+      },
+      "all_pass": {
+       "type": "boolean"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "closed_voids_enclosed",
+      "all_pass"
+     ]
+    },
+    "outputs": {
+     "type": "object",
+     "additionalProperties": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+     }
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "manifest_version",
+    "dataset_id",
+    "dataset_version",
+    "release_id",
+    "schema_version",
+    "input",
+    "compiler",
+    "compile_settings",
+    "scenarios",
+    "compile_checks",
+    "outputs"
+   ]
+  },
+  "terrainHeader": {
+   "type": "object",
+   "properties": {
+    "format_version": {
+     "const": "1.0"
+    },
+    "file": {
+     "type": "string"
+    },
+    "sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "dtype": {
+     "const": "float32"
+    },
+    "byte_order": {
+     "const": "little_endian"
+    },
+    "layout": {
+     "const": "row_major"
+    },
+    "axis_order": {
+     "const": [
+      "X",
+      "Y"
+     ]
+    },
+    "frame": {
+     "const": "model_frame"
+    },
+    "unit": {
+     "const": "m"
+    },
+    "shape": {
+     "type": "array",
+     "items": {
+      "type": "integer"
+     },
+     "minItems": 2
+    },
+    "origin": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 2
+    },
+    "spacing": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 2
+    },
+    "z_offset_applied": {
+     "type": "number"
+    },
+    "nodata": {
+     "type": "null"
+    },
+    "interpolation": {
+     "const": "bilinear"
+    },
+    "outside_policy": {
+     "enum": [
+      "use_far_grid",
+      "clamp_to_edge"
+     ]
+    },
+    "note": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "format_version",
+    "file",
+    "sha256",
+    "dtype",
+    "byte_order",
+    "layout",
+    "axis_order",
+    "frame",
+    "unit",
+    "shape",
+    "origin",
+    "spacing",
+    "z_offset_applied",
+    "interpolation",
+    "outside_policy"
+   ]
+  },
+  "conformancePoints": {
+   "type": "object",
+   "properties": {
+    "format": {
+     "const": "conformance_set"
+    },
+    "format_version": {
+     "const": "1.0"
+    },
+    "dataset_id": {
+     "type": "string"
+    },
+    "dataset_version": {
+     "type": "string"
+    },
+    "release_id": {
+     "type": "string"
+    },
+    "schema_version": {
+     "type": "string"
+    },
+    "spec_sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "reference_reader": {
+     "type": "string"
+    },
+    "reference_reader_sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "generator_sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "sampling": {
+     "type": "object"
+    },
+    "scenario_id": {
+     "type": "string"
+    },
+    "water_up_level": {
+     "type": "number"
+    },
+    "frame": {
+     "const": "model_frame"
+    },
+    "boundary_policy": {
+     "type": "object"
+    },
+    "generated_at_utc": {
+     "type": "string"
+    },
+    "note": {
+     "type": "string"
+    },
+    "points": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "p": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "minItems": 3
+       },
+       "material": {
+        "enum": [
+         "concrete",
+         "rock",
+         "water",
+         "air",
+         "steel"
+        ]
+       },
+       "dz_terrain": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false,
+      "required": [
+       "p",
+       "material",
+       "dz_terrain"
+      ]
+     },
+     "minItems": 1
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "format",
+    "format_version",
+    "dataset_id",
+    "dataset_version",
+    "release_id",
+    "spec_sha256",
+    "reference_reader_sha256",
+    "sampling",
+    "scenario_id",
+    "frame",
+    "points"
+   ]
+  },
+  "conformanceRays": {
+   "type": "object",
+   "properties": {
+    "format": {
+     "const": "conformance_set"
+    },
+    "format_version": {
+     "const": "1.0"
+    },
+    "dataset_id": {
+     "type": "string"
+    },
+    "dataset_version": {
+     "type": "string"
+    },
+    "release_id": {
+     "type": "string"
+    },
+    "schema_version": {
+     "type": "string"
+    },
+    "spec_sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "reference_reader": {
+     "type": "string"
+    },
+    "reference_reader_sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "generator_sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "sampling": {
+     "type": "object"
+    },
+    "scenario_id": {
+     "type": "string"
+    },
+    "water_up_level": {
+     "type": "number"
+    },
+    "frame": {
+     "const": "model_frame"
+    },
+    "boundary_policy": {
+     "type": "object"
+    },
+    "generated_at_utc": {
+     "type": "string"
+    },
+    "tolerances_m": {
+     "type": "object",
+     "additionalProperties": {
+      "type": "number"
+     }
+    },
+    "rays": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "site": {
+        "type": "string"
+       },
+       "origin": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "minItems": 3
+       },
+       "dir": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "minItems": 3
+       },
+       "length": {
+        "type": "number"
+       },
+       "expected_m": {
+        "type": "object",
+        "properties": {
+         "concrete": {
+          "type": "number"
+         },
+         "water": {
+          "type": "number"
+         },
+         "rock": {
+          "type": "number"
+         },
+         "steel": {
+          "type": "number"
+         }
+        },
+        "additionalProperties": false,
+        "required": [
+         "concrete",
+         "water",
+         "rock",
+         "steel"
+        ]
+       }
+      },
+      "additionalProperties": false,
+      "required": [
+       "site",
+       "origin",
+       "dir",
+       "length",
+       "expected_m"
+      ]
+     },
+     "minItems": 1
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "format",
+    "format_version",
+    "dataset_id",
+    "dataset_version",
+    "release_id",
+    "spec_sha256",
+    "reference_reader_sha256",
+    "sampling",
+    "scenario_id",
+    "frame",
+    "tolerances_m",
+    "rays"
+   ]
+  },
+  "conformanceCheck": {
+   "type": "object",
+   "properties": {
+    "points_agreement_all": {
+     "type": "number"
+    },
+    "points_agreement_far_from_terrain": {
+     "type": "number"
+    },
+    "points_far_from_terrain": {
+     "type": "integer"
+    },
+    "ray_errors_m": {
+     "type": "object"
+    },
+    "pass": {
+     "type": "boolean"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "points_agreement_far_from_terrain",
+    "ray_errors_m",
+    "pass"
+   ]
+  }
+ },
+ "oneOf": [
+  {
+   "$ref": "#/$defs/manifest"
+  },
+  {
+   "$ref": "#/$defs/terrainHeader"
+  },
+  {
+   "$ref": "#/$defs/conformancePoints"
+  },
+  {
+   "$ref": "#/$defs/conformanceRays"
+  },
+  {
+   "$ref": "#/$defs/conformanceCheck"
+  }
+ ]
+}

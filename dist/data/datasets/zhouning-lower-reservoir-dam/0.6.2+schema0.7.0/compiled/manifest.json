@@ -1,0 +1,2650 @@
+{
+ "manifest_version": "0.3",
+ "dataset_id": "zhouning-lower-reservoir-dam",
+ "dataset_version": "0.6.2",
+ "release_id": "zhouning-lower-reservoir-dam@0.6.2+schema0.7.0",
+ "schema_id": "org.jianweikeyi.dam-geometry",
+ "schema_version": "0.7.0",
+ "input": {
+  "spec_file": "dam_spec_v070.json",
+  "spec_sha256": "b102d7e7f07bd79b6d0d6a0e6c02d81848cad41fff446d629e668d7f78a5627d",
+  "assets": [
+   {
+    "role": "near_terrain_grid",
+    "path": "terrain_grid.npz",
+    "sha256": "79315666cf2b44d7f8072df158c4e98b8bd84caa3860ed3a4a5453fa30768805"
+   },
+   {
+    "role": "far_terrain_grid",
+    "path": "terrain_grid_far.npz",
+    "sha256": "9389d8e6290fbbf6101cc0887ae6b46ad14907f3c68d18c841def92d16386076"
+   }
+  ]
+ },
+ "compiler": {
+  "name": "dam_v07.compiler",
+  "script_sha256": "264500a53ebe203468a2b9ec3feffb4562e76e26587ec376aef98ae9830d5045",
+  "reader_sha256": "d6b550076b3b06329b170e2f614711f84439925c6fe3c8722708ff234bbd6298",
+  "tools": {
+   "python": "3.12.3",
+   "numpy": "2.4.4",
+   "manifold3d": "unknown",
+   "trimesh": "5.1.0"
+  }
+ },
+ "compile_settings": {
+  "rock_grid_m": 10.0,
+  "near_field_extra_grid_m": 5.0,
+  "breakline_offset_m": 0.02,
+  "structure_clip_y_m": [
+   -60.0,
+   300.0
+  ],
+  "structure_clip_top_above_crest_m": 24.0,
+  "arch_segments": 10,
+  "terrain_export_grid_m": 5.0,
+  "enclosure_check": {
+   "samples": 4000,
+   "offset_m": 0.15,
+   "pass_fraction": 0.995,
+   "seed": 1
+  },
+  "precision": {
+   "geometry_truth": "float64",
+   "mesh_vertices_glb": "float32",
+   "gdml_coordinates_decimals": 4,
+   "terrain_export": "float32"
+  }
+ },
+ "compiled_at_utc": "2026-10-05T23:21:20Z",
+ "frame": {
+  "name": "model_frame",
+  "from_doc": "X=y_doc, Y=x_doc, Z=z_doc−model_frame_z_offset",
+  "handedness": "right",
+  "units": "m"
+ },
+ "scenarios": {
+  "low": {
+   "variables": {
+    "water_up_level": 288,
+    "water_tail_level": 210.0,
+    "gate_state": "closed"
+   },
+   "glb": "scene_low.glb",
+   "gdml": "dam_low.gdml",
+   "components": [
+    {
+     "component_id": "reservoir",
+     "source_entity_id": "reservoir",
+     "material_id": "water",
+     "scenario_id": "low",
+     "role": "water_body",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "reservoir",
+     "enclosure": null,
+     "material": "water",
+     "density": 1.0,
+     "triangles": 5126,
+     "volume_m3": 2957655.4,
+     "watertight": true,
+     "semantics_ref": "reservoir",
+     "assembly_id": null
+    },
+    {
+     "component_id": "tailwater",
+     "source_entity_id": "tailwater",
+     "material_id": "water",
+     "scenario_id": "low",
+     "role": "water_body",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "tailwater",
+     "enclosure": null,
+     "material": "water",
+     "density": 1.0,
+     "triangles": 1204,
+     "volume_m3": 102401.6,
+     "watertight": true,
+     "semantics_ref": "tailwater",
+     "assembly_id": null
+    },
+    {
+     "component_id": "gallery_upper",
+     "source_entity_id": "gallery_upper",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_upper",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 282,
+     "volume_m3": 1457.3,
+     "watertight": true,
+     "semantics_ref": "gallery_upper",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "gallery_link",
+     "source_entity_id": "gallery_link",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_link",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 142.6,
+     "watertight": true,
+     "semantics_ref": "gallery_link",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "gallery_lower",
+     "source_entity_id": "gallery_lower",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_lower",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 256,
+     "volume_m3": 800.7,
+     "watertight": true,
+     "semantics_ref": "gallery_lower",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "adit_S",
+     "source_entity_id": "adit_S",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "adit_S",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 341.9,
+     "watertight": true,
+     "semantics_ref": "adit_S",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "adit_N",
+     "source_entity_id": "adit_N",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "adit_N",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 341.9,
+     "watertight": true,
+     "semantics_ref": "adit_N",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "obs_room_upper",
+     "source_entity_id": "obs_room_upper",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "obs_room_upper",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 29.4,
+     "watertight": true,
+     "semantics_ref": "obs_room_upper",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "obs_room_lower",
+     "source_entity_id": "obs_room_lower",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "obs_room_lower",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 112.0,
+     "watertight": true,
+     "semantics_ref": "obs_room_lower",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "elevator_shaft",
+     "source_entity_id": "elevator_shaft",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "elevator_shaft",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 554.3,
+     "watertight": true,
+     "semantics_ref": "elevator_shaft",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "spillway_bays_S",
+     "source_entity_id": "spillway_bays_S",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_bays_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 527.8,
+     "watertight": true,
+     "semantics_ref": "spillway_bays_S",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_bays_N",
+     "source_entity_id": "spillway_bays_N",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_bays_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 527.8,
+     "watertight": true,
+     "semantics_ref": "spillway_bays_N",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_chutes_S",
+     "source_entity_id": "spillway_chutes_S",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_chutes_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 84,
+     "volume_m3": 6056.1,
+     "watertight": true,
+     "semantics_ref": "spillway_chutes_S",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_chutes_N",
+     "source_entity_id": "spillway_chutes_N",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_chutes_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 84,
+     "volume_m3": 6056.1,
+     "watertight": true,
+     "semantics_ref": "spillway_chutes_N",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "outlet_conduits_S__water",
+     "source_entity_id": "outlet_conduits_S",
+     "material_id": "water",
+     "scenario_id": "low",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_conduits_S__water",
+     "enclosure": "closed",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 837.0,
+     "watertight": true,
+     "semantics_ref": "outlet_conduits_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_conduits_N__water",
+     "source_entity_id": "outlet_conduits_N",
+     "material_id": "water",
+     "scenario_id": "low",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_conduits_N__water",
+     "enclosure": "closed",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 837.0,
+     "watertight": true,
+     "semantics_ref": "outlet_conduits_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_gate_chambers_S",
+     "source_entity_id": "outlet_gate_chambers_S",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_gate_chambers_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 20,
+     "volume_m3": 485.1,
+     "watertight": true,
+     "semantics_ref": "outlet_gate_chambers_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_gate_chambers_N",
+     "source_entity_id": "outlet_gate_chambers_N",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_gate_chambers_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 20,
+     "volume_m3": 485.1,
+     "watertight": true,
+     "semantics_ref": "outlet_gate_chambers_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_tunnels_S",
+     "source_entity_id": "outlet_tunnels_S",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_tunnels_S",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 317.1,
+     "watertight": true,
+     "semantics_ref": "outlet_tunnels_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_tunnels_N",
+     "source_entity_id": "outlet_tunnels_N",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_tunnels_N",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 317.1,
+     "watertight": true,
+     "semantics_ref": "outlet_tunnels_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_channels_S",
+     "source_entity_id": "outlet_channels_S",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_channels_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 3396.3,
+     "watertight": true,
+     "semantics_ref": "outlet_channels_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_channels_N",
+     "source_entity_id": "outlet_channels_N",
+     "material_id": "air",
+     "scenario_id": "low",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_channels_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 3396.3,
+     "watertight": true,
+     "semantics_ref": "outlet_channels_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "concrete",
+     "source_entity_id": "concrete",
+     "material_id": "concrete",
+     "scenario_id": "low",
+     "role": "solid",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "concrete",
+     "enclosure": null,
+     "material": "concrete",
+     "density": 2.4,
+     "triangles": 1792,
+     "volume_m3": 789276.2,
+     "watertight": true,
+     "semantics_ref": "concrete",
+     "assembly_id": null
+    },
+    {
+     "component_id": "steel_gates",
+     "source_entity_id": "steel_gates",
+     "material_id": "steel",
+     "scenario_id": "low",
+     "role": "steel",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "steel_gates",
+     "enclosure": null,
+     "material": "steel",
+     "density": 7.85,
+     "triangles": 48,
+     "volume_m3": 7.6,
+     "watertight": true,
+     "semantics_ref": "steel_gates",
+     "assembly_id": null
+    },
+    {
+     "component_id": "rock",
+     "source_entity_id": "rock",
+     "material_id": "rock",
+     "scenario_id": "low",
+     "role": "solid",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "rock",
+     "enclosure": null,
+     "material": "rock",
+     "density": 2.65,
+     "triangles": 120800,
+     "volume_m3": 444926249.1,
+     "watertight": true,
+     "semantics_ref": "rock",
+     "assembly_id": null
+    }
+   ]
+  },
+  "mid": {
+   "variables": {
+    "water_up_level": 293,
+    "water_tail_level": 210.0,
+    "gate_state": "closed"
+   },
+   "glb": "scene_mid.glb",
+   "gdml": "dam_mid.gdml",
+   "components": [
+    {
+     "component_id": "reservoir",
+     "source_entity_id": "reservoir",
+     "material_id": "water",
+     "scenario_id": "mid",
+     "role": "water_body",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "reservoir",
+     "enclosure": null,
+     "material": "water",
+     "density": 1.0,
+     "triangles": 5396,
+     "volume_m3": 3414389.2,
+     "watertight": true,
+     "semantics_ref": "reservoir",
+     "assembly_id": null
+    },
+    {
+     "component_id": "tailwater",
+     "source_entity_id": "tailwater",
+     "material_id": "water",
+     "scenario_id": "mid",
+     "role": "water_body",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "tailwater",
+     "enclosure": null,
+     "material": "water",
+     "density": 1.0,
+     "triangles": 1204,
+     "volume_m3": 102401.6,
+     "watertight": true,
+     "semantics_ref": "tailwater",
+     "assembly_id": null
+    },
+    {
+     "component_id": "gallery_upper",
+     "source_entity_id": "gallery_upper",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_upper",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 282,
+     "volume_m3": 1457.3,
+     "watertight": true,
+     "semantics_ref": "gallery_upper",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "gallery_link",
+     "source_entity_id": "gallery_link",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_link",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 142.6,
+     "watertight": true,
+     "semantics_ref": "gallery_link",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "gallery_lower",
+     "source_entity_id": "gallery_lower",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_lower",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 256,
+     "volume_m3": 800.7,
+     "watertight": true,
+     "semantics_ref": "gallery_lower",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "adit_S",
+     "source_entity_id": "adit_S",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "adit_S",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 341.9,
+     "watertight": true,
+     "semantics_ref": "adit_S",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "adit_N",
+     "source_entity_id": "adit_N",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "adit_N",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 341.9,
+     "watertight": true,
+     "semantics_ref": "adit_N",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "obs_room_upper",
+     "source_entity_id": "obs_room_upper",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "obs_room_upper",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 29.4,
+     "watertight": true,
+     "semantics_ref": "obs_room_upper",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "obs_room_lower",
+     "source_entity_id": "obs_room_lower",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "obs_room_lower",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 112.0,
+     "watertight": true,
+     "semantics_ref": "obs_room_lower",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "elevator_shaft",
+     "source_entity_id": "elevator_shaft",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "elevator_shaft",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 554.3,
+     "watertight": true,
+     "semantics_ref": "elevator_shaft",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "spillway_bays_S",
+     "source_entity_id": "spillway_bays_S",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_bays_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 527.8,
+     "watertight": true,
+     "semantics_ref": "spillway_bays_S",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_bays_N",
+     "source_entity_id": "spillway_bays_N",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_bays_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 527.8,
+     "watertight": true,
+     "semantics_ref": "spillway_bays_N",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_chutes_S",
+     "source_entity_id": "spillway_chutes_S",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_chutes_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 84,
+     "volume_m3": 6056.1,
+     "watertight": true,
+     "semantics_ref": "spillway_chutes_S",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_chutes_N",
+     "source_entity_id": "spillway_chutes_N",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_chutes_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 84,
+     "volume_m3": 6056.1,
+     "watertight": true,
+     "semantics_ref": "spillway_chutes_N",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "outlet_conduits_S__water",
+     "source_entity_id": "outlet_conduits_S",
+     "material_id": "water",
+     "scenario_id": "mid",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_conduits_S__water",
+     "enclosure": "closed",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 837.0,
+     "watertight": true,
+     "semantics_ref": "outlet_conduits_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_conduits_N__water",
+     "source_entity_id": "outlet_conduits_N",
+     "material_id": "water",
+     "scenario_id": "mid",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_conduits_N__water",
+     "enclosure": "closed",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 837.0,
+     "watertight": true,
+     "semantics_ref": "outlet_conduits_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_gate_chambers_S",
+     "source_entity_id": "outlet_gate_chambers_S",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_gate_chambers_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 20,
+     "volume_m3": 485.1,
+     "watertight": true,
+     "semantics_ref": "outlet_gate_chambers_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_gate_chambers_N",
+     "source_entity_id": "outlet_gate_chambers_N",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_gate_chambers_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 20,
+     "volume_m3": 485.1,
+     "watertight": true,
+     "semantics_ref": "outlet_gate_chambers_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_tunnels_S",
+     "source_entity_id": "outlet_tunnels_S",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_tunnels_S",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 317.1,
+     "watertight": true,
+     "semantics_ref": "outlet_tunnels_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_tunnels_N",
+     "source_entity_id": "outlet_tunnels_N",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_tunnels_N",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 317.1,
+     "watertight": true,
+     "semantics_ref": "outlet_tunnels_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_channels_S",
+     "source_entity_id": "outlet_channels_S",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_channels_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 3396.3,
+     "watertight": true,
+     "semantics_ref": "outlet_channels_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_channels_N",
+     "source_entity_id": "outlet_channels_N",
+     "material_id": "air",
+     "scenario_id": "mid",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_channels_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 3396.3,
+     "watertight": true,
+     "semantics_ref": "outlet_channels_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "concrete",
+     "source_entity_id": "concrete",
+     "material_id": "concrete",
+     "scenario_id": "mid",
+     "role": "solid",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "concrete",
+     "enclosure": null,
+     "material": "concrete",
+     "density": 2.4,
+     "triangles": 1792,
+     "volume_m3": 789276.2,
+     "watertight": true,
+     "semantics_ref": "concrete",
+     "assembly_id": null
+    },
+    {
+     "component_id": "steel_gates",
+     "source_entity_id": "steel_gates",
+     "material_id": "steel",
+     "scenario_id": "mid",
+     "role": "steel",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "steel_gates",
+     "enclosure": null,
+     "material": "steel",
+     "density": 7.85,
+     "triangles": 48,
+     "volume_m3": 7.6,
+     "watertight": true,
+     "semantics_ref": "steel_gates",
+     "assembly_id": null
+    },
+    {
+     "component_id": "rock",
+     "source_entity_id": "rock",
+     "material_id": "rock",
+     "scenario_id": "mid",
+     "role": "solid",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "rock",
+     "enclosure": null,
+     "material": "rock",
+     "density": 2.65,
+     "triangles": 120800,
+     "volume_m3": 444926249.1,
+     "watertight": true,
+     "semantics_ref": "rock",
+     "assembly_id": null
+    }
+   ]
+  },
+  "high": {
+   "variables": {
+    "water_up_level": 298,
+    "water_tail_level": 210.0,
+    "gate_state": "closed"
+   },
+   "glb": "scene_high.glb",
+   "gdml": "dam_high.gdml",
+   "components": [
+    {
+     "component_id": "reservoir",
+     "source_entity_id": "reservoir",
+     "material_id": "water",
+     "scenario_id": "high",
+     "role": "water_body",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "reservoir",
+     "enclosure": null,
+     "material": "water",
+     "density": 1.0,
+     "triangles": 5688,
+     "volume_m3": 3902099.3,
+     "watertight": true,
+     "semantics_ref": "reservoir",
+     "assembly_id": null
+    },
+    {
+     "component_id": "tailwater",
+     "source_entity_id": "tailwater",
+     "material_id": "water",
+     "scenario_id": "high",
+     "role": "water_body",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "tailwater",
+     "enclosure": null,
+     "material": "water",
+     "density": 1.0,
+     "triangles": 1204,
+     "volume_m3": 102401.6,
+     "watertight": true,
+     "semantics_ref": "tailwater",
+     "assembly_id": null
+    },
+    {
+     "component_id": "gallery_upper",
+     "source_entity_id": "gallery_upper",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_upper",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 282,
+     "volume_m3": 1457.3,
+     "watertight": true,
+     "semantics_ref": "gallery_upper",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "gallery_link",
+     "source_entity_id": "gallery_link",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_link",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 142.6,
+     "watertight": true,
+     "semantics_ref": "gallery_link",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "gallery_lower",
+     "source_entity_id": "gallery_lower",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_lower",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 256,
+     "volume_m3": 800.7,
+     "watertight": true,
+     "semantics_ref": "gallery_lower",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "adit_S",
+     "source_entity_id": "adit_S",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "adit_S",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 341.9,
+     "watertight": true,
+     "semantics_ref": "adit_S",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "adit_N",
+     "source_entity_id": "adit_N",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "adit_N",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 341.9,
+     "watertight": true,
+     "semantics_ref": "adit_N",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "obs_room_upper",
+     "source_entity_id": "obs_room_upper",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "obs_room_upper",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 29.4,
+     "watertight": true,
+     "semantics_ref": "obs_room_upper",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "obs_room_lower",
+     "source_entity_id": "obs_room_lower",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "obs_room_lower",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 112.0,
+     "watertight": true,
+     "semantics_ref": "obs_room_lower",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "elevator_shaft",
+     "source_entity_id": "elevator_shaft",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "elevator_shaft",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 554.3,
+     "watertight": true,
+     "semantics_ref": "elevator_shaft",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "spillway_bays_S__water",
+     "source_entity_id": "spillway_bays_S",
+     "material_id": "water",
+     "scenario_id": "high",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_bays_S__water",
+     "enclosure": "open_channel",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 124.2,
+     "watertight": true,
+     "semantics_ref": "spillway_bays_S",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_bays_S",
+     "source_entity_id": "spillway_bays_S",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_bays_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 403.6,
+     "watertight": true,
+     "semantics_ref": "spillway_bays_S",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_bays_N__water",
+     "source_entity_id": "spillway_bays_N",
+     "material_id": "water",
+     "scenario_id": "high",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_bays_N__water",
+     "enclosure": "open_channel",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 124.2,
+     "watertight": true,
+     "semantics_ref": "spillway_bays_N",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_bays_N",
+     "source_entity_id": "spillway_bays_N",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_bays_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 403.6,
+     "watertight": true,
+     "semantics_ref": "spillway_bays_N",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_chutes_S",
+     "source_entity_id": "spillway_chutes_S",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_chutes_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 84,
+     "volume_m3": 6056.1,
+     "watertight": true,
+     "semantics_ref": "spillway_chutes_S",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_chutes_N",
+     "source_entity_id": "spillway_chutes_N",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_chutes_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 84,
+     "volume_m3": 6056.1,
+     "watertight": true,
+     "semantics_ref": "spillway_chutes_N",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "outlet_conduits_S__water",
+     "source_entity_id": "outlet_conduits_S",
+     "material_id": "water",
+     "scenario_id": "high",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_conduits_S__water",
+     "enclosure": "closed",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 837.0,
+     "watertight": true,
+     "semantics_ref": "outlet_conduits_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_conduits_N__water",
+     "source_entity_id": "outlet_conduits_N",
+     "material_id": "water",
+     "scenario_id": "high",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_conduits_N__water",
+     "enclosure": "closed",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 837.0,
+     "watertight": true,
+     "semantics_ref": "outlet_conduits_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_gate_chambers_S",
+     "source_entity_id": "outlet_gate_chambers_S",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_gate_chambers_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 20,
+     "volume_m3": 485.1,
+     "watertight": true,
+     "semantics_ref": "outlet_gate_chambers_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_gate_chambers_N",
+     "source_entity_id": "outlet_gate_chambers_N",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_gate_chambers_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 20,
+     "volume_m3": 485.1,
+     "watertight": true,
+     "semantics_ref": "outlet_gate_chambers_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_tunnels_S",
+     "source_entity_id": "outlet_tunnels_S",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_tunnels_S",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 317.1,
+     "watertight": true,
+     "semantics_ref": "outlet_tunnels_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_tunnels_N",
+     "source_entity_id": "outlet_tunnels_N",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_tunnels_N",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 317.1,
+     "watertight": true,
+     "semantics_ref": "outlet_tunnels_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_channels_S",
+     "source_entity_id": "outlet_channels_S",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_channels_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 3396.3,
+     "watertight": true,
+     "semantics_ref": "outlet_channels_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_channels_N",
+     "source_entity_id": "outlet_channels_N",
+     "material_id": "air",
+     "scenario_id": "high",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_channels_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 3396.3,
+     "watertight": true,
+     "semantics_ref": "outlet_channels_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "concrete",
+     "source_entity_id": "concrete",
+     "material_id": "concrete",
+     "scenario_id": "high",
+     "role": "solid",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "concrete",
+     "enclosure": null,
+     "material": "concrete",
+     "density": 2.4,
+     "triangles": 1792,
+     "volume_m3": 789276.2,
+     "watertight": true,
+     "semantics_ref": "concrete",
+     "assembly_id": null
+    },
+    {
+     "component_id": "steel_gates",
+     "source_entity_id": "steel_gates",
+     "material_id": "steel",
+     "scenario_id": "high",
+     "role": "steel",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "steel_gates",
+     "enclosure": null,
+     "material": "steel",
+     "density": 7.85,
+     "triangles": 48,
+     "volume_m3": 7.6,
+     "watertight": true,
+     "semantics_ref": "steel_gates",
+     "assembly_id": null
+    },
+    {
+     "component_id": "rock",
+     "source_entity_id": "rock",
+     "material_id": "rock",
+     "scenario_id": "high",
+     "role": "solid",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "rock",
+     "enclosure": null,
+     "material": "rock",
+     "density": 2.65,
+     "triangles": 120800,
+     "volume_m3": 444926249.1,
+     "watertight": true,
+     "semantics_ref": "rock",
+     "assembly_id": null
+    }
+   ]
+  },
+  "extreme": {
+   "variables": {
+    "water_up_level": 305,
+    "water_tail_level": 210.0,
+    "gate_state": "closed"
+   },
+   "glb": "scene_extreme.glb",
+   "gdml": "dam_extreme.gdml",
+   "components": [
+    {
+     "component_id": "reservoir",
+     "source_entity_id": "reservoir",
+     "material_id": "water",
+     "scenario_id": "extreme",
+     "role": "water_body",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "reservoir",
+     "enclosure": null,
+     "material": "water",
+     "density": 1.0,
+     "triangles": 6028,
+     "volume_m3": 4635292.6,
+     "watertight": true,
+     "semantics_ref": "reservoir",
+     "assembly_id": null
+    },
+    {
+     "component_id": "tailwater",
+     "source_entity_id": "tailwater",
+     "material_id": "water",
+     "scenario_id": "extreme",
+     "role": "water_body",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "tailwater",
+     "enclosure": null,
+     "material": "water",
+     "density": 1.0,
+     "triangles": 1204,
+     "volume_m3": 102401.6,
+     "watertight": true,
+     "semantics_ref": "tailwater",
+     "assembly_id": null
+    },
+    {
+     "component_id": "gallery_upper",
+     "source_entity_id": "gallery_upper",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_upper",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 282,
+     "volume_m3": 1457.3,
+     "watertight": true,
+     "semantics_ref": "gallery_upper",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "gallery_link",
+     "source_entity_id": "gallery_link",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_link",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 142.6,
+     "watertight": true,
+     "semantics_ref": "gallery_link",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "gallery_lower",
+     "source_entity_id": "gallery_lower",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "gallery_lower",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 256,
+     "volume_m3": 800.7,
+     "watertight": true,
+     "semantics_ref": "gallery_lower",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "adit_S",
+     "source_entity_id": "adit_S",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "adit_S",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 341.9,
+     "watertight": true,
+     "semantics_ref": "adit_S",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "adit_N",
+     "source_entity_id": "adit_N",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "adit_N",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 48,
+     "volume_m3": 341.9,
+     "watertight": true,
+     "semantics_ref": "adit_N",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "obs_room_upper",
+     "source_entity_id": "obs_room_upper",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "obs_room_upper",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 29.4,
+     "watertight": true,
+     "semantics_ref": "obs_room_upper",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "obs_room_lower",
+     "source_entity_id": "obs_room_lower",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "obs_room_lower",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 112.0,
+     "watertight": true,
+     "semantics_ref": "obs_room_lower",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "elevator_shaft",
+     "source_entity_id": "elevator_shaft",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "elevator_shaft",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 554.3,
+     "watertight": true,
+     "semantics_ref": "elevator_shaft",
+     "assembly_id": "gallery_system"
+    },
+    {
+     "component_id": "spillway_bays_S__water",
+     "source_entity_id": "spillway_bays_S",
+     "material_id": "water",
+     "scenario_id": "extreme",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_bays_S__water",
+     "enclosure": "open_channel",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 527.8,
+     "watertight": true,
+     "semantics_ref": "spillway_bays_S",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_bays_N__water",
+     "source_entity_id": "spillway_bays_N",
+     "material_id": "water",
+     "scenario_id": "extreme",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_bays_N__water",
+     "enclosure": "open_channel",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 527.8,
+     "watertight": true,
+     "semantics_ref": "spillway_bays_N",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_chutes_S",
+     "source_entity_id": "spillway_chutes_S",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_chutes_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 84,
+     "volume_m3": 6056.1,
+     "watertight": true,
+     "semantics_ref": "spillway_chutes_S",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "spillway_chutes_N",
+     "source_entity_id": "spillway_chutes_N",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "spillway_chutes_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 84,
+     "volume_m3": 6056.1,
+     "watertight": true,
+     "semantics_ref": "spillway_chutes_N",
+     "assembly_id": "spillway"
+    },
+    {
+     "component_id": "outlet_conduits_S__water",
+     "source_entity_id": "outlet_conduits_S",
+     "material_id": "water",
+     "scenario_id": "extreme",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_conduits_S__water",
+     "enclosure": "closed",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 837.0,
+     "watertight": true,
+     "semantics_ref": "outlet_conduits_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_conduits_N__water",
+     "source_entity_id": "outlet_conduits_N",
+     "material_id": "water",
+     "scenario_id": "extreme",
+     "role": "filled_void",
+     "state_dependent": true,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_conduits_N__water",
+     "enclosure": "closed",
+     "material": "water",
+     "density": 1.0,
+     "triangles": 12,
+     "volume_m3": 837.0,
+     "watertight": true,
+     "semantics_ref": "outlet_conduits_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_gate_chambers_S",
+     "source_entity_id": "outlet_gate_chambers_S",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_gate_chambers_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 20,
+     "volume_m3": 485.1,
+     "watertight": true,
+     "semantics_ref": "outlet_gate_chambers_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_gate_chambers_N",
+     "source_entity_id": "outlet_gate_chambers_N",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_gate_chambers_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 20,
+     "volume_m3": 485.1,
+     "watertight": true,
+     "semantics_ref": "outlet_gate_chambers_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_tunnels_S",
+     "source_entity_id": "outlet_tunnels_S",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_tunnels_S",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 317.1,
+     "watertight": true,
+     "semantics_ref": "outlet_tunnels_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_tunnels_N",
+     "source_entity_id": "outlet_tunnels_N",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_tunnels_N",
+     "enclosure": "closed",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 317.1,
+     "watertight": true,
+     "semantics_ref": "outlet_tunnels_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "outlet_channels_S",
+     "source_entity_id": "outlet_channels_S",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_channels_S",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 3396.3,
+     "watertight": true,
+     "semantics_ref": "outlet_channels_S",
+     "assembly_id": "bottom_outlet_south"
+    },
+    {
+     "component_id": "outlet_channels_N",
+     "source_entity_id": "outlet_channels_N",
+     "material_id": "air",
+     "scenario_id": "extreme",
+     "role": "void",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "outlet_channels_N",
+     "enclosure": "open_channel",
+     "material": "air",
+     "density": 0.0012,
+     "triangles": 12,
+     "volume_m3": 3396.3,
+     "watertight": true,
+     "semantics_ref": "outlet_channels_N",
+     "assembly_id": "bottom_outlet_north"
+    },
+    {
+     "component_id": "concrete",
+     "source_entity_id": "concrete",
+     "material_id": "concrete",
+     "scenario_id": "extreme",
+     "role": "solid",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "concrete",
+     "enclosure": null,
+     "material": "concrete",
+     "density": 2.4,
+     "triangles": 1792,
+     "volume_m3": 789276.2,
+     "watertight": true,
+     "semantics_ref": "concrete",
+     "assembly_id": null
+    },
+    {
+     "component_id": "steel_gates",
+     "source_entity_id": "steel_gates",
+     "material_id": "steel",
+     "scenario_id": "extreme",
+     "role": "steel",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "steel_gates",
+     "enclosure": null,
+     "material": "steel",
+     "density": 7.85,
+     "triangles": 48,
+     "volume_m3": 7.6,
+     "watertight": true,
+     "semantics_ref": "steel_gates",
+     "assembly_id": null
+    },
+    {
+     "component_id": "rock",
+     "source_entity_id": "rock",
+     "material_id": "rock",
+     "scenario_id": "extreme",
+     "role": "solid",
+     "state_dependent": false,
+     "flags": {
+      "physics": true,
+      "display": true,
+      "pick": true
+     },
+     "frame": "model_frame",
+     "id": "rock",
+     "enclosure": null,
+     "material": "rock",
+     "density": 2.65,
+     "triangles": 120800,
+     "volume_m3": 444926249.1,
+     "watertight": true,
+     "semantics_ref": "rock",
+     "assembly_id": null
+    }
+   ]
+  }
+ },
+ "materials": {
+  "concrete": {
+   "density": 2.4,
+   "range": [
+    2.35,
+    2.45
+   ],
+   "geant4_base": "G4_CONCRETE",
+   "note": "G4_CONCRETE默认2.3，须覆盖密度"
+  },
+  "water": {
+   "density": 1.0,
+   "geant4_base": "G4_WATER"
+  },
+  "rock": {
+   "density": 2.65,
+   "range": [
+    2.55,
+    2.75
+   ],
+   "geant4_base": "StandardRock (Z=11, A=22 g/mol)",
+   "note": "两岸与坝基"
+  },
+  "air": {
+   "density": 0.0012,
+   "geant4_base": "G4_AIR"
+  },
+  "steel": {
+   "density": 7.85,
+   "geant4_base": "G4_STAINLESS-STEEL 或 G4_Fe",
+   "note": "闸门等效钢板"
+  }
+ },
+ "markers": [
+  {
+   "id": "door_S",
+   "type": "frame",
+   "position_model": [
+    60.33,
+    59.0,
+    39.0
+   ]
+  },
+  {
+   "id": "door_N",
+   "type": "frame",
+   "position_model": [
+    60.33,
+    173.0,
+    39.0
+   ]
+  },
+  {
+   "id": "bank_platform_S_center",
+   "type": "point",
+   "position_model": [
+    84.915,
+    77.85,
+    39.0
+   ]
+  },
+  {
+   "id": "bank_platform_N_center",
+   "type": "point",
+   "position_model": [
+    84.915,
+    166.15,
+    39.0
+   ]
+  },
+  {
+   "id": "crest_center",
+   "type": "point",
+   "position_model": [
+    4.85,
+    122.0,
+    108.0
+   ]
+  },
+  {
+   "id": "upper_obs_room_center",
+   "type": "point",
+   "position_model": [
+    14.25,
+    122.0,
+    57.0
+   ]
+  },
+  {
+   "id": "lower_obs_room_center",
+   "type": "point",
+   "position_model": [
+    14.5,
+    122.0,
+    4.0
+   ]
+  }
+ ],
+ "virtual_elements": [
+  "bank_platform_N"
+ ],
+ "compile_checks": {
+  "closed_voids_enclosed": [
+   {
+    "id": "gallery_upper",
+    "samples": 3924,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   },
+   {
+    "id": "gallery_link",
+    "samples": 3985,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   },
+   {
+    "id": "gallery_lower",
+    "samples": 3920,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   },
+   {
+    "id": "adit_S",
+    "samples": 3992,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   },
+   {
+    "id": "adit_N",
+    "samples": 3992,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   },
+   {
+    "id": "obs_room_upper",
+    "samples": 3996,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   },
+   {
+    "id": "obs_room_lower",
+    "samples": 3996,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   },
+   {
+    "id": "elevator_shaft",
+    "samples": 3996,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   },
+   {
+    "id": "outlet_conduits_S__water",
+    "samples": 3996,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   },
+   {
+    "id": "outlet_conduits_N__water",
+    "samples": 3996,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   },
+   {
+    "id": "outlet_tunnels_S",
+    "samples": 3996,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   },
+   {
+    "id": "outlet_tunnels_N",
+    "samples": 3996,
+    "enclosed_fraction": 1.0,
+    "pass": true
+   }
+  ],
+  "all_pass": true
+ },
+ "outputs": {
+  "dam_extreme.gdml": "c98f40ee53a01ddd971975782cca9349432842f5061cf6813d131ff8d7d5f610",
+  "dam_high.gdml": "6460284c9d2f660dcb07b353047fabfba5fe63976d58ec0f9865d853ed05a876",
+  "dam_low.gdml": "c6b2200a2dadb37ab3d7b11d76ca15bdb52336766b0dbe17171d570eeeb50a49",
+  "dam_mid.gdml": "de171d9d70b9ea68351ea580fa32e8f8483d81c98383522569cf9cf5e7ab47ad",
+  "scene_extreme.glb": "cabb82c5f3904f7c5010dac5e4cb0eb20be439bff95f73fc41bfa7fca94e9b43",
+  "scene_high.glb": "a00760145b99ba0ffb556c937606e362dd1cd259cc67c0142a4861943e9a05f6",
+  "scene_low.glb": "16e99b60d5a3cac7b19bf00607fe3ab4b39881d3a055cf40e1ac97206f55fe23",
+  "scene_mid.glb": "b1ee63bae23c17b588cc4ae60e863ea3b5872660e821dd54d5ea0308652ba62a",
+  "terrain_effective_near.f32": "bb633ad1c8069c9773f62b3f66284a646fcfeeaa45803f09a5bd5f3a27f88e00",
+  "terrain_effective_near.json": "646330726366d1400f404110601bae348db1d52b898fac38f657a37dfd32931a",
+  "terrain_far.f32": "9b7cd47d7a32b365f5b2c2c11ed8bfe49fa7eb83f2fc9a5890f02f5d17e5dfb5",
+  "terrain_far.json": "ab1f0579a6822be6d06b58e77eb0576da66f0453988115f740535805f683c6a9"
+ }
+}

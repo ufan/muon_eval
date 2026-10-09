@@ -1,0 +1,31 @@
+{
+ "format_version": "1.0",
+ "file": "terrain_far.f32",
+ "sha256": "9b7cd47d7a32b365f5b2c2c11ed8bfe49fa7eb83f2fc9a5890f02f5d17e5dfb5",
+ "dtype": "float32",
+ "byte_order": "little_endian",
+ "layout": "row_major",
+ "axis_order": [
+  "X",
+  "Y"
+ ],
+ "frame": "model_frame",
+ "unit": "m",
+ "shape": [
+  201,
+  201
+ ],
+ "origin": [
+  -3000.0,
+  -2900.0
+ ],
+ "spacing": [
+  30.0,
+  30.0
+ ],
+ "z_offset_applied": 198.0,
+ "nodata": null,
+ "interpolation": "bilinear",
+ "outside_policy": "clamp_to_edge",
+ "note": "配准后DEM（建坝前）"
+}

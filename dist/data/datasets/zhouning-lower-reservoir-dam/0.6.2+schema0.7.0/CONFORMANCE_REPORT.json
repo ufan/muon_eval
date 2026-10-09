@@ -1,0 +1,188 @@
+{
+ "assertions": {
+  "thickness_255": {
+   "type": "face_position",
+   "status": "PASS",
+   "detail": "坡面 y(255.00)=45.39（期望 45.4 ±3.0）"
+  },
+  "face_at_platform": {
+   "type": "face_position",
+   "status": "PASS",
+   "detail": "坡面 y(253.00)=47.05（期望 47.0 ±2.5）"
+  },
+  "wall_meets_slope": {
+   "type": "face_position",
+   "status": "PASS",
+   "detail": "坡面 y(280.65)=24.10（期望 24.1 ±0.01）"
+  },
+  "base_width": {
+   "type": "face_position",
+   "status": "PASS",
+   "detail": "坡面 y(198.00)=92.70（期望 93.0 ±7.0）"
+  },
+  "galleries_inside_concrete": {
+   "type": "entity_inside_material",
+   "status": "PASS",
+   "detail": "241/241 点在concrete内"
+  },
+  "symmetry": {
+   "type": "parameter_relation",
+   "status": "PASS",
+   "detail": "mean=122（122.0）"
+  },
+  "fill_conduit_water": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "4/4 点为 water"
+  },
+  "fill_chamber_air": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "6/6 点为 air"
+  },
+  "fill_bay_low": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "1/1 点为 air"
+  },
+  "fill_bay_high": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "1/1 点为 water"
+  },
+  "tail_contact_spill": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "2/2 点为 water"
+  },
+  "tail_contact_outlet": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "3/3 点为 water"
+  },
+  "no_air_gap_below_tail": {
+   "type": "no_open_air_in_plane",
+   "status": "PASS",
+   "detail": "开放空气格点 0"
+  },
+  "outlet_exit_open": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "3/3 点为 air"
+  },
+  "outlet_toe_intact": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "4/4 点为 concrete"
+  },
+  "gate_well_open_shaft": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "2/2 点为 air"
+  },
+  "open_voids_outside_dam_body": {
+   "type": "void_outside_dam_body",
+   "status": "PASS",
+   "detail": "敞开空腔均在坝体本体之外"
+  },
+  "abutment_rock_above_crest": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "2/2 点为 rock"
+  },
+  "reservoir_contact": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "3/3 点为 water"
+  },
+  "virtual_no_matter": {
+   "type": "virtual_has_no_material",
+   "status": "PASS",
+   "detail": "虚几何内部材料 ['air']"
+  },
+  "adit_door_open": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "3/3 点为 air"
+  },
+  "bank_platform_solid": {
+   "type": "material_points",
+   "status": "PASS",
+   "detail": "2/2 点为 concrete"
+  },
+  "no_thin_air_layers": {
+   "type": "no_thin_region",
+   "status": "PASS",
+   "detail": "未声明薄层 0 格点（约 0 m³）"
+  },
+  "pier_rests_on_body": {
+   "type": "shared_boundary",
+   "status": "PASS",
+   "detail": "最大间隙 0.000 m"
+  },
+  "chute_floor_seal": {
+   "type": "surface_contact",
+   "status": "PASS",
+   "detail": "不合格点 0/1600"
+  },
+  "hydraulic_consistency": {
+   "type": "relation_reachable_hydraulic",
+   "status": "PASS",
+   "detail": "水力连通一致"
+  },
+  "channel_start_check": {
+   "type": "parameter_relation",
+   "status": "PASS",
+   "detail": "near=1.1（0.0）"
+  },
+  "water_above_upper_gallery": {
+   "type": "parameter_relation",
+   "status": "PASS",
+   "detail": "greater_than=288（255.0）"
+  },
+  "contacts": {
+   "type": "contacts",
+   "status": "PASS",
+   "detail": "121 条共用边界全部一致"
+  },
+  "terrain_continuity": {
+   "type": "terrain_continuity",
+   "status": "PASS",
+   "detail": "坝顶两端外侧地面 ▽318/▽324"
+  },
+  "dem_registration_consistency": {
+   "type": "dem_consistency",
+   "status": "PASS",
+   "detail": "DEM−坝基面 最小+16.0 m；坝端原地面 ▽318/▽324"
+  }
+ },
+ "rulesets": {
+  "zhouning-hydraulic-v1": {
+   "gate": {
+    "outlet_exit_open": "PASS",
+    "outlet_toe_intact": "PASS",
+    "gate_well_open_shaft": "PASS",
+    "open_voids_outside_dam_body": "PASS",
+    "channel_start_check": "PASS",
+    "no_thin_air_layers": "PASS",
+    "pier_rests_on_body": "PASS",
+    "chute_floor_seal": "PASS",
+    "contacts": "PASS",
+    "hydraulic_consistency": "PASS",
+    "galleries_inside_concrete": "PASS",
+    "reservoir_contact": "PASS",
+    "fill_conduit_water": "PASS",
+    "virtual_no_matter": "PASS"
+   },
+   "passed": true
+  },
+  "zhouning-terrain-assets-v1": {
+   "gate": {
+    "terrain_continuity": "PASS",
+    "dem_registration_consistency": "PASS"
+   },
+   "passed": true
+  }
+ },
+ "evaluation_path": "native v0.7 reader"
+}

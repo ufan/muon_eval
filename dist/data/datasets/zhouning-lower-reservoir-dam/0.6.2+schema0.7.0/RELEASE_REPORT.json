@@ -1,0 +1,96 @@
+{
+ "release_id": "zhouning-lower-reservoir-dam@0.6.2+schema0.7.0",
+ "dataset_version": "0.6.2",
+ "schema_version": "0.7.0",
+ "built_at_utc": "2026-10-05T23:21:56Z",
+ "format_release": {
+  "file": "dam-dataset-format_v0.7.0_20261005.zip",
+  "sha256": "6073e4289e48dad9181046cfa46ba03ac17fd967ae60f4e00432e2c62b74e4a0",
+  "frozen_files_sha256": {
+   "dam-dataset.schema.json": "4f9166252fb5f9d51801218518279243bede0f848966fd3d5a714fc126cf5dce",
+   "zhouning.profile.schema.json": "8d243489c78e67593aaad6678421961837e27499a215acdad447ef72b435dfbe",
+   "validate_v070.py": "1403a159a9794348e727bc2b02dd831817327c59801a3462af9c8c4b730626e5"
+  }
+ },
+ "validate": true,
+ "conformance": {
+  "zhouning-hydraulic-v1": {
+   "passed": true,
+   "gate": {
+    "outlet_exit_open": "PASS",
+    "outlet_toe_intact": "PASS",
+    "gate_well_open_shaft": "PASS",
+    "open_voids_outside_dam_body": "PASS",
+    "channel_start_check": "PASS",
+    "no_thin_air_layers": "PASS",
+    "pier_rests_on_body": "PASS",
+    "chute_floor_seal": "PASS",
+    "contacts": "PASS",
+    "hydraulic_consistency": "PASS",
+    "galleries_inside_concrete": "PASS",
+    "reservoir_contact": "PASS",
+    "fill_conduit_water": "PASS",
+    "virtual_no_matter": "PASS"
+   }
+  },
+  "zhouning-terrain-assets-v1": {
+   "passed": true,
+   "gate": {
+    "terrain_continuity": "PASS",
+    "dem_registration_consistency": "PASS"
+   }
+  }
+ },
+ "compile_checks_all_pass": true,
+ "conformance_check": {
+  "points_agreement_all": 0.998,
+  "points_agreement_far_from_terrain": 0.9999,
+  "points_far_from_terrain": 9437,
+  "ray_errors_m": {
+   "concrete": {
+    "median": 0.012,
+    "p95": 0.049,
+    "max": 0.075
+   },
+   "steel": {
+    "median": 0.0,
+    "p95": 0.0,
+    "max": 0.022
+   },
+   "water": {
+    "median": 0.0,
+    "p95": 0.038,
+    "max": 2.828
+   },
+   "rock": {
+    "median": 0.0,
+    "p95": 0.425,
+    "max": 2.882
+   }
+  },
+  "pass": true
+ },
+ "spec_sha256": "b102d7e7f07bd79b6d0d6a0e6c02d81848cad41fff446d629e668d7f78a5627d",
+ "assets": [
+  {
+   "role": "near_terrain_grid",
+   "path": "terrain_grid.npz",
+   "sha256": "79315666cf2b44d7f8072df158c4e98b8bd84caa3860ed3a4a5453fa30768805"
+  },
+  {
+   "role": "far_terrain_grid",
+   "path": "terrain_grid_far.npz",
+   "sha256": "9389d8e6290fbbf6101cc0887ae6b46ad14907f3c68d18c841def92d16386076"
+  }
+ ],
+ "evaluation_path": "native v0.7 tools (dam_v07)",
+ "rules": [
+  "R1",
+  "R2",
+  "R3",
+  "R4",
+  "R5",
+  "R6",
+  "R7"
+ ]
+}

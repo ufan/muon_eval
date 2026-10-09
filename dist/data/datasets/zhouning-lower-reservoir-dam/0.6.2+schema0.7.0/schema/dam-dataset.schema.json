@@ -1,0 +1,4103 @@
+{
+ "type": "object",
+ "properties": {
+  "$schema": {
+   "type": "string"
+  },
+  "dataset": {
+   "type": "object",
+   "properties": {
+    "dataset_id": {
+     "type": "string"
+    },
+    "dataset_version": {
+     "type": "string",
+     "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "release_id": {
+     "type": "string"
+    },
+    "schema_id": {
+     "type": "string"
+    },
+    "schema_version": {
+     "const": "0.7.0"
+    },
+    "profile": {
+     "type": "string"
+    },
+    "title": {
+     "type": "string"
+    },
+    "purpose": {
+     "type": "string"
+    },
+    "date": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "dataset_id",
+    "dataset_version",
+    "release_id",
+    "schema_id",
+    "schema_version"
+   ]
+  },
+  "units": {
+   "type": "object",
+   "properties": {
+    "length": {
+     "const": "m"
+    },
+    "elevation": {
+     "type": "string"
+    },
+    "density": {
+     "const": "g/cm3"
+    },
+    "angle": {
+     "const": "deg"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "length",
+    "density",
+    "angle"
+   ]
+  },
+  "frames": {
+   "type": "object",
+   "properties": {
+    "doc_frame": {
+     "type": "object",
+     "additionalProperties": {
+      "type": "string"
+     }
+    },
+    "model_frame": {
+     "type": "object",
+     "properties": {
+      "X": {
+       "type": "string"
+      },
+      "Y": {
+       "type": "string"
+      },
+      "Z": {
+       "type": "string"
+      },
+      "handedness": {
+       "const": "right-handed"
+      },
+      "origin": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "transform_from_doc": {
+       "type": "object",
+       "properties": {
+        "matrix_3x4": {
+         "type": "array",
+         "items": {
+          "type": "array",
+          "items": {
+           "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+         },
+         "minItems": 3,
+         "maxItems": 3
+        },
+        "z_offset_parameter_ref": {
+         "type": "string"
+        },
+        "determinant": {
+         "enum": [
+          1,
+          -1
+         ]
+        },
+        "note": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "matrix_3x4",
+        "z_offset_parameter_ref",
+        "determinant"
+       ]
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "X",
+      "Y",
+      "Z",
+      "handedness",
+      "transform_from_doc"
+     ]
+    },
+    "bearings": {
+     "type": "object",
+     "properties": {
+      "axis_to_NW_deg": {
+       "type": "number"
+      },
+      "axis_to_SE_deg": {
+       "type": "number"
+      },
+      "downstream_deg": {
+       "type": "number"
+      },
+      "uncertainty_deg": {
+       "type": "number"
+      },
+      "note": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "axis_to_NW_deg",
+      "downstream_deg",
+      "uncertainty_deg"
+     ]
+    },
+    "naming": {
+     "type": "object",
+     "additionalProperties": {
+      "type": "string"
+     }
+    },
+    "geographic": {
+     "type": "object",
+     "properties": {
+      "crs": {
+       "const": "EPSG:4326"
+      },
+      "anchors": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "name": {
+          "type": "string"
+         },
+         "lat": {
+          "type": "string"
+         },
+         "lon": {
+          "type": "string"
+         },
+         "doc_xy_approx": {
+          "$ref": "#/$defs/point2"
+         },
+         "grade": {
+          "type": "string"
+         }
+        },
+        "additionalProperties": false,
+        "required": [
+         "name",
+         "lat",
+         "lon",
+         "doc_xy_approx"
+        ]
+       },
+       "minItems": 1
+      },
+      "note": {
+       "type": "string"
+      },
+      "dem_registration": {
+       "type": "object",
+       "properties": {
+        "dem": {
+         "type": "string"
+        },
+        "along_axis_shift_m": {
+         "type": "number"
+        },
+        "downstream_shift_m": {
+         "type": "number"
+        },
+        "bearing_check_deg": {
+         "$ref": "#/$defs/range2"
+        },
+        "uncertainty": {
+         "type": "object",
+         "additionalProperties": {
+          "type": "number"
+         }
+        },
+        "grade": {
+         "type": "string"
+        },
+        "method": {
+         "type": "string"
+        },
+        "interpretation": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "dem",
+        "along_axis_shift_m",
+        "downstream_shift_m",
+        "uncertainty"
+       ]
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "crs",
+      "anchors",
+      "dem_registration"
+     ]
+    },
+    "transforms": {
+     "type": "object",
+     "additionalProperties": {
+      "type": "object",
+      "properties": {
+       "type": {
+        "const": "mirror_x"
+       },
+       "x": {
+        "$ref": "#/$defs/numberOrRef"
+       }
+      },
+      "additionalProperties": false,
+      "required": [
+       "type",
+       "x"
+      ]
+     }
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "doc_frame",
+    "model_frame",
+    "bearings",
+    "naming",
+    "geographic",
+    "transforms"
+   ]
+  },
+  "tolerances": {
+   "type": "object",
+   "properties": {
+    "numeric_precision": {
+     "const": "float64"
+    },
+    "analytic": {
+     "type": "object",
+     "properties": {
+      "point_classification_m": {
+       "type": "number"
+      },
+      "contact_equality_m": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "point_classification_m",
+      "contact_equality_m"
+     ]
+    },
+    "mesh": {
+     "type": "object",
+     "properties": {
+      "surface_merge_m": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "surface_merge_m"
+     ]
+    },
+    "ray": {
+     "type": "object",
+     "properties": {
+      "intersection_m": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "intersection_m"
+     ]
+    },
+    "conformance_length_m": {
+     "type": "object",
+     "additionalProperties": {
+      "type": "number"
+     }
+    },
+    "note": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "numeric_precision",
+    "analytic",
+    "mesh",
+    "ray",
+    "conformance_length_m"
+   ]
+  },
+  "classification": {
+   "type": "object",
+   "properties": {
+    "material_precedence": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "minItems": 2
+    },
+    "comparison": {
+     "enum": [
+      "closed_intervals"
+     ]
+    },
+    "structure_clip": {
+     "type": "object",
+     "properties": {
+      "kind": {
+       "const": "above_foundation_within_crest"
+      },
+      "x_range": {
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/numberOrRef"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      },
+      "foundation": {
+       "const": "foundation_surface"
+      },
+      "applies_to": {
+       "type": "array",
+       "items": {
+        "enum": [
+         "solid",
+         "void"
+        ]
+       },
+       "minItems": 1
+      },
+      "exempt_materials": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "kind",
+      "x_range",
+      "foundation",
+      "applies_to",
+      "exempt_materials"
+     ]
+    },
+    "void_effect": {
+     "type": "string"
+    },
+    "water_surface": {
+     "enum": [
+      "water",
+      "air"
+     ]
+    },
+    "shared_surface": {
+     "enum": [
+      "higher_precedence"
+     ]
+    },
+    "tangent_ray": {
+     "enum": [
+      "zero_length_contact"
+     ]
+    },
+    "outside_model": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "material_precedence",
+    "comparison",
+    "structure_clip",
+    "water_surface",
+    "shared_surface",
+    "tangent_ray"
+   ]
+  },
+  "compile_operations": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/compileOperation"
+   },
+   "minItems": 1
+  },
+  "conformance": {
+   "type": "object",
+   "properties": {
+    "ruleset": {
+     "type": "string"
+    },
+    "required_assertions": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/id"
+     },
+     "minItems": 1,
+     "uniqueItems": true
+    },
+    "note": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "ruleset",
+    "required_assertions"
+   ]
+  },
+  "confidence_grades": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "string"
+   }
+  },
+  "parameters": {
+   "type": "object",
+   "additionalProperties": {
+    "$ref": "#/$defs/parameter"
+   }
+  },
+  "derived": {
+   "type": "object"
+  },
+  "sources": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/source"
+   },
+   "minItems": 1
+  },
+  "sections": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "no": {
+      "type": "integer"
+     },
+     "x_range": {
+      "$ref": "#/$defs/range2"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "no",
+     "x_range"
+    ]
+   },
+   "minItems": 1
+  },
+  "foundation_surface": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "const": "polyline_xz"
+    },
+    "points": {
+     "$ref": "#/$defs/polyline2"
+    },
+    "extrude": {
+     "type": "string"
+    },
+    "grade": {
+     "type": "string"
+    },
+    "adjustments": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "type",
+    "points"
+   ]
+  },
+  "terrain": {
+   "type": "object",
+   "properties": {
+    "model": {
+     "const": "dem_registered"
+    },
+    "grade": {
+     "type": "string"
+    },
+    "grids": {
+     "type": "object",
+     "properties": {
+      "near": {
+       "type": "object",
+       "properties": {
+        "file": {
+         "type": "string"
+        },
+        "res_m": {
+         "type": "number",
+         "exclusiveMinimum": 0
+        },
+        "box": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "file",
+        "res_m",
+        "box"
+       ]
+      },
+      "far": {
+       "type": "object",
+       "properties": {
+        "file": {
+         "type": "string"
+        },
+        "res_m": {
+         "type": "number",
+         "exclusiveMinimum": 0
+        },
+        "box": {
+         "type": "string"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "file",
+        "res_m",
+        "box"
+       ]
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "near",
+      "far"
+     ]
+    },
+    "model_box": {
+     "type": "object",
+     "properties": {
+      "x": {
+       "$ref": "#/$defs/range2"
+      },
+      "y": {
+       "$ref": "#/$defs/range2"
+      },
+      "z": {
+       "$ref": "#/$defs/range2"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "x",
+      "y",
+      "z"
+     ]
+    },
+    "far_box": {
+     "type": "object",
+     "properties": {
+      "x": {
+       "$ref": "#/$defs/range2"
+      },
+      "y": {
+       "$ref": "#/$defs/range2"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "x",
+      "y"
+     ]
+    },
+    "near_field": {
+     "type": "object",
+     "properties": {
+      "x": {
+       "$ref": "#/$defs/range2"
+      },
+      "y": {
+       "$ref": "#/$defs/range2"
+      },
+      "blend_m": {
+       "type": "number",
+       "minimum": 0
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "x",
+      "y",
+      "blend_m"
+     ]
+    },
+    "plunge_pool_override": {
+     "type": "object",
+     "properties": {
+      "x": {
+       "$ref": "#/$defs/range2"
+      },
+      "y": {
+       "$ref": "#/$defs/range2"
+      },
+      "floor_elev": {
+       "type": "number"
+      },
+      "grade": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "x",
+      "y",
+      "floor_elev"
+     ]
+    },
+    "vertical_offset_m": {
+     "type": "number"
+    },
+    "vertical_note": {
+     "type": "string"
+    },
+    "capacity_check": {
+     "type": "object",
+     "properties": {
+      "note": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false
+    },
+    "limitations": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "fallback": {
+     "type": "object",
+     "properties": {
+      "model": {
+       "const": "parametric_valley_v1"
+      },
+      "axis_section": {
+       "type": "string"
+      },
+      "abutment_slopes": {
+       "type": "object",
+       "properties": {
+        "south": {
+         "$ref": "#/$defs/parameterRef"
+        },
+        "north": {
+         "$ref": "#/$defs/parameterRef"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "south",
+        "north"
+       ]
+      },
+      "cap": {
+       "$ref": "#/$defs/parameterRef"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "model",
+      "abutment_slopes",
+      "cap"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "model",
+    "grids",
+    "model_box",
+    "far_box",
+    "near_field",
+    "plunge_pool_override",
+    "vertical_offset_m",
+    "fallback"
+   ]
+  },
+  "materials": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "$ref": "#/$defs/id"
+     },
+     "density": {
+      "type": "number",
+      "exclusiveMinimum": 0
+     },
+     "range": {
+      "$ref": "#/$defs/range2"
+     },
+     "geant4_base": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "density"
+    ]
+   },
+   "minItems": 1
+  },
+  "entities": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/entity"
+   },
+   "minItems": 1
+  },
+  "water_bodies": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/waterBody"
+   }
+  },
+  "scenario_variables": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/scenarioVariable"
+   },
+   "minItems": 1
+  },
+  "scenarios": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/scenario"
+   },
+   "minItems": 1
+  },
+  "nodes": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/node"
+   }
+  },
+  "markers": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/marker"
+   }
+  },
+  "relations": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/relation"
+   }
+  },
+  "contacts": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/contact"
+   }
+  },
+  "declared_offsets": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "pair": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "axis": {
+      "type": "string"
+     },
+     "reason": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "pair",
+     "axis",
+     "reason"
+    ]
+   }
+  },
+  "vocabulary": {
+   "type": "object"
+  },
+  "unknowns": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/unknown"
+   }
+  },
+  "assertions": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/assertion"
+   }
+  },
+  "lod_levels": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/lodLevel"
+   }
+  },
+  "lod_policy": {
+   "type": "object",
+   "properties": {
+    "scope": {
+     "const": "display_only"
+    },
+    "note": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "scope"
+   ]
+  },
+  "external_files": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "properties": {
+     "file_type": {
+      "type": "string"
+     },
+     "format_version": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "file_type",
+     "format_version"
+    ]
+   }
+  },
+  "changelog": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "version": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "version",
+     "note"
+    ]
+   }
+  },
+  "asset_conformance": {
+   "type": "object",
+   "properties": {
+    "ruleset": {
+     "type": "string"
+    },
+    "requires_assets": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/assetRef"
+     },
+     "minItems": 1,
+     "uniqueItems": true
+    },
+    "required_assertions": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/id"
+     },
+     "minItems": 1,
+     "uniqueItems": true
+    },
+    "assertions": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/assetAssertion"
+     },
+     "minItems": 1
+    },
+    "note": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "ruleset",
+    "requires_assets",
+    "required_assertions",
+    "assertions"
+   ]
+  },
+  "superseded_checks": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "$ref": "#/$defs/id"
+     },
+     "type": {
+      "type": "string"
+     },
+     "superseded_by": {
+      "type": "string"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "type",
+     "superseded_by"
+    ]
+   }
+  },
+  "extensions": {
+   "type": "object",
+   "properties": {
+    "reference_assertions": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/referenceAssertion"
+     }
+    }
+   }
+  }
+ },
+ "additionalProperties": false,
+ "required": [
+  "dataset",
+  "units",
+  "frames",
+  "tolerances",
+  "classification",
+  "compile_operations",
+  "conformance",
+  "asset_conformance",
+  "parameters",
+  "sources",
+  "sections",
+  "foundation_surface",
+  "terrain",
+  "materials",
+  "entities",
+  "water_bodies",
+  "scenario_variables",
+  "scenarios",
+  "relations",
+  "contacts",
+  "assertions",
+  "lod_policy"
+ ],
+ "$comment": "开放扩展点（有意不禁止未知字段）：derived（派生量登记，仅供查阅）、vocabulary（由 profile 约束）、unknowns[].assumption（自由描述的假设）、parameters.*.value（标量/数组/对象）、confidence_grades、frames.doc_frame/naming（说明文字）、extensions（含 reference_assertions）。其余对象均禁止未知字段。",
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "dam-dataset.schema.json",
+ "title": "坝体几何数据集（通用格式 v0.7.0）",
+ "$defs": {
+  "assetRef": {
+   "type": "object",
+   "properties": {
+    "role": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "path": {
+     "type": "string",
+     "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "role",
+    "path"
+   ]
+  },
+  "range2": {
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 2,
+   "maxItems": 2
+  },
+  "point2": {
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 2,
+   "maxItems": 2
+  },
+  "point3": {
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 3,
+   "maxItems": 3
+  },
+  "polyline2": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/point2"
+   },
+   "minItems": 2
+  },
+  "polygon2": {
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/point2"
+   },
+   "minItems": 3
+  },
+  "id": {
+   "type": "string",
+   "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+  },
+  "parameterRef": {
+   "type": "object",
+   "properties": {
+    "parameter_ref": {
+     "$ref": "#/$defs/id"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "parameter_ref"
+   ]
+  },
+  "numberOrRef": {
+   "oneOf": [
+    {
+     "type": "number"
+    },
+    {
+     "$ref": "#/$defs/parameterRef"
+    }
+   ]
+  },
+  "scenarioVariableRef": {
+   "type": "object",
+   "properties": {
+    "scenario_variable": {
+     "$ref": "#/$defs/id"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "scenario_variable"
+   ]
+  },
+  "archSection": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "const": "arch_gate"
+    },
+    "width": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "height": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "wall_height": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "type",
+    "width",
+    "height",
+    "wall_height"
+   ]
+  },
+  "geom_extrusion_x": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "const": "extrusion_x"
+    },
+    "x_range": {
+     "$ref": "#/$defs/range2"
+    },
+    "profile_yz": {
+     "$ref": "#/$defs/polygon2"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "type",
+    "x_range",
+    "profile_yz"
+   ]
+  },
+  "geom_extrusion_z": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "const": "extrusion_z"
+    },
+    "plan_xy": {
+     "$ref": "#/$defs/polygon2"
+    },
+    "z_range": {
+     "$ref": "#/$defs/range2"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "type",
+    "plan_xy",
+    "z_range"
+   ]
+  },
+  "geom_box": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "const": "box"
+    },
+    "x": {
+     "$ref": "#/$defs/range2"
+    },
+    "y": {
+     "$ref": "#/$defs/range2"
+    },
+    "z": {
+     "$ref": "#/$defs/range2"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "type",
+    "x",
+    "y",
+    "z"
+   ]
+  },
+  "geom_sweep_xz": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "const": "sweep_xz"
+    },
+    "path_xz": {
+     "$ref": "#/$defs/polyline2"
+    },
+    "y": {
+     "type": "number"
+    },
+    "path_z_reference": {
+     "const": "floor"
+    },
+    "section": {
+     "$ref": "#/$defs/archSection"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "type",
+    "path_xz",
+    "y",
+    "path_z_reference",
+    "section"
+   ]
+  },
+  "geom_sweep_y": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "const": "sweep_y"
+    },
+    "path_yz": {
+     "$ref": "#/$defs/polyline2"
+    },
+    "x": {
+     "type": "number"
+    },
+    "path_z_reference": {
+     "const": "floor"
+    },
+    "section": {
+     "$ref": "#/$defs/archSection"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "type",
+    "path_yz",
+    "x",
+    "path_z_reference",
+    "section"
+   ]
+  },
+  "geom_chute": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "const": "chute"
+    },
+    "x_range": {
+     "$ref": "#/$defs/range2"
+    },
+    "floor_yz": {
+     "$ref": "#/$defs/polyline2"
+    },
+    "top_boundary": {
+     "type": "object",
+     "properties": {
+      "kind": {
+       "const": "piecewise_constant_z"
+      },
+      "segments": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "y_range": {
+          "$ref": "#/$defs/range2"
+         },
+         "z_top": {
+          "type": "number"
+         }
+        },
+        "additionalProperties": false,
+        "required": [
+         "y_range",
+         "z_top"
+        ]
+       },
+       "minItems": 1
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "kind",
+      "segments"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "type",
+    "x_range",
+    "floor_yz",
+    "top_boundary"
+   ]
+  },
+  "geometry": {
+   "type": "object",
+   "required": [
+    "type"
+   ],
+   "properties": {
+    "type": {
+     "enum": [
+      "extrusion_x",
+      "extrusion_z",
+      "box",
+      "sweep_xz",
+      "sweep_y",
+      "chute"
+     ]
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "extrusion_x"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/geom_extrusion_x"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "extrusion_z"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/geom_extrusion_z"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "box"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/geom_box"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "sweep_xz"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/geom_sweep_xz"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "sweep_y"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/geom_sweep_y"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "chute"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/geom_chute"
+     }
+    }
+   ]
+  },
+  "fillAir": {
+   "type": "object",
+   "properties": {
+    "kind": {
+     "const": "air"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "kind"
+   ]
+  },
+  "fillWater": {
+   "type": "object",
+   "properties": {
+    "kind": {
+     "const": "water_to_level"
+    },
+    "material_id": {
+     "const": "water"
+    },
+    "source_water_id": {
+     "$ref": "#/$defs/id"
+    },
+    "level": {
+     "$ref": "#/$defs/scenarioVariableRef"
+    },
+    "activation": {
+     "type": "object",
+     "properties": {
+      "minimum_level": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "minimum_level"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "kind",
+    "material_id",
+    "source_water_id",
+    "level"
+   ]
+  },
+  "fill": {
+   "type": "object",
+   "required": [
+    "kind"
+   ],
+   "properties": {
+    "kind": {
+     "enum": [
+      "air",
+      "water_to_level"
+     ]
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "kind": {
+        "const": "air"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/fillAir"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "kind": {
+        "const": "water_to_level"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/fillWater"
+     }
+    }
+   ]
+  },
+  "opening": {
+   "type": "object",
+   "properties": {
+    "axis": {
+     "enum": [
+      "x",
+      "y",
+      "z"
+     ]
+    },
+    "op": {
+     "enum": [
+      ">=",
+      "<="
+     ]
+    },
+    "value": {
+     "type": "number"
+    },
+    "to_material_id": {
+     "type": "string"
+    },
+    "note": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "axis",
+    "op",
+    "value",
+    "to_material_id"
+   ]
+  },
+  "access": {
+   "type": "object",
+   "properties": {
+    "walkable": {
+     "type": "boolean"
+    },
+    "environment": {
+     "enum": [
+      "indoor",
+      "outdoor"
+     ]
+    },
+    "floor": {
+     "type": "string"
+    },
+    "clearance_from": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "note": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "walkable",
+    "environment"
+   ]
+  },
+  "semantics": {
+   "type": "object",
+   "properties": {
+    "class": {
+     "type": "string"
+    },
+    "category": {
+     "type": "string"
+    },
+    "system": {
+     "type": "string"
+    },
+    "imaging_role": {
+     "type": "string"
+    },
+    "names": {
+     "type": "object",
+     "properties": {
+      "zh": {
+       "type": "string"
+      },
+      "en": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "zh",
+      "en"
+     ]
+    },
+    "side": {
+     "enum": [
+      "south",
+      "north",
+      "center"
+     ]
+    },
+    "sections": {
+     "type": "array",
+     "items": {
+      "type": "integer"
+     }
+    },
+    "aliases": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "state_dependent": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "enclosure": {
+     "enum": [
+      "closed",
+      "open_channel"
+     ]
+    },
+    "openings": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/opening"
+     }
+    },
+    "access": {
+     "$ref": "#/$defs/access"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "class",
+    "category",
+    "system",
+    "imaging_role",
+    "names"
+   ]
+  },
+  "solidEntity": {
+   "type": "object",
+   "properties": {
+    "assembly_id": {
+     "$ref": "#/$defs/id"
+    },
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "note": {
+     "type": "string"
+    },
+    "grade": {
+     "type": "string"
+    },
+    "status": {
+     "type": "string"
+    },
+    "derived_from": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "realization": {
+     "enum": [
+      "solid",
+      "virtual"
+     ]
+    },
+    "geometry": {
+     "$ref": "#/$defs/geometry"
+    },
+    "semantics": {
+     "$ref": "#/$defs/semantics"
+    },
+    "output_clip": {
+     "type": "object",
+     "properties": {
+      "kind": {
+       "const": "extrusion_profile_of"
+      },
+      "entity_id": {
+       "$ref": "#/$defs/id"
+      },
+      "note": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "kind",
+      "entity_id"
+     ]
+    },
+    "kind": {
+     "const": "solid"
+    },
+    "material_id": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "kind",
+    "realization",
+    "material_id",
+    "geometry",
+    "semantics"
+   ]
+  },
+  "voidEntity": {
+   "type": "object",
+   "properties": {
+    "assembly_id": {
+     "$ref": "#/$defs/id"
+    },
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "note": {
+     "type": "string"
+    },
+    "grade": {
+     "type": "string"
+    },
+    "status": {
+     "type": "string"
+    },
+    "derived_from": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "realization": {
+     "enum": [
+      "solid",
+      "virtual"
+     ]
+    },
+    "geometry": {
+     "$ref": "#/$defs/geometry"
+    },
+    "semantics": {
+     "$ref": "#/$defs/semantics"
+    },
+    "output_clip": {
+     "type": "object",
+     "properties": {
+      "kind": {
+       "const": "extrusion_profile_of"
+      },
+      "entity_id": {
+       "$ref": "#/$defs/id"
+      },
+      "note": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "kind",
+      "entity_id"
+     ]
+    },
+    "kind": {
+     "const": "void"
+    },
+    "fill": {
+     "$ref": "#/$defs/fill"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "kind",
+    "realization",
+    "fill",
+    "geometry",
+    "semantics"
+   ]
+  },
+  "entity": {
+   "type": "object",
+   "required": [
+    "kind"
+   ],
+   "properties": {
+    "kind": {
+     "enum": [
+      "solid",
+      "void"
+     ]
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "kind": {
+        "const": "solid"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/solidEntity"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "kind": {
+        "const": "void"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/voidEntity"
+     }
+    }
+   ]
+  },
+  "waterRegion": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "kind": {
+     "const": "region_below_level"
+    },
+    "material_id": {
+     "const": "water"
+    },
+    "y_range": {
+     "$ref": "#/$defs/range2"
+    },
+    "level": {
+     "$ref": "#/$defs/scenarioVariableRef"
+    },
+    "bounded_below": {
+     "type": "object",
+     "properties": {
+      "kind": {
+       "const": "terrain"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "kind"
+     ]
+    },
+    "connectivity": {
+     "type": "object",
+     "properties": {
+      "kind": {
+       "const": "seed_connected"
+      },
+      "seed_xy": {
+       "$ref": "#/$defs/point2"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "kind",
+      "seed_xy"
+     ]
+    },
+    "grade": {
+     "type": "string"
+    },
+    "note": {
+     "type": "string"
+    },
+    "semantics": {
+     "$ref": "#/$defs/semantics"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "kind",
+    "material_id",
+    "y_range",
+    "level",
+    "bounded_below",
+    "connectivity",
+    "semantics"
+   ]
+  },
+  "waterFill": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "kind": {
+     "const": "void_fill_body"
+    },
+    "material_id": {
+     "const": "water"
+    },
+    "realized_by": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/id"
+     },
+     "minItems": 1
+    },
+    "level": {
+     "$ref": "#/$defs/scenarioVariableRef"
+    },
+    "semantics": {
+     "$ref": "#/$defs/semantics"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "kind",
+    "material_id",
+    "realized_by",
+    "level",
+    "semantics"
+   ]
+  },
+  "waterBody": {
+   "type": "object",
+   "required": [
+    "kind"
+   ],
+   "properties": {
+    "kind": {
+     "enum": [
+      "region_below_level",
+      "void_fill_body"
+     ]
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "kind": {
+        "const": "region_below_level"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/waterRegion"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "kind": {
+        "const": "void_fill_body"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/waterFill"
+     }
+    }
+   ]
+  },
+  "parameter": {
+   "type": "object",
+   "properties": {
+    "value": {},
+    "unit": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "grade": {
+     "type": "string"
+    },
+    "status": {
+     "type": "string"
+    },
+    "source": {
+     "type": "string"
+    },
+    "source_refs": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "minItems": 1
+    },
+    "range": {
+     "$ref": "#/$defs/range2"
+    },
+    "note": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "value",
+    "unit",
+    "grade",
+    "status",
+    "source_refs"
+   ]
+  },
+  "entityPointer": {
+   "type": "object",
+   "properties": {
+    "entity_id": {
+     "$ref": "#/$defs/id"
+    },
+    "pointer": {
+     "type": "string",
+     "pattern": "^/geometry/"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "entity_id",
+    "pointer"
+   ]
+  },
+  "markerPointer": {
+   "type": "object",
+   "properties": {
+    "marker_id": {
+     "$ref": "#/$defs/id"
+    },
+    "pointer": {
+     "type": "string",
+     "pattern": "^/"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "marker_id",
+    "pointer"
+   ]
+  },
+  "waterPointer": {
+   "type": "object",
+   "properties": {
+    "water_body_id": {
+     "$ref": "#/$defs/id"
+    },
+    "pointer": {
+     "type": "string",
+     "pattern": "^/"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "water_body_id",
+    "pointer"
+   ]
+  },
+  "terrainPointer": {
+   "type": "object",
+   "properties": {
+    "terrain_pointer": {
+     "type": "string",
+     "pattern": "^/"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "terrain_pointer"
+   ]
+  },
+  "valueRef": {
+   "oneOf": [
+    {
+     "$ref": "#/$defs/entityPointer"
+    },
+    {
+     "$ref": "#/$defs/markerPointer"
+    },
+    {
+     "$ref": "#/$defs/waterPointer"
+    },
+    {
+     "$ref": "#/$defs/terrainPointer"
+    },
+    {
+     "$ref": "#/$defs/parameterRef"
+    }
+   ]
+  },
+  "contact": {
+   "oneOf": [
+    {
+     "type": "object",
+     "properties": {
+      "a": {
+       "$ref": "#/$defs/valueRef"
+      },
+      "b": {
+       "$ref": "#/$defs/valueRef"
+      },
+      "relation": {
+       "const": "equal"
+      },
+      "note": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "a",
+      "b",
+      "relation"
+     ]
+    },
+    {
+     "type": "object",
+     "properties": {
+      "a": {
+       "$ref": "#/$defs/valueRef"
+      },
+      "b": {
+       "$ref": "#/$defs/valueRef"
+      },
+      "relation": {
+       "const": "mirror"
+      },
+      "transform_ref": {
+       "$ref": "#/$defs/id"
+      },
+      "note": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "a",
+      "b",
+      "relation",
+      "transform_ref"
+     ]
+    }
+   ]
+  },
+  "relation": {
+   "type": "object",
+   "properties": {
+    "from": {
+     "$ref": "#/$defs/id"
+    },
+    "to": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "type": "string"
+    },
+    "at": {
+     "$ref": "#/$defs/point3"
+    },
+    "at_y": {
+     "type": "number"
+    },
+    "at_z": {
+     "type": "number"
+    },
+    "other": {
+     "$ref": "#/$defs/id"
+    },
+    "state": {
+     "type": "string"
+    },
+    "note": {
+     "type": "string"
+    },
+    "grade": {
+     "type": "string"
+    },
+    "condition": {
+     "type": "object",
+     "properties": {
+      "scenario_variable": {
+       "$ref": "#/$defs/id"
+      },
+      "op": {
+       "enum": [
+        ">=",
+        "<=",
+        ">",
+        "<"
+       ]
+      },
+      "value": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "scenario_variable",
+      "op",
+      "value"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "from",
+    "to",
+    "type"
+   ]
+  },
+  "marker": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "enum": [
+      "point",
+      "frame"
+     ]
+    },
+    "realization": {
+     "const": "virtual"
+    },
+    "position": {
+     "$ref": "#/$defs/point3"
+    },
+    "normal": {
+     "$ref": "#/$defs/point3"
+    },
+    "size_wh": {
+     "$ref": "#/$defs/range2"
+    },
+    "grade": {
+     "type": "string"
+    },
+    "note": {
+     "type": "string"
+    },
+    "semantics": {
+     "$ref": "#/$defs/semantics"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "realization",
+    "position",
+    "semantics"
+   ]
+  },
+  "node": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "semantics": {
+     "$ref": "#/$defs/semantics"
+    },
+    "z": {
+     "type": "number"
+    },
+    "realized_by": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "semantics"
+   ]
+  },
+  "source": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "type": "string"
+    },
+    "file": {
+     "type": "string"
+    },
+    "url": {
+     "type": "string"
+    },
+    "sha256": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "pattern": "^[0-9a-f]{64}$"
+    },
+    "captured_on": {
+     "type": "string"
+    },
+    "description": {
+     "type": "string"
+    },
+    "method": {
+     "type": "string"
+    },
+    "license": {
+     "type": "string"
+    },
+    "redistributable": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "redistributable"
+   ]
+  },
+  "unknown": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "subject": {
+     "type": "string"
+    },
+    "status": {
+     "enum": [
+      "open",
+      "partially_resolved",
+      "resolved"
+     ]
+    },
+    "description": {
+     "type": "string"
+    },
+    "assumption": {
+     "type": "object"
+    },
+    "affects": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "verification": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "subject",
+    "status",
+    "description"
+   ]
+  },
+  "allowedBox": {
+   "type": "object",
+   "properties": {
+    "kind": {
+     "const": "box"
+    },
+    "x": {
+     "$ref": "#/$defs/range2"
+    },
+    "y": {
+     "$ref": "#/$defs/range2"
+    },
+    "z": {
+     "$ref": "#/$defs/range2"
+    },
+    "reason": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "kind",
+    "x",
+    "y",
+    "z",
+    "reason"
+   ]
+  },
+  "allowedEntity": {
+   "type": "object",
+   "properties": {
+    "kind": {
+     "const": "entity"
+    },
+    "entity_id": {
+     "$ref": "#/$defs/id"
+    },
+    "reason": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "kind",
+    "entity_id",
+    "reason"
+   ]
+  },
+  "allowedRegion": {
+   "type": "object",
+   "required": [
+    "kind"
+   ],
+   "properties": {
+    "kind": {
+     "enum": [
+      "box",
+      "entity"
+     ]
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "kind": {
+        "const": "box"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/allowedBox"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "kind": {
+        "const": "entity"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/allowedEntity"
+     }
+    }
+   ]
+  },
+  "assert_material_points": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "material_points"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "points": {
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/point3"
+       },
+       "minItems": 1
+      },
+      "scenario_water_up_levels": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "points",
+      "scenario_water_up_levels"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "material_id": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "material_id"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assert_face_position": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "face_position"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "z": {
+       "$ref": "#/$defs/numberOrRef"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "z"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "y": {
+       "$ref": "#/$defs/numberOrRef"
+      },
+      "tol": {
+       "type": "number",
+       "minimum": 0
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "y",
+      "tol"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assert_parameter_relation": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "parameter_relation"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "op": {
+       "enum": [
+        "mean",
+        "greater_than",
+        "near"
+       ]
+      },
+      "parameter_refs": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "minItems": 1
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "op",
+      "parameter_refs"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "value": {
+       "$ref": "#/$defs/numberOrRef"
+      },
+      "tol": {
+       "type": "number",
+       "minimum": 0
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "value"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ],
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "input": {
+        "properties": {
+         "op": {
+          "const": "near"
+         }
+        }
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "expected": {
+        "required": [
+         "value",
+         "tol"
+        ]
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "input": {
+        "properties": {
+         "op": {
+          "const": "mean"
+         }
+        }
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "expected": {
+        "required": [
+         "value",
+         "tol"
+        ]
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "input": {
+        "properties": {
+         "op": {
+          "const": "greater_than"
+         }
+        }
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "expected": {
+        "not": {
+         "required": [
+          "tol"
+         ]
+        }
+       }
+      }
+     }
+    }
+   ]
+  },
+  "assert_entity_inside_material": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "entity_inside_material"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "entity_classes": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "minItems": 1
+      },
+      "sampling": {
+       "type": "object",
+       "properties": {
+        "kind": {
+         "const": "path_centerline"
+        },
+        "height_above_floor_m": {
+         "type": "number"
+        },
+        "per_segment": {
+         "type": "integer",
+         "minimum": 2
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "kind",
+        "height_above_floor_m",
+        "per_segment"
+       ]
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "entity_classes",
+      "sampling"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "material_id": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "material_id"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assert_void_outside_dam_body": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "void_outside_dam_body"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "entity_classes": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "minItems": 1
+      },
+      "region": {
+       "const": "dam_body_prism"
+      },
+      "sampling": {
+       "type": "object",
+       "properties": {
+        "n_x": {
+         "type": "integer",
+         "minimum": 2
+        },
+        "n_y": {
+         "type": "integer",
+         "minimum": 2
+        },
+        "n_z": {
+         "type": "integer",
+         "minimum": 2
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "n_x",
+        "n_y",
+        "n_z"
+       ]
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "entity_classes",
+      "region",
+      "sampling"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "max_inside_fraction": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 1
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "max_inside_fraction"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assert_shared_boundary": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "shared_boundary"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "upper_entity_id": {
+       "$ref": "#/$defs/id"
+      },
+      "lower_entity_id": {
+       "$ref": "#/$defs/id"
+      },
+      "y_range": {
+       "$ref": "#/$defs/range2"
+      },
+      "mode": {
+       "const": "upper_bottom_equals_lower_top"
+      },
+      "samples": {
+       "type": "integer",
+       "minimum": 10
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "upper_entity_id",
+      "lower_entity_id",
+      "y_range",
+      "mode",
+      "samples"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "max_gap_m": {
+       "type": "number",
+       "minimum": 0
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "max_gap_m"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assert_surface_contact": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "surface_contact"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "void_entity_id_prefix": {
+       "$ref": "#/$defs/id"
+      },
+      "x_samples": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1
+      },
+      "offset_m": {
+       "type": "number",
+       "exclusiveMinimum": 0
+      },
+      "samples_per_line": {
+       "type": "integer",
+       "minimum": 10
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "void_entity_id_prefix",
+      "x_samples",
+      "offset_m",
+      "samples_per_line"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "below_material_id": {
+       "type": "string"
+      },
+      "above_material_id": {
+       "type": "string"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "below_material_id",
+      "above_material_id"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assert_no_thin_region": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "no_thin_region"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "grid": {
+       "type": "object",
+       "properties": {
+        "dx": {
+         "type": "number",
+         "exclusiveMinimum": 0
+        },
+        "dz": {
+         "type": "number",
+         "exclusiveMinimum": 0
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "dx",
+        "dz"
+       ]
+      },
+      "region": {
+       "type": "object",
+       "properties": {
+        "x": {
+         "$ref": "#/$defs/range2"
+        },
+        "y": {
+         "$ref": "#/$defs/range2"
+        },
+        "z": {
+         "$ref": "#/$defs/range2"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "x",
+        "y",
+        "z"
+       ]
+      },
+      "max_thickness_m": {
+       "type": "number",
+       "exclusiveMinimum": 0
+      },
+      "bounding_material_ids": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "minItems": 1
+      },
+      "thin_material_id": {
+       "type": "string"
+      },
+      "exclude": {
+       "const": "declared_voids"
+      },
+      "allowed": {
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/allowedRegion"
+       }
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "grid",
+      "region",
+      "max_thickness_m",
+      "bounding_material_ids",
+      "thin_material_id",
+      "exclude",
+      "allowed"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "max_violations": {
+       "type": "integer",
+       "minimum": 0
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "max_violations"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assert_relation_reachable_hydraulic": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "relation_reachable_hydraulic"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "relation_types": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "minItems": 1
+      },
+      "rules": {
+       "type": "array",
+       "items": {
+        "enum": [
+         "water_filled_voids_reach_fill_source",
+         "air_voids_not_connected_to_water_bodies"
+        ]
+       },
+       "minItems": 1
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "relation_types",
+      "rules"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "violations": {
+       "type": "integer",
+       "minimum": 0
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "violations"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assert_virtual_has_no_material": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "virtual_has_no_material"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "virtual_entity_ids": {
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/id"
+       }
+      },
+      "points": {
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/point3"
+       },
+       "minItems": 1
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "virtual_entity_ids",
+      "points"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "forbidden_material_ids": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "minItems": 1
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "forbidden_material_ids"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assert_no_open_air_in_plane": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "no_open_air_in_plane"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "plane": {
+       "type": "object",
+       "properties": {
+        "x": {
+         "$ref": "#/$defs/range2"
+        },
+        "y": {
+         "$ref": "#/$defs/range2"
+        },
+        "z": {
+         "type": "number"
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "x",
+        "y",
+        "z"
+       ]
+      },
+      "grid": {
+       "type": "object",
+       "properties": {
+        "n_x": {
+         "type": "integer",
+         "minimum": 2
+        },
+        "n_y": {
+         "type": "integer",
+         "minimum": 2
+        }
+       },
+       "additionalProperties": false,
+       "required": [
+        "n_x",
+        "n_y"
+       ]
+      },
+      "exclude": {
+       "const": "declared_voids"
+      },
+      "scenario_water_up_level": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "plane",
+      "grid",
+      "exclude",
+      "scenario_water_up_level"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "max_open_air_cells": {
+       "type": "integer",
+       "minimum": 0
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "max_open_air_cells"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assert_contacts": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "contacts"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "tolerance_ref": {
+       "const": "analytic.contact_equality_m"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "tolerance_ref"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "violations": {
+       "type": "integer",
+       "minimum": 0
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "violations"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assertion": {
+   "type": "object",
+   "required": [
+    "type"
+   ],
+   "properties": {
+    "type": {
+     "enum": [
+      "material_points",
+      "face_position",
+      "parameter_relation",
+      "entity_inside_material",
+      "void_outside_dam_body",
+      "shared_boundary",
+      "surface_contact",
+      "no_thin_region",
+      "relation_reachable_hydraulic",
+      "virtual_has_no_material",
+      "no_open_air_in_plane",
+      "contacts"
+     ]
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "material_points"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_material_points"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "face_position"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_face_position"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "parameter_relation"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_parameter_relation"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "entity_inside_material"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_entity_inside_material"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "void_outside_dam_body"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_void_outside_dam_body"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "shared_boundary"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_shared_boundary"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "surface_contact"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_surface_contact"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "no_thin_region"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_no_thin_region"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "relation_reachable_hydraulic"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_relation_reachable_hydraulic"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "virtual_has_no_material"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_virtual_has_no_material"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "no_open_air_in_plane"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_no_open_air_in_plane"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "contacts"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/assert_contacts"
+     }
+    }
+   ]
+  },
+  "asset_terrain_continuity": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "terrain_continuity"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "crest_end_x": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      },
+      "y": {
+       "type": "number"
+      },
+      "min_elevation": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "crest_end_x",
+      "y",
+      "min_elevation"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "pass": {
+       "const": true
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "pass"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "asset_dem_consistency": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "const": "dem_consistency"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object",
+     "properties": {
+      "axis_y": {
+       "type": "number"
+      },
+      "x_range": {
+       "$ref": "#/$defs/range2"
+      },
+      "min_dem_minus_foundation_m": {
+       "type": "number"
+      },
+      "crest_end_min_elevation": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "axis_y",
+      "x_range",
+      "min_dem_minus_foundation_m",
+      "crest_end_min_elevation"
+     ]
+    },
+    "expected": {
+     "type": "object",
+     "properties": {
+      "pass": {
+       "const": true
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "pass"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "assetAssertion": {
+   "type": "object",
+   "required": [
+    "type"
+   ],
+   "properties": {
+    "type": {
+     "enum": [
+      "terrain_continuity",
+      "dem_consistency"
+     ]
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "terrain_continuity"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/asset_terrain_continuity"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "dem_consistency"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/asset_dem_consistency"
+     }
+    }
+   ]
+  },
+  "referenceAssertion": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "type": {
+     "type": "string"
+    },
+    "note": {
+     "type": "string"
+    },
+    "input": {
+     "type": "object"
+    },
+    "expected": {
+     "type": "object"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "type",
+    "input",
+    "expected"
+   ]
+  },
+  "selector": {
+   "type": "object",
+   "properties": {
+    "kind": {
+     "enum": [
+      "solid",
+      "void"
+     ]
+    },
+    "material_id": {
+     "type": "string"
+    },
+    "realization": {
+     "enum": [
+      "solid",
+      "virtual"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "kind",
+    "realization"
+   ]
+  },
+  "opOperand": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "selectors": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/selector"
+     },
+     "minItems": 1
+    },
+    "results": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/id"
+     },
+     "minItems": 1
+    }
+   },
+   "minProperties": 1
+  },
+  "op_union": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "result": {
+     "$ref": "#/$defs/id"
+    },
+    "op": {
+     "const": "union"
+    },
+    "note": {
+     "type": "string"
+    },
+    "of": {
+     "$ref": "#/$defs/opOperand"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "result",
+    "op",
+    "of"
+   ]
+  },
+  "op_subtract": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "result": {
+     "$ref": "#/$defs/id"
+    },
+    "op": {
+     "const": "subtract"
+    },
+    "note": {
+     "type": "string"
+    },
+    "of": {
+     "$ref": "#/$defs/opOperand"
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "result",
+    "op",
+    "of"
+   ]
+  },
+  "op_intersect": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "result": {
+     "$ref": "#/$defs/id"
+    },
+    "op": {
+     "const": "intersect"
+    },
+    "note": {
+     "type": "string"
+    },
+    "with": {
+     "type": "object",
+     "properties": {
+      "region": {
+       "enum": [
+        "above_foundation_within_crest"
+       ]
+      }
+     },
+     "additionalProperties": false,
+     "required": [
+      "region"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "result",
+    "op",
+    "with"
+   ]
+  },
+  "op_below_surface": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "result": {
+     "$ref": "#/$defs/id"
+    },
+    "op": {
+     "const": "below_surface"
+    },
+    "note": {
+     "type": "string"
+    },
+    "surface": {
+     "enum": [
+      "effective_terrain"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "result",
+    "op",
+    "surface"
+   ]
+  },
+  "op_fill_below_level": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "result": {
+     "$ref": "#/$defs/id"
+    },
+    "op": {
+     "const": "fill_below_level"
+    },
+    "note": {
+     "type": "string"
+    },
+    "bodies": {
+     "enum": [
+      "water_bodies",
+      "void_fills"
+     ]
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "result",
+    "op",
+    "bodies"
+   ]
+  },
+  "compileOperation": {
+   "type": "object",
+   "required": [
+    "op"
+   ],
+   "properties": {
+    "op": {
+     "enum": [
+      "union",
+      "subtract",
+      "intersect",
+      "below_surface",
+      "fill_below_level"
+     ]
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "op": {
+        "const": "union"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/op_union"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "op": {
+        "const": "subtract"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/op_subtract"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "op": {
+        "const": "intersect"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/op_intersect"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "op": {
+        "const": "below_surface"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/op_below_surface"
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "op": {
+        "const": "fill_below_level"
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/op_fill_below_level"
+     }
+    }
+   ]
+  },
+  "scenario": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "label": {
+     "type": "string"
+    },
+    "variables": {
+     "type": "object",
+     "additionalProperties": {
+      "type": [
+       "number",
+       "string"
+      ]
+     }
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "variables"
+   ]
+  },
+  "scenarioVariable": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "unit": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "default": {
+     "oneOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "string"
+      },
+      {
+       "$ref": "#/$defs/parameterRef"
+      }
+     ]
+    },
+    "allowed": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "default"
+   ]
+  },
+  "lodLevel": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "type": "string"
+    },
+    "inherits": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "include": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "exclude": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "additionalProperties": false,
+   "required": [
+    "id",
+    "inherits",
+    "include",
+    "exclude"
+   ]
+  }
+ }
+}

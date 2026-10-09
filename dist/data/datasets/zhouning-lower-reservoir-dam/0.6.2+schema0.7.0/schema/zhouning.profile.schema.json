@@ -1,0 +1,805 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "zhouning.profile.schema.json",
+ "title": "周宁抽蓄下库大坝专属约束（v0.7.0）",
+ "allOf": [
+  {
+   "$ref": "dam-dataset.schema.json"
+  },
+  {
+   "properties": {
+    "dataset": {
+     "properties": {
+      "dataset_id": {
+       "const": "zhouning-lower-reservoir-dam"
+      }
+     }
+    },
+    "sections": {
+     "minItems": 10,
+     "maxItems": 10,
+     "items": {
+      "properties": {
+       "no": {
+        "minimum": 1,
+        "maximum": 10
+       }
+      }
+     }
+    },
+    "entities": {
+     "items": {
+      "properties": {
+       "semantics": {
+        "properties": {
+         "class": {
+          "enum": [
+           "access_adit",
+           "bank_platform",
+           "bridge_deck",
+           "crest",
+           "dam_body",
+           "detector_site",
+           "elevator_shaft",
+           "gallery",
+           "gate_chamber",
+           "link_gallery",
+           "observation_room",
+           "outlet_channel",
+           "outlet_conduit",
+           "outlet_gate",
+           "outlet_structure",
+           "outlet_tunnel",
+           "pier",
+           "pier_nose",
+           "portal_marker",
+           "reference_point",
+           "reservoir",
+           "road_bridge",
+           "rock",
+           "second_dam",
+           "spillway_bay",
+           "spillway_body",
+           "spillway_chute",
+           "spillway_gate",
+           "tailwater",
+           "upstream_corbel",
+           "widened_block"
+          ]
+         },
+         "imaging_role": {
+          "enum": [
+           "background",
+           "detector_site",
+           "reference_void",
+           "target",
+           "time_varying_mass"
+          ]
+         },
+         "system": {
+          "enum": [
+           "dam",
+           "flood_release",
+           "gallery",
+           "ground",
+           "monitoring",
+           "reference",
+           "vertical_transport",
+           "water"
+          ]
+         }
+        }
+       }
+      }
+     }
+    },
+    "relations": {
+     "items": {
+      "properties": {
+       "type": {
+        "enum": [
+         "accessible_from",
+         "attached_to",
+         "connects_to",
+         "covers",
+         "discharges_to",
+         "hydraulically_connected",
+         "located_in",
+         "part_of",
+         "retains",
+         "separates",
+         "upstream_of"
+        ]
+       }
+      }
+     }
+    },
+    "materials": {
+     "allOf": [
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "concrete"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "water"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "rock"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "air"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "steel"
+         }
+        }
+       }
+      }
+     ]
+    },
+    "scenarios": {
+     "allOf": [
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "low"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "mid"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "high"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "extreme"
+         }
+        }
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "properties": {
+    "entities": {
+     "allOf": [
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "dam_standard"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "spillway_body"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "gallery_upper"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "gallery_lower"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "gallery_link"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "elevator_shaft"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "outlet_conduits_S"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "outlet_conduits_N"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "obs_room_upper"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "obs_room_lower"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "adit_S"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "adit_N"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "outlet_gate_chambers_S"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "outlet_gate_chambers_N"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "outlet_tunnels_S"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "outlet_tunnels_N"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "outlet_channels_S"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "outlet_channels_N"
+         }
+        }
+       }
+      }
+     ]
+    }
+   }
+  },
+  {
+   "properties": {
+    "conformance": {
+     "properties": {
+      "ruleset": {
+       "const": "zhouning-hydraulic-v1"
+      },
+      "required_assertions": {
+       "allOf": [
+        {
+         "contains": {
+          "const": "virtual_no_matter"
+         }
+        },
+        {
+         "contains": {
+          "const": "outlet_exit_open"
+         }
+        },
+        {
+         "contains": {
+          "const": "outlet_toe_intact"
+         }
+        },
+        {
+         "contains": {
+          "const": "gate_well_open_shaft"
+         }
+        },
+        {
+         "contains": {
+          "const": "open_voids_outside_dam_body"
+         }
+        },
+        {
+         "contains": {
+          "const": "channel_start_check"
+         }
+        },
+        {
+         "contains": {
+          "const": "no_thin_air_layers"
+         }
+        },
+        {
+         "contains": {
+          "const": "pier_rests_on_body"
+         }
+        },
+        {
+         "contains": {
+          "const": "chute_floor_seal"
+         }
+        },
+        {
+         "contains": {
+          "const": "contacts"
+         }
+        },
+        {
+         "contains": {
+          "const": "hydraulic_consistency"
+         }
+        },
+        {
+         "contains": {
+          "const": "galleries_inside_concrete"
+         }
+        },
+        {
+         "contains": {
+          "const": "reservoir_contact"
+         }
+        },
+        {
+         "contains": {
+          "const": "fill_conduit_water"
+         }
+        }
+       ]
+      }
+     }
+    },
+    "assertions": {
+     "allOf": [
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "virtual_no_matter"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "outlet_exit_open"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "outlet_toe_intact"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "gate_well_open_shaft"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "open_voids_outside_dam_body"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "channel_start_check"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "no_thin_air_layers"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "pier_rests_on_body"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "chute_floor_seal"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "contacts"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "hydraulic_consistency"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "galleries_inside_concrete"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "reservoir_contact"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "id": {
+          "const": "fill_conduit_water"
+         }
+        }
+       }
+      }
+     ]
+    },
+    "entities": {
+     "items": {
+      "not": {
+       "properties": {
+        "id": {
+         "pattern": "^(channel_end_sills|channel_pond)"
+        }
+       },
+       "required": [
+        "id"
+       ]
+      }
+     }
+    },
+    "water_bodies": {
+     "items": {
+      "not": {
+       "properties": {
+        "id": {
+         "pattern": "^(channel_end_sills|channel_pond)"
+        }
+       },
+       "required": [
+        "id"
+       ]
+      }
+     }
+    },
+    "relations": {
+     "allOf": [
+      {
+       "contains": {
+        "properties": {
+         "from": {
+          "const": "outlet_gate_chambers_S"
+         },
+         "to": {
+          "const": "outlet_tunnels_S"
+         },
+         "type": {
+          "const": "hydraulically_connected"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "from": {
+          "const": "outlet_gate_chambers_N"
+         },
+         "to": {
+          "const": "outlet_tunnels_N"
+         },
+         "type": {
+          "const": "hydraulically_connected"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "from": {
+          "const": "outlet_tunnels_S"
+         },
+         "to": {
+          "const": "outlet_channels_S"
+         },
+         "type": {
+          "const": "hydraulically_connected"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "from": {
+          "const": "outlet_tunnels_N"
+         },
+         "to": {
+          "const": "outlet_channels_N"
+         },
+         "type": {
+          "const": "hydraulically_connected"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "from": {
+          "const": "outlet_channels_S"
+         },
+         "to": {
+          "const": "tailwater"
+         },
+         "type": {
+          "const": "discharges_to"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "from": {
+          "const": "outlet_channels_N"
+         },
+         "to": {
+          "const": "tailwater"
+         },
+         "type": {
+          "const": "discharges_to"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "from": {
+          "const": "outlet_conduits_S"
+         },
+         "to": {
+          "const": "reservoir"
+         },
+         "type": {
+          "const": "hydraulically_connected"
+         }
+        }
+       }
+      },
+      {
+       "contains": {
+        "properties": {
+         "from": {
+          "const": "outlet_conduits_N"
+         },
+         "to": {
+          "const": "reservoir"
+         },
+         "type": {
+          "const": "hydraulically_connected"
+         }
+        }
+       }
+      }
+     ]
+    },
+    "asset_conformance": {
+     "properties": {
+      "ruleset": {
+       "const": "zhouning-terrain-assets-v1"
+      },
+      "requires_assets": {
+       "minItems": 2,
+       "maxItems": 2,
+       "allOf": [
+        {
+         "contains": {
+          "properties": {
+           "role": {
+            "const": "near_terrain_grid"
+           },
+           "path": {
+            "const": "terrain_grid.npz"
+           }
+          },
+          "required": [
+           "role",
+           "path"
+          ]
+         }
+        },
+        {
+         "contains": {
+          "properties": {
+           "role": {
+            "const": "far_terrain_grid"
+           },
+           "path": {
+            "const": "terrain_grid_far.npz"
+           }
+          },
+          "required": [
+           "role",
+           "path"
+          ]
+         }
+        }
+       ]
+      },
+      "required_assertions": {
+       "allOf": [
+        {
+         "contains": {
+          "const": "terrain_continuity"
+         }
+        },
+        {
+         "contains": {
+          "const": "dem_registration_consistency"
+         }
+        }
+       ]
+      }
+     }
+    }
+   }
+  }
+ ]
+}
