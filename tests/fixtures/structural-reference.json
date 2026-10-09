@@ -1,0 +1,1813 @@
+{
+  "schemaVersion": "1.0.0",
+  "vtkVersion": "9.5.2",
+  "threeRevision": "186",
+  "featureAngleDeg": 30,
+  "directionMode": "specified-origin (perspective)",
+  "hiddenLineRemoval": false,
+  "limitations": [
+    "Candidate comparison only; material-interface probes do not prove whole-edge qualification.",
+    "No field clipping, adaptive edge splitting, source attribution, or production implementation accepted."
+  ],
+  "results": [
+    {
+      "fixture": "slab",
+      "componentId": "slab",
+      "material": "concrete",
+      "meshSha256": "30bb3222a1a8df69b133472dc736dfdc5b9c28f5d077cd52414f708b27687287",
+      "threeFeatureEdges": 12,
+      "vtkFeatureEdges": 12,
+      "featureEdgeSetMatches": true,
+      "terrainDomain": null,
+      "views": [
+        {
+          "name": "external",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ]
+          ]
+        },
+        {
+          "name": "internal",
+          "silhouetteEdges": 0,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 8,
+          "silhouetteSegmentsModel": []
+        },
+        {
+          "name": "off-axis",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "wedge",
+      "componentId": "wedge",
+      "material": "concrete",
+      "meshSha256": "57d906653df02e67af567f52992ebdc45315f2963bb3e77559b4abe37ac79f1d",
+      "threeFeatureEdges": 12,
+      "vtkFeatureEdges": 12,
+      "featureEdgeSetMatches": true,
+      "terrainDomain": null,
+      "views": [
+        {
+          "name": "external",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ]
+          ]
+        },
+        {
+          "name": "internal",
+          "silhouetteEdges": 0,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 8,
+          "silhouetteSegmentsModel": []
+        },
+        {
+          "name": "off-axis",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "cavity",
+      "componentId": "shell",
+      "material": "concrete",
+      "meshSha256": "90971d10502a88fb3af0cef7fa26cb15b3c012826c0052648d9cc9456a36d1cf",
+      "threeFeatureEdges": 24,
+      "vtkFeatureEdges": 24,
+      "featureEdgeSetMatches": true,
+      "terrainDomain": null,
+      "views": [
+        {
+          "name": "external",
+          "silhouetteEdges": 8,
+          "combinedCandidates": 24,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 12,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                3,
+                -1,
+                -1
+              ],
+              [
+                3,
+                1,
+                -1
+              ]
+            ],
+            [
+              [
+                3,
+                -1,
+                -1
+              ],
+              [
+                3,
+                -1,
+                1
+              ]
+            ],
+            [
+              [
+                3,
+                1,
+                -1
+              ],
+              [
+                3,
+                1,
+                1
+              ]
+            ],
+            [
+              [
+                3,
+                -1,
+                1
+              ],
+              [
+                3,
+                1,
+                1
+              ]
+            ]
+          ]
+        },
+        {
+          "name": "internal",
+          "silhouetteEdges": 0,
+          "combinedCandidates": 24,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 12,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 16,
+          "silhouetteSegmentsModel": []
+        },
+        {
+          "name": "off-axis",
+          "silhouetteEdges": 8,
+          "combinedCandidates": 24,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 12,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                3,
+                -1,
+                -1
+              ],
+              [
+                3,
+                1,
+                -1
+              ]
+            ],
+            [
+              [
+                3,
+                -1,
+                -1
+              ],
+              [
+                3,
+                -1,
+                1
+              ]
+            ],
+            [
+              [
+                3,
+                1,
+                -1
+              ],
+              [
+                3,
+                1,
+                1
+              ]
+            ],
+            [
+              [
+                3,
+                -1,
+                1
+              ],
+              [
+                3,
+                1,
+                1
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "opening",
+      "componentId": "left",
+      "material": "concrete",
+      "meshSha256": "9956a21b57cdf1860e6153ce8ad76c7d94e2fbb1a0a5f88a3e309cd1cab66aad",
+      "threeFeatureEdges": 12,
+      "vtkFeatureEdges": 12,
+      "featureEdgeSetMatches": true,
+      "terrainDomain": null,
+      "views": [
+        {
+          "name": "external",
+          "silhouetteEdges": 6,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -1,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                6,
+                -1,
+                -4
+              ],
+              [
+                2,
+                -1,
+                -4
+              ]
+            ],
+            [
+              [
+                6,
+                -1,
+                -4
+              ],
+              [
+                6,
+                -1,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                4
+              ],
+              [
+                2,
+                -1,
+                4
+              ]
+            ],
+            [
+              [
+                6,
+                -1,
+                4
+              ],
+              [
+                2,
+                -1,
+                4
+              ]
+            ]
+          ]
+        },
+        {
+          "name": "internal",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 8,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                6,
+                -1,
+                -4
+              ],
+              [
+                2,
+                -1,
+                -4
+              ]
+            ],
+            [
+              [
+                6,
+                -1,
+                -4
+              ],
+              [
+                6,
+                -1,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                -1,
+                -4
+              ],
+              [
+                2,
+                -1,
+                4
+              ]
+            ],
+            [
+              [
+                6,
+                -1,
+                4
+              ],
+              [
+                2,
+                -1,
+                4
+              ]
+            ]
+          ]
+        },
+        {
+          "name": "off-axis",
+          "silhouetteEdges": 6,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -1,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                6,
+                -1,
+                -4
+              ],
+              [
+                2,
+                -1,
+                -4
+              ]
+            ],
+            [
+              [
+                6,
+                -1,
+                -4
+              ],
+              [
+                6,
+                -1,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                4
+              ],
+              [
+                2,
+                -1,
+                4
+              ]
+            ],
+            [
+              [
+                6,
+                -1,
+                4
+              ],
+              [
+                2,
+                -1,
+                4
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "opening",
+      "componentId": "right",
+      "material": "concrete",
+      "meshSha256": "bd5f81f0aad0b97ea7c48436a9426edf55d060d357bd3243774a02878ee26979",
+      "threeFeatureEdges": 12,
+      "vtkFeatureEdges": 12,
+      "featureEdgeSetMatches": true,
+      "terrainDomain": null,
+      "views": [
+        {
+          "name": "external",
+          "silhouetteEdges": 6,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                1,
+                -4
+              ],
+              [
+                6,
+                1,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                1,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                6,
+                1,
+                -4
+              ],
+              [
+                6,
+                1,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                1,
+                4
+              ],
+              [
+                6,
+                1,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                1,
+                4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ]
+          ]
+        },
+        {
+          "name": "internal",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 8,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                1,
+                -4
+              ],
+              [
+                6,
+                1,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                1,
+                -4
+              ],
+              [
+                2,
+                1,
+                4
+              ]
+            ],
+            [
+              [
+                6,
+                1,
+                -4
+              ],
+              [
+                6,
+                1,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                1,
+                4
+              ],
+              [
+                6,
+                1,
+                4
+              ]
+            ]
+          ]
+        },
+        {
+          "name": "off-axis",
+          "silhouetteEdges": 6,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                1,
+                -4
+              ],
+              [
+                6,
+                1,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                1,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                6,
+                1,
+                -4
+              ],
+              [
+                6,
+                1,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                1,
+                4
+              ],
+              [
+                6,
+                1,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                1,
+                4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "material-junction",
+      "componentId": "concrete",
+      "material": "concrete",
+      "meshSha256": "8670136e8e7ac6817681d3a58832977f2564afc54bf2524b4f1d86d547bcd054",
+      "threeFeatureEdges": 12,
+      "vtkFeatureEdges": 12,
+      "featureEdgeSetMatches": true,
+      "terrainDomain": null,
+      "views": [
+        {
+          "name": "external",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ]
+          ]
+        },
+        {
+          "name": "internal",
+          "silhouetteEdges": 0,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 12,
+          "silhouetteSegmentsModel": []
+        },
+        {
+          "name": "off-axis",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                4
+              ],
+              [
+                2,
+                4,
+                4
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "material-junction",
+      "componentId": "rock",
+      "material": "rock",
+      "meshSha256": "5d3cc9423ddae4656e8355571b7b577e7f3d45550a751838fcfdac210485521d",
+      "threeFeatureEdges": 12,
+      "vtkFeatureEdges": 12,
+      "featureEdgeSetMatches": true,
+      "terrainDomain": null,
+      "views": [
+        {
+          "name": "external",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                4,
+                -4,
+                -4
+              ],
+              [
+                4,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                4,
+                -4,
+                -4
+              ],
+              [
+                4,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                4,
+                4,
+                -4
+              ],
+              [
+                4,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                4,
+                -4,
+                4
+              ],
+              [
+                4,
+                4,
+                4
+              ]
+            ]
+          ]
+        },
+        {
+          "name": "internal",
+          "silhouetteEdges": 0,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 8,
+          "silhouetteSegmentsModel": []
+        },
+        {
+          "name": "off-axis",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                4,
+                -4,
+                -4
+              ],
+              [
+                4,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                4,
+                -4,
+                -4
+              ],
+              [
+                4,
+                -4,
+                4
+              ]
+            ],
+            [
+              [
+                4,
+                4,
+                -4
+              ],
+              [
+                4,
+                4,
+                4
+              ]
+            ],
+            [
+              [
+                4,
+                -4,
+                4
+              ],
+              [
+                4,
+                4,
+                4
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "terrain",
+      "componentId": "terrain",
+      "material": "rock",
+      "meshSha256": "83752c32af2ad9f4a39a3170f8612de16edd5dd57623269360598df3935e4f0c",
+      "threeFeatureEdges": 12,
+      "vtkFeatureEdges": 12,
+      "featureEdgeSetMatches": true,
+      "terrainDomain": {
+        "x": [
+          2,
+          10
+        ],
+        "y": [
+          -4,
+          4
+        ],
+        "bottomZ": -4,
+        "physicalTop": "z=1+x/4",
+        "limitation": "Sides and bottom are domain truncations, not physical rock-air envelopes."
+      },
+      "views": [
+        {
+          "name": "external",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                1.5
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                1.5
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                1.5
+              ],
+              [
+                2,
+                4,
+                1.5
+              ]
+            ]
+          ]
+        },
+        {
+          "name": "internal",
+          "silhouetteEdges": 0,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 8,
+          "silhouetteSegmentsModel": []
+        },
+        {
+          "name": "off-axis",
+          "silhouetteEdges": 4,
+          "combinedCandidates": 12,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                4,
+                -4
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                -4
+              ],
+              [
+                2,
+                -4,
+                1.5
+              ]
+            ],
+            [
+              [
+                2,
+                4,
+                -4
+              ],
+              [
+                2,
+                4,
+                1.5
+              ]
+            ],
+            [
+              [
+                2,
+                -4,
+                1.5
+              ],
+              [
+                2,
+                4,
+                1.5
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "smooth-prism",
+      "componentId": "smooth-prism",
+      "material": "rock",
+      "meshSha256": "5ac611272c8756d5929720316358f98f145986c64a8fce915ace73187250062c",
+      "threeFeatureEdges": 32,
+      "vtkFeatureEdges": 32,
+      "featureEdgeSetMatches": true,
+      "terrainDomain": null,
+      "views": [
+        {
+          "name": "external",
+          "silhouetteEdges": 14,
+          "combinedCandidates": 34,
+          "silhouetteEdgesMissingFromCreases": 2,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                3.617316484451294,
+                0.9238795042037964,
+                -2
+              ],
+              [
+                3.292893171310425,
+                0.7071067690849304,
+                -2
+              ]
+            ],
+            [
+              [
+                3.617316484451294,
+                0.9238795042037964,
+                -2
+              ],
+              [
+                3.617316484451294,
+                0.9238795042037964,
+                2
+              ]
+            ],
+            [
+              [
+                3.292893171310425,
+                0.7071067690849304,
+                -2
+              ],
+              [
+                3.076120376586914,
+                0.3826834261417389,
+                -2
+              ]
+            ],
+            [
+              [
+                3.076120376586914,
+                0.3826834261417389,
+                -2
+              ],
+              [
+                3,
+                1.2246468525851679e-16,
+                -2
+              ]
+            ],
+            [
+              [
+                3,
+                1.2246468525851679e-16,
+                -2
+              ],
+              [
+                3.076120376586914,
+                -0.3826834261417389,
+                -2
+              ]
+            ],
+            [
+              [
+                3.076120376586914,
+                -0.3826834261417389,
+                -2
+              ],
+              [
+                3.292893171310425,
+                -0.7071067690849304,
+                -2
+              ]
+            ],
+            [
+              [
+                3.292893171310425,
+                -0.7071067690849304,
+                -2
+              ],
+              [
+                3.617316484451294,
+                -0.9238795042037964,
+                -2
+              ]
+            ],
+            [
+              [
+                3.617316484451294,
+                -0.9238795042037964,
+                -2
+              ],
+              [
+                3.617316484451294,
+                -0.9238795042037964,
+                2
+              ]
+            ],
+            [
+              [
+                3.617316484451294,
+                0.9238795042037964,
+                2
+              ],
+              [
+                3.292893171310425,
+                0.7071067690849304,
+                2
+              ]
+            ],
+            [
+              [
+                3.292893171310425,
+                0.7071067690849304,
+                2
+              ],
+              [
+                3.076120376586914,
+                0.3826834261417389,
+                2
+              ]
+            ],
+            [
+              [
+                3.076120376586914,
+                0.3826834261417389,
+                2
+              ],
+              [
+                3,
+                1.2246468525851679e-16,
+                2
+              ]
+            ],
+            [
+              [
+                3,
+                1.2246468525851679e-16,
+                2
+              ],
+              [
+                3.076120376586914,
+                -0.3826834261417389,
+                2
+              ]
+            ],
+            [
+              [
+                3.076120376586914,
+                -0.3826834261417389,
+                2
+              ],
+              [
+                3.292893171310425,
+                -0.7071067690849304,
+                2
+              ]
+            ],
+            [
+              [
+                3.292893171310425,
+                -0.7071067690849304,
+                2
+              ],
+              [
+                3.617316484451294,
+                -0.9238795042037964,
+                2
+              ]
+            ]
+          ]
+        },
+        {
+          "name": "internal",
+          "silhouetteEdges": 0,
+          "combinedCandidates": 32,
+          "silhouetteEdgesMissingFromCreases": 0,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 20,
+          "silhouetteSegmentsModel": []
+        },
+        {
+          "name": "off-axis",
+          "silhouetteEdges": 16,
+          "combinedCandidates": 34,
+          "silhouetteEdgesMissingFromCreases": 2,
+          "nonAirInterfaceProbeCandidates": 0,
+          "candidatesWithEndpointAtOrBehindObserverPlane": 0,
+          "silhouetteSegmentsModel": [
+            [
+              [
+                3.617316484451294,
+                0.9238795042037964,
+                -2
+              ],
+              [
+                3.292893171310425,
+                0.7071067690849304,
+                -2
+              ]
+            ],
+            [
+              [
+                3.617316484451294,
+                0.9238795042037964,
+                -2
+              ],
+              [
+                3.617316484451294,
+                0.9238795042037964,
+                2
+              ]
+            ],
+            [
+              [
+                3.292893171310425,
+                0.7071067690849304,
+                -2
+              ],
+              [
+                3.076120376586914,
+                0.3826834261417389,
+                -2
+              ]
+            ],
+            [
+              [
+                3.076120376586914,
+                0.3826834261417389,
+                -2
+              ],
+              [
+                3,
+                1.2246468525851679e-16,
+                -2
+              ]
+            ],
+            [
+              [
+                3,
+                1.2246468525851679e-16,
+                -2
+              ],
+              [
+                3.076120376586914,
+                -0.3826834261417389,
+                -2
+              ]
+            ],
+            [
+              [
+                3.076120376586914,
+                -0.3826834261417389,
+                -2
+              ],
+              [
+                3.292893171310425,
+                -0.7071067690849304,
+                -2
+              ]
+            ],
+            [
+              [
+                3.292893171310425,
+                -0.7071067690849304,
+                -2
+              ],
+              [
+                3.617316484451294,
+                -0.9238795042037964,
+                -2
+              ]
+            ],
+            [
+              [
+                3.617316484451294,
+                -0.9238795042037964,
+                -2
+              ],
+              [
+                4,
+                -1,
+                -2
+              ]
+            ],
+            [
+              [
+                4,
+                -1,
+                -2
+              ],
+              [
+                4,
+                -1,
+                2
+              ]
+            ],
+            [
+              [
+                3.617316484451294,
+                0.9238795042037964,
+                2
+              ],
+              [
+                3.292893171310425,
+                0.7071067690849304,
+                2
+              ]
+            ],
+            [
+              [
+                3.292893171310425,
+                0.7071067690849304,
+                2
+              ],
+              [
+                3.076120376586914,
+                0.3826834261417389,
+                2
+              ]
+            ],
+            [
+              [
+                3.076120376586914,
+                0.3826834261417389,
+                2
+              ],
+              [
+                3,
+                1.2246468525851679e-16,
+                2
+              ]
+            ],
+            [
+              [
+                3,
+                1.2246468525851679e-16,
+                2
+              ],
+              [
+                3.076120376586914,
+                -0.3826834261417389,
+                2
+              ]
+            ],
+            [
+              [
+                3.076120376586914,
+                -0.3826834261417389,
+                2
+              ],
+              [
+                3.292893171310425,
+                -0.7071067690849304,
+                2
+              ]
+            ],
+            [
+              [
+                3.292893171310425,
+                -0.7071067690849304,
+                2
+              ],
+              [
+                3.617316484451294,
+                -0.9238795042037964,
+                2
+              ]
+            ],
+            [
+              [
+                3.617316484451294,
+                -0.9238795042037964,
+                2
+              ],
+              [
+                4,
+                -1,
+                2
+              ]
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

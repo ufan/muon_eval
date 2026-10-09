@@ -1,0 +1,3232 @@
+{
+  "manifoldVersion": "3.5.4",
+  "numpyVersion": "1.26.4",
+  "method": "priority-partition-then-union-boundary-with-face-lineage",
+  "results": [
+    {
+      "id": "slab",
+      "inputSha256": "b4a070e94d89f2d238c7133e6d33ee5c5475d4fcff077a5e60d85ae471408fc7",
+      "sourceComponentIds": [
+        "slab"
+      ],
+      "outputTriangles": 12,
+      "materialCounts": {
+        "concrete": 12,
+        "rock": 0
+      },
+      "scopeCounts": {
+        "domain-cap": 0,
+        "scope-unqualified": 12
+      },
+      "winningVolumesM3": {
+        "concrete": 256
+      },
+      "unionVolumeM3": 256,
+      "nativeToleranceM": 6e-12,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "wedge",
+      "inputSha256": "bb563a52d6e37ee4a6f4231493817b2e7232c2090d8f3cc5baca785b46c5a2d5",
+      "sourceComponentIds": [
+        "wedge"
+      ],
+      "outputTriangles": 12,
+      "materialCounts": {
+        "concrete": 12,
+        "rock": 0
+      },
+      "scopeCounts": {
+        "domain-cap": 0,
+        "scope-unqualified": 12
+      },
+      "winningVolumesM3": {
+        "concrete": 256
+      },
+      "unionVolumeM3": 256,
+      "nativeToleranceM": 7e-12,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "cavity",
+      "inputSha256": "69129b57af49a7578c8cc55a252459a177a533c6af0e13349c9a71e8314d3579",
+      "sourceComponentIds": [
+        "shell"
+      ],
+      "outputTriangles": 24,
+      "materialCounts": {
+        "concrete": 24,
+        "rock": 0
+      },
+      "scopeCounts": {
+        "domain-cap": 0,
+        "scope-unqualified": 24
+      },
+      "winningVolumesM3": {
+        "concrete": 248
+      },
+      "unionVolumeM3": 248,
+      "nativeToleranceM": 6e-12,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 24,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "opening",
+      "inputSha256": "6d903ccdefd59db1879f4757f7de68eb312488a81a63b4eabffe24c43df8cb56",
+      "sourceComponentIds": [
+        "left",
+        "right"
+      ],
+      "outputTriangles": 24,
+      "materialCounts": {
+        "concrete": 24,
+        "rock": 0
+      },
+      "scopeCounts": {
+        "domain-cap": 0,
+        "scope-unqualified": 24
+      },
+      "winningVolumesM3": {
+        "concrete": 192
+      },
+      "unionVolumeM3": 192,
+      "nativeToleranceM": 6e-12,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 24,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "material-junction",
+      "inputSha256": "53497c8e484d8735b7e91ee3f670de86aa243834024b76d0ff1f86daaa5187f8",
+      "sourceComponentIds": [
+        "concrete",
+        "rock"
+      ],
+      "outputTriangles": 20,
+      "materialCounts": {
+        "concrete": 10,
+        "rock": 10
+      },
+      "scopeCounts": {
+        "domain-cap": 0,
+        "scope-unqualified": 20
+      },
+      "winningVolumesM3": {
+        "concrete": 128,
+        "rock": 128
+      },
+      "unionVolumeM3": 256,
+      "nativeToleranceM": 6e-12,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 16,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "terrain",
+      "inputSha256": "6448d575ebd01237cef70ce12205676a38ca930346d1ab415c00872bb15e15a3",
+      "sourceComponentIds": [
+        "terrain"
+      ],
+      "outputTriangles": 12,
+      "materialCounts": {
+        "concrete": 0,
+        "rock": 12
+      },
+      "scopeCounts": {
+        "domain-cap": 10,
+        "scope-unqualified": 2
+      },
+      "winningVolumesM3": {
+        "rock": 416
+      },
+      "unionVolumeM3": 416,
+      "nativeToleranceM": 1e-11,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "partial-water-contact",
+      "inputSha256": "54f19a9c8111e75da8ec1515e000ee72f1ca80caf01b30ff001e3e812200a936",
+      "sourceComponentIds": [
+        "concrete",
+        "water"
+      ],
+      "outputTriangles": 38,
+      "materialCounts": {
+        "concrete": 17,
+        "water": 21
+      },
+      "scopeCounts": {
+        "domain-cap": 0,
+        "scope-unqualified": 38
+      },
+      "winningVolumesM3": {
+        "concrete": 64,
+        "water": 36
+      },
+      "unionVolumeM3": 100,
+      "nativeToleranceM": 6e-12,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 31,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "overlap-priority",
+      "inputSha256": "94cc8636848afedb9fdb187184f9a73bcdb48c851045557cb501fa24bbac117e",
+      "sourceComponentIds": [
+        "concrete",
+        "water"
+      ],
+      "outputTriangles": 48,
+      "materialCounts": {
+        "concrete": 22,
+        "water": 26
+      },
+      "scopeCounts": {
+        "domain-cap": 0,
+        "scope-unqualified": 48
+      },
+      "winningVolumesM3": {
+        "concrete": 64,
+        "water": 28
+      },
+      "unionVolumeM3": 92,
+      "nativeToleranceM": 6e-12,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 36,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "identical-overlap-priority",
+      "inputSha256": "1fb44d257be0a997e5b565a2b02a93219495397625ab69fd7b617f15aadbb23d",
+      "sourceComponentIds": [
+        "concrete",
+        "water"
+      ],
+      "outputTriangles": 12,
+      "materialCounts": {
+        "concrete": 12,
+        "water": 0
+      },
+      "scopeCounts": {
+        "domain-cap": 0,
+        "scope-unqualified": 12
+      },
+      "winningVolumesM3": {
+        "concrete": 64,
+        "water": 0
+      },
+      "unionVolumeM3": 64,
+      "nativeToleranceM": 6e-12,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "real-low",
+      "inputSha256": "271bfa1e00b94f2c84f22caf67ab1939a9860c0428ab3a6d3642980b177b47da",
+      "sourceComponentIds": [
+        "reservoir",
+        "tailwater",
+        "outlet_conduits_S__water",
+        "outlet_conduits_N__water",
+        "concrete",
+        "steel_gates",
+        "rock"
+      ],
+      "outputTriangles": 122702,
+      "materialCounts": {
+        "steel": 16,
+        "concrete": 2453,
+        "rock": 117295,
+        "water": 2938
+      },
+      "scopeCounts": {
+        "domain-cap": 59873,
+        "scope-unqualified": 62829
+      },
+      "winningVolumesM3": {
+        "steel": 7.574998760272164,
+        "concrete": 789276.1746025537,
+        "rock": 444926249.039449,
+        "water": 3061731.0744541716
+      },
+      "unionVolumeM3": 448777263.86350447,
+      "nativeToleranceM": 8.3e-10,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 8302,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "real-mid",
+      "inputSha256": "967784b8a1dd67e661d7b5ab3c819138d136b0711a3bc114fd53017b2c7e834b",
+      "sourceComponentIds": [
+        "reservoir",
+        "tailwater",
+        "outlet_conduits_S__water",
+        "outlet_conduits_N__water",
+        "concrete",
+        "steel_gates",
+        "rock"
+      ],
+      "outputTriangles": 122756,
+      "materialCounts": {
+        "steel": 16,
+        "concrete": 2447,
+        "rock": 117142,
+        "water": 3151
+      },
+      "scopeCounts": {
+        "domain-cap": 59866,
+        "scope-unqualified": 62890
+      },
+      "winningVolumesM3": {
+        "steel": 7.574998760272164,
+        "concrete": 789276.1746025537,
+        "rock": 444926249.039449,
+        "water": 3518464.927556953
+      },
+      "unionVolumeM3": 449233997.7166073,
+      "nativeToleranceM": 8.3e-10,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 8462,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "real-high",
+      "inputSha256": "6f40fd7e764e2b74bbca1dac30767940d61d00c16ee53759f87da6c075c42412",
+      "sourceComponentIds": [
+        "reservoir",
+        "tailwater",
+        "spillway_bays_S__water",
+        "spillway_bays_N__water",
+        "outlet_conduits_S__water",
+        "outlet_conduits_N__water",
+        "concrete",
+        "steel_gates",
+        "rock"
+      ],
+      "outputTriangles": 122332,
+      "materialCounts": {
+        "steel": 18,
+        "concrete": 2433,
+        "rock": 116790,
+        "water": 3091
+      },
+      "scopeCounts": {
+        "domain-cap": 59866,
+        "scope-unqualified": 62466
+      },
+      "winningVolumesM3": {
+        "steel": 7.574998760272164,
+        "concrete": 789276.1746025537,
+        "rock": 444926249.039449,
+        "water": 4006423.404577617
+      },
+      "unionVolumeM3": 449721956.1936279,
+      "nativeToleranceM": 8.3e-10,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 8345,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "real-extreme",
+      "inputSha256": "393e873c9eeba9719a753c1bdae3af4f50a3ea6d569196d5b83192b0c63d4092",
+      "sourceComponentIds": [
+        "reservoir",
+        "tailwater",
+        "spillway_bays_S__water",
+        "spillway_bays_N__water",
+        "outlet_conduits_S__water",
+        "outlet_conduits_N__water",
+        "concrete",
+        "steel_gates",
+        "rock"
+      ],
+      "outputTriangles": 121964,
+      "materialCounts": {
+        "steel": 12,
+        "concrete": 2378,
+        "rock": 116525,
+        "water": 3049
+      },
+      "scopeCounts": {
+        "domain-cap": 59866,
+        "scope-unqualified": 62098
+      },
+      "winningVolumesM3": {
+        "steel": 7.574998760272164,
+        "concrete": 789276.1746025537,
+        "rock": 444926249.039449,
+        "water": 4740423.958831829
+      },
+      "unionVolumeM3": 450455956.7478821,
+      "nativeToleranceM": 8.3e-10,
+      "indexedBorderEdges": 0,
+      "creaseAndContourCandidates": 8336,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    }
+  ],
+  "fixtureMeshes": [
+    {
+      "id": "slab",
+      "positions": [
+        2,
+        -4,
+        -4,
+        2,
+        -4,
+        4,
+        2,
+        4,
+        -4,
+        2,
+        4,
+        4,
+        6,
+        -4,
+        -4,
+        6,
+        -4,
+        4,
+        6,
+        4,
+        -4,
+        6,
+        4,
+        4
+      ],
+      "indices": [
+        0,
+        1,
+        3,
+        0,
+        5,
+        1,
+        0,
+        3,
+        2,
+        0,
+        2,
+        6,
+        1,
+        7,
+        3,
+        2,
+        3,
+        7,
+        0,
+        4,
+        5,
+        0,
+        6,
+        4,
+        1,
+        5,
+        7,
+        4,
+        7,
+        5,
+        2,
+        7,
+        6,
+        4,
+        6,
+        7
+      ],
+      "faceMaterials": [
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete"
+      ],
+      "sourceFaces": [
+        {
+          "componentId": "slab",
+          "faceId": 8,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "slab",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "slab",
+          "faceId": 9,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "slab",
+          "faceId": 1,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "slab",
+          "faceId": 3,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "slab",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "slab",
+          "faceId": 4,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "slab",
+          "faceId": 0,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "slab",
+          "faceId": 2,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "slab",
+          "faceId": 11,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "slab",
+          "faceId": 7,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "slab",
+          "faceId": 10,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        }
+      ],
+      "faceScopeKinds": [
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified"
+      ],
+      "winningVolumesM3": {
+        "concrete": 256
+      },
+      "unionVolumeM3": 256,
+      "nativeToleranceM": 6e-12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "wedge",
+      "positions": [
+        2,
+        -4,
+        -4,
+        2,
+        -4,
+        4,
+        2,
+        4,
+        -4,
+        2,
+        4,
+        4,
+        5,
+        -4,
+        -4,
+        5,
+        -4,
+        4,
+        7,
+        4,
+        -4,
+        7,
+        4,
+        4
+      ],
+      "indices": [
+        0,
+        4,
+        5,
+        0,
+        5,
+        1,
+        0,
+        1,
+        3,
+        0,
+        3,
+        2,
+        0,
+        2,
+        6,
+        1,
+        7,
+        3,
+        2,
+        3,
+        7,
+        0,
+        6,
+        4,
+        4,
+        7,
+        5,
+        1,
+        5,
+        7,
+        2,
+        7,
+        6,
+        4,
+        6,
+        7
+      ],
+      "faceMaterials": [
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete"
+      ],
+      "sourceFaces": [
+        {
+          "componentId": "wedge",
+          "faceId": 4,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "wedge",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "wedge",
+          "faceId": 8,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "wedge",
+          "faceId": 9,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "wedge",
+          "faceId": 1,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "wedge",
+          "faceId": 3,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "wedge",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "wedge",
+          "faceId": 0,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "wedge",
+          "faceId": 11,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "wedge",
+          "faceId": 2,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "wedge",
+          "faceId": 7,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "wedge",
+          "faceId": 10,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        }
+      ],
+      "faceScopeKinds": [
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified"
+      ],
+      "winningVolumesM3": {
+        "concrete": 256
+      },
+      "unionVolumeM3": 256,
+      "nativeToleranceM": 7e-12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "cavity",
+      "positions": [
+        2,
+        -4,
+        -4,
+        3,
+        -1,
+        -1,
+        2,
+        -4,
+        4,
+        3,
+        -1,
+        1,
+        2,
+        4,
+        -4,
+        3,
+        1,
+        -1,
+        2,
+        4,
+        4,
+        3,
+        1,
+        1,
+        6,
+        -4,
+        -4,
+        5,
+        -1,
+        -1,
+        6,
+        -4,
+        4,
+        5,
+        -1,
+        1,
+        5,
+        1,
+        -1,
+        6,
+        4,
+        -4,
+        5,
+        1,
+        1,
+        6,
+        4,
+        4
+      ],
+      "indices": [
+        0,
+        2,
+        6,
+        0,
+        10,
+        2,
+        1,
+        7,
+        3,
+        1,
+        3,
+        11,
+        0,
+        6,
+        4,
+        0,
+        4,
+        13,
+        1,
+        5,
+        7,
+        1,
+        12,
+        5,
+        3,
+        7,
+        14,
+        5,
+        14,
+        7,
+        2,
+        15,
+        6,
+        4,
+        6,
+        15,
+        0,
+        8,
+        10,
+        0,
+        13,
+        8,
+        1,
+        11,
+        9,
+        1,
+        9,
+        12,
+        3,
+        14,
+        11,
+        2,
+        10,
+        15,
+        9,
+        11,
+        14,
+        8,
+        15,
+        10,
+        5,
+        12,
+        14,
+        4,
+        15,
+        13,
+        9,
+        14,
+        12,
+        8,
+        13,
+        15
+      ],
+      "faceMaterials": [
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete"
+      ],
+      "sourceFaces": [
+        {
+          "componentId": "shell",
+          "faceId": 8,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 20,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 17,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 9,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 1,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 21,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 13,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 15,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 18,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 3,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 4,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 0,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 16,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 12,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 14,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 2,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 23,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 11,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 19,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 7,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 22,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "shell",
+          "faceId": 10,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        }
+      ],
+      "faceScopeKinds": [
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified"
+      ],
+      "winningVolumesM3": {
+        "concrete": 248
+      },
+      "unionVolumeM3": 248,
+      "nativeToleranceM": 6e-12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "opening",
+      "positions": [
+        2,
+        -4,
+        -4,
+        2,
+        -1,
+        -4,
+        2,
+        -4,
+        4,
+        2,
+        -1,
+        4,
+        2,
+        1,
+        -4,
+        2,
+        4,
+        -4,
+        2,
+        1,
+        4,
+        2,
+        4,
+        4,
+        6,
+        -4,
+        -4,
+        6,
+        -1,
+        -4,
+        6,
+        -4,
+        4,
+        6,
+        -1,
+        4,
+        6,
+        1,
+        -4,
+        6,
+        4,
+        -4,
+        6,
+        1,
+        4,
+        6,
+        4,
+        4
+      ],
+      "indices": [
+        0,
+        3,
+        1,
+        0,
+        1,
+        9,
+        0,
+        2,
+        3,
+        0,
+        10,
+        2,
+        1,
+        3,
+        11,
+        2,
+        11,
+        3,
+        4,
+        7,
+        5,
+        4,
+        5,
+        13,
+        4,
+        6,
+        7,
+        4,
+        14,
+        6,
+        5,
+        7,
+        15,
+        6,
+        15,
+        7,
+        0,
+        9,
+        8,
+        0,
+        8,
+        10,
+        1,
+        11,
+        9,
+        8,
+        9,
+        11,
+        2,
+        10,
+        11,
+        8,
+        11,
+        10,
+        4,
+        12,
+        14,
+        4,
+        13,
+        12,
+        5,
+        15,
+        13,
+        12,
+        13,
+        15,
+        6,
+        14,
+        15,
+        12,
+        15,
+        14
+      ],
+      "faceMaterials": [
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete"
+      ],
+      "sourceFaces": [
+        {
+          "componentId": "left",
+          "faceId": 9,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "left",
+          "faceId": 1,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "left",
+          "faceId": 8,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "left",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "left",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "left",
+          "faceId": 3,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 9,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 1,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 8,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 3,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "left",
+          "faceId": 0,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "left",
+          "faceId": 4,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "left",
+          "faceId": 7,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "left",
+          "faceId": 10,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "left",
+          "faceId": 2,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "left",
+          "faceId": 11,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 4,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 0,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 7,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 10,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 2,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "right",
+          "faceId": 11,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        }
+      ],
+      "faceScopeKinds": [
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified"
+      ],
+      "winningVolumesM3": {
+        "concrete": 192
+      },
+      "unionVolumeM3": 192,
+      "nativeToleranceM": 6e-12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "material-junction",
+      "positions": [
+        2,
+        -4,
+        -4,
+        2,
+        -4,
+        4,
+        2,
+        4,
+        -4,
+        2,
+        4,
+        4,
+        4,
+        -4,
+        -4,
+        6,
+        -4,
+        -4,
+        4,
+        -4,
+        4,
+        6,
+        -4,
+        4,
+        4,
+        4,
+        -4,
+        6,
+        4,
+        -4,
+        4,
+        4,
+        4,
+        6,
+        4,
+        4
+      ],
+      "indices": [
+        0,
+        4,
+        6,
+        0,
+        8,
+        4,
+        0,
+        6,
+        1,
+        0,
+        1,
+        3,
+        1,
+        6,
+        10,
+        0,
+        2,
+        8,
+        0,
+        3,
+        2,
+        2,
+        10,
+        8,
+        1,
+        10,
+        3,
+        2,
+        3,
+        10,
+        5,
+        7,
+        4,
+        5,
+        4,
+        9,
+        7,
+        6,
+        4,
+        5,
+        11,
+        7,
+        7,
+        11,
+        6,
+        9,
+        4,
+        8,
+        5,
+        9,
+        11,
+        9,
+        8,
+        11,
+        11,
+        10,
+        6,
+        11,
+        8,
+        10
+      ],
+      "faceMaterials": [
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock"
+      ],
+      "sourceFaces": [
+        {
+          "componentId": "concrete",
+          "faceId": 4,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 0,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 8,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 2,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 1,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 9,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 7,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 3,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "rock",
+          "faceId": 4,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "rock",
+          "faceId": 0,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "rock",
+          "faceId": 5,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "rock",
+          "faceId": 11,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "rock",
+          "faceId": 2,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "rock",
+          "faceId": 1,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "rock",
+          "faceId": 10,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "rock",
+          "faceId": 7,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "rock",
+          "faceId": 3,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "rock",
+          "faceId": 6,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        }
+      ],
+      "faceScopeKinds": [
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified"
+      ],
+      "winningVolumesM3": {
+        "concrete": 128,
+        "rock": 128
+      },
+      "unionVolumeM3": 256,
+      "nativeToleranceM": 6e-12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "terrain",
+      "positions": [
+        2,
+        -4,
+        -4,
+        2,
+        -4,
+        1.5,
+        2,
+        4,
+        -4,
+        2,
+        4,
+        1.5,
+        10,
+        -4,
+        -4,
+        10,
+        -4,
+        3.5,
+        10,
+        4,
+        -4,
+        10,
+        4,
+        3.5
+      ],
+      "indices": [
+        0,
+        1,
+        3,
+        0,
+        5,
+        1,
+        0,
+        3,
+        2,
+        0,
+        2,
+        6,
+        1,
+        7,
+        3,
+        2,
+        3,
+        7,
+        0,
+        4,
+        5,
+        0,
+        6,
+        4,
+        1,
+        5,
+        7,
+        4,
+        7,
+        5,
+        2,
+        7,
+        6,
+        4,
+        6,
+        7
+      ],
+      "faceMaterials": [
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock",
+        "rock"
+      ],
+      "sourceFaces": [
+        {
+          "componentId": "terrain",
+          "faceId": 8,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "terrain",
+          "faceId": 5,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "terrain",
+          "faceId": 9,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "terrain",
+          "faceId": 1,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "terrain",
+          "faceId": 3,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "terrain",
+          "faceId": 6,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "terrain",
+          "faceId": 4,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "terrain",
+          "faceId": 0,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "terrain",
+          "faceId": 2,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "terrain",
+          "faceId": 11,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "terrain",
+          "faceId": 7,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        },
+        {
+          "componentId": "terrain",
+          "faceId": 10,
+          "sourceMaterial": "rock",
+          "winningMaterial": "rock"
+        }
+      ],
+      "faceScopeKinds": [
+        "domain-cap",
+        "domain-cap",
+        "domain-cap",
+        "domain-cap",
+        "scope-unqualified",
+        "domain-cap",
+        "domain-cap",
+        "domain-cap",
+        "scope-unqualified",
+        "domain-cap",
+        "domain-cap",
+        "domain-cap"
+      ],
+      "winningVolumesM3": {
+        "rock": 416
+      },
+      "unionVolumeM3": 416,
+      "nativeToleranceM": 1e-11,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "partial-water-contact",
+      "positions": [
+        0,
+        -3,
+        -3,
+        2,
+        -3,
+        -3,
+        2,
+        -2,
+        -2,
+        2,
+        -1,
+        -2,
+        0,
+        -3,
+        0,
+        2,
+        -3,
+        0,
+        2,
+        -2,
+        0,
+        2,
+        -2,
+        2,
+        0,
+        3,
+        -3,
+        2,
+        2,
+        -2,
+        2,
+        3,
+        -3,
+        0,
+        3,
+        0,
+        2,
+        0,
+        0,
+        2,
+        2,
+        -0.5,
+        2,
+        2,
+        0,
+        2,
+        3,
+        0,
+        2,
+        2,
+        2,
+        6,
+        -2,
+        -2,
+        6,
+        -2,
+        2,
+        6,
+        2,
+        -2,
+        6,
+        2,
+        2
+      ],
+      "indices": [
+        7,
+        12,
+        6,
+        16,
+        14,
+        12,
+        7,
+        16,
+        12,
+        19,
+        2,
+        3,
+        17,
+        18,
+        2,
+        17,
+        2,
+        19,
+        18,
+        6,
+        2,
+        7,
+        6,
+        18,
+        17,
+        20,
+        18,
+        7,
+        18,
+        20,
+        19,
+        3,
+        9,
+        17,
+        19,
+        20,
+        19,
+        9,
+        20,
+        7,
+        20,
+        16,
+        20,
+        9,
+        13,
+        20,
+        13,
+        14,
+        16,
+        20,
+        14,
+        0,
+        1,
+        5,
+        0,
+        5,
+        4,
+        0,
+        10,
+        1,
+        0,
+        4,
+        11,
+        1,
+        3,
+        2,
+        1,
+        2,
+        5,
+        5,
+        2,
+        6,
+        1,
+        10,
+        3,
+        4,
+        5,
+        6,
+        4,
+        6,
+        12,
+        4,
+        12,
+        14,
+        0,
+        8,
+        10,
+        0,
+        11,
+        8,
+        8,
+        15,
+        10,
+        8,
+        11,
+        15,
+        10,
+        9,
+        3,
+        10,
+        15,
+        9,
+        15,
+        13,
+        9,
+        4,
+        15,
+        11,
+        4,
+        14,
+        15,
+        15,
+        14,
+        13
+      ],
+      "faceMaterials": [
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water"
+      ],
+      "sourceFaces": [
+        {
+          "componentId": "concrete",
+          "faceId": 8,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 9,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 8,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 1,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 4,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 0,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 11,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 2,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 1,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 10,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 7,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 3,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "water",
+          "faceId": 4,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 5,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 0,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 8,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 11,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 11,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 11,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 10,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 2,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 2,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 2,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 1,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 9,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 7,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 6,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 10,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 10,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 10,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 3,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 2,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 11,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        }
+      ],
+      "faceScopeKinds": [
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified"
+      ],
+      "winningVolumesM3": {
+        "concrete": 64,
+        "water": 36
+      },
+      "unionVolumeM3": 100,
+      "nativeToleranceM": 6e-12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "overlap-priority",
+      "positions": [
+        1,
+        -3,
+        -3,
+        3,
+        -3,
+        -3,
+        3,
+        -2,
+        -2,
+        3,
+        -2,
+        -1,
+        3,
+        -1,
+        -2,
+        1,
+        -3,
+        0,
+        2,
+        -2,
+        0,
+        2,
+        -2,
+        2,
+        3,
+        -3,
+        0,
+        3,
+        -2,
+        0,
+        1,
+        3,
+        -3,
+        3,
+        2,
+        -2,
+        3,
+        3,
+        -3,
+        3,
+        2,
+        -1,
+        2,
+        0,
+        0,
+        1,
+        3,
+        0,
+        2,
+        2,
+        0,
+        2,
+        2,
+        2,
+        2.6666666666666665,
+        2,
+        0,
+        3,
+        2,
+        -0.5,
+        3,
+        2,
+        0,
+        3,
+        3,
+        0,
+        6,
+        -2,
+        -2,
+        6,
+        -2,
+        2,
+        6,
+        2,
+        -2,
+        6,
+        2,
+        2
+      ],
+      "indices": [
+        7,
+        14,
+        6,
+        7,
+        6,
+        9,
+        17,
+        16,
+        14,
+        7,
+        17,
+        14,
+        17,
+        18,
+        16,
+        7,
+        25,
+        17,
+        17,
+        20,
+        18,
+        22,
+        2,
+        4,
+        22,
+        3,
+        2,
+        22,
+        4,
+        24,
+        23,
+        9,
+        3,
+        7,
+        9,
+        23,
+        7,
+        23,
+        25,
+        22,
+        23,
+        3,
+        22,
+        25,
+        23,
+        24,
+        4,
+        11,
+        24,
+        11,
+        13,
+        22,
+        24,
+        25,
+        25,
+        13,
+        19,
+        25,
+        19,
+        20,
+        17,
+        25,
+        20,
+        24,
+        13,
+        25,
+        0,
+        8,
+        5,
+        0,
+        5,
+        15,
+        0,
+        1,
+        8,
+        1,
+        2,
+        3,
+        1,
+        4,
+        2,
+        1,
+        3,
+        8,
+        0,
+        12,
+        1,
+        1,
+        12,
+        4,
+        5,
+        8,
+        6,
+        5,
+        6,
+        14,
+        8,
+        9,
+        6,
+        8,
+        3,
+        9,
+        0,
+        15,
+        10,
+        0,
+        10,
+        12,
+        10,
+        15,
+        21,
+        12,
+        11,
+        4,
+        10,
+        21,
+        12,
+        12,
+        21,
+        11,
+        21,
+        13,
+        11,
+        5,
+        14,
+        15,
+        15,
+        14,
+        16,
+        15,
+        16,
+        21,
+        21,
+        16,
+        18,
+        21,
+        19,
+        13,
+        21,
+        20,
+        19,
+        21,
+        18,
+        20
+      ],
+      "faceMaterials": [
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water",
+        "water"
+      ],
+      "sourceFaces": [
+        {
+          "componentId": "concrete",
+          "faceId": 8,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 9,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 8,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 3,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 0,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 4,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 0,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 2,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 4,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 11,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 1,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 7,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 10,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 7,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "water",
+          "faceId": 5,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 8,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 4,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 11,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 11,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 11,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 0,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 10,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 2,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 2,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 2,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 11,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 9,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 1,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 6,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 10,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 7,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 10,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 10,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 3,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 3,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 3,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 3,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 10,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 11,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        },
+        {
+          "componentId": "water",
+          "faceId": 2,
+          "sourceMaterial": "water",
+          "winningMaterial": "water"
+        }
+      ],
+      "faceScopeKinds": [
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified"
+      ],
+      "winningVolumesM3": {
+        "concrete": 64,
+        "water": 28
+      },
+      "unionVolumeM3": 92,
+      "nativeToleranceM": 6e-12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    },
+    {
+      "id": "identical-overlap-priority",
+      "positions": [
+        2,
+        -2,
+        -2,
+        2,
+        -2,
+        2,
+        2,
+        2,
+        -2,
+        2,
+        2,
+        2,
+        6,
+        -2,
+        -2,
+        6,
+        -2,
+        2,
+        6,
+        2,
+        -2,
+        6,
+        2,
+        2
+      ],
+      "indices": [
+        0,
+        1,
+        3,
+        0,
+        5,
+        1,
+        0,
+        3,
+        2,
+        0,
+        2,
+        6,
+        1,
+        7,
+        3,
+        2,
+        3,
+        7,
+        0,
+        4,
+        5,
+        0,
+        6,
+        4,
+        1,
+        5,
+        7,
+        4,
+        7,
+        5,
+        2,
+        7,
+        6,
+        4,
+        6,
+        7
+      ],
+      "faceMaterials": [
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete",
+        "concrete"
+      ],
+      "sourceFaces": [
+        {
+          "componentId": "concrete",
+          "faceId": 8,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 5,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 9,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 1,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 3,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 6,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 4,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 0,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 2,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 11,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 7,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        },
+        {
+          "componentId": "concrete",
+          "faceId": 10,
+          "sourceMaterial": "concrete",
+          "winningMaterial": "concrete"
+        }
+      ],
+      "faceScopeKinds": [
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified",
+        "scope-unqualified"
+      ],
+      "winningVolumesM3": {
+        "concrete": 64,
+        "water": 0
+      },
+      "unionVolumeM3": 64,
+      "nativeToleranceM": 6e-12,
+      "limitations": [
+        "Native CSG boundary is air-facing only within the supplied finite mesh model.",
+        "Domain/missing-geometry semantics require independent source qualification.",
+        "Component/face lineage does not establish canonical source-entity ownership."
+      ]
+    }
+  ]
+}

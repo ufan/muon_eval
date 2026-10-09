@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0",
+  "sourceRelease": "zhouning-lower-reservoir-dam@0.6.2+schema0.7.0",
+  "scenarios": [
+    {
+      "id": "low",
+      "fileSha256": "d186720d7a272cf35564c8cf99aedf9b62d4b1c80c1de894bd95fbf2e1f2aabc",
+      "contentSha256": "ad2214b191fb758a0445f82ec67981069e04a911dc162ed058d6711cb6fdb7cc"
+    },
+    {
+      "id": "mid",
+      "fileSha256": "227643236145b9e5dd172a12d6b7b62087737ece759c65b1a1decb8ea57d6d76",
+      "contentSha256": "66e1ebcf7331363665800420c3e0a710e9913fd8b0c55af4b020ce4f7505c92a"
+    },
+    {
+      "id": "high",
+      "fileSha256": "d4d031a319a68a4aeca1b24d327261a24a1863a17c3d19b3960e76b0d96c7577",
+      "contentSha256": "5d77d29d440e86c73c02165308bd22fb4ae8ae0751d0271b4d175705457664a9"
+    },
+    {
+      "id": "extreme",
+      "fileSha256": "3c463fb295fd3d2d8a36d14d7bd9abb2b6d388d9b57bb07aa4e277b42aede492",
+      "contentSha256": "b41874d1f34b5d3825598465afad7aa7e67aac9f47f1ed8b8808132761a670df"
+    }
+  ]
+}

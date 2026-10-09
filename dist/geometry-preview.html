@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compiled geometry preview</title>
+  <style>
+    * { box-sizing: border-box; } body { margin: 0; background: #09131d; color: #dce8ef; font: 14px system-ui, sans-serif; }
+    main { display: grid; grid-template-columns: 340px 1fr; height: 100dvh; }
+    aside { padding: 20px; overflow: auto; background: #12222e; } h1 { font-size: 21px; margin-top: 0; } p { line-height: 1.5; }
+    label { display: block; margin: 14px 0 5px; } select, input[type=number], input[type=text] { width: 100%; padding: 8px; background: #081722; color: inherit; border: 1px solid #416174; border-radius: 4px; }
+    button { margin-top: 12px; padding: 8px 12px; cursor: pointer; } #viewport { min-width: 0; min-height: 0; position: relative; }
+    canvas { display: block; } #status { color: #91d2ff; } table { width: 100%; border-collapse: collapse; } td, th { text-align: left; padding: 5px; border-bottom: 1px solid #284453; }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } .check { display: flex; gap: 8px; align-items: center; } #picked { overflow-wrap: anywhere; }
+    .projection-graph { position: relative; margin-top: 12px; }
+    #materialProjection, #assessmentProjection { width: 100%; height: auto; image-rendering: pixelated; }
+    .contribution-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+    .contribution-legend { overflow-wrap: anywhere; line-height: 1.5; }
+    @media (max-width: 760px) { main { grid-template-columns: 1fr; height: auto; } #viewport { height: 65dvh; } aside { order: 2; } }
+  </style>
+  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js"}}</script>
+</head>
+<body>
+  <main>
+    <aside>
+      <h1>Compiled geometry</h1>
+      <p>Inspect the published meshes and material paths for a fixed water-level scenario. This preview is separate from deployment assessment.</p>
+      <p id="status" role="status">Loading…</p>
+      <label for="release">Release</label><select id="release"></select>
+      <label for="scenario">Scenario</label><select id="scenario"></select>
+      <label class="check"><input id="air" type="checkbox"> Show cavity overlays</label>
+      <label class="check"><input id="virtual" type="checkbox"> Show reference geometry</label>
+      <button id="focus" type="button">Frame structures</button>
+      <label for="semanticTarget">Verified semantic target</label><select id="semanticTarget"><option value="">None</option></select>
+      <p id="semanticSummary"></p>
+      <p id="targetRay"></p>
+      <p>Target outlines show intersections with directly mapped compiled volumes. They do not imply material ownership or ROI significance.</p>
+      <label for="station">Reference station</label><select id="station"></select>
+      <div class="pair"><div><label for="azimuth">Azimuth (°)</label><input id="azimuth" type="number" value="180" min="0" max="360"></div>
+      <div><label for="elevation">Elevation (°)</label><input id="elevation" type="number" value="30" min="-90" max="90"></div></div>
+      <label for="length">Ray length (m)</label><input id="length" type="number" value="700" min="1" max="10000">
+      <button id="trace" type="button">Trace ray</button>
+      <p id="picked">Click a surface to inspect its component.</p>
+      <table><thead><tr><th>Material</th><th>Path (m)</th></tr></thead><tbody id="paths"></tbody></table>
+      <p id="column"></p>
+      <h2>Finite-model reference outlines</h2>
+      <label class="check"><input id="finiteConcrete" type="checkbox" checked> Concrete model–air reference · white</label>
+      <label class="check"><input id="finiteRock" type="checkbox" checked> Nearby rock model–air reference · orange</label>
+      <label class="check"><input id="finiteCreases" type="checkbox" checked> Include 30° geometric creases</label>
+      <p>Through-material geometry references, not certified physical envelopes. Known artificial terrain caps and incident edges are excluded. Structure/water boundaries and terrain beyond the finite model remain unresolved. These controls are independent of sampled depth diagnostics.</p>
+      <h2>Sampled boundary diagnostics</h2>
+      <label class="check"><input id="concreteEnvelope" type="checkbox" checked> Concrete sampled boundary · white</label>
+      <label class="check"><input id="rockEnvelope" type="checkbox" checked> Rock sampled boundary · orange</label>
+      <label class="check"><input id="envelopeDepthEdges" type="checkbox" checked> Include air-interface depth edges</label>
+      <p>Applied to both maps, using unsmoothed BVH material paths. Depth edges are sampled discontinuities, not CAD edges. Rock is limited to the published terrain volume.</p>
+      <h2>Material contribution contours</h2>
+      <label class="check"><input id="contributionVisible" type="checkbox" checked> Show numerical contribution contours</label>
+      <div id="contributionMaterials" aria-label="Materials for contribution contours"></div>
+      <label for="contributionQuantity">Contribution quantity</label><select id="contributionQuantity"><option value="material-column">Water-equivalent column (m.w.e.)</option><option value="material-path">Material path (m)</option></select>
+      <label for="contributionMode">Contour levels</label><select id="contributionMode"><option value="adaptive">Adaptive inspection · per graph</option><option value="physical">Explicit physical levels · same on both graphs</option></select>
+      <label for="contributionLevels">Explicit levels, increasing, comma-separated</label><input id="contributionLevels" type="text" placeholder="Enter levels in selected quantity units" disabled>
+      <p>Independent of envelope/depth diagnostics and colour scale. These are sampled material contributions, not geometric envelopes or detectable-signal claims. Adaptive levels differ by material and graph; use explicit levels for comparisons.</p>
+      <h2>Material projection</h2>
+      <p>Detector-local slope map of column density (m.w.e.), not predicted counts. Click a pixel to inspect its ray.</p>
+      <div class="pair"><div><label for="halfAngle">Half field angle (°)</label><input id="halfAngle" type="number" value="30" min="1" max="88"></div>
+      <div><label for="projectionBins">Samples per axis</label><select id="projectionBins"><option value="25">25</option><option value="65">65</option></select></div></div>
+      <div class="projection-graph"><canvas id="materialProjection" width="250" height="250" aria-label="Column-density map; horizontal slope right, vertical slope up"></canvas><svg id="materialContributionOverlay" class="contribution-overlay" aria-hidden="true"></svg><svg id="materialReferenceOverlay" class="contribution-overlay" aria-hidden="true"></svg></div>
+      <p id="materialReferenceLegend" role="status"></p>
+      <p id="materialReferenceHover"></p>
+      <div id="materialContributionLegend" class="contribution-legend" role="status"></div>
+      <p id="projectionStatus" role="status"></p>
+      <p id="projectionPixel"></p>
+      <label for="projectionScale">Color scale</label><select id="projectionScale"><option value="adaptive">Adaptive · robust logarithmic</option><option value="fixed">Fixed · linear 0–2000 m.w.e.</option></select>
+      <p id="projectionScaleLegend"></p>
+      <p>Horizontal: local right; vertical: local up. Adaptive colors are normalized per view; use fixed scale for comparisons.</p>
+      <button id="exportProjection" type="button" disabled>Export projection JSON</button>
+      <button id="exportMaterialContours" type="button" disabled>Export material contour JSON</button>
+      <button id="exportMaterialPatterns" type="button" disabled>Export all material-map pattern layers v1</button>
+      <h2>Detector assessment</h2>
+      <p>Shared main-app quick-response model on the published BVH geometry. Approximate counts, not a calibrated performance prediction.</p>
+      <p id="assessmentDevice"></p>
+      <div class="pair"><div><label for="assessmentExposure">Exposure (days)</label><input id="assessmentExposure" type="number" value="30" min="1" max="3650"></div>
+      <div><label for="assessmentAngular">Flux model</label><select id="assessmentAngular"><option value="gaisser">Modified Gaisser</option><option value="cos2">cos² approximation</option></select></div></div>
+      <label for="assessmentMode">Map</label><select id="assessmentMode"><option value="counts">Expected counts</option><option value="transmission">Transmission</option></select>
+      <label class="check"><input id="responseContours" type="checkbox" checked> Numerical response contours · green</label>
+      <label for="responseContext">Response contour field</label><select id="responseContext"><option value="through">Raw transmission</option><option value="smoothed">Display-smoothed transmission (approximation)</option><option value="normalized">Raw N/Nopen (zero support invalid)</option><option value="counts">Raw expected counts</option><option value="open-sky">Open-sky expected counts (acceptance + flux)</option></select>
+      <label for="responseLevels">Fixed response levels, increasing</label><input id="responseLevels" type="text" value="0.01, 0.1, 0.5, 0.9">
+      <div class="projection-graph"><canvas id="assessmentProjection" width="250" height="250" aria-label="Detector count or transmission map in local slope coordinates"></canvas><svg id="assessmentContributionOverlay" class="contribution-overlay" aria-hidden="true"></svg><svg id="assessmentResponseOverlay" class="contribution-overlay" aria-hidden="true"></svg><svg id="assessmentReferenceOverlay" class="contribution-overlay" aria-hidden="true"></svg></div>
+      <p id="assessmentReferenceLegend" role="status"></p><p id="assessmentReferenceHover"></p>
+      <p id="responseLegend" role="status"></p><p id="responseFeatureContext"></p>
+      <div id="assessmentContributionLegend" class="contribution-legend" role="status"></div>
+      <p id="assessmentStatus" role="status"></p>
+      <p id="assessmentSummary"></p>
+      <p id="assessmentLegend"></p>
+      <p id="assessmentPixel"></p>
+      <button id="exportAssessment" type="button" disabled>Export assessment JSON</button>
+      <button id="exportAssessmentContours" type="button" disabled>Export assessment contour JSON</button>
+      <button id="exportAssessmentPatterns" type="button" disabled>Export all assessment pattern layers v1</button>
+      <h2>Site / pose comparison</h2>
+      <p>Save completed assessments before changing site or pose. The same raw indicator definitions are used for every row. No automatic ranking, significance, safety or access score.</p>
+      <label for="comparisonMaterial">Material ROI</label><select id="comparisonMaterial"></select>
+      <label for="comparisonThreshold">ROI minimum path (m)</label><input id="comparisonThreshold" type="number" min="0" value="0.15" step="0.05">
+      <button id="captureComparison" type="button" disabled>Add current assessment</button>
+      <button id="clearComparison" type="button">Clear saved rows</button>
+      <button id="exportComparison" type="button" disabled>Export reproducible comparison v1</button>
+      <label for="importComparison">Replay comparison JSON</label><input id="importComparison" type="file" accept="application/json,.json">
+      <div id="comparisonSummary" role="status"></div>
+      <p>Contour JSON v1 includes selected raw fields, exact levels, slope lines, snapshots and completeness. Visibility/styles are separate. Hidden layers still export selected scientific fields; invalid levels prevent contour export.</p>
+      <p>The assessment uses the full device field, not the material-map half angle. Counts include detector acceptance and resolution smoothing; readouts/export retain raw values. No ROI significance or continuous-water approximation is enabled.</p>
+      <p>Water levels are fixed to published scenarios. Cavity overlays and reference geometry are display options; they do not change material paths.</p>
+      <p><a href="./" style="color:#91d2ff">Back to deployment app</a></p>
+    </aside>
+    <div id="viewport" aria-label="Three-dimensional geometry preview"></div>
+  </main>
+  <script type="module" src="./modules/geometry-preview.js"></script>
+</body>
+</html>
