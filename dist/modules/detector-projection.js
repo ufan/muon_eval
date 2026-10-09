@@ -1,3 +1,4 @@
+// @ts-check
 import { integratedSurfaceFlux, minimumMuonEnergy, RESPONSE_MODEL_VERSION } from './muon-response.js';
 
 export function nativeAxisBins(n, device, cache = new Map()) {

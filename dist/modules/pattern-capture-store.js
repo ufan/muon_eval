@@ -1,3 +1,4 @@
+// @ts-check
 // Completed scientific inputs are immutable; only result.display is view state.
 // Detach once per result/reference identity, then share the detached scientific
 // arrays between repeated rows. JSON exports still contain complete rows.

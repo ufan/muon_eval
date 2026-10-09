@@ -1,3 +1,4 @@
+// @ts-check
 // View-only SVG paths; numerical extraction and graph mapping remain separate.
 export function contributionPathData(lines) {
   return lines.map(line => line.map(([x, y], i) => `${i ? 'L' : 'M'}${x},${y}`).join(' ')).join(' ');

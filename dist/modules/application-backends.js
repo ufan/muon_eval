@@ -1,3 +1,4 @@
+// @ts-check
 // Bounded dependency assembly, not a plugin registry or a new calculation core.
 import { createLegacyGeometryAdapter } from './legacy-geometry-adapter.js';
 import { createMainAssessment, MAIN_TRACE_SETTINGS } from './main-assessment.js';

@@ -1,3 +1,4 @@
+// @ts-check
 import { defaultAssessmentDevice, defaultAssessmentResponse } from './detector-defaults.js';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function deriveDeviceGeometry(DEVICE) {

@@ -1,3 +1,4 @@
+// @ts-check
 import { adaptDamSpecV07 } from './dam-spec-v07.js';
 import { validateBundle, validateTerrainHeader, verifySha256 } from './dataset-validation.js';
 

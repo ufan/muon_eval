@@ -1,3 +1,4 @@
+// @ts-check
 import { createCoordinateTransform } from './coordinates.js';
 import { datasetIdentity, validateV07References } from './dataset-validation.js';
 

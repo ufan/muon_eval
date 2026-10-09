@@ -1,3 +1,4 @@
+// @ts-check
 // Plain model-coordinate directions; no dataset, renderer or application dependency.
 export const degreesToRadians=v=>v*(Math.PI/180);
 const normalized=v=>{const scale=1/(Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z)||1);return{x:v.x*scale,y:v.y*scale,z:v.z*scale};};

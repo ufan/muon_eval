@@ -1,3 +1,4 @@
+// @ts-check
 // Platform assessment defaults, independent of any dam dataset or instrument
 // sidecar. They are approximations, not a released instrument calibration.
 export function defaultAssessmentDevice() {

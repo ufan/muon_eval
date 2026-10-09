@@ -1,3 +1,4 @@
+// @ts-check
 // Bounded compatibility mapping: these example poses belong to the legacy dataset.
 export const LEGACY_PLAN_FILENAME='周宁缪子部署自适应射线方案.json';
 export function legacyDefaultStations(dataset,geometry){

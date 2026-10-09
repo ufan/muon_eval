@@ -1,3 +1,4 @@
+// @ts-check
 import { createPatternSnapshot, createPatternField } from './projection-pattern-contract.js';
 import { prepareProjectionPattern, materialFieldFromProjection } from './projection-pattern-fields.js';
 import { extractContributionContours } from './contribution-contours.js';

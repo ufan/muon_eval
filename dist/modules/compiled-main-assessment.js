@@ -1,3 +1,4 @@
+// @ts-check
 import { createCompiledAssessmentPass } from './compiled-assessment.js';
 import { detectorBasis, slopeDirection } from './detector-pose.js';
 

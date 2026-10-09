@@ -1,3 +1,4 @@
+// @ts-check
 // Native analytic qualification backend. Uses published terrain arrays, not mesh/BVH.
 // It is deliberately separate from the production UI until scenario/mesh validation lands.
 import { sampleTerrainModel } from './dataset-loader.js';

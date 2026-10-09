@@ -1,0 +1,19 @@
+{
+  "name": "muon-dam-eval",
+  "private": true,
+  "type": "module",
+  "description": "Development tooling only. The app in dist/ runs without a build step or Node.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"tests/*.test.mjs\"",
+    "typecheck": "tsc -p .",
+    "check:syntax": "node --check dist/app.js",
+    "check:geometry": "node scripts/check-geometry-conformance.mjs && node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0 && node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0 --backend compiled && node scripts/check-semantic-mapping.mjs",
+    "check": "npm run check:syntax && npm run typecheck && npm test && npm run check:geometry"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

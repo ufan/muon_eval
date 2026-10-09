@@ -1,3 +1,4 @@
+// @ts-check
 // Bounded glTF 2.0/GLB decoder for static, indexed triangle releases.
 // Contract: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
 // Decoded buffers belong to computation and are also consumed directly by the view.

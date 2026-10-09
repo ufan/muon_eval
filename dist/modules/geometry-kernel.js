@@ -1,3 +1,4 @@
+// @ts-check
 import { sampleTerrainModel } from './dataset-loader.js';
 
 const EPS = 1e-6;

@@ -1,3 +1,4 @@
+// @ts-check
 // Bounded schema-0.6 compatibility adapter, not a generic geometry backend.
 import { createGeometryKernel } from './geometry-kernel.js';
 import { createDdaRayTracer } from './dda-ray-tracer.js';

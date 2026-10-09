@@ -4,3 +4,4 @@ site-v*.tar.gz
 .DS_Store
 Thumbs.db
 dist/data/derived-interfaces/
+node_modules/

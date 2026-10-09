@@ -1,3 +1,4 @@
+// @ts-check
 // Attribution comes only from declared source IDs, not names, spatial guesses
 // or connectivity relations. Aggregate geometry requires compiler provenance.
 export function auditSemanticMappings(components, geometry) {

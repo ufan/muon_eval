@@ -1,3 +1,4 @@
+// @ts-check
 // Explicit release/backend selection. No fallback to another scientific backend.
 export function resolveApplicationSelection(registry, search = '') {
   const params = new URLSearchParams(search);

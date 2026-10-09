@@ -1,3 +1,4 @@
+// @ts-check
 // No legacy tracing/response formulas: adapt the completed shared-core pass.
 export function adaptLegacyPatternResult({ pass, identity, materials, station, device, response, environment, traceSettings, directionToModel }) {
   if (typeof directionToModel !== 'function') throw new Error('Explicit legacy direction-frame adapter required');

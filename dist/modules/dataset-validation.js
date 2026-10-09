@@ -1,3 +1,4 @@
+// @ts-check
 export function datasetIdentity(spec) {
   const identity = spec.dataset || spec;
   for (const key of ['dataset_id', 'dataset_version', 'release_id', 'schema_id', 'schema_version']) {

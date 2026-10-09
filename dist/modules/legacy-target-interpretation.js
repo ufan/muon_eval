@@ -1,3 +1,4 @@
+// @ts-check
 // Legacy target heuristics, not canonical entity ownership or physical interfaces.
 import { minimumMuonEnergy, countSignificance } from './muon-response.js';
 

@@ -1,3 +1,4 @@
+// @ts-check
 import { materialFieldFromProjection, mapPatternOverlayToGraph } from './projection-pattern-fields.js';
 import { extractContributionContours } from './contribution-contours.js';
 import { responsePattern } from './response-patterns.js';

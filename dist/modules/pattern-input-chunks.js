@@ -1,3 +1,4 @@
+// @ts-check
 import { deferPatternWork } from './pattern-timing.js';
 
 // Bound structured-clone work with small native-cloned pixel batches. This is

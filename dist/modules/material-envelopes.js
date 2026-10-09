@@ -1,3 +1,4 @@
+// @ts-check
 // Boundary profiles come from winning BVH material intervals, not rendering.
 export function materialBoundaryProfile(trace) {
   const profile = {};

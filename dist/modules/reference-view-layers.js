@@ -1,3 +1,4 @@
+// @ts-check
 import { mapPatternOverlayToGraph } from './projection-pattern-fields.js';
 import { contributionPathData } from './contribution-view.js';
 

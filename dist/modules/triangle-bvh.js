@@ -1,3 +1,4 @@
+// @ts-check
 // CPU geometry only. BufferGeometry and scene objects are never query inputs.
 const rayBox = (origin, direction, min, max, tolerance) => {
   let near = 0, far = Infinity;

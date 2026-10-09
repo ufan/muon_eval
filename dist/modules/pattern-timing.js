@@ -1,3 +1,4 @@
+// @ts-check
 // Diagnostic User Timing entries only; never part of scientific results.
 export function timePatternWork(name, work) {
   const start = performance.now();

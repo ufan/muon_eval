@@ -1,3 +1,4 @@
+// @ts-check
 // Existing quick-assessment formulas, extracted without recalibration.
 // Flux units: cm^-2 s^-1 sr^-1 (integrated); energy: GeV; column: m.w.e.
 export const RESPONSE_MODEL_VERSION = 'legacy-quick-response@1.0.0';

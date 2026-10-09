@@ -1,3 +1,4 @@
+// @ts-check
 // Display-only mapping: never rescale scientific pixel values.
 export function projectionColorScale(values, mode = 'adaptive') {
   if (!['adaptive', 'fixed'].includes(mode) || !values.every(value => Number.isFinite(value) && value >= 0)) throw new Error('Invalid projection color scale');

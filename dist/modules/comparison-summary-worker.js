@@ -1,3 +1,4 @@
+// @ts-check
 import { createImmutablePatternComparisonEvaluator } from './pattern-comparison.js';
 const entries = new Map(), compare = createImmutablePatternComparisonEvaluator();
 self.onmessage = ({ data }) => {

@@ -1,3 +1,4 @@
+// @ts-check
 // Three.js' on-demand pattern: coalesce invalidations and allow change events
 // during controls.update() to schedule the next damping frame.
 export function createDemandRender(render, schedule = requestAnimationFrame) {

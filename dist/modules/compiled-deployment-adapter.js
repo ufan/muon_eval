@@ -1,3 +1,4 @@
+// @ts-check
 import { enclosingCompiledRayLength } from './compiled-main-assessment.js';
 
 // This sidecar explicitly accompanies the bounded v0.7 profile in doc_frame.

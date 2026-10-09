@@ -1,0 +1,15 @@
+{
+  // Type-checks only files that opt in with a first-line `// @ts-check`; no output is emitted.
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["es2023", "dom", "dom.iterable", "webworker"],
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true
+  },
+  "include": ["dist/app.js", "dist/modules/**/*.js"]
+}

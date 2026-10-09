@@ -1,3 +1,4 @@
+// @ts-check
 // Affine transforms are shared by adapters and computation; no rendering dependency.
 export function createCoordinateTransform(matrix) {
   if (!Array.isArray(matrix) || matrix.length !== 3 || matrix.some(row => !Array.isArray(row) || row.length !== 4 || row.some(x => !Number.isFinite(x)))) {

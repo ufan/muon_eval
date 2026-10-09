@@ -1,3 +1,4 @@
+// @ts-check
 import { createPatternSnapshot, createPatternField, createPatternOverlay } from './projection-pattern-contract.js';
 import { nativeAxisBins } from './detector-projection.js';
 

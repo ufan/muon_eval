@@ -1,3 +1,4 @@
+// @ts-check
 import { prepareNumericPattern } from './numeric-pattern-work.js';
 import { createPatternInputAssembler } from './pattern-input-chunks.js';
 const inputs = new Map();
