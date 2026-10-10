@@ -58,23 +58,23 @@ Open `http://127.0.0.1:8765/`. Do not open `dist/index.html` directly: browsers 
 
 ## Checks
 
+Layered test commands ([test strategy](docs/specs/TEST_STRATEGY.md)); no npm packages are needed:
+
 ```bash
-node --test tests/*.test.mjs
-node --check dist/app.js
-node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0 --backend compiled
-node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2
-node scripts/check-semantic-mapping.mjs
-python3 scripts/check-dataset-release.py   # needs Python jsonschema>=4.10 (development only)
-git diff --check
+npm test                    # L0 syntax/whitespace + L1 unit + L2 contract, ~5 s; every commit
+npm run test:data           # L3 dataset releases, conformance, semantic mapping (needs Python jsonschema>=4.10)
+npm run test:integration    # L4 whole calculation chain on real datasets, ~25 s; before push
+npm run test:browser        # L5 main app, compiled default and legacy release; minutes
+npm run test:all            # everything above
 ```
 
 Detailed rules are in `AGENTS.md`.
 
-Browser acceptance (development needs Playwright/Chromium; pass existing paths with `--playwright` and `--chromium`):
+Browser acceptance needs Playwright and Chromium (development only). Point to existing installs with `PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs` and `CHROMIUM_PATH=/path/to/chromium`, or pass `--playwright`/`--chromium` to the scripts directly.
 
-- `node scripts/check-main-compiled-app.mjs`: default compiled app; all four frozen scenarios, explicit switch to legacy, capability gates, model coordinates, same-result updates, exports, desktop and narrow screens. Screenshots go to a temporary directory.
-- `node scripts/check-main-app.mjs`: legacy release (`?dataset=zhouning-lower-reservoir-dam%400.6.2&backend=legacy`); desktop/narrow, layers, fast pose changes, devices/stations, persistence and exports.
-- `node scripts/check-compiled-preview.mjs`: standalone preview. Its finite-model reference step needs the derived assets in `dist/data/derived-interfaces/`, generated with the `manifold3d` Python package (see [geometry references](docs/specs/GEOMETRY_REFERENCES.md#offline-interface-construction)).
+- `scripts/check-main-compiled-app.mjs`: default compiled app; all four frozen scenarios, explicit switch to legacy, capability gates, model coordinates, same-result updates, exports, desktop and narrow screens. Screenshots go to a temporary directory.
+- `scripts/check-main-app.mjs`: legacy release (`?dataset=zhouning-lower-reservoir-dam%400.6.2&backend=legacy`); desktop/narrow, layers, fast pose changes, devices/stations, persistence and exports.
+- `npm run test:browser:preview` (`scripts/check-compiled-preview.mjs`): standalone preview. Its finite-model reference step needs the derived assets in `dist/data/derived-interfaces/`, generated with the `manifold3d` Python package (see [geometry references](docs/specs/GEOMETRY_REFERENCES.md#offline-interface-construction)).
 
 ## Selecting a release, backend and scenario
 

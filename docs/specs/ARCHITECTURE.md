@@ -49,7 +49,7 @@ The formulas, parameters, UI outputs and limits of each step are in the [calcula
 - Device and candidate-station state is stored in `localStorage`, stations per full release ID.
 - `dist/modules/dataset-loader.js` loads releases by full release ID from `datasets/registry.json`; v0.7 releases go through `dataset-validation.js` and `dam-spec-v07.js` into a versioned IR. `coordinates.js` provides independent forward/inverse point and direction transforms.
 - `compiled-glb.js` decodes the GLB of a frozen scenario, `triangle-bvh.js` builds a pure-CPU spatial index over computation-owned model-coordinate buffers, and `compiled-mesh-runtime.js` provides point material classification, material segments and density integration. `compiled-geometry-view.js` uses the same position/index arrays directly; display toggles never enter calculation. `geometry-preview.html` is the standalone preview entry.
-- `geometry-v07-qualification.js` is an analytic qualification backend for native v0.7 (arch sweeps, structural clipping, filled scenarios, upstream seed connectivity), using compiled terrain sampling; it does not replace production geometry. The import schema gate is `scripts/check-dataset-release.py`; HTTP loading and failure-path tests are in `tests/dataset-v07.test.mjs`.
+- `geometry-v07-qualification.js` is an analytic qualification backend for native v0.7 (arch sweeps, structural clipping, filled scenarios, upstream seed connectivity), using compiled terrain sampling; it does not replace production geometry. The import schema gate is `scripts/check-dataset-release.py`; HTTP loading and failure-path tests are in `tests/data/dataset-v07.test.mjs`.
 - Legacy material point classification is provided by `dist/modules/geometry-kernel.js`, falling back to far-field terrain outside the near field. The control-point and 200-reference-ray regression entry is `scripts/check-geometry-conformance.mjs`; its targets are resolved from the dataset registry, not bound to a version directory.
 
 ## Current geometry backends and integration boundaries
@@ -64,7 +64,7 @@ The formulas, parameters, UI outputs and limits of each step are in the [calcula
 
 The legacy environment supports only a variable `upstream` and a dataset-fixed `downstream`; other environment fields, non-finite water levels, non-legacy datasets and unsupported coordinate conventions fail closed, without faking full hydraulic connectivity or continuous compiled scenarios. One preview/final calculation calls coordinates, classification/tracing, metadata and pattern adaptation through the same bound context; display controls never enter the tracer. Direction arithmetic in the pure detector-pose module keeps the old Vector3 operation order without a Three.js dependency; legacy scene geometry transforms belong to the view.
 
-Traversal keeps the entry offset, three-point sampling, up to eight subdivision levels, per-material cell merging and the 10,000-iteration guard. It therefore remains a legacy approximation, not exact interface tracing; missed thin structures, cell merging that ignores target labels and the historical guard behaviour were not changed in the extraction. `tests/dda-ray-tracer.test.mjs` verifies real reference directions, boundary/reverse/parallel grids, different water levels, full 25/65 projections and dependency boundaries against frozen test baselines. Test baselines live only in `tests/fixtures` and are never referenced at runtime.
+Traversal keeps the entry offset, three-point sampling, up to eight subdivision levels, per-material cell merging and the 10,000-iteration guard. It therefore remains a legacy approximation, not exact interface tracing; missed thin structures, cell merging that ignores target labels and the historical guard behaviour were not changed in the extraction. `tests/integration/dda-ray-tracer.test.mjs` verifies real reference directions, boundary/reverse/parallel grids, different water levels, full 25/65 projections and dependency boundaries against frozen test baselines. Test baselines live only in `tests/fixtures` and are never referenced at runtime.
 
 The registry distinguishes different schemas of the same data version by full release ID. The loader verifies source/manifest/asset digests, scenarios and cross-references; the main app first resolves the full release/backend/scenario, then calls `loadDataset(releaseId)`. `loadDefaultDataset` is kept only for legacy compatibility calls and is not used for main-app assembly. Control points and reference rays are based on the dataset resolved from the registry.
 
@@ -80,7 +80,7 @@ Reproduction entry points (no single-run scores or performance logs are kept her
 
 ```sh
 python3 scripts/check-dataset-release.py
-node --test tests/dataset-v07.test.mjs tests/compiled-mesh.test.mjs
+node --test tests/data/dataset-v07.test.mjs tests/data/compiled-mesh.test.mjs
 node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2
 node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0
 node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0 --backend compiled
@@ -125,7 +125,7 @@ The main controller consumes only the createSession/projection/advance/complete 
 
 The UI disables, from capabilities, the unsupported continuous water level, legacy targets/significance, coloured internal proxies and flux cloud. Model coordinates and scientific results never use Three.js objects; views consume only buffers and same-result segments. Switching release/scenario reloads the full page, clearing old tasks; station storage is isolated per release ID and device configuration is independent. The legacy plan export format is kept; the compiled-deployment-snapshot v0.1 records source, assets, model domain, scenario, device and central ray, without claiming full plan save/load.
 
-Both backends, the four scenarios, rejection paths and numerical consistency are tested in `tests/main-compiled-backend.test.mjs`; HTTP acceptance is `scripts/check-main-compiled-app.mjs` (default compiled app) and `scripts/check-main-app.mjs` (legacy release). Material points and reference rays keep using the release conformance thresholds; passing the P95 threshold does not mean zero maximum error or a certified physical domain.
+Both backends, the four scenarios, rejection paths and numerical consistency are tested in `tests/integration/main-compiled-backend.test.mjs`; HTTP acceptance is `scripts/check-main-compiled-app.mjs` (default compiled app) and `scripts/check-main-app.mjs` (legacy release). Material points and reference rays keep using the release conformance thresholds; passing the P95 threshold does not mean zero maximum error or a certified physical domain.
 
 ## Main-app source entry points
 

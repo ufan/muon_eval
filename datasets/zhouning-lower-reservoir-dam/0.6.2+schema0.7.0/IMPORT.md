@@ -9,9 +9,9 @@ This directory holds the release package's authoritative JSON, frozen schemas, e
 
 ```bash
 python3 scripts/check-dataset-release.py --archive archive/zhouning-dam-spec_v0.6.2+schema0.7.0_20261005_full.zip
-node --test tests/dataset-v07.test.mjs
+node --test tests/data/dataset-v07.test.mjs
 node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0
-node --test tests/compiled-mesh.test.mjs
+node --test tests/data/compiled-mesh.test.mjs
 node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0 --backend compiled
 ```
 

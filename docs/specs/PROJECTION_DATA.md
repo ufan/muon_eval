@@ -12,7 +12,7 @@ Related: [Geometry reference methods and artifacts](GEOMETRY_REFERENCES.md) · [
 
 ## Calculation contracts
 
-Implemented and validated by `dist/modules/projection-pattern-contract.js` and `tests/projection-pattern-contract.test.mjs`. These are additive, pure data constructors; existing preview results and v0.1.0 exports are unchanged. This is not a general deployment-plan schema.
+Implemented and validated by `dist/modules/projection-pattern-contract.js` and `tests/unit/projection-pattern-contract.test.mjs`. These are additive, pure data constructors; existing preview results and v0.1.0 exports are unchanged. This is not a general deployment-plan schema.
 
 ### Calculation identity
 
@@ -52,7 +52,7 @@ For an injected backend that does not supply contributions, adapters expose `mat
 
 ### Verification
 
-`tests/material-contributions.test.mjs` independently evaluates the previous total formula and verifies priority overlap, arbitrary `test-alloy`, thin steel, unhit/air paths, inside origins, zero/truncated rays, detached maps, nine rays for nine pixels, unchanged raw/display response, and JSON round trips. Existing material/assessment regression tests verify column accounting and same-trace copies for all four published scenarios (both response models in the assessment test).
+`tests/integration/material-contributions.test.mjs` independently evaluates the previous total formula and verifies priority overlap, arbitrary `test-alloy`, thin steel, unhit/air paths, inside origins, zero/truncated rays, detached maps, nine rays for nine pixels, unchanged raw/display response, and JSON round trips. Existing material/assessment regression tests verify column accounting and same-trace copies for all four published scenarios (both response models in the assessment test).
 
 ## Numerical contour extraction
 
@@ -92,7 +92,7 @@ The zero-valued overlay tolerance describes exact constant/range tests, not zero
 
 ### Library basis
 
-Use pinned offline D3-contour 4.0.2 rather than custom marching squares. The [official API](https://d3js.org/d3-contour/contour) defines centers at (i+0.5,j+0.5); subtract 0.5 and map through actual slope centers. The [pinned source](https://github.com/d3/d3-contour/blob/v4.0.2/src/contours.js) uses fixed saddle connectivity, not an asymptotic decider. Preserve ambiguity warnings and mask/hull filtering; padding closures are not physical envelopes. Attribution and licenses remain in dist/vendor/d3-contour/. Reproduce numerical checks with scripts/benchmark-projection-contours.mjs and tests/contour-benchmark.test.mjs.
+Use pinned offline D3-contour 4.0.2 rather than custom marching squares. The [official API](https://d3js.org/d3-contour/contour) defines centers at (i+0.5,j+0.5); subtract 0.5 and map through actual slope centers. The [pinned source](https://github.com/d3/d3-contour/blob/v4.0.2/src/contours.js) uses fixed saddle connectivity, not an asymptotic decider. Preserve ambiguity warnings and mask/hull filtering; padding closures are not physical envelopes. Attribution and licenses remain in dist/vendor/d3-contour/. Reproduce numerical checks with scripts/benchmark-projection-contours.mjs and tests/contract/contour-benchmark.test.mjs.
 
 ## Graph mapping
 
@@ -124,7 +124,7 @@ These are additive v0.1.0 result metadata and pattern adapters, distinct from th
 
 ## Contour export and replay
 
-Implementation: `dist/modules/contribution-export.js`; validation/replay tests: `tests/contribution-export.test.mjs`. This is a numerical-pattern format, not a deployment plan or geometry release.
+Implementation: `dist/modules/contribution-export.js`; validation/replay tests: `tests/integration/contribution-export.test.mjs`. This is a numerical-pattern format, not a deployment plan or geometry release.
 
 ### Download and compatibility
 

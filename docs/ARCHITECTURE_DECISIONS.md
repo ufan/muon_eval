@@ -32,7 +32,7 @@ Last updated: 2026-10-10
 | 020 | Multi-station view composes per-station results | Accepted (priority) / Proposed (design) |
 | 021 | Simulated multi-projection reconstruction as a separate pipeline | Proposed |
 | 022 | A living domain model separate from the glossary | Accepted |
-| 023 | Layered, lightweight test-driven development | Proposed |
+| 023 | Layered, lightweight test-driven development | Accepted |
 
 ---
 
@@ -203,7 +203,7 @@ DD4hep XML does not replace the strict JSON contract: Compact XML has no fixed s
 
 **Status:** Accepted, current practice; planned to be superseded by ADR-004 (migrated from `ARCHITECTURE.md` "main-app source entry points")
 
-**Decision.** Native ES modules live directly in `dist/modules`; there is no separate `src/` mirror and no build step. The module ownership table in [`specs/MODULE_BOUNDARIES.md`](specs/MODULE_BOUNDARIES.md) defines which module owns what and which dependencies are forbidden; `tests/main-architecture.test.mjs` enforces it.
+**Decision.** Native ES modules live directly in `dist/modules`; there is no separate `src/` mirror and no build step. The module ownership table in [`specs/MODULE_BOUNDARIES.md`](specs/MODULE_BOUNDARIES.md) defines which module owns what and which dependencies are forbidden; `tests/integration/main-architecture.test.mjs` enforces it.
 
 ## ADR-014 Structural reference lines: material-qualified mesh contours
 
@@ -341,7 +341,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## ADR-023 Layered, lightweight test-driven development
 
-**Status:** Proposed (owner preference 2026-10-10: TDD preferred but not heavy)
+**Status:** Accepted (owner, 2026-10-10); implemented as layered npm scripts and test directories
 
 **Context.** The Node suite has 34 files (about 32 s in parallel, 90 s sequentially): most are fast pure-function tests, a handful load real datasets and take 3–18 s each, and browser acceptance takes minutes. There is no single command, no layering and no record of which tests to run when.
 
@@ -356,7 +356,6 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 ## Open questions
 
 - **OQ-2 UI framework choice** (Preact vs Svelte), decided when ADR-004 starts.
-- **OQ-8 Continuous integration.** Run the layers automatically (e.g. GitHub Actions: L0–L2 on every push, L4 on pull requests, L3/L5 on data or UI changes), or keep them local for now?
 
 ## Resolved questions
 
@@ -368,9 +367,11 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 | OQ-5 Generic terminology | Keep "dataset" + `kind`; generalise `AGENTS.md`/`CONTEXT.md` now | ADR-016, FR-K9 |
 | OQ-6 Dataset directory move | Move now | ADR-018 |
 | OQ-7 Multi-station overview priority | Ahead of scan performance | ADR-020 |
+| OQ-8 Continuous integration | Keep tests local for now | ADR-023, TEST_STRATEGY |
 
 ## Change log
 
+- 2026-10-10: ADR-023 accepted; OQ-8 resolved (local tests only).
 - 2026-10-10: ADR-023 layered test strategy; OQ-8 continuous integration.
 - 2026-10-10: Windows launcher scripts (`serve.ps1`, `.cmd`) removed; references updated in ADR-004 and ADR-018.
 - 2026-10-10: ADR-022 living domain model.

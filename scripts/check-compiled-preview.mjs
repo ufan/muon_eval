@@ -15,7 +15,9 @@ import { replayPatternLayerExport } from '../dist/modules/pattern-layer-export.j
 
 const args = process.argv.slice(2);
 if (args.length && (args.length !== 2 || args[0] !== '--playwright')) throw new Error('Usage: node scripts/check-compiled-preview.mjs [--playwright /path/to/playwright/index.mjs]');
-const { chromium } = await import(args[1] ? pathToFileURL(args[1]).href : 'playwright');
+// Environment fallback lets `npm run test:browser:preview` locate an existing Playwright/Chromium.
+const playwrightModule = args[1] ?? process.env.PLAYWRIGHT_MODULE;
+const { chromium } = await import(playwrightModule ? pathToFileURL(playwrightModule).href : 'playwright');
 const root = new URL('../dist/', import.meta.url), artifacts = await mkdtemp(join(tmpdir(), 'muon-preview-check-'));
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 const server = createServer(async (request, response) => {
@@ -30,7 +32,7 @@ const server = createServer(async (request, response) => {
 server.listen(0, '127.0.0.1'); await once(server, 'listening');
 let browser;
 try {
-  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
+  browser = await chromium.launch({ headless: true, ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}), args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
     '--no-proxy-server', '--host-resolver-rules=MAP muon-preview.test 127.0.0.1'] });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } }), errors = [];
   page.on('pageerror', error => { errors.push(error.message); console.error('Preview page error:', error.message); });

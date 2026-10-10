@@ -129,7 +129,7 @@ Use an isolated development directory; no system installation needed:
 interface_reference_dir=$(mktemp -d /tmp/muon-manifold-reference.XXXXXX)
 python3 -m pip install --only-binary=:all: --target "$interface_reference_dir/packages" manifold3d==3.5.4 numpy==1.26.4
 PYTHONPATH="$interface_reference_dir/packages" node scripts/benchmark-interface-csg.mjs --real
-node --test tests/interface-csg.test.mjs
+node --test tests/contract/interface-csg.test.mjs
 ```
 
 Add `--output tests/fixtures/interface-csg.json` only when deliberately regenerating evidence. The driver can take `--python /path/to/python`. Generated evidence is a regression reference, not a signature or independent real-physics validation.
@@ -144,8 +144,8 @@ After installing the pinned temporary native environment described in [CSG reuse
 
 ```sh
 PYTHONPATH=<temporary-native-packages> node scripts/check-interface-artifacts.mjs
-node --test tests/derived-interface-artifact.test.mjs
-node --test tests/*.test.mjs
+node --test tests/contract/derived-interface-artifact.test.mjs
+npm test && npm run test:data && npm run test:integration
 node --check dist/app.js
 git diff --check
 ```

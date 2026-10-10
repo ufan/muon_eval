@@ -58,11 +58,11 @@ No stale result may replace a newer snapshot, even if cancellation finishes late
 
 ### 4. Verification
 
-Run `node --test tests/*.test.mjs`, `node --check dist/app.js`, and `git diff --check`. Run the contour benchmark with `node scripts/benchmark-projection-contours.mjs` (JSON to stdout); preserve pinned inputs and report hardware when comparing timings. Native structural-reference reproduction is described in its decision document and is not a runtime requirement.
+Run `npm test && npm run test:data && npm run test:integration`, `node --check dist/app.js`, and `git diff --check`. Run the contour benchmark with `node scripts/benchmark-projection-contours.mjs` (JSON to stdout); preserve pinned inputs and report hardware when comparing timings. Native structural-reference reproduction is described in its decision document and is not a runtime requirement.
 
 ## Analytical fixtures
 
-Sources: `tests/projection-pattern-fixtures.mjs`; tests: `tests/projection-pattern-fixtures.test.mjs`. Synthetic model-frame coordinates and metre lengths; no real-dam constants or data release changes. Reuses the existing cube mesh helper and production compiled mesh/BVH runtime.
+Sources: `tests/projection-pattern-fixtures.mjs`; tests: `tests/contract/projection-pattern-fixtures.test.mjs`. Synthetic model-frame coordinates and metre lengths; no real-dam constants or data release changes. Reuses the existing cube mesh helper and production compiled mesh/BVH runtime.
 
 | ID | Exact geometry | Central +X chord from origin |
 | --- | --- | --- |
@@ -87,4 +87,4 @@ All six fixtures compare every ray in 25×25, 65×65 and 129×129 slope grids ov
 
 Fixture-only absolute tolerance is 10⁻⁶ m (and 10⁻⁶ m.w.e. for column checks); BVH intersection/point tolerance is 10⁻⁸ m. Coordinates are exactly representable in Float32. These tolerances do not establish real-dataset or contour acceptance accuracy; see PROJECTION_VALIDATION.md#acceptance-requirements. No new dependencies, scientific formulas, preview behavior or export formats change.
 
-Run: `node --test tests/projection-pattern-fixtures.test.mjs`. Contour tests independently cover actual grid coordinates, invalid scalar regions, constant fields and saddle ambiguity; these are not geometry-ray claims.
+Run: `node --test tests/contract/projection-pattern-fixtures.test.mjs`. Contour tests independently cover actual grid coordinates, invalid scalar regions, constant fields and saddle ambiguity; these are not geometry-ray claims.

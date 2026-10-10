@@ -1,6 +1,6 @@
 # Module boundaries
 
-Ownership and dependency rules for the main application's modules. `tests/main-architecture.test.mjs` checks the dependency graph and pure-module boundaries automatically; when a module's responsibility changes, update this spec and that test together. The overall current implementation is described in [the architecture spec](ARCHITECTURE.md); related decisions are ADR-002, ADR-012 and ADR-013.
+Ownership and dependency rules for the main application's modules. `tests/integration/main-architecture.test.mjs` checks the dependency graph and pure-module boundaries automatically; when a module's responsibility changes, update this spec and that test together. The overall current implementation is described in [the architecture spec](ARCHITECTURE.md); related decisions are ADR-002, ADR-012 and ADR-013.
 
 ## Dependency direction
 
@@ -24,4 +24,4 @@ Native ES modules without a build step; files live directly in `dist/modules` wi
 | legacy-scene-view / compiled-scene-view / projection-canvas-view / main-pattern-view | Scene, canvas/SVG and legends | Scientific geometry implementations, ray intersection |
 | app.js | Loading, construction, injection, start-up and start-up error display | Calculation and scene implementations |
 
-The main application's dependency graph, pure-module boundaries, snapshot/cancellation and whole-chain numerical regression are tested in `tests/main-architecture.test.mjs`; optional HTTP desktop/narrow acceptance is `scripts/check-main-app.mjs`. The standalone geometry preview is not part of main-app assembly and has not become a platform dependency.
+The main application's dependency graph, pure-module boundaries, snapshot/cancellation and whole-chain numerical regression are tested in `tests/integration/main-architecture.test.mjs`; optional HTTP desktop/narrow acceptance is `scripts/check-main-app.mjs`. The standalone geometry preview is not part of main-app assembly and has not become a platform dependency.

@@ -27,7 +27,7 @@ Last updated: 2026-10-10
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| 5 | `package.json` with layered test scripts; tests moved into `tests/unit`, `tests/contract`, `tests/integration` | FR-Q1, ADR-023 | `npm test` = L0–L2 under ~15 s; classification in TEST_STRATEGY §2 | Todo |
+| 5 | `package.json` with layered test scripts; tests moved into `tests/unit`, `tests/contract`, `tests/integration` | FR-Q1, ADR-023 | `npm test` = L0–L2 under ~15 s; classification in TEST_STRATEGY §2 | Done |
 | 6 | Bounded module-dependency audit | FR-Q8 | Was "next priority" in the former `docs/ROADMAP.md`; no projection or performance features in this item | Todo |
 | 7 | Prettier reformat (behaviour-free commit) | FR-Q2 | Separate commit, no logic changes | Todo |
 | 8 | `@ts-check` + JSDoc + `tsc --noEmit` on pure modules; branded point/direction/frame types | FR-Q3, ADR-003 | Start with `coordinates.js`, `detector-pose.js`, tracers | Todo |
@@ -103,10 +103,12 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | Stale v0.1.0 `dam_spec` files removed | FR-Q6 | `03436ee` |
 | All documentation in English; `AGENTS.md`/`CONTEXT.md` generalised | OQ-4, OQ-5, FR-K9 | `85b0dfe` |
 | Living domain model created | ADR-022, FR-Q10 | `14c9f8f` |
-| Windows launcher scripts removed (re-add when needed) | owner request | this change |
+| Windows launcher scripts removed (re-add when needed) | owner request | `b4c48f6` |
+| Layered test commands and test directories (#5) | FR-Q1, ADR-023 | this change |
 
 ## Change log
 
+- 2026-10-10: #5 done.
 - 2026-10-10: #5 extended to layered scripts; standing rule ADR-023.
 - 2026-10-10: Standing rule FR-Q10; Done table updated.
 - 2026-10-10: Legacy-only notes on #2 and #4; #9 narrowed; compiled-default gaps and station import added under Later; Done table added.

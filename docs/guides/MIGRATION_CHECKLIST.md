@@ -61,7 +61,7 @@ Browser `localStorage` lives in the browser and site origin, not in the reposito
    git status
    git log -5 --oneline
    node --check dist/app.js
-   node --test tests/*.test.mjs
+   npm test && npm run test:data && npm run test:integration
    ```
 
 6. Start the offline version and check the page, datasets, 3D geometry, ray calculation, projections and interaction.

@@ -57,24 +57,23 @@ Not test first:
 - **Speed budgets are enforced by layer.** A test that outgrows its layer's budget moves up a layer or gets smaller inputs.
 - **Generic tests stay subject-neutral.** Dataset-specific expectations (e.g. Zhouning counts) belong in L3/L4 tests named for the dataset; L1/L2 use synthetic or analytic inputs (FR-K1).
 
-## 5. Running (target)
+## 5. Running
 
-`package.json` scripts (FR-Q1, priority #5):
+Tests live in layer directories: `tests/unit`, `tests/contract`, `tests/data`, `tests/integration`. Shared helpers (`tests/*-fixtures.mjs`) and recorded evidence (`tests/fixtures/`) stay at `tests/` because scripts use them too.
 
-| Command | Layers | Use |
-|---|---|---|
-| `npm test` | L0–L2 | Every commit; target < 15 s |
-| `npm run test:integration` | L4 | Before push |
-| `npm run test:data` | L3 | After data/geometry/tracer changes |
-| `npm run test:browser` | L5 | Before merging UI/flow changes; before release |
-| `npm run test:all` | L0–L5 | Before release |
+| Command | Layers | Use | Measured 2026-10-10 |
+|---|---|---|---|
+| `npm test` | L0–L2 | Every commit | ~5 s |
+| `npm run test:data` | L3 | After data/geometry/tracer changes | ~11 s |
+| `npm run test:integration` | L4 | Before push | ~22 s |
+| `npm run test:browser` | L5 (main app: compiled default and legacy) | Before merging UI/flow changes; before release | ~110 s |
+| `npm run test:browser:preview` | L5 (standalone preview; needs derived assets) | When the preview changes | — |
+| `npm run test:all` | L0–L5 | Before release | |
 
-Until then: `node --test tests/*.test.mjs` runs L1, L2, L4 and the L3 tests together.
+Single layers: `npm run test:unit`, `npm run test:contract`. L0 is `npm run check` (`scripts/check-syntax.mjs` runs `node --check` on all entry points, scripts and tests, then `git diff --check`). Browser tests take `PLAYWRIGHT_MODULE` and `CHROMIUM_PATH` from the environment when Playwright is not resolvable as a package. Tests run locally; there is no continuous integration (OQ-8).
 
 ## 6. Gaps
 
-- No `package.json` or layer scripts yet (FR-Q1).
-- Tests are not yet in layer directories (`tests/unit`, `tests/contract`, `tests/integration`); classification is by this table.
 - Domain invariant 8 (history independence) has no test and is currently violated (FR-C1).
 - No type checking at L0 yet (FR-Q3).
-- No continuous integration; layers run locally (OQ-8).
+- Some L4 files contain cases that belong at L1/L2 (§2); move them down when touching those files.
