@@ -57,14 +57,17 @@ Last updated: 2026-10-10
 | Preview chunked-transfer browser regression incl. failed narrow-screen overlay check | FR-N2 | Todo |
 | Cold start, peak memory, worst-case interaction measurements | FR-N3 | Todo |
 
-## Later (Phases 3–5, parallel and conditional tracks)
+## Later (Phases 3–6, parallel and conditional tracks)
 
 | Item | Ref | Gate |
 |---|---|---|
 | Plan/scan screens with Vite + Preact/Svelte | ADR-004 | After P2 formats exist |
+| Multi-station overview and demonstration mode; per-station result cache | FR-M4, FR-M5, ADR-020 | Phase 4; after #11, #12; may move up (OQ-7) |
+| 3D coverage metrics per voxel | FR-M6 | Phase 4 |
 | Multi-station evaluation, reports | FR-M1, FR-M2 | Phase 4 |
-| Physics validation items | FR-V2…V11 | Phase 5 |
-| Geant4 job package export / result import | FR-G1, FR-G2, ADR-007 | Phase 5 |
+| Simulated reconstruction (SIRT/MLEM), quality metrics, 3D result display | FR-M7…M9, ADR-021 | Phase 5 |
+| Physics validation items | FR-V2…V11 | Phase 6 |
+| Geant4 job package export / result import | FR-G1, FR-G2, ADR-007 | Phase 6 |
 | Continuous-water scene resolution | FR-E1 | Geometry track |
 | Physical-domain certification, entity attribution, compiled ROI | FR-GE4, FR-M3 | Geometry track; needs data evidence |
 | Geometry debt (cavity, spillway rules, terrain, contours) | FR-GE1…GE3, GE5 | Geometry track |
@@ -81,6 +84,7 @@ Last updated: 2026-10-10
 
 ## Change log
 
+- 2026-10-10: Added multi-station overview, coverage metrics and simulated reconstruction under Later; phases renumbered.
 - 2026-10-10: Added standing rule FR-K1; generalisation and user-geometry items under Later; #11 made subject-neutral.
 - 2026-10-10: Moved from `docs/planning/` to `docs/` top level; links updated to `specs/` and `guides/`.
 - 2026-10-10: Merged former `docs/ROADMAP.md`: dependency audit (#6), browser regressions, geometry-track and deferred items; added #10 (FR-X1); renumbered.

@@ -56,12 +56,18 @@ data contract + coordinate adapters → pure geometry query interfaces
 **Covers:** ADR-004 (Vite + small framework introduced here, old page migrated gradually); FR-N1…N4.
 **Exit:** plan and scan screens built on the Phase 1–2 formats; hosting/Docker/docs updated for the build step.
 
-## Phase 4 — Multi-station evaluation and reports
+## Phase 4 — Multi-station overview, coverage and reports
 
-**Goal:** evaluate plans as sets of stations and produce shareable reports.
-**Covers:** FR-M1, FR-M2.
+**Goal:** see and evaluate a deployment as a whole: all selected stations at once for overview and customer demonstration, 3D coverage metrics, shareable reports.
+**Covers:** FR-M1, FR-M2, FR-M4…M6; ADR-020.
+**Depends on:** plan schema with selected deployment (Phase 1), async port; benefits from Phase 2 workers and Phase 3 UI. May be pulled earlier for its demonstration value (OQ-7).
 
-## Phase 5 — Physics validation
+## Phase 5 — Simulated multi-projection reconstruction
+
+**Goal:** a second dimension of plan quality: what 3D density picture the deployment could recover.
+**Covers:** FR-M7…M9; ADR-021. Coverage metrics (Phase 4) come first; reconstruction algorithms are added incrementally.
+
+## Phase 6 — Physics validation
 
 **Goal:** know how accurate the fast model is.
 **Covers:** FR-V2…V11, FR-G1, FR-G2 (Geant4 export package and result import), FR-X1…X3.
@@ -105,6 +111,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-10: Phase 4 extended to multi-station overview/demonstration/coverage; new Phase 5 simulated reconstruction; physics validation renumbered to Phase 6.
 - 2026-10-10: Added subject-neutral principle, generalisation track (G0–G3) and user-loaded geometry track (U1–U3).
 - 2026-10-10: Moved from `docs/planning/` to `docs/` top level; links updated to `specs/` and `guides/`.
 - 2026-10-10: Merged former `docs/ROADMAP.md` (milestones, follow-up features, validation boundaries) and the dependency order from `GEOMETRY_SPEC_REFACTOR.md` §6; added "Where we are", Phase 5 scope, geometry parallel track and Deferred.

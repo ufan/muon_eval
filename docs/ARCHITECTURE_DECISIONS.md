@@ -29,6 +29,8 @@ Last updated: 2026-10-10
 | 017 | Compiled geometry package is the generic runtime contract | Proposed |
 | 018 | Datasets move to a top-level `datasets/` directory | Proposed |
 | 019 | User-loaded geometry in stages, client-side first | Proposed |
+| 020 | Multi-station view composes per-station results | Proposed |
+| 021 | Simulated multi-projection reconstruction as a separate pipeline | Proposed |
 
 ---
 
@@ -295,6 +297,33 @@ docs/
 
 A server becomes relevant only if loaded geometry must be shared across a team (trigger T1) or protected (T4).
 
+## ADR-020 Multi-station view composes per-station results
+
+**Status:** Proposed (owner requirement 2026-10-10)
+
+**Context.** The UI evaluates one active station at a time (`deployment-state.js` holds candidates plus one `active` index; the controller computes one snapshot). That suits detailed inspection, but a deployment plan is a set of stations, and both customer demonstrations and reconstruction need them shown together.
+
+**Decision.**
+- A plan distinguishes **candidates** from the **selected deployment** (a subset with per-station pose and device). The plan schema (FR-P1) carries both.
+- Each station is evaluated by the existing single-station core. Results are cached by the station's snapshot key, so switching between overview and detail, or toggling stations, does not recompute unchanged stations. Multi-station metrics are computed from these stored per-station results: no second formula path (ADR-002, ADR-012).
+- Two UI modes over the same plan state: **detail** (today's single-station inspection) and **overview** (all selected stations at once). Overview is a natural first screen for the new UI stack (ADR-004) but must not wait for it if needed earlier.
+- Computation for several stations goes through the async, cancellable assessment port and workers (ADR-006 item 2, ADR-005 step 3); a stale station result never appears in the overview.
+
+## ADR-021 Simulated multi-projection reconstruction as a separate pipeline
+
+**Status:** Proposed (owner requirement 2026-10-10)
+
+**Context.** Several projections of the same subject can be combined by tomographic algorithms into a 3D density estimate. Simulating that from a plan gives a second, complementary measure of plan quality: not "what does each detector see" but "what 3D picture could the deployment recover".
+
+**Decision.**
+- Pipeline: plan → per-station simulated measurements (expected counts from the shared core; optional Poisson noise for the chosen exposure) → per-pixel column-density estimates → 3D reconstruction on a voxel grid in the model frame → comparison with the dataset's true density.
+- **No inverse crime:** the reconstruction's forward model (ray–voxel path lengths on its own grid) is independent of the geometry used to simulate the measurements. Reconstructing with the same exact model that generated the data would overstate quality.
+- Algorithms are pure, versioned modules registered explicitly (start with SIRT/ART and MLEM with non-negativity and density bounds; priors and regularisation later). Every result records algorithm, version, settings, voxel grid, noise seed and input snapshot keys.
+- Cheaper coverage metrics come first and need no inversion: per voxel, number of rays, number of stations, path length and angular diversity of crossing rays.
+- Outputs are always labelled **simulated**. The same pipeline can later take measured data (FR-V10), at which point it becomes a real reconstruction with its own validation.
+- Subject-neutral: voxel grid from dataset bounds, densities from dataset materials (ADR-016).
+- Sizing estimate: a 2 m grid over a 230 × 100 × 80 m dam is ~230k voxels; 10 stations × 65² rays ≈ 42k rays with a few hundred voxels each gives a sparse system of ~10M non-zeros. That is workable in the browser with typed arrays and a worker; larger grids follow ADR-005 (measure, then WebAssembly).
+
 ---
 
 ## Open questions
@@ -305,9 +334,11 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **OQ-4 Documentation language.** One language for all docs, or English guideline files with specs/guides in their current (mixed Chinese/English) languages.
 - **OQ-5 Generic terminology.** Keep "dataset" + `kind` (recommended), or introduce a term such as "subject"/"site" in UI and docs. When should `AGENTS.md` and `CONTEXT.md` (currently dam-worded) be generalised: now, or with the first non-dam kind?
 - **OQ-6 Dataset directory move (ADR-018).** Move now with a copy script, or together with the build step (ADR-004)?
+- **OQ-7 Priority of the multi-station overview.** It has high demonstration value and depends only on the plan schema and async port. Pull it ahead of scan performance work (P3), or keep it after scans?
 
 ## Change log
 
+- 2026-10-10: Added ADR-020 (multi-station view), ADR-021 (simulated reconstruction), OQ-7.
 - 2026-10-10: Added ADR-016 (subject-neutral platform), ADR-017 (compiled package as generic contract), ADR-018 (top-level datasets), ADR-019 (user-loaded geometry), OQ-5, OQ-6; ADR-008 generalised.
 - 2026-10-10: ADR-015 rewritten for the new layout: guideline files at `docs/` top level, `specs/` and `guides/` below.
 - 2026-10-10: Merged decisions from `GEOMETRY_SPEC_REFACTOR.md`, `ARCHITECTURE.md` and `GEOMETRY_REFERENCES.md` (ADR-008…014); added ADR-015 and OQ-3, OQ-4.
