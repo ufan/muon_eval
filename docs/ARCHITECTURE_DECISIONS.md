@@ -29,7 +29,7 @@ Last updated: 2026-10-10
 | 017 | Compiled geometry package is the generic runtime contract | Proposed |
 | 018 | Datasets move to a top-level `datasets/` directory | Proposed |
 | 019 | User-loaded geometry in stages, client-side first | Proposed |
-| 020 | Multi-station view composes per-station results | Proposed |
+| 020 | Multi-station view composes per-station results | Accepted (priority) / Proposed (design) |
 | 021 | Simulated multi-projection reconstruction as a separate pipeline | Proposed |
 
 ---
@@ -299,14 +299,15 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## ADR-020 Multi-station view composes per-station results
 
-**Status:** Proposed (owner requirement 2026-10-10)
+**Status:** Accepted for priority and UI modes (owner, 2026-10-10); design details Proposed
 
 **Context.** The UI evaluates one active station at a time (`deployment-state.js` holds candidates plus one `active` index; the controller computes one snapshot). That suits detailed inspection, but a deployment plan is a set of stations, and both customer demonstrations and reconstruction need them shown together.
 
 **Decision.**
 - A plan distinguishes **candidates** from the **selected deployment** (a subset with per-station pose and device). The plan schema (FR-P1) carries both.
 - Each station is evaluated by the existing single-station core. Results are cached by the station's snapshot key, so switching between overview and detail, or toggling stations, does not recompute unchanged stations. Multi-station metrics are computed from these stored per-station results: no second formula path (ADR-002, ADR-012).
-- Two UI modes over the same plan state: **detail** (today's single-station inspection) and **overview** (all selected stations at once). Overview is a natural first screen for the new UI stack (ADR-004) but must not wait for it if needed earlier.
+- Two UI modes over the same plan state: **detail** (today's single-station inspection) and **overview** (all selected stations at once).
+- **Priority (owner decision 2026-10-10):** the overview comes right after the plan format, ahead of scan performance work. It is built in the current page with existing modules: it is mostly 3D scene and projection canvases, which stay framework-free under ADR-004 anyway, so it does not trigger the build-step switch. Stations are computed sequentially through the async port until scan workers exist.
 - Computation for several stations goes through the async, cancellable assessment port and workers (ADR-006 item 2, ADR-005 step 3); a stale station result never appears in the overview.
 
 ## ADR-021 Simulated multi-projection reconstruction as a separate pipeline
@@ -334,10 +335,10 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **OQ-4 Documentation language.** One language for all docs, or English guideline files with specs/guides in their current (mixed Chinese/English) languages.
 - **OQ-5 Generic terminology.** Keep "dataset" + `kind` (recommended), or introduce a term such as "subject"/"site" in UI and docs. When should `AGENTS.md` and `CONTEXT.md` (currently dam-worded) be generalised: now, or with the first non-dam kind?
 - **OQ-6 Dataset directory move (ADR-018).** Move now with a copy script, or together with the build step (ADR-004)?
-- **OQ-7 Priority of the multi-station overview.** It has high demonstration value and depends only on the plan schema and async port. Pull it ahead of scan performance work (P3), or keep it after scans?
 
 ## Change log
 
+- 2026-10-10: OQ-7 resolved: multi-station overview ahead of scan performance; recorded in ADR-020.
 - 2026-10-10: Added ADR-020 (multi-station view), ADR-021 (simulated reconstruction), OQ-7.
 - 2026-10-10: Added ADR-016 (subject-neutral platform), ADR-017 (compiled package as generic contract), ADR-018 (top-level datasets), ADR-019 (user-loaded geometry), OQ-5, OQ-6; ADR-008 generalised.
 - 2026-10-10: ADR-015 rewritten for the new layout: guideline files at `docs/` top level, `specs/` and `guides/` below.

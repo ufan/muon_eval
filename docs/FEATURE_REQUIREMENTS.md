@@ -101,8 +101,8 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
 | FR-M1 | Joint multi-station evaluation. | Coverage overlap, cross-view of targets, added information; joint objective defined. Computed from stored per-station results (ADR-020). | Needed |
-| FR-M4 | Show selected stations simultaneously. | Select a subset of plan stations; 3D view shows all of them at once (marker, colour per station, field-of-view cone, ray coverage on the subject); per-station projections side by side; summary table. Clicking a station opens today's detail mode. Switching modes or toggling stations does not recompute unchanged stations. | Needed |
-| FR-M5 | Demonstration mode. | Clean presentation layout for customers: camera presets and guided views, labels, screenshot and short animation export; numbers shown carry their limitations. | Needed |
+| FR-M4 | Show selected stations simultaneously. | Select a subset of plan stations; 3D view shows all of them at once (marker, colour per station, field-of-view cone, ray coverage on the subject); per-station projections side by side; summary table. Clicking a station opens today's detail mode. Switching modes or toggling stations does not recompute unchanged stations. | Needed (next after plans) |
+| FR-M5 | Demonstration mode. | Clean presentation layout for customers: camera presets and guided views, labels, screenshot and short animation export; numbers shown carry their limitations. | Needed (next after plans) |
 | FR-M6 | Coverage metrics in 3D. | Per voxel: ray count, station count, path length and angular diversity of crossing rays; displayed as slices/volume on the subject and summarised per plan. | Needed |
 | FR-M7 | Simulated multi-projection reconstruction. | From a plan: simulated counts (optional Poisson noise for the exposure) → column density per pixel → 3D density on a voxel grid; SIRT/ART and MLEM first; forward model independent of the simulation geometry (ADR-021); results labelled simulated and fully versioned. | Needed (later) |
 | FR-M8 | Reconstruction quality metrics. | Against the dataset's true density: density error, contrast recovery and resolution for chosen targets (e.g. a cavity), detectability; comparable across plans. | Needed (later) |
@@ -177,6 +177,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-10: FR-M4, FR-M5 prioritised next after the plan format.
 - 2026-10-10: Added FR-M4…M9 (simultaneous stations, demonstration mode, coverage metrics, simulated reconstruction); FR-P1 candidates vs selected deployment.
 - 2026-10-10: Added K (subject generality) and L (user-loaded geometry); FR-P1 made subject-neutral.
 - 2026-10-10: Moved from `docs/planning/` to `docs/` top level; links updated to `specs/` and `guides/`.

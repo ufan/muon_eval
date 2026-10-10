@@ -40,15 +40,26 @@ Last updated: 2026-10-10
 | 12 | Async, cancellable assessment port | ADR-006 | Change limited to `assessment-controller.js` | Todo |
 | 13 | Headless batch runner (Node CLI) | FR-S5, ADR-006 | Plan in, results out; future server worker | Todo |
 
-## P3 — Scan performance and features (Phase 2)
+## P3 — Multi-station overview and demonstration (Phase 2)
+
+Moved ahead of scan performance by owner decision (OQ-7). Built in the current page with existing modules; stations are computed one after another through the async port (#12); workers arrive with P4.
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| 14 | Benchmark script tracking rays/s and pose time | FR-S4 | Baseline 2026-10-09: ~10.6k rays/s/core, 0.44 s per 65×65 pose | Todo |
-| 15 | Direction-map reuse per station/scenario + coarse-to-fine | ADR-005 step 1 | Validate against direct tracing | Todo |
-| 16 | JS tracer optimisation (top-level BVH, flat arrays, no per-ray allocation) | ADR-005 step 2 | Must pass conformance rays/points | Todo |
-| 17 | Worker-parallel scans (Node + browser) | ADR-005 step 3 | | Todo |
-| 18 | Scan constraints, ranking, robustness | FR-S1…S3 | Write metric/ranking definitions first | Todo |
+| 14 | Plan state: candidates vs selected deployment; per-station result cache keyed by snapshot | ADR-020, FR-P1 | Needs #11, #12; no recompute for unchanged stations; stale results never shown | Todo |
+| 15 | Overview mode in 3D: all selected stations, colour per station, field-of-view cones, ray coverage on the subject; summary table; click → detail mode | FR-M4 | Reuses scene views; subject-neutral labels (FR-K1) | Todo |
+| 16 | Per-station projections side by side | FR-M4 | Reuses `projection-canvas-view.js` | Todo |
+| 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | Short animation export later | Todo |
+
+## P4 — Scan performance and features (Phase 3)
+
+| # | Item | Ref | Notes | Status |
+|---|---|---|---|---|
+| 18 | Benchmark script tracking rays/s and pose time | FR-S4 | Baseline 2026-10-09: ~10.6k rays/s/core, 0.44 s per 65×65 pose | Todo |
+| 19 | Direction-map reuse per station/scenario + coarse-to-fine | ADR-005 step 1 | Validate against direct tracing | Todo |
+| 20 | JS tracer optimisation (top-level BVH, flat arrays, no per-ray allocation) | ADR-005 step 2 | Must pass conformance rays/points | Todo |
+| 21 | Worker-parallel evaluation (Node + browser) | ADR-005 step 3 | Also speeds up the multi-station overview | Todo |
+| 22 | Scan constraints, ranking, robustness | FR-S1…S3 | Write metric/ranking definitions first | Todo |
 
 ## Pending browser regressions (fit in when touching the preview)
 
@@ -57,17 +68,16 @@ Last updated: 2026-10-10
 | Preview chunked-transfer browser regression incl. failed narrow-screen overlay check | FR-N2 | Todo |
 | Cold start, peak memory, worst-case interaction measurements | FR-N3 | Todo |
 
-## Later (Phases 3–6, parallel and conditional tracks)
+## Later (Phases 4–7, parallel and conditional tracks)
 
 | Item | Ref | Gate |
 |---|---|---|
-| Plan/scan screens with Vite + Preact/Svelte | ADR-004 | After P2 formats exist |
-| Multi-station overview and demonstration mode; per-station result cache | FR-M4, FR-M5, ADR-020 | Phase 4; after #11, #12; may move up (OQ-7) |
-| 3D coverage metrics per voxel | FR-M6 | Phase 4 |
-| Multi-station evaluation, reports | FR-M1, FR-M2 | Phase 4 |
-| Simulated reconstruction (SIRT/MLEM), quality metrics, 3D result display | FR-M7…M9, ADR-021 | Phase 5 |
-| Physics validation items | FR-V2…V11 | Phase 6 |
-| Geant4 job package export / result import | FR-G1, FR-G2, ADR-007 | Phase 6 |
+| Plan/scan screens with Vite + Preact/Svelte | ADR-004 | Phase 4, after P2 formats exist |
+| 3D coverage metrics per voxel | FR-M6 | Phase 5 |
+| Multi-station joint evaluation, reports | FR-M1, FR-M2 | Phase 5 |
+| Simulated reconstruction (SIRT/MLEM), quality metrics, 3D result display | FR-M7…M9, ADR-021 | Phase 6 |
+| Physics validation items | FR-V2…V11 | Phase 7 |
+| Geant4 job package export / result import | FR-G1, FR-G2, ADR-007 | Phase 7 |
 | Continuous-water scene resolution | FR-E1 | Geometry track |
 | Physical-domain certification, entity attribution, compiled ROI | FR-GE4, FR-M3 | Geometry track; needs data evidence |
 | Geometry debt (cavity, spillway rules, terrain, contours) | FR-GE1…GE3, GE5 | Geometry track |
@@ -77,13 +87,14 @@ Last updated: 2026-10-10
 | Material-dependent energy loss, deep-overburden flux, in-material stations, large terrain | FR-K4…K7 | Before the first non-dam subject (G3) |
 | Load packaged dataset from file; converter; in-app authoring | FR-L1…L6 | User-geometry track U1–U3, not urgent |
 | Default backend switch | OQ-3 | Decision first |
-| WebAssembly tracer | ADR-005 step 4 | Only if P3 measurements insufficient |
+| WebAssembly tracer | ADR-005 step 4 | Only if P4 measurements insufficient |
 | Server backend | ADR-001 | Only when T1–T4 observed |
 | Access control | FR-A1 | Answer to OQ-1 |
 | Preview performance extensions | Roadmap "Deferred" | Paused |
 
 ## Change log
 
+- 2026-10-10: New P3 multi-station overview (#14–#17) ahead of scan performance (now P4, #18–#22) by owner decision; phase references updated.
 - 2026-10-10: Added multi-station overview, coverage metrics and simulated reconstruction under Later; phases renumbered.
 - 2026-10-10: Added standing rule FR-K1; generalisation and user-geometry items under Later; #11 made subject-neutral.
 - 2026-10-10: Moved from `docs/planning/` to `docs/` top level; links updated to `specs/` and `guides/`.

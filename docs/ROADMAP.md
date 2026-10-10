@@ -44,30 +44,36 @@ data contract + coordinate adapters → pure geometry query interfaces
 **Covers:** FR-P1, FR-P2; ADR-006 seams (schemas, async cancellable assessment port).
 **Exit:** round-trip plan tests; plan/scan/result schemas stable enough to serve as a future API contract.
 
-## Phase 2 — Workstation-scale scanning
+## Phase 2 — Multi-station overview and demonstration
+
+**Goal:** show the selected deployment as a whole: all selected stations at once for overview and customer demonstration. Prioritised ahead of scanning by the owner (2026-10-10).
+**Covers:** FR-M4, FR-M5; ADR-020.
+**Depends on:** plan schema with selected deployment, async cancellable assessment port (Phase 1). Built in the current page; does not wait for the new UI stack (ADR-004) or scan workers.
+**Exit:** overview and detail modes over one plan; per-station results cached; demonstration layout with camera presets and screenshot export.
+
+## Phase 3 — Workstation-scale scanning
 
 **Goal:** large station/pose scans with constraints, ranking and robustness on one workstation.
 **Covers:** FR-S1…S5; ADR-005 steps 1–3.
 **Exit:** headless batch runner; reference scan in minutes; feasibility, observability and safety reported as separate dimensions.
 
-## Phase 3 — New planning and scan screens
+## Phase 4 — New planning and scan screens
 
 **Goal:** usable UI for plans, scans and comparisons.
 **Covers:** ADR-004 (Vite + small framework introduced here, old page migrated gradually); FR-N1…N4.
-**Exit:** plan and scan screens built on the Phase 1–2 formats; hosting/Docker/docs updated for the build step.
+**Exit:** plan and scan screens built on the Phase 1 and Phase 3 formats; hosting/Docker/docs updated for the build step.
 
-## Phase 4 — Multi-station overview, coverage and reports
+## Phase 5 — Multi-station evaluation, coverage and reports
 
-**Goal:** see and evaluate a deployment as a whole: all selected stations at once for overview and customer demonstration, 3D coverage metrics, shareable reports.
-**Covers:** FR-M1, FR-M2, FR-M4…M6; ADR-020.
-**Depends on:** plan schema with selected deployment (Phase 1), async port; benefits from Phase 2 workers and Phase 3 UI. May be pulled earlier for its demonstration value (OQ-7).
+**Goal:** evaluate the deployment as a whole: joint metrics, 3D coverage, shareable reports.
+**Covers:** FR-M1, FR-M2, FR-M6; ADR-020. Uses Phase 3 workers for many stations.
 
-## Phase 5 — Simulated multi-projection reconstruction
+## Phase 6 — Simulated multi-projection reconstruction
 
 **Goal:** a second dimension of plan quality: what 3D density picture the deployment could recover.
-**Covers:** FR-M7…M9; ADR-021. Coverage metrics (Phase 4) come first; reconstruction algorithms are added incrementally.
+**Covers:** FR-M7…M9; ADR-021. Coverage metrics (Phase 5) come first; reconstruction algorithms are added incrementally.
 
-## Phase 6 — Physics validation
+## Phase 7 — Physics validation
 
 **Goal:** know how accurate the fast model is.
 **Covers:** FR-V2…V11, FR-G1, FR-G2 (Geant4 export package and result import), FR-X1…X3.
@@ -102,7 +108,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 | Track | Unlocked by | Content |
 |---|---|---|
 | Server backend | T1 shared plans, T2 scan scale, T3 routine Geant4, T4 access control | Small backend: storage + job queue; workers reuse the core (FR-P3, FR-S6, FR-G3) |
-| WebAssembly tracer | Phase 2 measurements still insufficient | Rust/C++ → WASM; must pass conformance rays/points (ADR-005 step 4) |
+| WebAssembly tracer | Phase 3 measurements still insufficient | Rust/C++ → WASM; must pass conformance rays/points (ADR-005 step 4) |
 | Access control | OQ-1 answer | Authenticated hosting (FR-A1) |
 
 ## Deferred
@@ -111,6 +117,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-10: Multi-station overview and demonstration moved ahead of scanning as Phase 2 (owner decision, OQ-7); later phases renumbered 3–7.
 - 2026-10-10: Phase 4 extended to multi-station overview/demonstration/coverage; new Phase 5 simulated reconstruction; physics validation renumbered to Phase 6.
 - 2026-10-10: Added subject-neutral principle, generalisation track (G0–G3) and user-loaded geometry track (U1–U3).
 - 2026-10-10: Moved from `docs/planning/` to `docs/` top level; links updated to `specs/` and `guides/`.
