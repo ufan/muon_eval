@@ -20,11 +20,11 @@ Last updated: 2026-10-10
 | 008 | Dams are explicit, versioned data products | Accepted |
 | 009 | Format responsibilities | Accepted |
 | 010 | Hybrid geometry/ray kernel | Accepted |
-| 011 | Backend switching is an explicit migration | Accepted |
+| 011 | Backend switching is an explicit migration; compiled is the default | Accepted |
 | 012 | Refactoring principles | Accepted |
 | 013 | Native ES modules in `dist/`, no build step (current) | Accepted (to be superseded by 004) |
 | 014 | Structural reference lines: material-qualified mesh contours | Accepted |
-| 015 | Documentation structure: guidelines on top, specs and guides below | Proposed |
+| 015 | Documentation structure: guidelines on top, specs and guides below; English only | Accepted |
 | 016 | Subject-neutral evaluation platform | Accepted (direction) |
 | 017 | Compiled geometry package is the generic runtime contract | Proposed |
 | 018 | Datasets move to a top-level `datasets/` directory | Accepted, implemented |
@@ -47,7 +47,7 @@ Last updated: 2026-10-10
 | T1 Shared plans across a team | "Which file is current?" confusion; need for concurrent editing, permissions, sign-off/audit trail | Versioned plan JSON (schema version + full dataset release ID) kept in git or a shared folder |
 | T2 Scans too big for one PC | Scans regularly don't finish overnight on a good workstation; several people need big scans at once; results must be shared, not recomputed | Headless Node batch runner on a workstation, using all cores (ADR-005, ADR-006) |
 | T3 Geant4 runs | Geant4 validation becomes routine (e.g. per shortlisted site) rather than occasional | "Export Geant4 job package" + manual cluster run + result import (ADR-007) |
-| T4 Access control (candidate) | Dam geometry judged sensitive by its owner | Authenticated hosting; may force a server earlier than T1–T3 (OQ-1) |
+| T4 Access control (candidate) | Subject geometry judged sensitive by its owner. Zhouning: not sensitive now (OQ-1, 2026-10-10); re-check for each new dataset | Authenticated hosting; may force a server earlier than T1–T3 |
 
 **If a backend is built:** keep it small (file/object storage + job queue, possibly a small database for plans/users). Workers run the same calculation modules. The browser app stays usable offline for single-person, single-site work.
 
@@ -176,18 +176,19 @@ DD4hep XML does not replace the strict JSON contract: Compact XML has no fixed s
 
 ## ADR-011 Backend switching is an explicit migration
 
-**Status:** Accepted (migrated from `GEOMETRY_SPEC_REFACTOR.md` §6 and `ARCHITECTURE.md` "显式主应用后端选择")
+**Status:** Accepted (migrated from `GEOMETRY_SPEC_REFACTOR.md` §6 and `ARCHITECTURE.md` "explicit main-app backend selection")
 
 **Decision.**
 - The main app resolves a full release ID, backend and scenario explicitly; unknown or incompatible combinations fail closed and never fall back to another backend or scenario.
-- Changing the default backend is an explicit migration: dataset, device semantics, environment, ROI, rays and response are validated separately before the default entry changes. A working standalone preview never replaces the production backend automatically. (Whether and when to switch the default: OQ-3.)
+- Changing the default backend is an explicit migration: dataset, device semantics, environment, ROI, rays and response are validated separately before the default entry changes. A working standalone preview never replaces the production backend automatically.
+- **Default switched to compiled (OQ-3, owner decision 2026-10-10).** The registry default is the v0.7 release on the compiled GLB/BVH backend; the legacy DDA release stays selectable as a compatibility path. Validation: full test suite and browser acceptance of both apps. Accepted gaps on the default path, tracked as FR-B1: continuous water level (FR-E1), legacy target contours/significance and entity ROI (FR-M3, FR-GE4), coloured internal proxies and the flux cloud. New work targets the compiled path; legacy-only fixes are lower priority.
 - Frozen scenarios and continuous environment resolution are different capabilities; finite snapshots must never be interpolated to fake continuous-water material geometry.
 - Source geometry, visuals, material classification and rays express the same facts. Camera transforms, visibility, normals, colours and display smoothing never change material paths.
 - Result snapshots bind the full effective input; asynchronous cancellation, caches and UI updates never let a stale result overwrite newer state.
 
 ## ADR-012 Refactoring principles
 
-**Status:** Accepted (migrated from `ARCHITECTURE.md` "重构原则")
+**Status:** Accepted (migrated from `ARCHITECTURE.md` "refactoring principles")
 
 - Extract pure functions first without changing UI or numerical results.
 - Build regression tests before merging visual geometry with calculation geometry.
@@ -198,7 +199,7 @@ DD4hep XML does not replace the strict JSON contract: Compact XML has no fixed s
 
 ## ADR-013 Native ES modules in `dist/`, no build step (current)
 
-**Status:** Accepted, current practice; planned to be superseded by ADR-004 (migrated from `ARCHITECTURE.md` "主应用源码入口")
+**Status:** Accepted, current practice; planned to be superseded by ADR-004 (migrated from `ARCHITECTURE.md` "main-app source entry points")
 
 **Decision.** Native ES modules live directly in `dist/modules`; there is no separate `src/` mirror and no build step. The module ownership table in [`specs/MODULE_BOUNDARIES.md`](specs/MODULE_BOUNDARIES.md) defines which module owns what and which dependencies are forbidden; `tests/main-architecture.test.mjs` enforces it.
 
@@ -210,7 +211,7 @@ DD4hep XML does not replace the strict JSON contract: Compact XML has no fixed s
 
 ## ADR-015 Documentation structure: guidelines on top, specifications and guides one level down
 
-**Status:** Proposed (layout requested 2026-10-10; under review)
+**Status:** Accepted (layout requested 2026-10-10; English for all documentation, OQ-4)
 
 **Context.** Decisions, open work, specifications and usage guidance were mixed across `ROADMAP.md`, `GEOMETRY_SPEC_REFACTOR.md`, `ARCHITECTURE.md`, `CALCULATION_MODELS.md`, `CONTEXT.md` and checklists inside reference docs.
 
@@ -229,7 +230,8 @@ docs/
 
 - Specs and guides contain no task lists; they link to the guideline files for open items.
 - Specs keep their original language and section numbering where other docs cite them.
-- Root entry docs stay: `AGENTS.md` (rules), `CONTEXT.md` (domain context and semantics), `README.md` (usage), `部署说明.md` (deployment).
+- Root entry docs stay: `AGENTS.md` (rules), `CONTEXT.md` (domain context and semantics), `README.md` (usage). The deployment guide moved to `guides/DEPLOYMENT.md`; dataset descriptions live with their data in `datasets/` (ADR-018).
+- **All documentation is in English** (OQ-4, 2026-10-10). Dataset release files imported byte for byte from upstream packages are not edited.
 
 **Migration status:**
 
@@ -245,7 +247,6 @@ docs/
 | `docs/PROJECTION_WORKFLOW.md`, `docs/MIGRATION_CHECKLIST.md` | → `guides/` unchanged in content |
 | `CONTEXT.md` §9 checklist | → requirements; §3–§7 are spec candidates (see `specs/README.md`) |
 
-**Open:** language (OQ-4).
 
 ## ADR-016 Subject-neutral evaluation platform
 
@@ -258,7 +259,7 @@ docs/
 - Each dataset declares a `kind` (e.g. `dam`, `blast-furnace`, `tunnel`) plus its own variables, display layers, semantic targets and capabilities. UI controls and labels are generated from these declarations.
 - Kind-specific knowledge lives in (1) dataset packages, (2) offline compilers that turn source data into the generic package (ADR-017), and (3) where unavoidable, small explicit adapters registered in `application-backends.js`. No plugin system until a second subject kind proves the pattern (consistent with ADR-008, `AGENTS.md`).
 - Physics must not silently assume rock-like matter or open-sky geometry: energy loss per material, deep overburden and in-material detector positions are explicit requirements before the corresponding subject kinds are supported (FR-K4…K6).
-- Terminology: keep **dataset** as the generic unit, qualified by `kind`. Do not use "scenario" for the subject, because it already means a frozen environment variant (low/mid/high/extreme) (OQ-5).
+- Terminology (OQ-5, accepted): keep **dataset** as the generic unit, qualified by `kind`. Do not use "scenario" for the subject, because it already means a frozen environment variant (low/mid/high/extreme). `AGENTS.md` and `CONTEXT.md` were generalised away from dam wording on 2026-10-10.
 - The technology choices stand: static browser app, WebGL rendering, framework-free JS core, glTF/GLB runtime geometry, WebAssembly only if measured. Nothing in them is dam-specific.
 
 ## ADR-017 Compiled geometry package is the generic runtime contract
@@ -270,7 +271,7 @@ docs/
 **Decision.**
 - The runtime contract for every subject kind is the compiled package: manifest (identity, frames, materials, variables/frozen variants, layers, targets, checksums) + GLB physics/display meshes + optional terrain heightfield + optional conformance baselines.
 - Source formats (dam parametric spec, CAD, survey, furnace drawings) are converted offline by kind-specific compilers. The browser never runs kind-specific CSG (consistent with ADR-009).
-- The legacy dam path remains a bounded compatibility adapter until the default-backend decision (OQ-3); new subject kinds go only through the compiled path.
+- The legacy dam path remains a bounded compatibility adapter; the compiled path is the default (OQ-3) and new subject kinds go only through it.
 - Continuous variables (e.g. water level, burden level) need explicit per-kind resolvers; frozen variants are supported first (ADR-011).
 
 ## ADR-018 Datasets move to a top-level `datasets/` directory
@@ -329,14 +330,22 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Open questions
 
-- **OQ-1 Sensitivity of dam geometry.** The current public instance serves full geometry to anyone with the URL. Confirm with the data owner whether access control is required; if so, T4 applies.
 - **OQ-2 UI framework choice** (Preact vs Svelte), decided when ADR-004 starts.
-- **OQ-3 Default backend switch.** Whether and when the main app's default moves from legacy DDA to the compiled backend, and the acceptance evidence required (ADR-011).
-- **OQ-4 Documentation language.** One language for all docs, or English guideline files with specs/guides in their current (mixed Chinese/English) languages.
-- **OQ-5 Generic terminology.** Keep "dataset" + `kind` (recommended), or introduce a term such as "subject"/"site" in UI and docs. When should `AGENTS.md` and `CONTEXT.md` (currently dam-worded) be generalised: now, or with the first non-dam kind?
+
+## Resolved questions
+
+| Question | Decision (2026-10-10) | Recorded in |
+|---|---|---|
+| OQ-1 Sensitivity of dam geometry | Not sensitive now; re-check for each new dataset | ADR-001 (T4), FR-A1 |
+| OQ-3 Default backend switch | Switch to the compiled backend | ADR-011, FR-B1 |
+| OQ-4 Documentation language | English for all documentation | ADR-015 |
+| OQ-5 Generic terminology | Keep "dataset" + `kind`; generalise `AGENTS.md`/`CONTEXT.md` now | ADR-016, FR-K9 |
+| OQ-6 Dataset directory move | Move now | ADR-018 |
+| OQ-7 Multi-station overview priority | Ahead of scan performance | ADR-020 |
 
 ## Change log
 
+- 2026-10-10: Recorded owner decisions OQ-1, OQ-3, OQ-4, OQ-5 (compiled default in ADR-011, English-only docs in ADR-015, terminology in ADR-016); added Resolved questions table.
 - 2026-10-10: ADR-018 accepted and implemented (OQ-6).
 - 2026-10-10: OQ-7 resolved: multi-station overview ahead of scan performance; recorded in ADR-020.
 - 2026-10-10: Added ADR-020 (multi-station view), ADR-021 (simulated reconstruction), OQ-7.

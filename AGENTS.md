@@ -1,91 +1,88 @@
 # AGENTS.md
 
-本文件定义任何 AI 编程工具或人工开发者在本仓库中应遵循的通用开发规则。它不依赖特定厂商、模型、编辑器、命令行工具或托管平台。规则面向“可加载不同坝体数据的缪子部署评估平台”，不得把某一坝体的尺寸、坐标或业务假设固化为平台规则。
+General development rules for any AI coding tool or human developer working in this repository. They do not depend on a particular vendor, model, editor, command-line tool or hosting platform. The rules apply to a **muography deployment evaluation platform that loads datasets of different kinds**: dams first, then other imaging subjects such as blast furnaces and tunnels. No subject's dimensions, coordinates or business assumptions may become platform rules.
 
-当前数据集、领域背景和仍待确认的语义集中记录在 `CONTEXT.md`；具体数据集可另设专属说明。
+Domain context, terminology and the current datasets are recorded in `CONTEXT.md`; each dataset has its own description in `datasets/<dataset-id>/README.md`.
 
-## 项目定位
+## Purpose
 
-本项目用于：
+The project is used to:
 
-- 加载坝体及其附属结构、材料区和空腔的几何数据；
-- 配置缪子探测器、候选站点和观测姿态；
-- 估算射线材料路径、水当量柱密度、透射率和预计计数；
-- 生成探测器局部斜率空间中的预期投影；
-- 对站点、姿态和多站点部署方案进行扫描、比较与输出。
+- load the geometry of an imaging subject (a dam and its appurtenant structures, a blast furnace, a tunnel and its overburden, …): material regions, cavities and internal features;
+- configure muon detectors, candidate stations and observation poses;
+- estimate ray material paths, water-equivalent column density, transmission and expected counts;
+- produce expected projections in the detector-local slope space;
+- scan, compare and export stations, poses and multi-station deployment plans, including simultaneous multi-station views and simulated reconstruction.
 
-这是工程部署的快速评估与方案比较工具，不是完整粒子输运模拟、工程 CAD、施工设计或安全鉴定系统。不得把近似结果描述成施工级结论。
+It is a rapid evaluation and plan-comparison tool for engineering deployment, not a full particle-transport simulation, engineering CAD, construction design or safety-assessment system. Approximate results must never be described as construction-grade conclusions.
 
-## 首先阅读
+## Read first
 
-1. `CONTEXT.md`：通用使用场景、几何语义、术语和当前数据集。
-2. `README.md`：运行方式、当前能力和目录入口。
-3. `docs/` 顶层四份设计指导文件：`ARCHITECTURE_DECISIONS.md`、`FEATURE_REQUIREMENTS.md`、`ROADMAP.md`、`IMPLEMENTATION_PRIORITY.md`。
-4. `docs/specs/`：按任务读取相关规格——当前架构与模块边界、计算模型（公式、参数、假定）、几何参考契约、投影数据与验证；索引见 `docs/specs/README.md`。
-5. 当前数据集的坐标与几何规格；现有周宁示例见 `datasets/zhouning-lower-reservoir-dam/README.md`。
-6. `docs/guides/`：结果解读、投影工作流和 `MIGRATION_CHECKLIST.md`。
+1. `CONTEXT.md`: use cases, geometry semantics, terminology and current datasets.
+2. `README.md`: how to run, current capabilities and directory entry points.
+3. The four guideline documents at the top of `docs/`: `ARCHITECTURE_DECISIONS.md`, `FEATURE_REQUIREMENTS.md`, `ROADMAP.md`, `IMPLEMENTATION_PRIORITY.md`.
+4. `docs/specs/`: the specs relevant to the task (current architecture and module boundaries, calculation model, geometry reference contract, projection data and validation); index in `docs/specs/README.md`.
+5. The dataset's own description; the current example is `datasets/zhouning-lower-reservoir-dam/README.md`.
+6. `docs/guides/`: result interpretation, projection workflow, deployment and `MIGRATION_CHECKLIST.md`.
 
-开始修改前检查 `git status --short`，保留用户已有改动，不要假定工作树是干净的。
+Check `git status --short` before changing anything, keep the user's existing changes, and never assume the working tree is clean.
 
-## 数据与几何规则
+## Data and geometry rules
 
-- 每个坝体必须作为显式、可版本化的数据集加载。不要在通用 UI、渲染器或计算模块中硬编码某一工程的尺寸、坝段数、名称或坐标。
-- 通用代码只依赖标准化模型坐标和几何接口。原始测绘/CAD 坐标、轴向约定和高程基准的转换应由数据集适配层负责。
-- 点、方向、角度、高程和长度必须使用明确类型或字段语义；平移仅作用于点，不能作用于方向。
-- 实体材料由“正体积减去负体积”得到。负体积用于掏空，不应默认作为有材料的可见填充物。
-- 视觉几何、材料分类和射线求交必须表达同一几何事实。修改实体、空腔或边界时要同时验证三者。
-- 内部结构是否显示是数据集和场景配置，不是材料真实性；隐藏几何不得改变射线计算结果。
-- 不确定尺寸、近似轮廓、数据来源和置信度应保留为元数据，不得用无说明的常数掩盖未知项。
-- 探测器构型与坝体数据集相互独立；更换坝体不应改变设备参数含义。
+- Every subject is loaded as an explicit, versioned dataset with a declared `kind`. Never hard-code a project's dimensions, section counts, names, coordinates or kind-specific terms in generic UI, renderer or calculation modules.
+- Generic code depends only on normalized model coordinates and geometry interfaces. Converting raw survey/CAD coordinates, axis conventions and elevation datums is the job of the dataset adapter layer.
+- Points, directions, angles, elevations and lengths use explicit types or field semantics; translation applies to points only, never to directions.
+- Solid material is "positive volumes minus negative volumes". Negative volumes hollow out material and are not shown as filled material by default.
+- Visual geometry, material classification and ray intersection express the same geometric facts. When changing solids, cavities or boundaries, verify all three.
+- Whether internal structures are shown is dataset and scene configuration, not material truth; hidden geometry never changes ray results.
+- Uncertain dimensions, approximate outlines, data sources and confidence are kept as metadata; unknowns are never hidden behind unexplained constants.
+- Detector configuration is independent of the dataset; changing the subject never changes the meaning of device parameters.
+- Physics must not silently assume one kind of subject (for example rock-like matter or open-sky geometry); kind-specific physics prerequisites are explicit requirements.
 
-## 新增坝体数据集
+## Adding a dataset
 
-新增数据集时至少完成：
+A new dataset must at least:
 
-1. 定义稳定的数据集 ID、版本、单位、源坐标系、模型坐标系、高程基准和方位约定。
-2. 将坝体实体、材料区、空腔、内部设施、环境水体和候选区域映射到通用几何语义。
-3. 记录来源、近似项、未知项和可自动检查的断言。
-4. 提供正向和逆向坐标转换，并用已知控制点验证。
-5. 提供代表性材料点、空腔点和参考射线作为回归基线。
-6. 验证三维显示、点分类、射线路径和投影轮廓的一致性。
-7. 优先新增数据集适配器或配置，不为单一数据集修改通用计算核心。
+1. Define a stable dataset ID, `kind`, version, units, source frame, model frame, elevation datum and azimuth convention.
+2. Map solids, material regions, cavities, internal features, environment volumes (water, burden, overburden, …) and candidate areas to the generic geometry semantics; declare its environment variables, display layers and semantic targets.
+3. Record sources, approximations, unknowns and automatically checkable assertions.
+4. Provide forward and inverse coordinate transforms, verified with known control points.
+5. Provide representative material points, cavity points and reference rays as regression baselines.
+6. Verify that 3D display, point classification, ray paths and projection outlines agree.
+7. Prefer adding a dataset adapter, offline compiler or configuration; never change the generic calculation core for a single dataset.
 
-只有第二个真实数据集证明存在共同模式后，才将其抽象为更高层通用接口；不要仅凭猜测过度设计。
+Raise something to a higher-level generic interface only after a second real dataset (or a second subject kind) proves a shared pattern; do not over-design on speculation.
 
-## 修改与验证
+## Changes and verification
 
-- 修改 JavaScript 后至少运行 `node --check dist/app.js`；模块化后对所有入口执行相应语法检查或测试。
-- 提交前运行 `git diff --check`。
-- 修改数据规格后依据对应 schema 验证，并检查 `assertions`、`unknowns`、版本和坐标元数据。
-- 修改布局后检查常用桌面尺寸和窄屏；侧栏切换或容器缩放后确认 WebGL 相机纵横比及模型比例不变。
-- 修改站点、姿态、设备参数、环境或几何后，确认最终投影和派生评估均由同一次计算结果更新。
-- 几何高风险改动至少抽查：普通实体、边界转折、材料交界、开口/空腔、内部设施和数据集特有复杂结构。
-- 新数据集必须补充控制点、材料分类点和参考射线测试；不得只靠截图验收。
+- After changing JavaScript, run at least `node --check dist/app.js`; check every affected entry point and run the related tests.
+- Run `git diff --check` before committing.
+- After changing a data spec, validate it against its schema and check `assertions`, `unknowns`, versions and coordinate metadata.
+- After changing layout, check common desktop sizes and narrow screens; after a sidebar toggle or container resize, confirm the WebGL camera aspect ratio and model scale are unchanged.
+- After changing stations, poses, device parameters, environment or geometry, confirm the final projection and derived assessment are updated from the same calculation result.
+- High-risk geometry changes need spot checks of at least: ordinary solids, boundary turns, material junctions, openings/cavities, internal features and the dataset's own complex structures.
+- A new dataset must add control-point, material-point and reference-ray tests; screenshots alone are never acceptance.
 
-## 架构约束
+## Architecture constraints
 
-- 应用当前为可离线运行的静态站点；除非需求改变，不引入运行时 CDN 或外部服务依赖。
-- 当前核心仍集中在 `dist/app.js`，重构应渐进进行，并优先提取可测试的纯计算模块。
-- 单点计算、批量扫描、排名、导出和报告必须复用同一计算核心，避免产生互不一致的公式副本。
-- 分离数据集、设备、部署方案、环境、视图状态和计算结果；保存/加载格式需要显式 schema 版本和迁移策略。
-- 渲染层不得成为几何真值来源；计算层不得依赖 DOM 或 Three.js 场景对象才能运行。
-- 扫描应以相对比较、约束过滤和稳健性为主；工程可达性、物理可观测性和安全/施工条件应是不同维度。
+- The application is an offline static site; do not add runtime CDN or external-service dependencies unless requirements change.
+- Refactor gradually and prefer extracting testable pure calculation modules.
+- Single-point evaluation, batch scans, ranking, multi-station views, reconstruction, export and reports all reuse the same calculation core; no divergent formula copies.
+- Keep datasets, devices, deployment plans, environments, view state and calculation results separate; save/load formats need explicit schema versions and a migration strategy.
+- The rendering layer is never a source of geometric truth; the calculation layer never needs the DOM or Three.js scene objects to run.
+- Scans focus on relative comparison, constraint filtering and robustness; engineering accessibility, physical observability and safety/construction conditions are separate dimensions.
 
-## Git、迁移与部署
+## Git, migration and deployment
 
-- 不要直接双击 `dist/index.html` 测试，必须通过 HTTP 服务运行。
-- 不提交发布临时包、缓存和可再生成文件。
-- 托管平台的绑定文件只属于可选部署适配，不是领域配置；更换 AI 工具或托管方式不应影响应用、数据集和核心文档。
-- 迁移仓库时至少保留 `.git/`、`AGENTS.md`、`CONTEXT.md`、`README.md`、`docs/`、应用源码、数据和必要部署配置。
-- 一个功能或一个可解释的重构单元对应一个提交；几何、物理公式和数据格式变更应在提交信息中明确标注。
+- Never test by double-clicking `dist/index.html`; always serve over HTTP.
+- Do not commit release archives, caches or regenerable files.
+- Hosting-platform binding files are optional deployment adapters, not domain configuration; changing AI tools or hosting must not affect the application, datasets or core documentation.
+- A repository migration keeps at least `.git/`, `AGENTS.md`, `CONTEXT.md`, `README.md`, `docs/`, application source, `datasets/` and required deployment configuration.
+- One feature or one explainable refactoring unit per commit; geometry, physics-formula and data-format changes are labelled explicitly in the commit message.
+- All documentation is written in English.
 
-## 推荐演进顺序
+## Recommended order of evolution
 
-1. 为坐标转换、几何分类、射线追踪和投影补测试并提取纯模块。
-2. 建立数据集注册、加载、验证和坐标适配接口。
-3. 建立设备与部署方案的保存/加载格式及迁移机制。
-4. 实现扫描、约束过滤、相对排名和稳健性分析。
-5. 实现多站点联合显示与评估。
-6. 实现结果数据、动画和方案报告输出。
+The authoritative order is `docs/ROADMAP.md` and `docs/IMPLEMENTATION_PRIORITY.md`. In short: trustworthy results and tests first, then versioned plans, then the multi-station overview, scanning, new screens, multi-station evaluation, simulated reconstruction and physics validation.
 
-避免为未来可能性提前引入大型框架或复杂插件系统；以第二个坝体数据集和真实扫描需求作为抽象是否值得的验证标准。
+Avoid introducing large frameworks or complex plugin systems for hypothetical futures; a second real dataset, a second subject kind and real scan needs are the test of whether an abstraction is worth it.

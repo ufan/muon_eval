@@ -23,7 +23,7 @@ Last updated: 2026-10-10
 
 ## D. Dataset and geometry contracts
 
-Derived from ADR-008/009. Apply to every new dataset and data-format change (`AGENTS.md` "新增坝体数据集").
+Derived from ADR-008/009. Apply to every new dataset and data-format change (`AGENTS.md` "Adding a dataset").
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
@@ -36,6 +36,14 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | FR-D7 | Manifest binds everything. | Source digest, IR/backend versions, compile options, LOD, scenario, coordinate transform and asset checksums; declares authority between authoring source and canonical release. Dataset manifest and directory convention documented. | Standing (directory spec Needed) |
 | FR-D8 | Conformance tolerances live in the dataset baseline. | Not chosen by each implementation; water connectivity, open channels, thin layers, coplanar contacts and compiled topology checked independently. | Standing |
 | FR-D9 | Second real dam dataset. | Loaded through the common interface with its own adapter; abstractions revised only from evidence of a shared pattern. | Needed |
+
+## B. Default backend (compiled)
+
+| ID | Requirement | Acceptance criteria | Status |
+|---|---|---|---|
+| FR-B1 | Close the capability gaps of the compiled default. | Since OQ-3 the default path lacks: continuous water level (FR-E1), target contours/significance and entity ROI (FR-M3, FR-GE4), coloured internal features (dataset-declared layers, FR-K3) and the flux cloud (re-implement from the shared core, no legacy heuristic copy). Each is restored on the compiled path or explicitly dropped. | Needed |
+| FR-B2 | Station continuity across releases. | Stations saved under the legacy release key are not shown on the compiled default; offer station export/import between releases with coordinate validation. | Needed (later) |
+| FR-B3 | Legacy compatibility scope. | Legacy-only fixes (e.g. FR-C2 ray cutoff, FR-C4 quick metrics) stay correct and labelled, but new features target the compiled path only. | Standing |
 
 ## E. Environment and scenarios
 
@@ -136,7 +144,8 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | FR-Q3 | Static type checking. | `tsc --noEmit --checkJs` passes on pure modules; branded point/direction/frame types (ADR-003). | Needed |
 | FR-Q4 | Safe rendering of user text. | Station names and other user/imported text rendered with `textContent`, not `innerHTML`. | Needed |
 | FR-Q5 | Azimuth input wraps. | −10° → 350°, 360° → 0° (not clamped to 0/359). | Needed |
-| FR-Q6 | No stale data files. | Unused `dist/data/dam_spec.json` and `dist/data/dam_spec.schema.json` (old v0.1.0) removed or clearly marked; README corrected. | Needed |
+| FR-Q6 | No stale data files. | Unused `dist/data/dam_spec.json` and `dist/data/dam_spec.schema.json` (old v0.1.0) removed; README corrected. | Done |
+| FR-Q9 | English documentation. | All documentation in English (OQ-4); dataset files imported byte for byte from upstream packages excepted. UI text and Windows launcher names are not documentation and are tracked separately. | Standing |
 | FR-Q7 | Dev dependencies documented. | `manifold3d` (Python) listed for `check-interface-artifacts.mjs`; `jsonschema` deprecation (`RefResolver`) addressed. | Needed |
 | FR-Q8 | Module dependency boundaries enforced. | Real import boundaries between dataset loading, geometry, device/deployment state, assessment and rendering audited; both backends reuse application ports; calculation runs without DOM/Three.js; views provide no geometric truth; main app does not depend on the standalone preview. Locked by automated tests. | Needed |
 
@@ -154,7 +163,7 @@ The platform evaluates any imaging subject (dams, blast furnaces, tunnels, …).
 | FR-K6 | Detector placement inside or below material. | Stations inside solids or underground and the pose ranges they need (e.g. near-horizontal, zenith) are supported and tested on the compiled path. | Needed (later) |
 | FR-K7 | Large terrain. | Kilometre-scale DEM heightfields with level of detail for display and a heightfield ray backend (ADR-010). | Needed (later) |
 | FR-K8 | Per-kind baselines. | Each new subject kind ships at least one reference dataset with control points, material points and reference rays, extending the `AGENTS.md` dataset checklist. | Standing |
-| FR-K9 | Generic wording in rules and context. | `AGENTS.md`, `CONTEXT.md` and UI text describe the generic platform with dams as one kind (timing: OQ-5). | Open |
+| FR-K9 | Generic wording in rules and context. | `AGENTS.md` and `CONTEXT.md` describe the generic platform with dams as one kind (done 2026-10-10, OQ-5). UI text still uses dam wording in places; generalise with FR-K2/K3. | Done (docs); UI Needed |
 
 ## L. User-loaded geometry (ADR-019)
 
@@ -173,10 +182,11 @@ Not urgent; staged after bundled datasets.
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
-| FR-A1 | Access control for sensitive geometry. | Depends on data owner's answer (OQ-1). If required: authenticated hosting before further public deployment. | Open |
+| FR-A1 | Access control for sensitive geometry. | Zhouning data is not sensitive now (OQ-1, 2026-10-10). Re-check with the data owner for each new dataset; if required, authenticated hosting before public deployment. | Not needed now |
 
 ## Change log
 
+- 2026-10-10: Added FR-B1…B3 (compiled default), FR-Q9 (English docs); FR-A1 not needed now; FR-K9 docs done; FR-Q6 done.
 - 2026-10-10: FR-M4, FR-M5 prioritised next after the plan format.
 - 2026-10-10: Added FR-M4…M9 (simultaneous stations, demonstration mode, coverage metrics, simulated reconstruction); FR-P1 candidates vs selected deployment.
 - 2026-10-10: Added K (subject generality) and L (user-loaded geometry); FR-P1 made subject-neutral.

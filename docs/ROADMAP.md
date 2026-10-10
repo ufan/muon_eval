@@ -28,7 +28,8 @@ data contract + coordinate adapters → pure geometry query interfaces
 ```
 
 - Dataset registry, release IDs, checksum-verified loading; v0.7.0 release with compiled GLB/BVH backend.
-- Main app runs legacy DDA by default, compiled backend explicitly for frozen scenarios; shared response core.
+- Main app runs the compiled GLB/BVH backend by default (frozen scenarios); legacy DDA with continuous water level stays selectable as a compatibility path; shared response core.
+- Dataset releases live in the top-level `datasets/` directory; all documentation is in English.
 - Calculation, state, scheduling and views separated into modules; numeric pattern layers and finite-model references in the preview.
 - Not done: continuous water on compiled geometry, physical-domain certification, entity-level ROI on compiled, full plan save/load, scans.
 
@@ -86,7 +87,7 @@ Can advance alongside Phases 1–4 when data or evidence becomes available.
 - Physical-domain and interface certification, aggregate entity attribution (FR-GE4), then compiled entity ROI (FR-M3).
 - Geometry debt: single cavity implementation, spillway rules into spec, complete terrain, contour quality (FR-GE1…GE3, GE5).
 - Second real dam dataset (FR-D9) and the pending contract specs in FR-D2, D3, D5, D7.
-- Default backend switch decision (OQ-3, ADR-011).
+- Close the compiled default's capability gaps (FR-B1).
 
 ## Generalisation track (ADR-016…018)
 
@@ -95,7 +96,7 @@ Gradual; each stage is triggered by real need, not built ahead.
 | Stage | Content | When |
 |---|---|---|
 | G0 | No new dam-specific code in generic modules (FR-K1); plan/scan schemas subject-neutral (FR-P1) | Now, standing |
-| G1 | Dataset-declared kind, variables, layers, targets, capabilities (FR-K2, K3); compiled package as the generic contract (ADR-017); datasets as top-level directory (ADR-018, OQ-6) | After Phase 1 formats exist |
+| G1 | Dataset-declared kind, variables, layers, targets, capabilities (FR-K2, K3); compiled package as the generic contract (ADR-017); datasets as top-level directory (ADR-018, done) | After Phase 1 formats exist |
 | G2 | Second dam dataset validates the abstractions (FR-D9) | When data is available |
 | G3 | First non-dam subject (blast furnace or tunnel) with its physics prerequisites (FR-K4…K7) and baselines (FR-K8) | When a real project needs it |
 
@@ -117,6 +118,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-10: "Where we are" updated (compiled default, `datasets/`, English docs); default-switch item replaced by FR-B1.
 - 2026-10-10: Multi-station overview and demonstration moved ahead of scanning as Phase 2 (owner decision, OQ-7); later phases renumbered 3–7.
 - 2026-10-10: Phase 4 extended to multi-station overview/demonstration/coverage; new Phase 5 simulated reconstruction; physics validation renumbered to Phase 6.
 - 2026-10-10: Added subject-neutral principle, generalisation track (G0–G3) and user-loaded geometry track (U1–U3).

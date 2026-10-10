@@ -13,9 +13,9 @@ Last updated: 2026-10-10
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
 | 1 | Make flux integration history-independent | FR-C1 | Physics-model revision; bump `RESPONSE_MODEL_VERSION`; update frozen baseline tests and `specs/CALCULATION_MODEL.md` §2/§9 | Todo |
-| 2 | Record the legacy 500 m ray cutoff in exports; fix limitation text | FR-C2, FR-C5 | `legacy-pattern-adapter.js`, `legacy-geometry-adapter.js` | Todo |
+| 2 | Record the legacy 500 m ray cutoff in exports; fix limitation text | FR-C2, FR-C5 | `legacy-pattern-adapter.js`, `legacy-geometry-adapter.js`; legacy compatibility path only since OQ-3 | Todo |
 | 3 | Decide the cos θ projected-area factor | FR-C3 | Needs owner decision; then fix as model revision or document | Blocked (decision) |
-| 4 | Remove dead work in `quickMetrics()` | FR-C4 | Keep only `center` and `dirDoc` | Todo |
+| 4 | Remove dead work in `quickMetrics()` | FR-C4 | Keep only `center` and `dirDoc`; legacy path only | Todo |
 
 ## Standing rule
 
@@ -29,7 +29,7 @@ Last updated: 2026-10-10
 | 6 | Bounded module-dependency audit | FR-Q8 | Was "next priority" in the former `docs/ROADMAP.md`; no projection or performance features in this item | Todo |
 | 7 | Prettier reformat (behaviour-free commit) | FR-Q2 | Separate commit, no logic changes | Todo |
 | 8 | `@ts-check` + JSDoc + `tsc --noEmit` on pure modules; branded point/direction/frame types | FR-Q3, ADR-003 | Start with `coordinates.js`, `detector-pose.js`, tracers | Todo |
-| 9 | Small fixes: `textContent` for names, azimuth wrap, remove stale `dist/data/dam_spec*.json`, document dev dependencies | FR-Q4…Q7 | One commit each | Todo |
+| 9 | Small fixes: `textContent` for names, azimuth wrap, document dev dependencies | FR-Q4, Q5, Q7 | One commit each (stale files removed, FR-Q6 done) | Todo |
 | 10 | Formal `sx`/`sy` and detector-frame definition | FR-X1 | Documentation only; prerequisite for plan schema | Todo |
 
 ## P2 — Plans and server seams (Phase 1)
@@ -83,17 +83,27 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | Geometry debt (cavity, spillway rules, terrain, contours) | FR-GE1…GE3, GE5 | Geometry track |
 | Second dam dataset | FR-D9 | When data is available |
 | Dataset-declared kind/variables/layers/targets; compiled package as generic contract | FR-K2, K3, ADR-017 | Generalisation G1, after P2 |
-| Move datasets to top-level `datasets/` | ADR-018 | OQ-6 decision |
 | Material-dependent energy loss, deep-overburden flux, in-material stations, large terrain | FR-K4…K7 | Before the first non-dam subject (G3) |
 | Load packaged dataset from file; converter; in-app authoring | FR-L1…L6 | User-geometry track U1–U3, not urgent |
-| Default backend switch | OQ-3 | Decision first |
+| Compiled default capability gaps: flux cloud, internal features, target outlines/ROI, continuous water | FR-B1, FR-E1, FR-M3 | After P3; parts depend on FR-K3 and FR-GE4 |
+| Station export/import between releases | FR-B2 | With the plan format (#11) or later |
 | WebAssembly tracer | ADR-005 step 4 | Only if P4 measurements insufficient |
 | Server backend | ADR-001 | Only when T1–T4 observed |
 | Access control | FR-A1 | Answer to OQ-1 |
 | Preview performance extensions | Roadmap "Deferred" | Paused |
 
+## Done
+
+| Item | Ref | Commit |
+|---|---|---|
+| Datasets moved to top-level `datasets/` with sync script | ADR-018 | `dc48ed3` |
+| Compiled backend made the default | OQ-3, ADR-011 | `eba2f6f` |
+| Stale v0.1.0 `dam_spec` files removed | FR-Q6 | `03436ee` |
+| All documentation in English; `AGENTS.md`/`CONTEXT.md` generalised | OQ-4, OQ-5, FR-K9 | docs translation commit |
+
 ## Change log
 
+- 2026-10-10: Legacy-only notes on #2 and #4; #9 narrowed; compiled-default gaps and station import added under Later; Done table added.
 - 2026-10-10: New P3 multi-station overview (#14–#17) ahead of scan performance (now P4, #18–#22) by owner decision; phase references updated.
 - 2026-10-10: Added multi-station overview, coverage metrics and simulated reconstruction under Later; phases renumbered.
 - 2026-10-10: Added standing rule FR-K1; generalisation and user-geometry items under Later; #11 made subject-neutral.

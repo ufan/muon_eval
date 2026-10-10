@@ -1,27 +1,28 @@
-# 仓库迁移检查清单
+# Repository migration checklist
 
-## 迁移目标
+## Goal
 
-将 Git 仓库完整迁移到稳定目录，使人工开发者、任意 AI 编程工具、编辑器和自动化流程都能在同一工作树继续开发。迁移不应绑定某个 AI 厂商、客户端或托管平台。
+Move the Git repository completely to a stable location so that human developers, any AI coding tool, editors and automation can continue in the same working tree. Migration must not be tied to a particular AI vendor, client or hosting platform.
 
-## 必须保留
+## Must keep
 
-- `.git/`：提交历史、分支和远端信息；
-- `AGENTS.md`、`CONTEXT.md`、`README.md` 和 `docs/`；
-- `dist/` 全部内容，包括本地依赖和数据规格；
-- 本机离线及容器部署脚本；
-- 项目实际使用的测试、构建和配置文件。
+- `.git/`: history, branches and remotes;
+- `AGENTS.md`, `CONTEXT.md`, `README.md` and `docs/`;
+- all of `dist/`, including local vendor libraries;
+- all of `datasets/` (dataset releases and their descriptions);
+- local offline and container deployment scripts;
+- the tests, build and configuration files the project actually uses.
 
-## 可选集成文件
+## Optional integration files
 
-不同工具可能使用各自的隐藏目录、项目文件或托管绑定。这些文件只能作为适配层，不应承载唯一的领域知识或核心配置。
+Different tools may use their own hidden directories, project files or hosting bindings. These are adapters only and must not hold the only copy of domain knowledge or core configuration.
 
-- 若要继续发布到当前在线实例，保留 `.openai/hosting.json`；
-- 若改用其他托管平台，该文件可以忽略；
-- 编辑器工作区、AI 工具缓存和本地会话历史通常不需要迁移；
-- 某个工具专用的重要规则，应同步归并到 `AGENTS.md`、`CONTEXT.md` 或 `docs/`，避免形成信息孤岛。
+- To keep publishing to the current hosted instance, keep `.openai/hosting.json`;
+- when switching to another host, the file can be ignored;
+- editor workspaces, AI tool caches and local session history usually need not be migrated;
+- important rules specific to one tool are merged into `AGENTS.md`, `CONTEXT.md` or `docs/` so they do not become an information silo.
 
-当前可选托管绑定为：
+The current optional hosting binding is:
 
 ```json
 {
@@ -32,58 +33,59 @@
 }
 ```
 
-`project_id` 不是应用运行时秘密，但替换后会指向不同的在线实例。
+`project_id` is not a runtime secret, but replacing it points to a different hosted instance. Because this host publishes only `dist/`, run `node scripts/sync-datasets.mjs` before publishing.
 
-## 不需要迁移
+## Need not migrate
 
-- 发布过程生成的临时压缩包；
-- 浏览器缓存、编辑器缓存和 AI 会话缓存；
-- 可由依赖安装、构建或测试重新生成的临时文件。
+- temporary archives produced by releases;
+- browser, editor and AI session caches;
+- temporary files that dependency installation, builds or tests can regenerate (including `dist/datasets/` and `dist/data/derived-interfaces/`).
 
-浏览器 `localStorage` 位于浏览器及站点来源中，不在仓库里。保持原在线 URL 时浏览器数据通常仍可继续使用；改用新 URL 后不会自动迁移。
+Browser `localStorage` lives in the browser and site origin, not in the repository. Keeping the same hosted URL usually keeps that browser data; a new URL does not migrate it automatically.
 
-## 通用迁移步骤
+## General steps
 
-1. 确认当前工作树状态：
+1. Check the current working tree:
 
-   ```powershell
+   ```bash
    git status --short
    git log -1 --oneline
    ```
 
-2. 提交需要保留的修改；不要只依赖尚未记录的工具会话或聊天历史。
-3. 复制或克隆整个仓库，包括隐藏的 `.git` 目录。
-4. 根据需要复制可选托管绑定和本地环境配置，但不要复制缓存。
-5. 在新目录执行：
+2. Commit changes that must be kept; never rely only on unrecorded tool sessions or chat history.
+3. Copy or clone the whole repository, including the hidden `.git` directory.
+4. Copy optional hosting bindings and local environment configuration as needed, but not caches.
+5. In the new location run:
 
-   ```powershell
+   ```bash
    git status
    git log -5 --oneline
-   node --check dist\app.js
+   node --check dist/app.js
+   node --test tests/*.test.mjs
    ```
 
-6. 启动离线版本，检查页面、数据规格、三维几何、射线计算、投影和交互。
-7. 将新目录添加到所选编辑器或 AI 编程工具；工作目录应指向仓库根目录。
-8. 要求新参与者或 AI 工具首先完整读取 `AGENTS.md` 和 `CONTEXT.md`，再按任务读取相关 `docs/`。
-9. 用一个小而可验证的改动完成编辑、检查和提交测试。
-10. 若保留原在线实例，再执行一次部署验证；确认成功后停止从旧目录发布。旧目录先归档，不立即删除。
+6. Start the offline version and check the page, datasets, 3D geometry, ray calculation, projections and interaction.
+7. Add the new directory to the chosen editor or AI coding tool; the working directory is the repository root.
+8. Ask new contributors or AI tools to read `AGENTS.md` and `CONTEXT.md` in full first, then the relevant `docs/` for each task.
+9. Make one small verifiable change to test editing, checks and commits.
+10. If the hosted instance is kept, run one deployment check; once it succeeds, stop publishing from the old directory. Archive the old directory first rather than deleting it at once.
 
-## 迁移后验收
+## Acceptance after migration
 
-- 新环境能够读写仓库；
-- 不同开发工具看到相同的 `git status` 和提交历史；
-- 离线站点正常打开；
-- 当前数据集可以加载；
-- 坝体比例、空腔、复杂结构、投影和侧栏行为正常；
-- 应用不依赖旧目录中的绝对路径；
-- 若需保留在线实例，原 URL 和发布流程仍然有效；
-- 项目规则和领域上下文可以在不参考旧聊天的情况下理解。
+- The new environment can read and write the repository;
+- different tools see the same `git status` and history;
+- the offline site opens;
+- the current datasets load;
+- subject scale, cavities, complex structures, projections and sidebar behaviour are correct;
+- the application does not depend on absolute paths in the old directory;
+- if the hosted instance is kept, its URL and publishing process still work;
+- project rules and domain context can be understood without the old chats.
 
-## 多工具协作规则
+## Working with several tools
 
-- 任意 AI 工具和人工开发者都可以共享仓库，但不要同时编辑同一文件。
-- 开始工作前检查 `git status`，不要覆盖其他工具或开发者的未提交修改。
-- 一个功能或一个可解释的重构单元对应一个提交。
-- 几何、物理公式、坐标和数据格式变更应在提交信息与文档中明确标注。
-- 聊天记录、IDE 索引和工具记忆不是项目事实来源；长期决策必须写入版本控制中的文档。
-- 工具专用指令不得与 `AGENTS.md` 冲突，也不得成为完成构建、测试或理解项目的唯一入口。
+- Any AI tool and human developer can share the repository, but do not edit the same file at the same time.
+- Check `git status` before starting and never overwrite another tool's or developer's uncommitted changes.
+- One feature or one explainable refactoring unit per commit.
+- Geometry, physics-formula, coordinate and data-format changes are labelled explicitly in commit messages and documentation.
+- Chat records, IDE indexes and tool memory are not sources of project truth; long-lived decisions are written to version-controlled documentation.
+- Tool-specific instructions must not conflict with `AGENTS.md` and must not become the only way to build, test or understand the project.

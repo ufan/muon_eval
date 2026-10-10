@@ -1,116 +1,116 @@
-# 计算结果解读与使用
+# Interpreting and using results
 
-本文档面向开发者和最终使用者，说明当前快速评估结果的含义、适用边界、参数敏感性、不确定性和使用建议。公式与计算链本身见 [计算模型规格](../specs/CALCULATION_MODEL.md)（下文“规格 §N”指该文件章节）。
+For developers and end users: what the current fast-evaluation results mean, where they apply, how sensitive they are to parameters, what is uncertain and how to use them. The formulas and calculation chain themselves are in the [calculation model spec](../specs/CALCULATION_MODEL.md) ("spec §N" below refers to its sections).
 
-阅读本文后，使用者应能回答：某幅图显示什么、某个数值如何得到、改变参数会影响哪一步，以及结果依赖哪些假定。
+After reading this, a user should be able to answer: what a given image shows, how a given number is obtained, which step a parameter change affects, and which assumptions a result depends on.
 
-## 1. 适用范围与结论边界
+## 1. Scope and limits of conclusions
 
-当前模型适合：
+The current model is suitable for:
 
-- 快速比较候选站点、姿态和设备构型；
-- 判断视场是否覆盖目标结构；
-- 估算不同方向的材料长度、柱密度、透射趋势和计数量级；
-- 为后续高精度模拟、现场踏勘和部署设计筛选方案。
+- quickly comparing candidate stations, poses and device configurations;
+- judging whether the field of view covers the target structure;
+- estimating material lengths, column density, transmission trends and count magnitudes in different directions;
+- screening plans for later high-fidelity simulation, site surveys and deployment design.
 
-当前模型不等同于：
+The current model is not:
 
-- Geant4 等逐粒子蒙特卡洛输运；
-- 含地形、材料非均匀性和完整 CAD/BIM 的工程数字孪生；
-- 经实测本底、触发、重建效率和环境变化标定的最终性能预测；
-- 结构安全、施工安全或部署可达性的自动结论。
+- particle-by-particle Monte Carlo transport such as Geant4;
+- an engineering digital twin with full terrain, material inhomogeneity and complete CAD/BIM;
+- a final performance prediction calibrated with measured background, trigger, reconstruction efficiency and environmental changes;
+- an automatic conclusion about structural safety, construction safety or deployment accessibility.
 
-因此，预计计数和显著度应视为**同一模型内的比较指标和量级估算**。在完成几何、通量、探测器响应和现场数据验证前，不应单独用作工程承诺。
+Expected counts and significance are therefore **comparison metrics and magnitude estimates within one model**. Until geometry, flux, detector response and field data are validated, they must not be used on their own as engineering commitments.
 
-## 2. 右栏指标的准确含义
+## 2. Exact meaning of the side-panel metrics
 
-| 界面指标 | 最终值来源 | 应如何理解 |
+| UI metric | Source of the final value | How to read it |
 | --- | --- | --- |
-| 中心线混凝土路径 | 65×65 中心像素 | 中心观测方向累计穿过的混凝土长度 |
-| 中心线柱密度 m.w.e. | 65×65 中心像素 | 中心方向混凝土、水和岩体的水当量总和 |
-| 预计计数 | 全部 65×65 像素求和 | 当前设备、曝光和快速物理模型下的总事件量级 |
-| 加权视场穿透率 | `sum(Nthrough)/sum(Nopen)` | 按面积、立体角和响应加权后的全视场透射 |
-| 中心线穿越主网格 | 中心像素射线区段记录数 | 计算复杂度/路径分段的辅助信息，不是物理性能指标 |
-| 有效射线路径范围 | 全投影混凝土长度最小–最大 | 当前视场覆盖的混凝土厚度跨度 |
+| Central-ray concrete path | Centre pixel of the 65×65 projection | Total concrete length along the central viewing direction |
+| Central-ray column density (m.w.e.) | Centre pixel of the 65×65 projection | Water-equivalent sum of concrete, water and rock along the central direction |
+| Expected count | Sum over all 65×65 pixels | Total event magnitude for the current device, exposure and fast physics model |
+| Weighted field transmission | `sum(Nthrough)/sum(Nopen)` | Whole-field transmission weighted by area, solid angle and response |
+| Central-ray main-grid cells | Number of segments recorded for the centre ray | Auxiliary information about computational complexity/path segmentation, not a physical performance metric |
+| Effective ray path range | Minimum–maximum concrete length over the projection | The span of concrete thickness covered by the current field of view |
 
-右栏标题“站点评估”不代表已经完成相对扫描排名。当前这些主要是单站原始或派生指标；未来扫描功能应在共同约束下比较分位数、排名、稳健性和多目标权衡。
+The side-panel heading "station assessment" does not mean a relative scan ranking has been done. These are mostly single-station raw or derived metrics; future scans compare quantiles, ranks, robustness and multi-objective trade-offs under common constraints.
 
-## 3. 参数敏感性与选择建议
+## 3. Parameter sensitivity and choices
 
-| 参数变化 | 主要影响 | 使用建议 |
+| Parameter change | Main effect | Advice |
 | --- | --- | --- |
-| 站点位置 | 几何交点、所有材料路径和轮廓 | 优先保证坐标和站点工程语义可靠 |
-| 方位/仰角 | 覆盖目标、天顶角通量和路径 | 小步调整并等待最终投影完成 |
-| 水位 | 水路径、柱密度和水体轮廓 | 结果中记录场景水位 |
-| 材料密度 | 柱密度、最低能量、透射和计数 | 使用实测值并保留不确定范围 |
-| 灵敏面积 | 计数近似线性变化 | 必须填写实际有效面积而非外壳尺寸 |
-| 条宽/条数/层距 | 斜率步长、视场和像素接受度 | 参数组合需与真实读出几何一致 |
-| 单层效率 | 三层符合按 `ε³` 变化 | 不应以单层效率替代系统总效率标定 |
-| 死区损失 | 总计数线性变化 | 使用有效活时间比例 |
-| 曝光时间 | 计数线性变化、显著度次线性变化 | 比较方案时保持一致 |
-| 角分辨率 | 图像平滑和结构可见度 | 当前只平滑计数/透射，不改变原始射线 |
-| 系统误差 | 只影响结构显著度 | 应来自标定或敏感性区间，而非随意调优 |
-| 通量角模型 | 天顶角依赖及绝对计数 | 默认 Gaisser；cos²仅用于粗略对照 |
+| Station position | Geometric intersections, all material paths and contours | Make sure coordinates and the station's engineering meaning are reliable first |
+| Azimuth/elevation | Target coverage, zenith-angle flux and paths | Adjust in small steps and wait for the final projection |
+| Water level / scenario | Water paths, column density and water-body outlines | Record the scenario in results |
+| Material density | Column density, minimum energy, transmission and counts | Use measured values and keep the uncertainty range |
+| Sensitive area | Counts change roughly linearly | Enter the actual effective area, not the housing size |
+| Strip pitch / count / layer spacing | Slope step, field of view and pixel acceptance | The combination must match the real readout geometry |
+| Single-layer efficiency | Three-layer coincidence changes as `ε³` | Do not substitute single-layer efficiency for a system efficiency calibration |
+| Dead-time loss | Total counts change linearly | Use the effective live-time fraction |
+| Exposure time | Counts linear, significance sub-linear | Keep it the same when comparing plans |
+| Angular resolution | Image smoothing and structure visibility | Currently smooths counts/transmission only; raw rays are unchanged |
+| Systematic error | Affects structural significance only | Should come from calibration or a sensitivity range, not be tuned freely |
+| Angular flux model | Zenith dependence and absolute counts | Gaisser by default; cos² only for rough comparison |
 
-开发者不应通过调节系统误差、边缘因子或色标来“优化”方案外观。参数变化必须有物理或标定依据，并进入导出结果。
+Developers must not "optimize" how a plan looks by tuning systematic error, the edge factor or colour scales. Parameter changes need a physical or calibration basis and must appear in exported results.
 
-## 4. 当前主要不确定性和技术债务
+## 4. Main current uncertainties and technical debt
 
-### 几何
+### Geometry
 
-- 水力空腔视觉裁剪与材料分类仍有两套实现，可能漂移；
-- 部分泄槽、底孔、观测室和下层廊道尺寸为近似或假定；
-- 缺少完整库底、两岸和外部岩体地形；
-- 工程包围盒可能截短外部岩体路径。
+- Hydraulic-cavity visual clipping and material classification still have two implementations that can drift (legacy backend);
+- some chute, bottom-outlet, observation-room and lower-gallery dimensions are approximate or assumed;
+- the full reservoir bed, both banks and external rock terrain are missing;
+- the engineering bounding box can truncate external rock paths.
 
-### 物理
+### Physics
 
-- 连续能损忽略随机输运和散射；
-- 地表通量模型及单位归一化尚未用本站实测数据核验；
-- 材料仅以平均密度表示；
-- 未考虑大气、季节和电荷比等修正。
+- Continuous energy loss ignores stochastic transport and scattering;
+- the surface flux model and its unit normalization have not been checked against measured data at this site;
+- materials are represented by mean density only;
+- atmospheric, seasonal and charge-ratio corrections are not included.
 
-### 探测器
+### Detector
 
-- 三层效率按独立同效率 `ε³` 处理；
-- 边缘效率是经验公式；
-- 未建模触发、噪声、重建、能量和方向相关效率；
-- 角分辨率使用近似二维高斯显示平滑。
+- Three-layer efficiency is treated as independent identical efficiencies `ε³`;
+- the edge efficiency is an empirical formula;
+- trigger, noise, reconstruction, energy- and direction-dependent efficiencies are not modelled;
+- angular resolution is an approximate 2D Gaussian display smoothing.
 
-### 统计
+### Statistics
 
-- 显著度使用单像素高斯近似和统一比例系统误差；
-- ROI 合并忽略像素相关和多重检验；
-- 多目标选择取最大值，不是联合拟合；
-- 当前没有几何、密度和响应参数的不确定性传播。
+- Significance uses a single-pixel Gaussian approximation and one proportional systematic error;
+- ROI combination ignores pixel correlation and multiple testing;
+- selecting several targets takes the maximum, not a joint fit;
+- there is no uncertainty propagation for geometry, density or response parameters.
 
-## 5. 结果使用与验证建议
+## 5. Using and verifying results
 
-### 最终使用者
+### End users
 
-1. 确认数据集版本、站点、姿态、设备和水位。
-2. 等待“精细投影”完成后再记录右栏指标。
-3. 同时查看计数、透射、目标轮廓和三维悬停射线，不凭单幅亮度图判断结构。
-4. 只在相同参数和约束下比较站点。
-5. 对领先候选方案进行密度、位置、角度和几何范围的敏感性检查。
-6. 用高精度模拟或实测数据复核最终方案。
+1. Confirm the dataset release, station, pose, device and scenario/water level.
+2. Wait until the final projection is done before recording side-panel metrics.
+3. Look at counts, transmission, target outlines and the hovered 3D ray together; never judge structure from a single brightness image.
+4. Compare stations only under identical parameters and constraints.
+5. Run sensitivity checks on density, position, angle and geometry extent for leading candidates.
+6. Confirm the final plan with high-fidelity simulation or measured data.
 
-### 开发者
+### Developers
 
-对计算链的任何修改至少建立以下回归量：
+Any change to the calculation chain establishes at least these regression quantities:
 
-- 控制点坐标正反变换；
-- 代表点的材料分类；
-- 参考射线的各材料路径和柱密度；
-- 固定 `X` 下的 `Emin`；
-- 固定能量/天顶角的谱与积分通量；
-- 固定设备参数下的视场、立体角权重和开放天空计数；
-- 固定站点的中心像素、总计数和加权透射；
-- 目标反事实计数与显著度；
-- 25×25 预览和 65×65 最终结果的一致趋势。
+- forward and inverse transforms of control points;
+- material classification of representative points;
+- per-material path lengths and column density of reference rays;
+- `Emin` at fixed `X`;
+- spectrum and integrated flux at fixed energy/zenith angle;
+- field of view, solid-angle weights and open-sky counts at fixed device parameters;
+- centre pixel, total count and weighted transmission at a fixed station;
+- target counterfactual counts and significance;
+- consistent trends between the 25×25 preview and the 65×65 final result.
 
-模型或默认参数改变时，应提高相应模型版本，并在导出文件和变更记录中说明数值不可直接与旧版本比较。
+When the model or default parameters change, increase the corresponding model version and state in exports and the change log that values are not directly comparable with the old version.
 
-## 6. 后续验证
+## 6. Further validation
 
-待补充的验证材料已迁移为需求条目，在 [`../FEATURE_REQUIREMENTS.md`](../FEATURE_REQUIREMENTS.md) 的 FR-V（物理与验证）、FR-X（探测器）、FR-S2/FR-M1（扫描与多站点）中维护。
+Validation material still to be produced is tracked as requirements in [`../FEATURE_REQUIREMENTS.md`](../FEATURE_REQUIREMENTS.md): FR-V (physics and validation), FR-X (detector), FR-S2/FR-M1 (scans and multi-station).

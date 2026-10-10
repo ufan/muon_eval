@@ -1,119 +1,120 @@
-# 计算模型规格
+# Calculation model
 
-本规格定义当前快速评估模型（`legacy-quick-response@1.0.0` 及其 compiled 适配）从坝体数据、探测器位置和姿态生成射线、投影与数值指标的计算链、公式和参数。它是代码必须符合的规范性描述，不是对完整缪子输运或探测器标定的承诺。
+This spec defines the calculation chain, formulas and parameters by which the current fast-evaluation model (`legacy-quick-response@1.0.0` and its compiled adapter) turns subject data, detector position and pose into rays, projections and numerical metrics. It is a normative description the code must match, not a promise of full muon transport or detector calibration.
 
-- 公式、默认参数或数值行为的任何改变都是模型修订：须提高模型版本、更新冻结基线测试，并在提交信息中标注。
-- 结果含义、适用边界、参数敏感性和使用建议见 [结果解读](../guides/RESULT_INTERPRETATION.md)。
-- 已知与本规格相关的待修正项（缓存历史依赖、射程记录、接受度 cos θ 因子）见 [需求](../FEATURE_REQUIREMENTS.md) FR-C1…C3。
-- 章节编号沿用原 `CALCULATION_MODELS.md`，以保持既有引用（§2–§13）有效。
+- Any change to formulas, default parameters or numerical behaviour is a model revision: increase the model version, update the frozen baseline tests and label it in the commit message.
+- The meaning of results, their limits, parameter sensitivity and usage advice are in the [result interpretation guide](../guides/RESULT_INTERPRETATION.md).
+- Known open corrections to this spec (history-dependent cache, ray-length recording, the acceptance cos θ factor) are FR-C1…C3 in the [feature requirements](../FEATURE_REQUIREMENTS.md).
+- Section numbers follow the former `CALCULATION_MODELS.md` so existing references (§2–§13) stay valid.
+- The bundled Zhouning dam is the worked example; dam-specific items (water levels, concrete, dam targets) are the dam kind's instance of the generic quantities.
 
-## 2. 总体计算链
+## 2. Overall calculation chain
 
 ```text
-坝体数据集 + 环境状态
+dataset + environment state
         ↓
-坐标转换与材料分类
+coordinate transform and material classification
         ↓
-站点位置 + 方位角/仰角 + 探测器参数
+station position + azimuth/elevation + detector parameters
         ↓
-探测器局部斜率格 (sx, sy) → 空间射线方向
+detector-local slope grid (sx, sy) → ray directions in space
         ↓
-Legacy DDA 自适应细分，或 compiled BVH 材料区段
+compiled BVH material segments, or legacy DDA adaptive subdivision
         ↓
-混凝土/水/岩体/空气路径长度
+path lengths per material (e.g. concrete/water/rock/air)
         ↓
-水当量柱密度 X
+water-equivalent column density X
         ↓
-连续能损近似 → 穿透所需最低初始能量 Emin
+continuous energy loss → minimum surface energy to penetrate, Emin
         ↓
-地表缪子谱积分：开天通量与穿透后通量
+surface muon spectrum integrals: open-sky flux and transmitted flux
         ↓
-透射率、立体角、面积、曝光和探测效率
+transmission, solid angle, area, exposure and detection efficiency
         ↓
-每方向预计计数
+expected counts per direction
         ↓
-投影图、结构轮廓、显著度、热云和右栏汇总指标
+projections, structure outlines, significance, flux cloud and side-panel metrics
 ```
 
-Legacy 计算入口为 `dist/modules/main-assessment.js`，接受站点、设备、响应和环境快照，并注入几何接口。方向运算位于 `detector-pose.js`，射线由绑定的几何上下文提供，目标解释位于 `legacy-target-interpretation.js`。`dist/app.js` 仅装配依赖。
+The legacy calculation entry is `dist/modules/main-assessment.js`, which takes station, device, response and environment snapshots and an injected geometry interface; the compiled entry is `compiled-main-assessment.js` over `compiled-assessment.js`. Direction arithmetic is in `detector-pose.js`, rays come from the bound geometry context, and legacy target interpretation is in `legacy-target-interpretation.js`. `dist/app.js` only assembles dependencies.
 
-`dist/modules/muon-response.js` 保存谱、积分、能损与显著度公式；`detector-projection.js` 保存原生条差分箱、像素响应、分批投影及高斯显示平滑。`assessment-controller.js` 管理取消与发布，不读取 DOM 或导入几何后端。快预览和最终结果共用一个输入/环境快照；`main-page.js` 只接收结果更新 DOM。模型标识为 `legacy-quick-response@1.0.0`；模块边界不改变物理模型。
+`dist/modules/muon-response.js` holds the spectrum, integral, energy-loss and significance formulas; `detector-projection.js` holds native strip-difference binning, pixel response, batched projection and Gaussian display smoothing. `assessment-controller.js` manages cancellation and publication without reading the DOM or importing a geometry backend. The quick preview and final result share one input/environment snapshot; `main-page.js` only receives results to update the DOM. The model identifier is `legacy-quick-response@1.0.0`; module boundaries do not change the physics model.
 
-本次保留既有近似，包括计数使用固定三层效率 `ε³`、两个轴以 `stripsX` 分箱（当前 UI 为对称读出），以及积分通量按模型/天顶角/能量量化的缓存。同一量化桶返回首次调用值，因此缓存历史可能影响最后几位数；默认主应用仍共享原缓存。固定 `10⁵ GeV` 积分上限及极端能量的旧行为尚未修改，应另设模型修订而不能在重构中静默改变。冻结旧公式的测试验证两种角模型、25/65 网格、逐像素计数/透射率和显示平滑的精确数值一致性。
+Existing approximations are kept: counts use a fixed three-layer efficiency `ε³`; both axes are binned with `stripsX` (the current UI has symmetric readout); and the integrated flux is cached with quantization by model/zenith angle/energy. A quantization bucket returns the value of its first call, so cache history can change results (measured up to ~5% per pixel near the horizon; FR-C1); the main app still shares this cache. The fixed `10⁵ GeV` integration upper limit and the old behaviour at extreme energies are unchanged and need a separate model revision rather than a silent change during refactoring. Tests with frozen old formulas verify exact numerical agreement for both angular models, 25/65 grids, per-pixel counts/transmission and display smoothing.
 
-## 3. 输入、状态和版本
+## 3. Inputs, state and versions
 
-### 3.1 坝体数据集
+### 3.1 Dataset
 
-当前内置数据由 `dist/data/dam_spec.json` 提供，包括：
+Data come from the selected release in `datasets/registry.json`, including:
 
-- 正体积 `solids`；
-- 负体积 `voids`；
-- 基础面、环境水体和材料密度；
-- 候选站点和设备初始参数；
-- 几何来源、置信等级、未知项和断言。
+- positive volumes (`solids`);
+- negative volumes (`voids`);
+- foundation surfaces, environment water bodies and material densities;
+- candidate stations and initial device parameters;
+- geometry sources, confidence grades, unknowns and assertions.
 
-当前周宁数据集为 LOD2 参数模型，包含照片、公开资料和经验假定。具体坐标与几何规则见 [`datasets/zhouning-lower-reservoir-dam/README.md`](../../datasets/zhouning-lower-reservoir-dam/README.md)。未来数据集应通过同一语义接口进入本计算链。
+The current Zhouning dataset is an LOD2 parametric model based on photographs, public information and empirical assumptions; compiled releases add closed GLB meshes per frozen scenario. Coordinate and geometry rules are in [`datasets/zhouning-lower-reservoir-dam/README.md`](../../datasets/zhouning-lower-reservoir-dam/README.md). Future datasets enter this calculation chain through the same semantic interface.
 
-### 3.2 环境状态
+### 3.2 Environment state
 
-Legacy 上游水位由滑条设置，下游固定为规格值；compiled 仅选择已发布工况的完整 variables（含水位和闸门状态），禁用连续滑条。不插值已编译网格，也不把任意覆盖值记录成已计算环境。
+On the legacy backend the upstream water level is set by a slider and the downstream level is fixed to the spec value. On the compiled backend only the complete variables of a published scenario (including water levels and gate states) can be selected, and the continuous slider is disabled. Compiled meshes are never interpolated, and arbitrary override values are never recorded as a computed environment.
 
-当前模型未包含随时间变化的大气压、温度、库水密度、地形含水率等环境修正。
+The model includes no time-dependent corrections for atmospheric pressure, temperature, reservoir water density or ground moisture.
 
-### 3.3 探测器和响应参数
+### 3.3 Detector and response parameters
 
-默认值及界面可调项如下。
+Defaults and adjustable UI parameters:
 
-| 参数 | 当前默认值 | 作用位置 |
+| Parameter | Current default | Where it acts |
 | --- | ---: | --- |
-| 层数 | 3 | 基线和多层符合效率 |
-| 灵敏面积 | 409.6 × 409.6 mm | 计数归一化与三维显示 |
-| 条宽/节距 | 1.6 mm | 原生斜率步长 |
-| 每方向读出条数 | 256 | 原生斜率格和视场 |
-| 层间距 | 0.15 m | 总基线，默认三层时为 0.30 m |
-| 单层效率 | 95% | 三层符合效率 `ε³` |
-| 死区损失 | 2% | 有效活时间比例 0.98 |
-| 角分辨率 | 0.3° | 投影显示的高斯平滑 |
-| 系统误差 | 3% | 结构显著度分母 |
-| 曝光时间 | 30 天 | 预计计数线性缩放 |
-| 地表角分布 | Modified Gaisser | 开天和穿透通量 |
+| Layers | 3 | Baseline and multi-layer coincidence efficiency |
+| Sensitive area | 409.6 × 409.6 mm | Count normalization and 3D display |
+| Strip width/pitch | 1.6 mm | Native slope step |
+| Readout strips per direction | 256 | Native slope grid and field of view |
+| Layer spacing | 0.15 m | Total baseline, 0.30 m with three layers |
+| Single-layer efficiency | 95% | Three-layer coincidence efficiency `ε³` |
+| Dead-time loss | 2% | Effective live-time fraction 0.98 |
+| Angular resolution | 0.3° | Gaussian smoothing of the displayed projection |
+| Systematic error | 3% | Denominator of structural significance |
+| Exposure time | 30 days | Linear scaling of expected counts |
+| Surface angular distribution | Modified Gaisser | Open-sky and transmitted flux |
 
-参数保存于浏览器 `localStorage`。导出方案时会写入设备和响应快照。
+Parameters are stored in browser `localStorage`. Exported plans include device and response snapshots.
 
-## 4. 坐标、姿态与射线方向
+## 4. Coordinates, pose and ray directions
 
-### 4.1 站点坐标
+### 4.1 Station coordinates
 
-界面使用标准化右手模型坐标：
+The UI uses a normalized right-handed model frame. For the Zhouning dataset:
 
-- `X+`：下游；
-- `Y+`：西北/左岸；
-- `Z+`：高程增加，当前数据集的 `Z = 工程高程 - 198 m`。
+- `X+`: downstream;
+- `Y+`: northwest / left bank;
+- `Z+`: increasing elevation, with `Z = engineering elevation − 198 m` for this dataset.
 
-Legacy 分类内部使用文档坐标，入口统一转换；compiled 分类/射线直接使用 model_frame，GLB 与显示复用模型缓冲。坐标变换细节见 [`datasets/zhouning-lower-reservoir-dam/README.md`](../../datasets/zhouning-lower-reservoir-dam/README.md)。
+Legacy classification uses document coordinates internally with a single conversion at the entry; compiled classification and rays use `model_frame` directly, and the GLB and display reuse the model buffers. Transform details are in the dataset README.
 
-### 4.2 中心方向
+### 4.2 Central direction
 
-方位角 `az` 从模型 `X+` 朝 `Y+` 增加，仰角 `el` 从水平面向上增加。中心单位方向为：
+Azimuth `az` increases from model `X+` towards `Y+`; elevation `el` increases upward from the horizontal plane. The central unit direction is:
 
 ```text
 d0 = (cos(el) cos(az), cos(el) sin(az), sin(el))
 ```
 
-当前界面把方位角限制在 `0–359°`，仰角限制在 `0–90°`，因此只计算向上的射线。地表通量模型对地平线以下方向返回零。
+The UI currently limits azimuth to `0–359°` and elevation to `0–90°`, so only upward rays are computed. The surface flux model returns zero below the horizon.
 
-### 4.3 探测器局部斜率
+### 4.3 Detector-local slopes
 
-每个投影方向由中心方向、局部右方向和局部上方向构造：
+Each projection direction is built from the central direction, the local right direction and the local up direction:
 
 ```text
 d(sx, sy) = normalize(d0 + sx · right + sy · up)
 ```
 
-`sx`、`sy` 是无量纲斜率，不是角度；分别表示局部向右、向上的偏移。对应离轴角约为 `atan(sqrt(sx² + sy²))`。
+`sx` and `sy` are dimensionless slopes, not angles; they are the local rightward and upward offsets. The corresponding off-axis angle is about `atan(sqrt(sx² + sy²))`.
 
-总基线和原生斜率步长为：
+Total baseline and native slope step:
 
 ```text
 baseline = layerSpacing × (layers - 1)
@@ -122,139 +123,139 @@ maxSlopeX = (stripsX - 1) × nativeSlopeStep
 maxSlopeY = (stripsY - 1) × nativeSlopeStep
 ```
 
-界面显示的完整视场采用：
+The full field of view shown in the UI is:
 
 ```text
 FOV = 2 atan(maxSlope)
 ```
 
-注意：这是由条差组合得到的几何范围。大斜率方向的条对组合更少，接受度自然下降，不能把整个视场理解为均匀灵敏。
+Note: this is the geometric range spanned by strip-difference combinations. Large-slope directions have fewer strip pairs, so acceptance falls off naturally; the field of view is not uniformly sensitive.
 
-## 5. Legacy 材料几何和点分类
+## 5. Legacy material geometry and point classification
 
-对任意空间点，程序按以下顺序分类：
+For any point in space the legacy backend classifies in this order:
 
-1. 位于正体积、未落入负体积且高于坝基面：混凝土；
-2. 低于坝基面：岩体；
-3. 位于上游/下游水域且低于相应水位：水；
-4. 其余：空气。
+1. inside a positive volume, outside all negative volumes and above the dam foundation surface: concrete;
+2. below the foundation surface: rock;
+3. inside the upstream/downstream water area and below the corresponding water level: water;
+4. otherwise: air.
 
-这里的混凝土几何是 `union(solids) - union(voids)`。负体积本身没有材料；廊道、观察室、电梯井、孔洞和泄槽通过扣除混凝土形成。
+The concrete geometry here is `union(solids) − union(voids)`. Negative volumes themselves have no material; galleries, observation rooms, elevator shafts, openings and chutes are formed by subtracting concrete.
 
-同一个点还可携带目标标签，如坝体、廊道、电梯井、溢流泄洪、平台和水体。标签用于轮廓、悬停标记及反事实显著度，并不改变基础材料分类。
+The same point can also carry target labels such as dam, gallery, elevator shaft, spillway, platform and water body. Labels are used for outlines, hover markers and counterfactual significance and do not change the base material classification.
 
-### 当前假定
+### Current assumptions
 
-- 材料区内部密度均匀；
-- 不计算钢筋、设备、沉积物及小尺度构件；
-- 岩体由简化基础面和边界近似；
-- 库底及两岸完整三维地形尚未建模；
-- 几何交界的结果受采样容差影响。
+- Uniform density within each material region;
+- no reinforcement, equipment, sediment or small components;
+- rock approximated by a simplified foundation surface and boundaries;
+- the full reservoir bed and both banks are not modelled in 3D;
+- results at geometric junctions depend on sampling tolerance.
 
-## 6. Legacy 射线追踪与路径积分
+## 6. Legacy ray tracing and path integration
 
-### 6.1 追踪范围
+### 6.1 Tracing range
 
-射线先与当前工程包围盒求交：
+Rays are first intersected with the current engineering bounding box.
 
-边界以 legacy-geometry-adapter 返回的 traceSettings.boundsDoc 为准：横向从 terrainNear 的 origin/shape/spacing 确定，高程为旧后端兼容域 150–600 m，射程上限 500 m。不得用源规格坝体尺寸代替该实际计算域。
+The bounds are the `traceSettings.boundsDoc` returned by legacy-geometry-adapter: laterally from terrainNear's origin/shape/spacing, vertically the legacy compatibility domain 150–600 m, with a 500 m range limit. The spec's dam dimensions must never replace this actual calculation domain.
 
-包围盒外不继续累计材料。因此，若真实岩体或水体延伸超出该范围，当前柱密度会低估。这个范围是当前数据集实现细节，未来应由数据集声明。
+No material is accumulated outside the box. If real rock or water extends beyond it, the column density is underestimated. This range is an implementation detail of the current dataset and should in future be declared by the dataset.
 
-### 6.2 DDA 与边界细分
+### 6.2 DDA and boundary subdivision
 
-射线使用三维 DDA 沿主网格前进：
+Rays advance along the main grid with 3D DDA:
 
-- 主网格边长：5 m；
-- 最终投影边界细分目标：0.5 m；
-- 快速预览边界细分目标：1.5 m；
-- 递归细分最大深度：8。
+- main cell size: 5 m;
+- final-projection boundary subdivision target: 0.5 m;
+- quick-preview boundary subdivision target: 1.5 m;
+- maximum recursive subdivision depth: 8.
 
-在每个主网格段内，程序检查靠近段首、段中和段尾的材料与目标标签。如果三处一致，整段用同一类别累计；若不一致，则二分递归直至达到细分尺度或深度上限。
+Within each main-grid segment the program checks material and target labels near the start, middle and end. If all three agree, the whole segment is accumulated as one class; otherwise it is bisected recursively down to the subdivision scale or depth limit.
 
-这种方法比固定小步长快，但它仍是数值近似：小于采样尺度、恰好落在检查点之间或具有极薄尖角的结构可能漏判。0.5 m 是细分终止尺度，不等同于所有路径长度都具有 0.5 m 的绝对精度。
+This is faster than a fixed small step but still a numerical approximation: structures smaller than the sampling scale, falling exactly between check points, or with very thin sharp corners can be missed. 0.5 m is the termination scale of subdivision, not an absolute 0.5 m accuracy for every path length.
 
-### 6.3 路径输出
+### 6.3 Path output
 
-每条射线累计：
+Each ray accumulates:
 
-- 混凝土路径 `Lconcrete`；
-- 水路径 `Lwater`；
-- 岩体路径 `Lrock`；
-- 空气路径 `Lair`；
-- 各目标标签的相交长度；
-- 穿过的网格区段及进入/离开距离。
+- concrete path `Lconcrete`;
+- water path `Lwater`;
+- rock path `Lrock`;
+- air path `Lair`;
+- intersection length with each target label;
+- crossed grid segments with entry/exit distances.
 
-右栏“中心线混凝土路径”只显示投影中心方向的混凝土累计长度，不代表总材料长度。
+"Central-ray concrete path" in the side panel shows only the concrete length along the projection's central direction, not the total material length.
 
-“中心线穿越主网格”当前实际显示中心射线记录的分类区段数；因为同一主网格可能因边界细分形成多个区段，它不一定严格等于几何上不同体素的数量。
+"Central-ray main-grid cells" currently shows the number of classified segments recorded for the central ray; because one main cell can produce several segments through boundary subdivision, it is not necessarily the number of geometrically distinct voxels.
 
-“有效射线路径范围”是最终 65×65 投影中所有有效方向的混凝土路径最小值与最大值。
+"Effective ray path range" is the minimum and maximum concrete path over all valid directions of the final 65×65 projection.
 
-## 7. 水当量柱密度
+## 7. Water-equivalent column density
 
-当前水当量 `X` 按路径长度乘相对水密度求和：
+Water equivalent `X` is the sum of path lengths times relative density:
 
 ```text
 X [m.w.e.] = Lconcrete ρconcrete + Lwater ρwater + Lrock ρrock
 ```
 
-其中路径长度单位为米，密度单位为 `g/cm³`，数值上相对于水密度 `1 g/cm³` 转换为米水当量。空气未计入柱密度。
+Path lengths are in metres and densities in `g/cm³`, which relative to water at `1 g/cm³` gives metres of water equivalent numerically. Air does not contribute to column density. On the compiled backend the same sum runs over every registered material of the dataset (`materialColumns`), not a fixed list.
 
-当前周宁数据集默认：
+Current Zhouning defaults:
 
-- 混凝土：2.4 g/cm³，假定范围 2.35–2.45；
-- 水：1.0 g/cm³；
-- 岩体：2.65 g/cm³，假定范围 2.55–2.75。
+- concrete: 2.4 g/cm³, assumed range 2.35–2.45;
+- water: 1.0 g/cm³;
+- rock: 2.65 g/cm³, assumed range 2.55–2.75.
 
-右栏“中心线柱密度 m.w.e.”显示中心方向的 `X`，取整数。它同时受几何长度、材料类型、密度和水位影响。
+"Central-ray column density m.w.e." in the side panel shows `X` of the central direction, rounded to an integer. It depends on geometric length, material type, density and water level.
 
-## 8. 连续能损与最低穿透能量
+## 8. Continuous energy loss and minimum penetrating energy
 
-程序使用连续慢化近似，将柱密度换算为能够穿透该路径的地表最低初始能量：
+A continuous-slowing-down approximation converts column density into the minimum surface energy needed to penetrate the path:
 
 ```text
 dE/dX ≈ a + bE
 Emin(X) = (a / b) [exp(bX) - 1]
 ```
 
-当前系数：
+Current coefficients:
 
 ```text
 a = 0.2 GeV / m.w.e.
 b = 4 × 10⁻⁴ / m.w.e.
 ```
 
-积分时 `Emin` 至少取 1 GeV。
+`Emin` is at least 1 GeV in the integration.
 
-这是平均连续能损模型，没有描述能损涨落、随机辐射过程、多重散射、缪子衰变、电荷差异及不同材料的详细成分效应。厚路径下的真实透射可能与该近似产生系统偏差。
+This is a mean continuous energy-loss model. It does not describe energy-loss fluctuations, stochastic radiative processes, multiple scattering, muon decay, charge differences or detailed material-composition effects; one rock-like `a, b` is used for all materials (FR-K4). For thick paths the real transmission can deviate systematically from this approximation.
 
-## 9. 地表缪子通量模型
+## 9. Surface muon flux model
 
-### 9.1 Modified Gaisser 模式
+### 9.1 Modified Gaisser mode
 
-默认使用代码中的 Modified Gaisser 参数化。谱形包含：
+The default is the Modified Gaisser parameterization in the code. The spectral shape includes:
 
-- 约 `E^-2.7` 的能谱；
-- π/K 介子项；
-- 低能修正；
-- 有效天顶角 `cos(θ*)` 修正。
+- an approximately `E^-2.7` energy spectrum;
+- π/K meson terms;
+- a low-energy correction;
+- an effective zenith-angle `cos(θ*)` correction.
 
-代码在 `Emin` 到 `10⁵ GeV` 范围按对数能量积分，共 44 个区间，得到该天顶方向上的积分通量。为了性能，`cosZ` 和 `log10(Emin)` 会量化后缓存，因此相近输入可能复用同一积分值。
+The code integrates in log energy from `Emin` to `10⁵ GeV` in 44 intervals to obtain the integrated flux in that zenith direction. For performance, `cosZ` and `log10(Emin)` are quantized and cached, so nearby inputs can reuse the same integral value (see FR-C1).
 
-### 9.2 cos²θ 模式
+### 9.2 cos²θ mode
 
-可选的 `cos²θ` 模式用竖直方向的 Gaisser 能谱乘 `cos²θ`：
+The optional `cos²θ` mode multiplies the vertical Gaisser spectrum by `cos²θ`:
 
 ```text
 I(E, θ) = I_Gaisser(E, θ=0) cos²θ
 ```
 
-这是更粗略的角分布对比模型。它没有独立重标定绝对归一化，不应被理解为更高精度选项。
+This is a rougher angular distribution for comparison. Its absolute normalization is not recalibrated, and it must not be understood as a more accurate option.
 
-### 9.3 开天与穿透通量
+### 9.3 Open-sky and transmitted flux
 
-对每个方向分别计算：
+For each direction:
 
 ```text
 Φopen    = ∫ from 1 GeV to 10⁵ GeV I(E, θ) dE
@@ -262,184 +263,184 @@ I(E, θ) = I_Gaisser(E, θ=0) cos²θ
 T        = Φthrough / Φopen
 ```
 
-`T` 即投影中的透射率。它是当前模型下的相对通量比，不是“射线穿过坝体的概率”，也不包含探测器效率；效率在计数阶段另行相乘。
+`T` is the transmission in the projection. It is a relative flux ratio within the current model, not "the probability that a ray passes through the dam", and does not include detector efficiency, which is applied at the count stage.
 
-## 10. 探测器接受度与预计计数
+## 10. Detector acceptance and expected counts
 
-### 10.1 原生条差格
+### 10.1 Native strip-difference grid
 
-每个方向轴包含 `2N - 1` 个条差，其中 `N` 为每方向条数。条差 `d` 的组合权重为：
+Each direction axis has `2N - 1` strip differences, where `N` is the number of strips per direction. The combination weight of strip difference `d` is:
 
 ```text
 w(d) = (N - |d|) / N
 slope(d) = d × nativeSlopeStep
 ```
 
-中心方向可由最多条对组合产生，边缘方向组合较少。为了生成 25×25 或 65×65 投影，多个原生条差按权重聚合到一个显示像素，像素斜率取加权平均。
+The central direction can be produced by the most strip pairs, edge directions by fewer. To produce a 25×25 or 65×65 projection, several native strip differences are aggregated by weight into one display pixel, with the pixel slope taken as the weighted mean.
 
-### 10.2 像素立体角
+### 10.2 Pixel solid angle
 
-当前近似为：
+The current approximation is:
 
 ```text
 dΩ = nativeSlopeStep² × Wx × Wy / (1 + sx² + sy²)^(3/2)
 ```
 
-其中 `Wx`、`Wy` 是聚合进该像素的原生条差权重之和。分母是从局部斜率平面到立体角的雅可比。
+where `Wx` and `Wy` are the sums of the native strip-difference weights aggregated into the pixel. The denominator is the Jacobian from the local slope plane to solid angle. Whether a further projected-area factor `cos θ` belongs here is open (FR-C3).
 
-### 10.3 响应与计数
+### 10.3 Response and counts
 
-基础响应因子为：
+The base response factor is:
 
 ```text
 response = layerEfficiency³ × deadLiveFraction
 ```
 
-每像素预计计数为：
+Expected counts per pixel:
 
 ```text
 Npixel = Φthrough × activeArea × exposureSeconds × dΩ
          × response × edgeFactor
 ```
 
-当前边缘修正为：
+The current edge correction is:
 
 ```text
 edgeFactor = 0.85 + 0.15 sqrt(acceptanceWeight / (stripsX × stripsY))
 ```
 
-它使视场边缘额外降低，属于经验近似，尚不是由详细触发/重建仿真得到的效率图。
+It lowers the edge of the field of view further. It is an empirical approximation, not an efficiency map from detailed trigger/reconstruction simulation.
 
-预计计数的绝对值依赖地表通量归一化、单位一致性、设备有效面积、三层独立效率、死区和上述边缘模型。当前没有加入：
+The absolute expected count depends on the surface flux normalization, unit consistency, the device's effective area, independent three-layer efficiencies, dead time and the edge model above. Not included:
 
-- 能量相关探测效率；
-- 方向相关触发与重建效率标定；
-- 噪声、偶然符合和非缪子本底；
-- 数据质量选择与运行中断；
-- 多层散射导致的角迁移。
+- energy-dependent detection efficiency;
+- direction-dependent trigger and reconstruction efficiency calibration;
+- noise, accidental coincidences and non-muon background;
+- data-quality selection and run interruptions;
+- angular migration from multiple scattering.
 
-右栏预计计数最终显示 65×65 所有像素 `Npixel` 之和。Legacy 站点/姿态刚改变时会先给出 9×9 经验预估；compiled 不提供这项旧启发式；最终投影完成后会被正式积分总数覆盖。使用者应以投影状态完成后的数值为准。
+The side panel's expected count is the sum of `Npixel` over all 65×65 pixels. On the legacy backend, right after a station/pose change, a 9×9 empirical estimate is shown first; the compiled backend does not provide this old heuristic. The formal integrated total replaces it once the final projection completes. Use the values after the projection status shows completion.
 
-## 11. 投影生成与图像解释
+## 11. Projection generation and image interpretation
 
-### 11.1 两阶段计算
+### 11.1 Two-stage calculation
 
-为保持界面响应，投影分两阶段：
+To keep the UI responsive, projection runs in two stages:
 
-| 阶段 | 像素数 | 边界细分 | 用途 |
+| Stage | Pixels | Boundary subdivision | Use |
 | --- | ---: | ---: | --- |
-| 快速预览 | 25×25 | 1.5 m | 姿态改变后的即时反馈 |
-| 最终投影 | 65×65 | 0.5 m | 更新最终图像和右栏指标 |
+| Quick preview | 25×25 | 1.5 m | Immediate feedback after a pose change |
+| Final projection | 65×65 | 0.5 m | Final image and side-panel metrics |
 
-上表边界细分仅适用于 DDA；compiled 两阶段均使用相同 BVH 网格和交点公差，变化的是设备格聚合数，非物理几何精度。
+The boundary subdivision column applies only to DDA; on the compiled backend both stages use the same BVH meshes and intersection tolerance, and only the device-grid aggregation changes, not physical geometric accuracy.
 
-65×65 是显示/聚合分辨率，不是探测器原生通道数。默认 256 条读出对应每轴 511 个原生条差。
+65×65 is a display/aggregation resolution, not the detector's native channel count. The default 256-strip readout has 511 native strip differences per axis.
 
-### 11.2 坐标轴
+### 11.2 Axes
 
-- 横轴 `sx`：探测器局部向右为正；
-- 纵轴 `sy`：探测器局部向上为正；
-- 中心像素对应所设置的方位角和仰角；
-- 图像不是坝体的正投影平面图，而是**探测器方向/斜率空间图**。
+- Horizontal axis `sx`: positive towards the detector's local right;
+- vertical axis `sy`: positive towards the detector's local up;
+- the centre pixel corresponds to the set azimuth and elevation;
+- the image is not an orthographic plan of the subject but a **detector direction/slope-space map**.
 
-### 11.3 预计计数图
+### 11.3 Expected-count map
 
-每个像素显示角分辨率平滑后的预计计数。颜色采用固定对数映射：
+Each pixel shows the expected count after angular-resolution smoothing, with a fixed logarithmic colour mapping:
 
 ```text
 t = clamp[(log10(max(0.1, N)) + 1) / 6, 0, 1]
 ```
 
-大致覆盖 `0.1–10⁵` 计数。颜色用于跨站点视觉比较，但饱和后无法继续区分更大值。鼠标悬停读数中的 `count` 当前使用平滑前的原始像素计数，可能与该像素显示颜色略有差别。
+It covers roughly `0.1–10⁵` counts. The colours support visual comparison across stations, but larger values cannot be distinguished after saturation. The `count` in the hover readout currently uses the raw pre-smoothing pixel count and can differ slightly from the pixel's displayed colour.
 
-### 11.4 透射率图
+### 11.4 Transmission map
 
-每像素显示角分辨率平滑后的 `T = Φthrough / Φopen`，采用 `10⁻⁶–1` 的固定对数色标：
+Each pixel shows the smoothed `T = Φthrough / Φopen` on a fixed `10⁻⁶–1` logarithmic colour scale:
 
 ```text
 t = clamp[(log10(max(10⁻⁶, T)) + 6) / 6, 0, 1]
 ```
 
-高透射通常表示柱密度较低，但也可能来自射线未覆盖目标实体、几何缺失或工程包围盒过短，不能仅凭亮区断言存在空腔。
+High transmission usually means low column density, but it can also come from rays missing the target, missing geometry or an engineering bounding box that is too short; a bright area alone does not prove a cavity.
 
-### 11.5 角分辨率平滑
+### 11.5 Angular-resolution smoothing
 
-程序把设置的角分辨率换算为投影像素中的高斯 `σ`，对计数和透射率作二维卷积，截断半径约为 `2.5σ`、最多 6 像素。
+The configured angular resolution is converted into a Gaussian `σ` in projection pixels, and counts and transmission are convolved in 2D, truncated at about `2.5σ` and at most 6 pixels.
 
-当前换算以局部斜率步长近似角度，对大斜率位置并非严格球面卷积；边界处只用图内像素重新归一化。显著度目前没有经过同样的分辨率卷积。
+The conversion approximates angle by the local slope step, which is not a strict spherical convolution at large slopes; at the image border only in-image pixels are renormalized. Significance is currently not convolved with the same resolution.
 
-## 12. Legacy 目标结构、轮廓和显著度
+## 12. Legacy target structures, outlines and significance
 
-### 12.1 目标掩膜
+### 12.1 Target mask
 
-当某像素射线与目标标签累计相交长度超过 0.15 m 时，该像素进入目标掩膜。目标包括电梯井、廊道、溢流泄洪、平台、水体和坝体。
+A pixel enters a target's mask when its ray's accumulated intersection length with the target label exceeds 0.15 m. Targets are elevator shafts, galleries, spillway, platform, water body and dam.
 
-### 12.2 轮廓
+### 12.2 Outlines
 
-轮廓由离散目标掩膜的外边界产生。相邻像素若目标进入深度或相交长度变化超过阈值，还会绘制内部特征线：
+Outlines are the outer boundaries of the discrete target masks. Where target entry depth or intersection length changes beyond a threshold between neighbouring pixels, internal feature lines are drawn as well:
 
-- 坝体：进入深度差约 4 m 或混凝土长度差约 5 m；
-- 水体：约 2 m / 2 m；
-- 其他目标：约 1.5 m / 0.75 m。
+- dam: entry-depth difference of about 4 m or concrete-length difference of about 5 m;
+- water body: about 2 m / 2 m;
+- other targets: about 1.5 m / 0.75 m.
 
-这些阈值是显示启发式参数。轮廓表示“射线与语义目标的离散相交边界”，不是 CAD 边线，也不保证显示全部细小结构。
+These thresholds are display heuristics. An outline is "the discrete intersection boundary between rays and a semantic target", not a CAD edge, and is not guaranteed to show every small structure.
 
-### 12.3 反事实显著度
+### 12.3 Counterfactual significance
 
-对选中的非坝体目标，程序构造一个简化反事实柱密度：
+For a selected non-dam target the program builds a simplified counterfactual column density:
 
-- 空腔目标：把对应空气路径替换为混凝土；
-- 混凝土构件目标：移除其混凝土柱密度；
-- 水体目标：移除相应水柱密度。
+- cavity target: replace its air path with concrete;
+- concrete component target: remove its concrete column;
+- water-body target: remove its water column.
 
-再计算反事实计数 `Ncf`，单像素显著度为：
+It then computes the counterfactual count `Ncf`; single-pixel significance is:
 
 ```text
 S = |N - Ncf| / sqrt(max(1, N) + (fsys N)²)
 ```
 
-默认系统误差比例 `fsys = 3%`。若同时选择多个目标，像素显示其中最大的 `S`，不是联合似然。
+The default systematic fraction is `fsys = 3%`. When several targets are selected, a pixel shows the largest `S`, not a joint likelihood.
 
-界面“选中 ROI”汇总为：
+The "selected ROI" summary in the UI is:
 
 ```text
 SROI = sqrt(sum over pixels of Smax²)
 ```
 
-该合并假定像素统计独立，而角分辨率平滑、系统误差和重建会造成相关性。因此它应理解为结构对比的启发式评分，不是严格的发现显著性或置信水平。
+This combination assumes statistically independent pixels, whereas angular smoothing, systematic errors and reconstruction create correlation. It is a heuristic score for structural contrast, not a strict discovery significance or confidence level.
 
-## 13. Legacy 三维热云
+## 13. Legacy 3D flux cloud
 
-热云使用 17×17 个规则局部斜率方向，比最终投影更稀疏。它有两种显示量：
+The flux cloud uses 17×17 regular local slope directions, sparser than the final projection. It has two display quantities:
 
-### 综合接收贡献
+### Combined received contribution
 
 ```text
 contribution = triangularAcceptance × Φthrough / Φvertical,open
 ```
 
-其中三角接受度在视场中心最大、边缘降到零；参考通量是竖直方向、最低能量 1 GeV 的开天积分通量。
+The triangular acceptance is largest at the centre of the field of view and falls to zero at the edge; the reference flux is the vertical open-sky integrated flux with a 1 GeV minimum energy.
 
-### 仅坝体透射率
+### Subject-only transmission
 
 ```text
 transmission = Φthrough / Φopen
 ```
 
-热云颜色使用固定对数映射。点数和延伸长度也随显示量增大，因此它是方向贡献的三维视觉编码，并不表示空间中真实存在缪子云团，也不表示沿射线路径的局部通量变化。
+The flux cloud uses a fixed logarithmic colour mapping. Point count and extension length also grow with the displayed quantity, so it is a 3D visual encoding of directional contribution; it does not represent a real cloud of muons in space or local flux changes along the ray path.
 
-低于当前站点峰值 0.1% 的方向会隐藏。因阈值相对于本站峰值，显示的方向数量不适合直接作为跨站点绝对指标；颜色固定标尺和“加权透射”更适合比较。
+Directions below 0.1% of the current station's peak are hidden. Because the threshold is relative to the station's own peak, the number of shown directions is not suitable as an absolute cross-station metric; the fixed colour scale and "weighted transmission" are better for comparison.
 
-热云信息中的加权透射为 17×17 样本上：
+The weighted transmission in the flux-cloud information is, over the 17×17 samples:
 
 ```text
 Tweighted = sum(acceptance × Φthrough) / sum(acceptance × Φopen)
 ```
 
-## 14. Compiled 评估与图案解释层
+## 14. Compiled assessment and pattern interpretation layer
 
-图案解释层现在提供原始/既有显示平滑响应等值线、直接来自共享像素计算的开天计数、`N/Nopen` 上下文和可复现站点/姿态比较；定义与限制见 [有限模型工作流](../guides/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison)。开天零支持与原快速模型的超范围 `T>1` 不被伪造为有效衰减，原始科学结果仍保留。比较仅使用明确 ROI、原始透射率/计数、代表采样格覆盖和方向质心间距，不新增显著度或实测标定模型。几何参考线是有限模型解释，不是经认证的真实物理界面。共享核心新增开天上下文为可选输出，旧默认科学结果精确回归保留。
+The pattern interpretation layer provides raw and existing display-smoothed response contours, open-sky counts taken directly from the shared pixel calculation, `N/Nopen` context and reproducible station/pose comparison; definitions and limits are in the [finite-model workflow](../guides/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison). Zero open-sky support and the original fast model's out-of-range `T>1` are not faked as valid attenuation; the raw scientific results are kept. Comparison uses only explicit ROIs, raw transmission/counts, representative sampling-grid coverage and direction-centroid distance, and adds no significance or measured-calibration model. Geometry reference lines are finite-model interpretation, not certified real physical interfaces. The shared core's open-sky context is an optional output; the exact regression of the old default scientific results is kept.
 
-新格式冻结工况在主应用显式 compiled 路径和独立 `/geometry-preview.html` 中调用同一个 compiled-assessment 分批评估/结果适配，通过 `compiled-assessment.js` 使用闭合 GLB/BVH 材料路径。列密度图的任意半视角不用于设备计数：计数取三层对称读出设备完整条差空间，原生分箱方向一般不同于均匀材料图方向。界面可切换预计计数/透射率，显示使用原有高斯平滑；总计数、加权透射、像素拾取和 JSON 中的原始值不经该平滑。
+Frozen scenarios of the native format call the same compiled-assessment batched evaluation/result adaptation in the main app (the default backend) and in the standalone `/geometry-preview.html`, using closed GLB/BVH material paths through `compiled-assessment.js`. The column-density map's arbitrary half-angle is not used for device counts: counts use the full strip-difference space of the three-layer symmetric-readout device, and native-bin directions generally differ from the uniform material-map directions. The UI can switch between expected counts and transmission, displayed with the existing Gaussian smoothing; total counts, weighted transmission, pixel picking and raw values in JSON are not smoothed.
 
-预览配置默认来自独立平台设备/响应，不自动使用数据包 sidecar 中不完整的仪器参数。模型未经过现场标定，发布网格之外或射线长度之外的材料不参与计算，可能高估透射率。新适配器对非有限或负响应明确报错（例如极端柱密度超过旧积分能量范围），不修改主应用旧公式；三层非对称设备、源实体 ROI 显著度和连续水位仍不支持。主应用禁用旧目标启发式及热云；材料与响应数值图层仍消费同次科学结果。主应用射程包住站点至发布 bounds 的所有角点，并记录在结果中；它仍不补偿域外缺失材料。
+The preview configuration defaults to the independent platform device/response and does not automatically use the incomplete instrument parameters in the data package sidecar. The model is not field-calibrated; material outside the published meshes or beyond the ray length is not included, which can overestimate transmission. The compiled adapter reports non-finite or negative responses explicitly (for example extreme column densities beyond the old integration energy range) without modifying the old formulas; three-layer asymmetric devices, source-entity ROI significance and continuous water level are not supported. The main app disables the old target heuristics and flux cloud on the compiled backend; material and response numeric layers still consume the same scientific result. The main app's ray length encloses every corner of the published bounds from the station and is recorded in the result; it still does not compensate for missing material outside the domain.

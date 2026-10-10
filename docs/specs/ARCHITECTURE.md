@@ -1,144 +1,144 @@
-# 架构说明
+# Architecture
 
-## 当前形态
+## Current shape
 
-项目是无构建步骤的静态 Web 应用：
+The project is a static web application without a build step:
 
 ```text
-app.js：发布/后端/工况选择与依赖装配
+app.js: release/backend/scenario selection and dependency assembly
   ├─ application-selection → application-backends → dataset-loader
-  │   ├─ legacy-geometry-adapter → geometry-kernel / dda-ray-tracer
-  │   └─ compiled-mesh-runtime → compiled-glb / triangle-bvh
+  │   ├─ compiled-mesh-runtime → compiled-glb / triangle-bvh          (default)
+  │   └─ legacy-geometry-adapter → geometry-kernel / dda-ray-tracer    (compatibility)
   ├─ deployment-state → device-configuration / detector-defaults
-  ├─ main-assessment 或 compiled-main-assessment → 共享 detector-projection / muon-response
-  ├─ assessment-controller：快照、取消、进度与结果发布
-  └─ main-page → legacy 或 compiled-scene-view / projection-canvas-view / main-pattern-view
+  ├─ compiled-main-assessment or main-assessment → shared detector-projection / muon-response
+  ├─ assessment-controller: snapshots, cancellation, progress and result publication
+  └─ main-page → compiled- or legacy-scene-view / projection-canvas-view / main-pattern-view
 ```
 
-发布目录固定为 `dist/`，运行时不访问 CDN 或后端 API。
+The application is served from `dist/`; dataset releases are served from the top-level `datasets/` directory at `/datasets/` (ADR-018). At runtime nothing contacts a CDN or backend API.
 
-本文记录当前实现与目标边界，不记录任务完成流水。架构决策（含长期几何数据原则）见 [ARCHITECTURE_DECISIONS](../ARCHITECTURE_DECISIONS.md)；未完成工作、需求与优先级仅在 `docs/` 顶层的设计指导文件中维护；其他规格见 [规格索引](README.md)。
+This document describes the current implementation and its target boundaries, not a log of completed tasks. Architecture decisions (including long-term geometry data principles) are in [ARCHITECTURE_DECISIONS](../ARCHITECTURE_DECISIONS.md); open work, requirements and priorities are kept only in the guideline documents at the top of `docs/`; other specs are listed in the [spec index](README.md).
 
-## 核心数据流
+## Core data flow
 
 ```text
-数据集 → 计算所有的几何适配器             → legacy 视觉适配器 → Three.js
-站点 / 设备 / 环境 → 不可变 deployment-state
-                   → controller 捕获快照
-                   → assessment session：热云 / 快速指标 / 25² → 65²
-                   → 同次结果 → DOM / Canvas / Three.js / 导出
+dataset → computation-owned geometry adapter → view adapter → Three.js
+stations / device / environment → immutable deployment-state
+                   → controller captures a snapshot
+                   → assessment session: (legacy: flux cloud / quick metrics) / 25² → 65²
+                   → same result → DOM / canvas / Three.js / export
 ```
 
-依赖方向规则见 [模块边界规格](MODULE_BOUNDARIES.md)。
+Dependency-direction rules are in the [module boundaries spec](MODULE_BOUNDARIES.md).
 
-输入由 deployment-state 拥有并只读发布；视图拥有选择、颜色、相机和图层状态。main-assessment 的每个 session 复制站点、设备、响应和环境，绑定一个几何上下文；预览与最终 pass 均消费同一 session。控制器在输入变化时取消待执行批次并使旧代号失效，旧结果不能发布。通量/分箱缓存由 assessment 实例拥有，设备设置改变时显式清除。
+Inputs are owned by deployment-state and published read-only; views own selection, colour, camera and layer state. Each assessment session copies the station, device, response and environment and binds one geometry context; the preview and final passes consume the same session. When inputs change, the controller cancels pending batches and invalidates the old generation, so stale results cannot be published. Flux/bin caches are owned by the assessment instance and cleared explicitly when device settings change.
 
-legacy 场景中的程序化表面、坐标显示偏移和相机预设是有界兼容适配，不是通用平台常数；默认站点姿态和旧方案 JSON 约定属于 legacy-deployment-adapter。它们不作为材料或射线真值。compiled 主应用视图复用 compiled-geometry-view 的计算所有缓冲；geometry-preview 独立，不作为主应用依赖。
+The procedural surfaces, coordinate display offsets and camera presets of the legacy scene are bounded compatibility adapters, not generic platform constants; the legacy default stations/poses and old plan JSON conventions belong to legacy-deployment-adapter. None of them is material or ray truth. The compiled main-app view reuses the computation-owned buffers of compiled-geometry-view; geometry-preview is standalone and not a main-app dependency.
 
-## 当前计算策略
+## Current calculation strategy
 
-主应用的谱、积分通量、连续能损和显著度公式已提取至 `dist/modules/muon-response.js`；原生条差接受度、像素计数、分批投影与显示分辨率卷积位于 `detector-projection.js`。它们不依赖 DOM/Three.js，通过注入方向与射线结果支持不同几何后端。`dda-ray-tracer.js` 提供纯 DDA 遍历；`legacy-geometry-adapter.js` 绑定 legacy 数据集/环境；`deployment-state.js` 管理输入，`assessment-controller.js` 管理取消/调度，`main-page.js` 与独立视图消费结果；快预览和最终投影均调用同一个 `createProjectionPass`。
+The spectrum, integrated flux, continuous energy loss and significance formulas are in `dist/modules/muon-response.js`; native strip-difference acceptance, pixel counts, batched projection and display-resolution convolution are in `detector-projection.js`. Neither depends on the DOM or Three.js; they support different geometry backends through injected directions and ray results. `dda-ray-tracer.js` provides pure DDA traversal; `legacy-geometry-adapter.js` binds the legacy dataset/environment; `deployment-state.js` manages inputs, `assessment-controller.js` manages cancellation/scheduling, and `main-page.js` and the separate views consume results. Quick preview and final projection both call the same `createProjectionPass`.
 
-各步骤的公式、参数、界面输出含义和适用边界详见 [计算模型规格](CALCULATION_MODEL.md)；结果含义与使用见 [结果解读](../guides/RESULT_INTERPRETATION.md)。
+The formulas, parameters, UI outputs and limits of each step are in the [calculation model spec](CALCULATION_MODEL.md); the meaning and use of results are in the [result interpretation guide](../guides/RESULT_INTERPRETATION.md).
 
-- 候选点/姿态改变后延迟约 160 ms 更新。
-- 投影先计算 25×25 快速预览，随后计算 65×65 最终结果。
-- 65×65 像素由设备原生条读出斜率格聚合得到。
-- 投影计算按批次让出事件循环，避免页面长时间冻结。
-- 通量积分和原生斜率分箱带内存缓存。
-- 设备与候选站点状态保存在 `localStorage`。
-- 当前数据集材料点分类由 `dist/modules/geometry-kernel.js` 提供，近场外回退到远场地形；控制点和 200 条参考射线回归入口为 `scripts/check-geometry-conformance.mjs`，测试目标由数据集注册表解析，不绑定具体版本目录。
-- `dist/modules/dataset-loader.js` 支持按完整发布标识加载；v0.7 接入经 `dataset-validation.js` 与 `dam-spec-v07.js` 进入版本化 IR。`coordinates.js` 提供独立的点/方向正反变换。新发布可在主应用显式选择 compiled 冻结工况，默认保持旧格式；解析资格后端不进入生产计算。
-- `geometry-v07-qualification.js` 是原生 v0.7 解析资格后端，支持拱形扫掠、结构裁切、充水工况和上游种子连通；使用编译后地形采样，尚未替代生产 DDA、CSG 或网格/BVH。入库 schema 门禁位于 `scripts/check-dataset-release.py`，HTTP 加载和失败路径测试位于 `tests/dataset-v07.test.mjs`。
-- `compiled-glb.js` 解码冻结工况的 GLB，`triangle-bvh.js` 为计算所有的模型坐标缓冲建立纯 CPU 空间索引，`compiled-mesh-runtime.js` 提供点材料分类、材料分段与密度积分。`compiled-geometry-view.js` 直接使用这些位置/索引数组，显示开关不参与计算；`geometry-preview.html` 是独立预览入口；主应用可显式选用 compiled，同一入口默认仍为 legacy DDA。
+- Updates run about 160 ms after a station/pose change.
+- Projection computes a 25×25 quick preview, then the 65×65 final result.
+- The 65×65 pixels aggregate the device's native strip-readout slope grid.
+- Projection yields to the event loop between batches so the page does not freeze.
+- Flux integrals and native slope bins are cached in memory.
+- Device and candidate-station state is stored in `localStorage`, stations per full release ID.
+- `dist/modules/dataset-loader.js` loads releases by full release ID from `datasets/registry.json`; v0.7 releases go through `dataset-validation.js` and `dam-spec-v07.js` into a versioned IR. `coordinates.js` provides independent forward/inverse point and direction transforms.
+- `compiled-glb.js` decodes the GLB of a frozen scenario, `triangle-bvh.js` builds a pure-CPU spatial index over computation-owned model-coordinate buffers, and `compiled-mesh-runtime.js` provides point material classification, material segments and density integration. `compiled-geometry-view.js` uses the same position/index arrays directly; display toggles never enter calculation. `geometry-preview.html` is the standalone preview entry.
+- `geometry-v07-qualification.js` is an analytic qualification backend for native v0.7 (arch sweeps, structural clipping, filled scenarios, upstream seed connectivity), using compiled terrain sampling; it does not replace production geometry. The import schema gate is `scripts/check-dataset-release.py`; HTTP loading and failure-path tests are in `tests/dataset-v07.test.mjs`.
+- Legacy material point classification is provided by `dist/modules/geometry-kernel.js`, falling back to far-field terrain outside the near field. The control-point and 200-reference-ray regression entry is `scripts/check-geometry-conformance.mjs`; its targets are resolved from the dataset registry, not bound to a version directory.
 
-## 当前几何后端与接入边界
+## Current geometry backends and integration boundaries
 
-| 入口/后端 | 当前用途 | 关键限制 |
+| Entry / backend | Current use | Key limits |
 | --- | --- | --- |
-| 主应用 legacy DDA | 默认旧格式发布、连续水位 UI、单站响应与兼容数值图层 | 尚未切换到 v0.7 编译网格；DDA 与数据集适配为纯模块；调度、应用状态与显示已分离；计算仍保留 legacy 兼容语义 |
-| v0.7 解析资格后端 | 通过完整 release ID 加载规格及版本化 IR，验证解析实体 | 有界数据集适配，不是任意 v0.7 CSG 执行器；地形近似与水体区间填充不能当作完整连通算法 |
-| 编译网格/BVH | 主应用显式选项与独立预览的冻结工况、模型分类、材料路径和共享设备评估 | 不解析连续水位；聚合源实体归属未解决；主应用明确禁用旧目标/显著度、内部代理与热云 |
+| Compiled mesh/BVH (default) | Default main app and standalone preview: frozen scenarios, model classification, material paths and shared device assessment | No continuous water level; aggregate source-entity attribution unresolved; the main app disables legacy targets/significance, internal proxies and the flux cloud |
+| Legacy DDA (compatibility) | Legacy-format release selected explicitly: continuous water-level UI, single-station response and compatible numeric layers | Dam-specific parametric interpreter; DDA and dataset adapter are pure modules; scheduling, state and display are separated; calculation keeps legacy semantics |
+| v0.7 analytic qualification | Loads spec and versioned IR by full release ID; validates analytic entities | Bounded dataset adapter, not a general v0.7 CSG executor; terrain approximation and water interval filling are not a full connectivity algorithm |
 
-`dda-ray-tracer.js` 无运行时 imports，不依赖 DOM、Three.js、投影或编译几何。createDdaRayTracer 接受显式坐标 bounds、maxDistanceM、有序 densities、targetIds 和 classifyPoint(x,y,z,environment)；返回的同步 tracer 接受普通 {x,y,z} 点、单位方向及 {cellM,refineM,environment}。`legacy-geometry-adapter.js` 保留旧文档坐标域、高程 150–600 m、500 m 上限和钢材 fallback；这些是 legacy 兼容配置，不是平台默认规则。适配器只依赖几何内核和 tracer，创建时复制规格、identity 和地形缓冲；坐标交换与高程偏移取自有界支持的声明，方向不接受平移。bindEnvironment 为每次计算返回不可变的 identity、材料、环境、坐标转换、traceDoc/traceModel 与 traceSettings；不读取 DOM 或当前 UI。
+`dda-ray-tracer.js` has no runtime imports and no dependency on the DOM, Three.js, projection or compiled geometry. `createDdaRayTracer` takes explicit coordinate bounds, `maxDistanceM`, ordered densities, target IDs and `classifyPoint(x,y,z,environment)`; the returned synchronous tracer takes plain `{x,y,z}` points, unit directions and `{cellM,refineM,environment}`. `legacy-geometry-adapter.js` keeps the old document-coordinate domain, elevation 150–600 m, the 500 m distance limit and the steel fallback; these are legacy compatibility settings, not platform defaults. The adapter depends only on the geometry kernel and tracer and copies the spec, identity and terrain buffers on creation; the coordinate swap and elevation offset come from the bounded supported declaration, and directions never take translation. `bindEnvironment` returns, per calculation, immutable identity, materials, environment, coordinate transforms, `traceDoc`/`traceModel` and `traceSettings`; it never reads the DOM or current UI.
 
-环境只支持变化的 upstream 和数据集固定 downstream；其他环境字段、非有限水位、非旧格式数据集及不支持的坐标约定失败关闭，不伪造完整水力连通或连续编译工况。主应用一次预览/最终计算通过同一绑定上下文调用坐标、分类/追踪、元数据与图案适配；显示控制不进入 tracer。方向运算在纯 detector-pose 中保留旧 Vector3 的运算顺序，无 Three.js 依赖；legacy 场景几何转换归视图。
+The legacy environment supports only a variable `upstream` and a dataset-fixed `downstream`; other environment fields, non-finite water levels, non-legacy datasets and unsupported coordinate conventions fail closed, without faking full hydraulic connectivity or continuous compiled scenarios. One preview/final calculation calls coordinates, classification/tracing, metadata and pattern adaptation through the same bound context; display controls never enter the tracer. Direction arithmetic in the pure detector-pose module keeps the old Vector3 operation order without a Three.js dependency; legacy scene geometry transforms belong to the view.
 
-遍历保留入域偏移、三点采样、最多八层细分、按材料合并单元和 10000 次循环保护。因此它仍是 legacy 近似，不是精确界面追踪；细薄结构漏采样、单元合并不区分目标标签及保护上限的历史行为未在本次提取中修正。tests/dda-ray-tracer.test.mjs 使用冻结测试基线验证真实参考方向、边界/反向/并列网格、不同水位、完整 25/65 投影和依赖边界。测试基线只在 tests/fixtures，运行时不得引用。
+Traversal keeps the entry offset, three-point sampling, up to eight subdivision levels, per-material cell merging and the 10,000-iteration guard. It therefore remains a legacy approximation, not exact interface tracing; missed thin structures, cell merging that ignores target labels and the historical guard behaviour were not changed in the extraction. `tests/dda-ray-tracer.test.mjs` verifies real reference directions, boundary/reverse/parallel grids, different water levels, full 25/65 projections and dependency boundaries against frozen test baselines. Test baselines live only in `tests/fixtures` and are never referenced at runtime.
 
-注册表以完整发布标识区分同数据版本的不同 schema。Loader 验证源/manifest/资产摘要、工况与跨引用；主应用先解析完整 release/backend/scenario，再使用 loadDataset(releaseId)。loadDefaultDataset 仅为 legacy 兼容调用保留，不用于新主应用装配。控制点和参考射线以注册表解析的数据集为基准。
+The registry distinguishes different schemas of the same data version by full release ID. The loader verifies source/manifest/asset digests, scenarios and cross-references; the main app first resolves the full release/backend/scenario, then calls `loadDataset(releaseId)`. `loadDefaultDataset` is kept only for legacy compatibility calls and is not used for main-app assembly. Control points and reference rays are based on the dataset resolved from the registry.
 
-编译 GLB 解码只接受受支持的冻结静态 indexed triangles，处理节点变换、访问器布局和绕向反转；外部缓冲、稀疏访问器、压缩、动画/蒙皮及未登记节点失败关闭。物理组件核对 manifest、材料和闭合/绕向/净体积；虚几何不建立物理 BVH。位置/索引由计算拥有，视图仅使用共享缓冲及 Z-up→Y-up 显示变换，法线和材质由视图拥有。
+GLB decoding accepts only supported frozen static indexed triangles, handling node transforms, accessor layout and winding reversal; external buffers, sparse accessors, compression, animation/skinning and unregistered nodes fail closed. Physical components are checked against the manifest, materials and closure/winding/net volume; virtual geometry gets no physical BVH. Positions/indices are owned by computation; the view only uses the shared buffers and the Z-up → Y-up display transform, and owns normals and materials.
 
-BVH 合并共同三角边交点，切触/沿面不累积长度，支持实体内起点和封闭空腔。组件区间按显式材料优先级消解；组件相交长度、语义占据长度和 winning-material 长度不是同一指标。直接目标只依赖 canonical ID 与显式来源映射，聚合 concrete/steel/rock 不伪造实体归属。
+The BVH merges hits on shared triangle edges, accumulates no length for tangent/on-surface contact, and supports origins inside solids and closed cavities. Component intervals are resolved by explicit material priority; component intersection length, semantic occupancy length and winning-material length are different quantities. Direct targets depend only on canonical IDs and explicit source mapping; aggregate concrete/steel/rock never fakes entity ownership.
 
-两张预览图分别是均匀斜率材料积分和设备条差接受度下的共享响应评估，不按像素索引对齐。编译设备适配器限制为支持的三层对称读出，未标定参数不可由数据集名称补猜。材料色标自适应/固定显示不改变科学值；逐面法线只控制视觉尖角。material-envelopes.js 的采样占据/空气深度边缘属于显示诊断，不是经认证的包络，详见 [投影工作流](../guides/PROJECTION_WORKFLOW.md)。
+The two preview graphs are the uniform-slope material integral and the shared response assessment under device strip-difference acceptance; they are not aligned by pixel index. The compiled device adapter is limited to the supported three-layer symmetric readout; uncalibrated parameters are never guessed from dataset names. Adaptive/fixed material colour scales never change scientific values; per-face normals only control visual sharp edges. The sampled occupancy/air-depth edges of `material-envelopes.js` are display diagnostics, not certified envelopes; see the [projection workflow](../guides/PROJECTION_WORKFLOW.md).
 
-### 几何验证入口
+### Geometry verification entry points
 
-以下为复现入口，不保存一次运行的成绩或性能日志：
+Reproduction entry points (no single-run scores or performance logs are kept here):
 
 ```sh
 python3 scripts/check-dataset-release.py
 node --test tests/dataset-v07.test.mjs tests/compiled-mesh.test.mjs
-node scripts/check-geometry-conformance.mjs
+node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2
 node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0
 node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0 --backend compiled
 node scripts/check-semantic-mapping.mjs
 ```
 
-命令中的周宁 release ID 是数据集示例，不是平台规则。Conformance 脚本报告资格门槛与发布门槛是否满足，并保留最大误差；analytic 的迁移公差不能冒充 compiled 发布公差。控制点检查排除距地形面小于 5 m 的点，因此不覆盖该边界带；具体数值策略以脚本及数据集基准为准，不构成测绘精度声明。
+The Zhouning release IDs in these commands are dataset examples, not platform rules. The conformance script reports whether qualification and release thresholds are met and keeps the maximum error; the analytic migration tolerance must not stand in for the compiled release tolerance. Control-point checks exclude points within 5 m of the terrain surface, so that band is not covered; the exact numerical policy is defined by the script and dataset baselines and is not a survey-accuracy claim.
 
-可选 HTTP 浏览器检查：node scripts/check-compiled-preview.mjs，支持 --playwright /absolute/path/to/playwright/index.mjs。Playwright/Chromium 仅是开发依赖，截图写入临时目录；检查桌面/窄屏、共享显示/计算、拾取、工况、取消与原主应用。最新未完成回归与性能限制见 [功能需求](../FEATURE_REQUIREMENTS.md)（FR-N），不以旧测试结果宣称已通过。
+Optional HTTP browser check: `node scripts/check-compiled-preview.mjs`, accepting `--playwright /absolute/path/to/playwright/index.mjs`. Playwright/Chromium are development dependencies only; screenshots go to a temporary directory. It checks desktop/narrow layouts, shared display/calculation, picking, scenarios, cancellation and the main app. Open regressions and performance limits are in the [feature requirements](../FEATURE_REQUIREMENTS.md) (FR-N); old test results are never cited as passing.
 
-## 当前投影与解释模块
+## Current projection and interpretation modules
 
-`dist/modules/material-projection.js` 是独立于 DOM/Three.js 的局部斜率投影评估器，通过注入运行时的 `traceRayModel` 复用网格射线核心。当前预览消费材料路径与柱密度图；并非主应用的设备加权计数投影替代品。
+`dist/modules/material-projection.js` is a local-slope projection evaluator independent of the DOM/Three.js that reuses the mesh ray core through the injected runtime's `traceRayModel`. The preview consumes its material-path and column-density maps; it does not replace the main app's device-weighted count projection.
 
-`compiled-assessment.js` 是 BVH → 共享 `createProjectionPass` 的纯适配器，使用模型竖直方向余弦与材料柱密度，提供四档冻结工况的计数/透射率、显示平滑、元数据及取消。`detector-defaults.js` 的设备/响应默认配置与坝体数据独立，并由主应用和预览共同使用。createCompiledAssessmentPass 提供相同校验、方向采样、分批推进与结果适配；evaluateCompiledAssessment 是预览/批量调用的异步包装，compiled-main-assessment 为主控制器提供会话。两条路径不复制公式或追踪。默认 DDA 不变，源实体 ROI 尚未提供。
+`compiled-assessment.js` is a pure adapter from the BVH to the shared `createProjectionPass`, using the model vertical direction cosine and material column density, providing counts/transmission, display smoothing, metadata and cancellation for the four frozen scenarios. The device/response defaults in `detector-defaults.js` are independent of the dataset and shared by the main app and preview. `createCompiledAssessmentPass` provides the same validation, direction sampling, batched advance and result adaptation; `evaluateCompiledAssessment` is the async wrapper for preview/batch calls, and compiled-main-assessment provides sessions for the main controller. The two paths duplicate neither formulas nor tracing. Source-entity ROI is not available yet.
 
-`legacy-target-interpretation.js` 消费同次 legacy trace 与绑定材料快照，不依赖几何后端、DOM、Three.js 或投影模块；只引用共享 muon-response 数学。createLegacyTargetInterpreter 复制有序目标 ID 和水/混凝土密度，派生 edgeProfile、targetMask 与 counterfactualMwe，不改写原始路径或 cells。完整单元 t0<2 m 被排除出目标调整（不在 2 m 处分割），mask 使用严格大于 0.15 m，首次密集/混凝土入口仍包含近处单元；缺失入口保持 Infinity 的 legacy 内部表示。
+`legacy-target-interpretation.js` consumes the same legacy trace and bound material snapshot, independent of geometry backends, the DOM, Three.js and projection modules; it references only the shared muon-response maths. `createLegacyTargetInterpreter` copies ordered target IDs and water/concrete densities and derives `edgeProfile`, `targetMask` and `counterfactualMwe` without rewriting raw paths or cells. Whole cells with `t0 < 2 m` are excluded from target adjustment (not split at 2 m); the mask uses strictly greater than 0.15 m; the first dense/concrete entry still includes near cells; a missing entry keeps the legacy internal representation `Infinity`.
 
-evaluateLegacyTargetSignificance 接受显式 flux 与系统误差；未命中或 dam 返回零，其余调用共享最低能量和显著度公式。选择归视图状态，显著度缓存归 assessment session，最终结果门禁归控制器，目标轮廓绘制归 projection-canvas-view。水移除、空腔填混凝土、非 dam 混凝土移除及下限零裁切都是旧模型启发式，不证明源实体归属或可探测性；该模块不用于编译后端实体 ROI。
+`evaluateLegacyTargetSignificance` takes an explicit flux and systematic error; a miss or `dam` returns zero, other targets call the shared minimum-energy and significance formulas. Selection belongs to view state, the significance cache to the assessment session, the final-result gate to the controller and target-outline drawing to projection-canvas-view. Water removal, filling cavities with concrete, removing non-dam concrete and clamping at zero are old-model heuristics that prove neither source-entity ownership nor detectability; the module is not used for compiled entity ROI.
 
-`semantic-mapping.js` 仅审计显式 canonical source ID，生成直接目标索引；运行时点/射线与渲染拾取使用同一 ID。两种投影记录射线的语义体积相交长度，用于直接目标轮廓；聚合材料的实体归属和反事实 ROI 显著度仍未解决。
+`semantic-mapping.js` audits only explicit canonical source IDs and builds the direct-target index; runtime point/ray queries and render picking use the same IDs. Both projections record each ray's semantic volume intersection length for direct-target outlines; entity ownership of aggregate materials and counterfactual ROI significance remain unresolved.
 
-`projection-pattern-fields.js` 将同次计算的原生网格、材料路径/柱密度与预先快照的几何元数据转换为标准化字段，并将 `contribution-contours.js` 的 D3 数值等值线映射到各图自己的等宽显示单元。探测器加权斜率中心按分段坐标转换，不与材料图按像素索引对齐；两个图独立提取，不引入重采样或响应公式副本。预览接入独立材料/数量/级别控制，`contribution-view.js` 只消费映射后的线数据生成固定 CSS 像素宽度 SVG；结果与提取设置限定的缓存不修改科学数组。`contribution-export.js` 提供独立 v1 等值线导出与离线重放验证，显示样式不进入科学身份，旧结果导出不迁移。浏览器最坏性能仍待验证。
+`projection-pattern-fields.js` turns the same calculation's native grid, material paths/column density and the pre-snapshotted geometry metadata into standardized fields, and maps the D3 numerical contours of `contribution-contours.js` onto each graph's own equal-width display cells. Detector-weighted slope centres are mapped piecewise, never aligned with the material graph by pixel index; the two graphs are extracted independently without resampling or a copied response formula. The preview adds independent material/quantity/level controls; `contribution-view.js` only consumes mapped line data to produce fixed-CSS-pixel-width SVG; caches scoped to results and extraction settings never modify scientific arrays. `contribution-export.js` provides a separate v1 contour export and offline replay validation; display styles do not enter scientific identity and old result exports are not migrated. Worst-case browser performance is still to be verified.
 
-异步图层计算：`numeric-pattern-work.js` 复用上述纯字段、D3 提取和原生网格映射核心；`numeric-pattern-worker.js` 仅保存每张图的当前精简标量输入，不重新追踪射线。`numeric-pattern-client.js` 使用计算结果身份、设置键和有界缓存管理异步工作；输入变化时终止 worker、清除任务，旧结果不能更新当前图。UI 仅插入 worker 准备的 SVG 路径、图例和来源信息。结构参考 worker 同样承担字段验证、映射和路径文本准备；保留原始斜率空间线用于导出。`pattern-timing.js` 的诊断不进入科学结果；`demand-render.js` 按需调度 3D 显示并保留相机阻尼。详见 [未完成工作](../IMPLEMENTATION_PRIORITY.md)；这些改动不代表物理界面认证或默认后端迁移。
+Asynchronous layer computation: `numeric-pattern-work.js` reuses the pure fields, D3 extraction and native-grid mapping core above; `numeric-pattern-worker.js` keeps only each graph's current reduced scalar inputs and never retraces rays. `numeric-pattern-client.js` manages asynchronous work with result identity, settings keys and bounded caches; when inputs change it terminates the worker and clears tasks so stale results cannot update the current graph. The UI only inserts SVG paths, legends and provenance prepared by the worker. The structural-reference worker likewise performs field validation, mapping and path-text preparation and keeps the raw slope-space lines for export. Diagnostics from `pattern-timing.js` never enter scientific results; `demand-render.js` schedules 3D rendering on demand and keeps camera damping. Open items are in the [implementation priority](../IMPLEMENTATION_PRIORITY.md); these changes do not represent physical-interface certification.
 
-结构参考线纯核心渐进拆为 `structural-reference-candidates.js`（已复用/验证的 VTK 候选边）、`structural-reference-qualification.js`（显式完整面资格记录的验证与过滤）及 `structural-reference-projection.js`（透视除法前整段视场/径向射程裁切）。这些模块不依赖渲染器，不修改射线/响应结果；供显式面资格及有限模型消费者使用；有限模型预览已经接入，真实物理界面认证仍未完成。编译器域盖面开发审计与限制见 [结构参考线契约](GEOMETRY_REFERENCE_CONTRACT.md#candidate-qualification-and-projection)。
+The structural-reference pure core is split into `structural-reference-candidates.js` (reused/validated VTK candidate edges), `structural-reference-qualification.js` (validation and filtering of explicit whole-face qualification records) and `structural-reference-projection.js` (whole-segment field/radial-range clipping before perspective division). These modules do not depend on a renderer and do not modify ray/response results; they serve explicit face qualification and finite-model consumers. The finite-model preview is connected; real physical-interface certification is not done. The compiler domain-cap development audit and its limits are in the [structural reference contract](GEOMETRY_REFERENCE_CONTRACT.md#candidate-qualification-and-projection).
 
-开发端已验证 [Manifold CSG 复用](GEOMETRY_REFERENCES.md#offline-interface-construction)：按共享材料优先级分割体积，再提取全局有限网格—空气边界，保留输入组件/三角面谱系并处理部分接触面。它不是浏览器运行依赖，也不替换科学网格；派生资产源绑定与有限模型消费已实现，但不代表真实物理域认证或主应用后端迁移。资格适配器支持显式启用两个已验证空气界面之间的共面材料过渡边，不把域盖面/未知面边界当作物理轮廓。
+Development has validated [Manifold CSG reuse](GEOMETRY_REFERENCES.md#offline-interface-construction): volumes are split by the shared material priority, then the global finite mesh–air boundary is extracted, keeping input component/triangle lineage and handling partial contact faces. It is not a browser runtime dependency and does not replace the scientific meshes; derived-asset source binding and finite-model consumption are implemented, but they do not represent real physical-domain certification. The qualification adapter can explicitly enable coplanar material-transition edges between two qualified air interfaces and never treats domain caps or unknown faces as physical outlines.
 
-[派生界面资格产物](GEOMETRY_REFERENCE_CONTRACT.md#derived-interface-artifact-contract) v1.0.0 已实现源/工况/几何哈希、原生输入回执、域策略与面谱系绑定，以及纯模块校验；开发生成器默认输出到新临时目录，不改发布资产。加载后的 Float64 派生缓冲使用同一 `triangle-bvh.js` 验证空气/非空气区间，一致性检查比较非空气区间、端点与长度，并要求科学缓冲不变。此产物不授予物理包络资格；有限模型参考线在预览中使用；真实物理域认证与最坏浏览器性能仍未完成。BVH 同时接受 Float32/Float64，现有科学输入保持 Float32 与原数值行为。
+The [derived interface artifact](GEOMETRY_REFERENCE_CONTRACT.md#derived-interface-artifact-contract) v1.0.0 implements source/scenario/geometry hashes, native input receipts, domain policy and face-lineage binding, plus pure-module validation; the development generator writes to a fresh temporary directory by default and never changes release assets. Loaded Float64 derived buffers are checked with the same `triangle-bvh.js` for air/non-air intervals; the consistency check compares non-air intervals, endpoints and lengths and requires the scientific buffers to be unchanged. The artifact does not grant physical-envelope qualification; finite-model reference lines are used in the preview; real physical-domain certification and worst-case browser performance are not done. The BVH accepts both Float32 and Float64; existing scientific inputs remain Float32 with unchanged numerical behaviour.
 
-几何数据契约、Geometry IR、运行时产物与 DD4hep/GDML 后端的决策见 [ARCHITECTURE_DECISIONS](../ARCHITECTURE_DECISIONS.md) ADR-008…011，数据契约要求见 FEATURE_REQUIREMENTS FR-D。
+Decisions on the geometry data contract, Geometry IR, runtime artifacts and DD4hep/GDML backends are ADR-008…011 and ADR-016/017 in [ARCHITECTURE_DECISIONS](../ARCHITECTURE_DECISIONS.md); data-contract requirements are FR-D in the feature requirements.
 
-有限模型操作与契约见 [图案解释工作流](../guides/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison)：`finite-reference-worker.js` 校验独立派生资产，`finite-model-references.js` 消费有限模型边界（不授予真实物理界面资格）。已接入独立参考线、响应数值等值线、开天上下文、悬停谱系和 v1 图层/比较导出。`response-patterns.js` 使用共享响应直接保留的开天计数；`pattern-comparison.js` 定义统一指标，`pattern-comparison-batch.js` 复用单站科学核心进行显式小批量计算。`legacy-pattern-adapter.js` 与 `main-pattern-view.js` 将兼容的数值图层和比较接入主应用，明确保留 legacy DDA 身份；编译参考线仍只在兼容的独立预览中显示；主应用只迁移冻结几何与共享评估，不引入参考线/性能扩展。既有物理公式与发布几何保持不变。
+Finite-model operation and contracts are in the [projection workflow](../guides/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison): `finite-reference-worker.js` validates the separate derived assets and `finite-model-references.js` consumes finite-model boundaries (without granting real physical-interface qualification). Separate reference lines, response numeric contours, open-sky context, hover lineage and v1 layer/comparison export are connected. `response-patterns.js` uses the open-sky counts kept directly by the shared response; `pattern-comparison.js` defines common metrics and `pattern-comparison-batch.js` reuses the single-station scientific core for explicit small batches. `legacy-pattern-adapter.js` and `main-pattern-view.js` bring compatible numeric layers and comparison into the main app, keeping the legacy DDA identity on the legacy backend; compiled reference lines are still shown only in the standalone preview. Physics formulas and released geometry are unchanged.
 
-## 显式主应用后端选择
+## Explicit main-app backend selection
 
-application-selection 校验 registry 中的完整 release ID 和兼容 backend；未提供选择时使用既有 registry 默认值。application-backends 是有界依赖装配，不是插件系统：legacy 保留原坐标/DDA/连续水位行为，compiled 在已登记冻结工况中绑定一个 GLB/BVH 运行时。错误工况、未知发布或不兼容后端失败关闭，不尝试其他后端。
+application-selection validates the full release ID and compatible backend against the registry; without an explicit selection it uses the registry default, which is the compiled v0.7 release (OQ-3, 2026-10-10). The backend follows from the release: compiled for `dam-spec-v07` releases, legacy otherwise. application-backends is bounded dependency assembly, not a plugin system: compiled binds one GLB/BVH runtime for a registered frozen scenario (the first scenario when none is given); legacy keeps the original coordinates/DDA/continuous-water behaviour. Wrong scenarios, unknown releases or incompatible backends fail closed without trying another backend.
 
-主控制器只消费 createSession/projection/advance/complete 端口。compiled 会话捕获相同站点、设备、响应和冻结 variables，并拒绝其他环境值；25² 与 65² 均复用已有 compiled-assessment。射程由站点至有限模型 bounds 最远角点距离确定，包住全部发布网格；超出支持范围则报错，不暗中截断。域外未知材料仍可能导致透射高估。
+The main controller consumes only the createSession/projection/advance/complete ports. A compiled session captures the same station, device, response and frozen variables and rejects other environment values; 25² and 65² both reuse compiled-assessment. The ray length is the distance from the station to the farthest corner of the finite model bounds, enclosing all published meshes; exceeding the supported range is an error, never a silent truncation. Unknown material outside the domain can still lead to overestimated transmission.
 
-UI 从 capabilities 禁用不支持的连续水位、旧目标/显著度、彩色内部代理与热云。模型坐标和科学结果不使用 Three.js 对象；视图只消费缓冲和同次区段。发布/工况切换使用完整页面重载，清除旧任务；站点存储按 release ID 隔离，设备配置独立。旧部署导出格式保留；新 compiled-deployment-snapshot v0.1 记录来源、资产、模型域、工况、设备与中心射线，不宣称完整方案 save/load。
+The UI disables, from capabilities, the unsupported continuous water level, legacy targets/significance, coloured internal proxies and flux cloud. Model coordinates and scientific results never use Three.js objects; views consume only buffers and same-result segments. Switching release/scenario reloads the full page, clearing old tasks; station storage is isolated per release ID and device configuration is independent. The legacy plan export format is kept; the compiled-deployment-snapshot v0.1 records source, assets, model domain, scenario, device and central ray, without claiming full plan save/load.
 
-主应用双后端、四工况、拒绝路径与数值一致性在 tests/main-compiled-backend.test.mjs；HTTP 验收在 scripts/check-main-compiled-app.mjs。材料点与参考射线继续使用 release conformance 门槛；P95 门槛通过不代表最大误差为零或真实物理域已认证。
+Both backends, the four scenarios, rejection paths and numerical consistency are tested in `tests/main-compiled-backend.test.mjs`; HTTP acceptance is `scripts/check-main-compiled-app.mjs` (default compiled app) and `scripts/check-main-app.mjs` (legacy release). Material points and reference rays keep using the release conformance thresholds; passing the P95 threshold does not mean zero maximum error or a certified physical domain.
 
-## 主应用源码入口
+## Main-app source entry points
 
-模块所有权与禁止依赖表已提取为规格：[模块边界规格](MODULE_BOUNDARIES.md)。
+The module ownership and forbidden-dependency table is the [module boundaries spec](MODULE_BOUNDARIES.md).
 
-## 重构原则
+## Refactoring principles
 
-已迁移至 [ARCHITECTURE_DECISIONS ADR-012](../ARCHITECTURE_DECISIONS.md#adr-012-refactoring-principles)。
+Moved to [ARCHITECTURE_DECISIONS ADR-012](../ARCHITECTURE_DECISIONS.md#adr-012-refactoring-principles).
 
-## 建议测试层次
+## Recommended test layers
 
-1. 单元测试：坐标互逆、点分类、材料密度、设备斜率格。
-2. 几何回归：选定空间点和标准射线的材料标签/长度快照。
-3. 投影回归：固定规格、站点和设备参数下的总计数、透射率和若干像素。
-4. UI 冒烟：切换站点/姿态、侧栏、投影模式、保存加载。
-5. 视觉回归：典型透视、上游正视、横剖面和坝顶俯视截图。
+1. Unit tests: coordinate round trips, point classification, material density, device slope grid.
+2. Geometry regression: material labels/lengths at selected points and standard rays.
+3. Projection regression: total count, transmission and selected pixels for a fixed spec, station and device.
+4. UI smoke tests: switching stations/poses, sidebar, projection modes, save/load.
+5. Visual regression: typical perspective, upstream elevation, cross-section and plan views.
