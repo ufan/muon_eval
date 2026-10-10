@@ -6,6 +6,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 $SiteRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "dist"))
+# Dataset releases are served from the top-level datasets/ directory (ADR-018).
+$DatasetsRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "datasets"))
 $Ip = if ($BindAddress -eq "0.0.0.0") { [Net.IPAddress]::Any } else { [Net.IPAddress]::Parse($BindAddress) }
 $Server = [Net.Sockets.TcpListener]::new($Ip,$Port)
 $Mime = @{
@@ -50,8 +52,10 @@ try {
       $Method=$Matches[1]; $RawPath=($Matches[2] -split '\?')[0]
       $Relative=[Uri]::UnescapeDataString($RawPath.TrimStart('/'))
       if ([string]::IsNullOrWhiteSpace($Relative)) { $Relative="index.html" }
-      $Candidate=[IO.Path]::GetFullPath((Join-Path $SiteRoot $Relative))
-      if (-not $Candidate.StartsWith($SiteRoot,[StringComparison]::OrdinalIgnoreCase)) {
+      $Root=$SiteRoot
+      if ($Relative.StartsWith("datasets/")) { $Root=$DatasetsRoot; $Relative=$Relative.Substring("datasets/".Length) }
+      $Candidate=[IO.Path]::GetFullPath((Join-Path $Root $Relative))
+      if (-not $Candidate.StartsWith($Root,[StringComparison]::OrdinalIgnoreCase)) {
         Send-Response $Stream 403 "Forbidden" "text/plain; charset=utf-8" ([Text.Encoding]::UTF8.GetBytes("403 Forbidden")) ($Method -eq "HEAD")
       } elseif (-not [IO.File]::Exists($Candidate)) {
         Send-Response $Stream 404 "Not Found" "text/plain; charset=utf-8" ([Text.Encoding]::UTF8.GetBytes("404 Not Found")) ($Method -eq "HEAD")

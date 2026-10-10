@@ -1,6 +1,7 @@
 // Optional browser smoke check. Playwright is development tooling only.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { resolveStaticPath } from './static-paths.mjs';
 import { readFile, mkdtemp } from 'node:fs/promises';
 import { once } from 'node:events';
 import { tmpdir } from 'node:os';
@@ -20,8 +21,8 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 const server = createServer(async (request, response) => {
   try {
     const pathname = new URL(request.url, 'http://localhost').pathname;
-    const file = new URL(`.${pathname === '/' ? '/index.html' : pathname}`, root);
-    if (!file.href.startsWith(root.href)) { response.writeHead(403).end(); return; }
+    const file = resolveStaticPath(pathname);
+    if (!file) { response.writeHead(403).end(); return; }
     response.setHeader('Content-Type', mime[extname(file.pathname)] || 'application/octet-stream');
     response.end(await readFile(file));
   } catch { response.writeHead(404).end(); }

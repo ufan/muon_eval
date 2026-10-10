@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { resolveStaticPath } from '../scripts/static-paths.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
@@ -151,9 +152,9 @@ test('actual HTTP loader verifies native assets and lazy scenario meshes', async
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url, 'http://localhost');
-      const path = new URL(`../dist${url.pathname}`, import.meta.url);
+      const path = resolveStaticPath(url.pathname);
       let bytes = await readFile(path);
-      if (nativeDefault && url.pathname.endsWith('/datasets.json')) {
+      if (nativeDefault && url.pathname.endsWith('/registry.json')) {
         const registry = JSON.parse(bytes.toString()); registry.default_dataset = release;
         bytes = Buffer.from(JSON.stringify(registry));
       }
@@ -164,7 +165,7 @@ test('actual HTTP loader verifies native assets and lazy scenario meshes', async
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   t.after(() => { server.closeAllConnections(); server.close(); });
-  const address = `http://127.0.0.1:${server.address().port}/data/datasets.json`;
+  const address = `http://127.0.0.1:${server.address().port}/datasets/registry.json`;
   const loaded = await loadDataset(release, address, { digest: sha256 });
   assert.equal(loaded.geometry.identity.release_id, release);
   const mesh = await loaded.loadCompiledScenario('high');

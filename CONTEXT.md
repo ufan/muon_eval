@@ -137,10 +137,10 @@
 
 当前实现以内置的周宁下库大坝数据集作为首个验证案例，而不是平台默认语义。
 
-- 数据集注册表：`dist/data/datasets.json`；默认发布标识为 `zhouning-lower-reservoir-dam@0.6.2`。
-- 当前 UI 规格与 schema：`dist/data/datasets/zhouning-lower-reservoir-dam/0.6.2/`。
+- 数据集注册表：`datasets/registry.json`；默认发布标识为 `zhouning-lower-reservoir-dam@0.6.2`。
+- 当前 UI 规格与 schema：`datasets/zhouning-lower-reservoir-dam/0.6.2/`。
 - 原生格式 v0.7.0 发布标识为 `zhouning-lower-reservoir-dam@0.6.2+schema0.7.0`，独立目录保存；主应用可显式选择 compiled 后端和已发布冻结工况，默认仍为 legacy。连续水位与聚合源实体归属未解决。
-- 坐标和几何说明：`docs/specs/datasets/zhouning-lower-reservoir-dam.md`
+- 坐标和几何说明：`datasets/zhouning-lower-reservoir-dam/README.md`
 - 数据集 ID、数据版本、schema 版本和发布标识分别记录；同一数据版本允许具有不同格式的发布包，缓存和方案引用必须区分完整发布标识。
 
 未来新增坝体时，应为每个数据集建立同等级的元数据和说明，并使用共同接口加载。

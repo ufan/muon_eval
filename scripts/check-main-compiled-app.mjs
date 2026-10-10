@@ -1,6 +1,7 @@
 // Main-page integration acceptance only; no preview/performance workload.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { resolveStaticPath } from './static-paths.mjs';
 import { readFile, mkdtemp } from 'node:fs/promises';
 import { once } from 'node:events';
 import { extname, join } from 'node:path';
@@ -11,7 +12,7 @@ import { replayPatternComparison } from '../dist/modules/pattern-comparison.js';
 const options=new Map();for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i],value=process.argv[i+1];if(!['--playwright','--chromium'].includes(key)||!value)throw Error('Usage: node scripts/check-main-compiled-app.mjs [--playwright /path/index.mjs] [--chromium /path/browser]');options.set(key,value);}
 const {chromium}=await import(options.has('--playwright')?pathToFileURL(options.get('--playwright')).href:'playwright');
 const root=new URL('../dist/',import.meta.url),mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json'};
-const server=createServer(async(request,response)=>{try{const path=new URL(request.url,'http://localhost').pathname,file=new URL('.'+(path==='/'?'/index.html':path),root);if(!file.href.startsWith(root.href)){response.writeHead(403).end();return;}response.setHeader('Content-Type',mime[extname(file.pathname)]||'application/octet-stream');response.end(await readFile(file));}catch{response.writeHead(404).end();}});
+const server=createServer(async(request,response)=>{try{const path=new URL(request.url,'http://localhost').pathname,file=resolveStaticPath(path);if(!file){response.writeHead(403).end();return;}response.setHeader('Content-Type',mime[extname(file.pathname)]||'application/octet-stream');response.end(await readFile(file));}catch{response.writeHead(404).end();}});
 server.listen(0,'127.0.0.1');await once(server,'listening');let browser;
 const release='zhouning-lower-reservoir-dam@0.6.2+schema0.7.0',base='http://127.0.0.1:'+server.address().port;
 try{
@@ -42,7 +43,7 @@ try{
  for(const [scenarioId,waterLevel] of [['mid',293],['high',298],['extreme',305]]){await page.locator('#scenarioSelect').selectOption(scenarioId);await loadSelected();result=(await comparison()).entries.at(-1).result;assert.equal(result.scenarioId,scenarioId);assert.equal(result.variables.water_up_level,waterLevel);assert.equal(result.variables.gate_state,'closed');assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);}
  await page.setViewportSize({width:390,height:844});for(const selector of ['#toggleLeft','#toggleRight'])await click(selector);await page.waitForFunction(()=>{const canvas=document.querySelector('#webgl canvas'),rect=canvas?.getBoundingClientRect();return rect?.width>0&&rect.height>0&&Math.abs(canvas.width/canvas.height-rect.width/rect.height)<.01;},null,{timeout:10000});await page.screenshot({path:join(artifacts,'narrow.png'),fullPage:true});
  // Real UI can explicitly return to legacy without changing registry defaults.
- const registry=JSON.parse(await readFile(new URL('data/datasets.json',root),'utf8'));await page.locator('#datasetSelect').selectOption(registry.default_dataset);await loadSelected();assert.equal(await page.locator('#backendSelect').inputValue(),'legacy');assert.ok(await page.locator('#upLevel').isEnabled());assert.ok(await page.locator('[data-projection="significance"]').isEnabled());
+ const registry=JSON.parse(await readFile(new URL('../datasets/registry.json',import.meta.url),'utf8'));await page.locator('#datasetSelect').selectOption(registry.default_dataset);await loadSelected();assert.equal(await page.locator('#backendSelect').inputValue(),'legacy');assert.ok(await page.locator('#upLevel').isEnabled());assert.ok(await page.locator('[data-projection="significance"]').isEnabled());
  assert.deepEqual(errors,[]);
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
  console.log('Compiled main application: all frozen scenarios, selection/legacy return, capability gates, geometry layers, pose cancellation, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);

@@ -29,7 +29,7 @@ async function prepare(releaseId, scenarioId) {
   if (!globalThis.DecompressionStream) throw new Error('Browser lacks offline gzip decompression support');
   const decoded = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).json();
   mark('decompressParse');
-  const dataset = await loadDataset(releaseId, new URL('../data/datasets.json', import.meta.url).href), runtime = await loadCompiledMeshRuntime(dataset, scenarioId);
+  const dataset = await loadDataset(releaseId, new URL('../datasets/registry.json', import.meta.url).href), runtime = await loadCompiledMeshRuntime(dataset, scenarioId);
   mark('sourceRuntimeLoad');
   const domainFaces = Object.fromEntries(decoded.inputs.map(i => [i.componentId, i.domainFaceIds]));
   const artifact = validateDerivedInterfaceArtifact(decoded, { runtime, domainFaces, domainPolicy: entry.domainPolicy,

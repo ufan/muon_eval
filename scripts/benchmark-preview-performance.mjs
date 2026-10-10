@@ -1,5 +1,6 @@
 // Development-only, real HTTP production-page measurements. No scientific writes.
 import { createServer } from 'node:http';
+import { resolveStaticPath } from './static-paths.mjs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { once } from 'node:events';
 import { extname } from 'node:path';
@@ -11,8 +12,8 @@ const { chromium } = await import(args.includes('--playwright') ? pathToFileURL(
 const root = new URL('../dist/', import.meta.url);
 const server = createServer(async (request, response) => {
   try {
-    const path = new URL(request.url, 'http://localhost').pathname, file = new URL(`.${path}`, root);
-    if (!file.href.startsWith(root.href)) return response.writeHead(403).end();
+    const path = new URL(request.url, 'http://localhost').pathname, file = resolveStaticPath(path);
+    if (!file) return response.writeHead(403).end();
     response.setHeader('Cache-Control', 'no-store');
     response.setHeader('Content-Type', { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json' }[extname(path)] || 'application/octet-stream');
     response.end(await readFile(file));

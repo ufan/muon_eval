@@ -53,7 +53,7 @@ Legacy 计算入口为 `dist/modules/main-assessment.js`，接受站点、设备
 - 候选站点和设备初始参数；
 - 几何来源、置信等级、未知项和断言。
 
-当前周宁数据集为 LOD2 参数模型，包含照片、公开资料和经验假定。具体坐标与几何规则见 [`datasets/zhouning-lower-reservoir-dam.md`](datasets/zhouning-lower-reservoir-dam.md)。未来数据集应通过同一语义接口进入本计算链。
+当前周宁数据集为 LOD2 参数模型，包含照片、公开资料和经验假定。具体坐标与几何规则见 [`datasets/zhouning-lower-reservoir-dam/README.md`](../../datasets/zhouning-lower-reservoir-dam/README.md)。未来数据集应通过同一语义接口进入本计算链。
 
 ### 3.2 环境状态
 
@@ -91,7 +91,7 @@ Legacy 上游水位由滑条设置，下游固定为规格值；compiled 仅选�
 - `Y+`：西北/左岸；
 - `Z+`：高程增加，当前数据集的 `Z = 工程高程 - 198 m`。
 
-Legacy 分类内部使用文档坐标，入口统一转换；compiled 分类/射线直接使用 model_frame，GLB 与显示复用模型缓冲。坐标变换细节见 [`datasets/zhouning-lower-reservoir-dam.md`](datasets/zhouning-lower-reservoir-dam.md)。
+Legacy 分类内部使用文档坐标，入口统一转换；compiled 分类/射线直接使用 model_frame，GLB 与显示复用模型缓冲。坐标变换细节见 [`datasets/zhouning-lower-reservoir-dam/README.md`](../../datasets/zhouning-lower-reservoir-dam/README.md)。
 
 ### 4.2 中心方向
 

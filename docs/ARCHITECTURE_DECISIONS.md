@@ -27,7 +27,7 @@ Last updated: 2026-10-10
 | 015 | Documentation structure: guidelines on top, specs and guides below | Proposed |
 | 016 | Subject-neutral evaluation platform | Accepted (direction) |
 | 017 | Compiled geometry package is the generic runtime contract | Proposed |
-| 018 | Datasets move to a top-level `datasets/` directory | Proposed |
+| 018 | Datasets move to a top-level `datasets/` directory | Accepted, implemented |
 | 019 | User-loaded geometry in stages, client-side first | Proposed |
 | 020 | Multi-station view composes per-station results | Accepted (priority) / Proposed (design) |
 | 021 | Simulated multi-projection reconstruction as a separate pipeline | Proposed |
@@ -239,7 +239,7 @@ docs/
 | `docs/GEOMETRY_SPEC_REFACTOR.md` | Merged into ADR-008…011 and FR-D, FR-V; removed |
 | `docs/ARCHITECTURE.md` | Decisions → ADR-011…013; module table → `specs/MODULE_BOUNDARIES.md`; rest → `specs/ARCHITECTURE.md` |
 | `docs/CALCULATION_MODELS.md` | §2–§13 + §18 prose → `specs/CALCULATION_MODEL.md` (numbering kept); §1, §14–§17 → `guides/RESULT_INTERPRETATION.md`; §18 checklist → FR-V |
-| `docs/GEOMETRY_AND_COORDINATES.md` | → `specs/datasets/zhouning-lower-reservoir-dam.md`; §6 risks → FR-GE |
+| `docs/GEOMETRY_AND_COORDINATES.md` | → `datasets/zhouning-lower-reservoir-dam/README.md` (via `specs/datasets/`, ADR-018); §6 risks → FR-GE |
 | `docs/GEOMETRY_REFERENCES.md` | Normative rules → `specs/GEOMETRY_REFERENCE_CONTRACT.md`; decision/evidence/reproduction → `specs/GEOMETRY_REFERENCES.md`; decision summarised in ADR-014 |
 | `docs/PROJECTION_DATA.md`, `docs/PROJECTION_VALIDATION.md` | → `specs/` unchanged in content |
 | `docs/PROJECTION_WORKFLOW.md`, `docs/MIGRATION_CHECKLIST.md` | → `guides/` unchanged in content |
@@ -275,13 +275,13 @@ docs/
 
 ## ADR-018 Datasets move to a top-level `datasets/` directory
 
-**Status:** Proposed (owner's question 2026-10-10; not yet moved)
+**Status:** Accepted and implemented (owner decision OQ-6, 2026-10-10: move now)
 
 **Context.** Dataset releases (spec JSON, schemas, GLB, terrain, conformance baselines) live inside the deployable web root `dist/data/datasets/`, mixed with application code. Their descriptive spec currently sits apart from them in `docs/specs/datasets/`. Binary assets are large (~2.6 MB per GLB, four per release, terrain duplicated across 0.6.1/0.6.2/0.7).
 
 **Decision.**
 - Make `datasets/<dataset-id>/<release>/` a top-level source directory: release files, schemas, conformance baselines and the dataset's own spec document (`README.md`, moved from `docs/specs/datasets/`), versioned together. Shared package schemas go in `datasets/_schemas/`.
-- `dist/` receives only the bundled datasets through an explicit step: a small copy script now (no build step, ADR-013), the Vite public/asset pipeline later (ADR-004). The registry lists what is bundled.
+- Served at `/datasets/`; the registry is `datasets/registry.json` with `base_url` relative to it. Local dev servers (`serve.ps1`, `scripts/static-paths.mjs`) map `/datasets/` to the directory, Docker copies it into the web root, and static hosts that publish only `dist/` run `scripts/sync-datasets.mjs` first (output `dist/datasets/`, gitignored). With the build step (ADR-004) this becomes part of the asset pipeline.
 - Consider Git LFS or release artifacts for large binaries once more datasets arrive.
 - **Cost:** a copy step before serving/deploying; test/script paths and hosting must be updated in the same change.
 
@@ -334,10 +334,10 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **OQ-3 Default backend switch.** Whether and when the main app's default moves from legacy DDA to the compiled backend, and the acceptance evidence required (ADR-011).
 - **OQ-4 Documentation language.** One language for all docs, or English guideline files with specs/guides in their current (mixed Chinese/English) languages.
 - **OQ-5 Generic terminology.** Keep "dataset" + `kind` (recommended), or introduce a term such as "subject"/"site" in UI and docs. When should `AGENTS.md` and `CONTEXT.md` (currently dam-worded) be generalised: now, or with the first non-dam kind?
-- **OQ-6 Dataset directory move (ADR-018).** Move now with a copy script, or together with the build step (ADR-004)?
 
 ## Change log
 
+- 2026-10-10: ADR-018 accepted and implemented (OQ-6).
 - 2026-10-10: OQ-7 resolved: multi-station overview ahead of scan performance; recorded in ADR-020.
 - 2026-10-10: Added ADR-020 (multi-station view), ADR-021 (simulated reconstruction), OQ-7.
 - 2026-10-10: Added ADR-016 (subject-neutral platform), ADR-017 (compiled package as generic contract), ADR-018 (top-level datasets), ADR-019 (user-loaded geometry), OQ-5, OQ-6; ADR-008 generalised.

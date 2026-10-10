@@ -2,7 +2,7 @@
 
 Modular, detailed specifications of the platform. The code must match them: a change to formulas, data formats, contracts, module boundaries or tolerances updates the relevant spec in the same commit, with a version bump where the spec defines one.
 
-The guideline documents sit one level up in [`docs/`](../): [architecture decisions](../ARCHITECTURE_DECISIONS.md), [feature requirements](../FEATURE_REQUIREMENTS.md), [roadmap](../ROADMAP.md) and [implementation priority](../IMPLEMENTATION_PRIORITY.md). Specs contain no task lists; open work is tracked only in those files. Usage and operation guides are in [`../guides/`](../guides/).
+The guideline documents sit one level up in [`docs/`](../../): [architecture decisions](../ARCHITECTURE_DECISIONS.md), [feature requirements](../FEATURE_REQUIREMENTS.md), [roadmap](../ROADMAP.md) and [implementation priority](../IMPLEMENTATION_PRIORITY.md). Specs contain no task lists; open work is tracked only in those files. Usage and operation guides are in [`../guides/`](../guides/).
 
 Last updated: 2026-10-10
 
@@ -17,11 +17,8 @@ Last updated: 2026-10-10
 | Geometry | [GEOMETRY_REFERENCES.md](GEOMETRY_REFERENCES.md) | English | Supporting record for the contract: decision, library comparison, evidence, real-release audit, reproduction |
 | Projection | [PROJECTION_DATA.md](PROJECTION_DATA.md) | English | Calculation identity, numerical fields, overlays, material contributions, contour extraction, graph mapping, contour export v1.0.0 |
 | Projection | [PROJECTION_VALIDATION.md](PROJECTION_VALIDATION.md) | English | Numerical gates, feature-scale policy, performance budgets, analytical fixtures |
-| Datasets | [datasets/zhouning-lower-reservoir-dam.md](datasets/zhouning-lower-reservoir-dam.md) | 中文 | Zhouning frames and transforms, geometry types, display and calculation rules, change checklist |
 
-`specs/datasets/` holds the *description* of each dataset (frames, transforms, geometry rules); the data itself is in `dist/data/datasets/`. ADR-018 proposes moving both into one top-level `datasets/<id>/<release>/` directory so each dataset and its description are versioned together.
-
-Machine-readable specs live with the data: dataset schemas under `dist/data/datasets/<id>/<version>/` (e.g. `schema/dam-dataset.schema.json`) and the registry `dist/data/datasets.json`.
+Dataset specs live with their data in the top-level [`datasets/`](../../datasets/README.md) directory (ADR-018): each dataset's `README.md` describes its frames, transforms and geometry rules, next to its machine-readable schemas, releases and the registry `datasets/registry.json`.
 
 ## Not yet extracted (candidates)
 

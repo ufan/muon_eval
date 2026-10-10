@@ -90,4 +90,4 @@ legacy 的程序化裁剪、网格显示和目标反事实启发式不用于此�
 
 ## 6. 已知几何风险
 
-已知几何风险已迁移为需求条目，在 [`../../FEATURE_REQUIREMENTS.md`](../../FEATURE_REQUIREMENTS.md) 的 FR-GE 中维护。
+已知几何风险已迁移为需求条目，在 [`docs/FEATURE_REQUIREMENTS.md`](../../docs/FEATURE_REQUIREMENTS.md) 的 FR-GE 中维护。

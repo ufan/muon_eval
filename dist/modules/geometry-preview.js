@@ -363,7 +363,7 @@ renderer.domElement.addEventListener('click', event => {
   }
 });
 try {
-  const response = await fetch('./data/datasets.json');
+  const response = await fetch('./datasets/registry.json');
   if (!response.ok) throw new Error('Unable to load dataset registry');
   const registry = await response.json();
   $('release').replaceChildren(...Object.entries(registry.datasets).filter(([, entry]) => entry.adapter === 'dam-spec-v07').map(([id]) => new Option(id, id)));

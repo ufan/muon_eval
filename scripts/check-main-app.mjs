@@ -1,6 +1,7 @@
 // Optional HTTP browser acceptance. No application runtime dependency on Playwright.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { resolveStaticPath } from './static-paths.mjs';
 import { readFile } from 'node:fs/promises';
 import { once } from 'node:events';
 import { extname } from 'node:path';
@@ -11,7 +12,7 @@ const options=new Map();
 for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i],value=process.argv[i+1];if(!['--playwright','--chromium'].includes(key)||!value)throw Error('Usage: node scripts/check-main-app.mjs [--playwright /path/index.mjs] [--chromium /path/browser]');options.set(key,value);}
 const {chromium}=await import(options.has('--playwright')?pathToFileURL(options.get('--playwright')).href:'playwright');
 const root=new URL('../dist/',import.meta.url),mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json'};
-const server=createServer(async(request,response)=>{try{const path=new URL(request.url,'http://localhost').pathname,file=new URL('.'+(path==='/'?'/index.html':path),root);if(!file.href.startsWith(root.href)){response.writeHead(403).end();return;}response.setHeader('Content-Type',mime[extname(file.pathname)]||'application/octet-stream');response.end(await readFile(file));}catch{response.writeHead(404).end();}});
+const server=createServer(async(request,response)=>{try{const path=new URL(request.url,'http://localhost').pathname,file=resolveStaticPath(path);if(!file){response.writeHead(403).end();return;}response.setHeader('Content-Type',mime[extname(file.pathname)]||'application/octet-stream');response.end(await readFile(file));}catch{response.writeHead(404).end();}});
 server.listen(0,'127.0.0.1');await once(server,'listening');let browser;
 try{
  browser=await chromium.launch({headless:true,...(options.has('--chromium')?{executablePath:options.get('--chromium')} : {}),args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-unsafe-swiftshader']});

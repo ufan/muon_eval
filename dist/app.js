@@ -11,7 +11,7 @@ import { createMainPage } from './modules/main-page.js';
 import { createDeploymentState } from './modules/deployment-state.js';
 
 async function main(){
- const response=await fetch('./data/datasets.json');if(!response.ok)throw new Error('Dataset registry unavailable');
+ const response=await fetch('./datasets/registry.json');if(!response.ok)throw new Error('Dataset registry unavailable');
  const registry=await response.json(),selection=resolveApplicationSelection(registry,location.search);
  const dataset=await loadDataset(selection.datasetId),backend=await createApplicationBackend(dataset,selection);
  const state=createDeploymentState({stations:backend.stations,environment:backend.environment});let page;
