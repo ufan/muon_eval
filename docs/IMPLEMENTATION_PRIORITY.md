@@ -17,8 +17,9 @@ Last updated: 2026-10-10
 | 3 | Decide the cos θ projected-area factor | FR-C3 | Needs owner decision; then fix as model revision or document | Blocked (decision) |
 | 4 | Remove dead work in `quickMetrics()` | FR-C4 | Keep only `center` and `dirDoc`; legacy path only | Todo |
 
-## Standing rule
+## Standing rules
 
+- FR-Q10: changes to domain concepts update `docs/specs/DOMAIN_MODEL.md` in the same commit.
 - FR-K1: every change keeps generic modules free of subject-specific (dam) logic; when touching a module that has such leaks, prefer moving them into the dataset declaration or a bounded adapter.
 
 ## P1 — Tooling, hygiene and boundaries (Phase 0)
@@ -99,10 +100,12 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | Datasets moved to top-level `datasets/` with sync script | ADR-018 | `dc48ed3` |
 | Compiled backend made the default | OQ-3, ADR-011 | `eba2f6f` |
 | Stale v0.1.0 `dam_spec` files removed | FR-Q6 | `03436ee` |
-| All documentation in English; `AGENTS.md`/`CONTEXT.md` generalised | OQ-4, OQ-5, FR-K9 | docs translation commit |
+| All documentation in English; `AGENTS.md`/`CONTEXT.md` generalised | OQ-4, OQ-5, FR-K9 | `85b0dfe` |
+| Living domain model created | ADR-022, FR-Q10 | this change |
 
 ## Change log
 
+- 2026-10-10: Standing rule FR-Q10; Done table updated.
 - 2026-10-10: Legacy-only notes on #2 and #4; #9 narrowed; compiled-default gaps and station import added under Later; Done table added.
 - 2026-10-10: New P3 multi-station overview (#14–#17) ahead of scan performance (now P4, #18–#22) by owner decision; phase references updated.
 - 2026-10-10: Added multi-station overview, coverage metrics and simulated reconstruction under Later; phases renumbered.

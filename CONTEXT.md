@@ -1,6 +1,6 @@
 # CONTEXT.md
 
-Domain context for the project: product purpose, geometry semantics, physical quantities and terminology. It is written for human developers and any AI tool, independent of vendor or product. It may be completed gradually; unknown or undecided content is marked `TBD` rather than guessed.
+Domain context for the project: product purpose, geometry semantics, physical quantities and terminology (the glossary). The domain model itself (contexts, relationships, identities, invariants, lifecycles) is kept in `docs/specs/DOMAIN_MODEL.md` and updated with development. It is written for human developers and any AI tool, independent of vendor or product. It may be completed gradually; unknown or undecided content is marked `TBD` rather than guessed.
 
 A subject's dimensions and coordinates are never platform rules here. Dataset-specific content belongs in "Current datasets" below or in the dataset's own `datasets/<dataset-id>/README.md`.
 
@@ -51,7 +51,7 @@ Help users explore, filter and compare muography detector deployment plans for a
 
 Note: "scenario" means a frozen environment variant, never the subject itself; the subject is a dataset of some kind.
 
-Object identifiers, required fields and file schemas: `TBD` (FR-P1).
+How these objects relate, their identities, invariants and lifecycles are modelled in [`docs/specs/DOMAIN_MODEL.md`](docs/specs/DOMAIN_MODEL.md); this file keeps the glossary. Object identifiers, required fields and file schemas: `TBD` (FR-P1).
 
 ## 3. Geometry semantics
 

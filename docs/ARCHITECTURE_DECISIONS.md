@@ -31,6 +31,7 @@ Last updated: 2026-10-10
 | 019 | User-loaded geometry in stages, client-side first | Proposed |
 | 020 | Multi-station view composes per-station results | Accepted (priority) / Proposed (design) |
 | 021 | Simulated multi-projection reconstruction as a separate pipeline | Proposed |
+| 022 | A living domain model separate from the glossary | Accepted |
 
 ---
 
@@ -326,6 +327,17 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - Subject-neutral: voxel grid from dataset bounds, densities from dataset materials (ADR-016).
 - Sizing estimate: a 2 m grid over a 230 × 100 × 80 m dam is ~230k voxels; 10 stations × 65² rays ≈ 42k rays with a few hundred voxels each gives a sparse system of ~10M non-zeros. That is workable in the browser with typed arrays and a worker; larger grids follow ADR-005 (measure, then WebAssembly).
 
+## ADR-022 A living domain model separate from the glossary
+
+**Status:** Accepted (owner request 2026-10-10)
+
+**Context.** The owner asked for a record of domain modelling kept along with development. `CONTEXT.md` holds product context and the glossary and is required reading for every contributor, so it should stay short and stable. The model (bounded contexts, relationships, identities, invariants, lifecycles, gaps between code and target) changes with development and has so far existed only implicitly in code.
+
+**Decision.**
+- `CONTEXT.md` stays the ubiquitous-language entry: product context and term definitions.
+- `docs/specs/DOMAIN_MODEL.md` is the living domain model, marking each element Current, Partial or Target, listing invariants and code-vs-model gaps with their requirement IDs, and keeping a change log.
+- Any change that adds, removes or changes a domain concept, relationship, identity or invariant updates the model (and the glossary for new terms) in the same commit (`AGENTS.md`, FR-Q10). Decisions that reshape the model are also recorded here as ADRs.
+
 ---
 
 ## Open questions
@@ -345,6 +357,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-10: ADR-022 living domain model.
 - 2026-10-10: Recorded owner decisions OQ-1, OQ-3, OQ-4, OQ-5 (compiled default in ADR-011, English-only docs in ADR-015, terminology in ADR-016); added Resolved questions table.
 - 2026-10-10: ADR-018 accepted and implemented (OQ-6).
 - 2026-10-10: OQ-7 resolved: multi-station overview ahead of scan performance; recorded in ADR-020.

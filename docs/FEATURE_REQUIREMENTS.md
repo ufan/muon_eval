@@ -145,6 +145,7 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | FR-Q4 | Safe rendering of user text. | Station names and other user/imported text rendered with `textContent`, not `innerHTML`. | Needed |
 | FR-Q5 | Azimuth input wraps. | −10° → 350°, 360° → 0° (not clamped to 0/359). | Needed |
 | FR-Q6 | No stale data files. | Unused `dist/data/dam_spec.json` and `dist/data/dam_spec.schema.json` (old v0.1.0) removed; README corrected. | Done |
+| FR-Q10 | Domain model kept current. | `docs/specs/DOMAIN_MODEL.md` and the `CONTEXT.md` glossary are updated in the same commit as any change to a domain concept, relationship, identity or invariant (ADR-022). | Standing |
 | FR-Q9 | English documentation. | All documentation in English (OQ-4); dataset files imported byte for byte from upstream packages excepted. UI text and Windows launcher names are not documentation and are tracked separately. | Standing |
 | FR-Q7 | Dev dependencies documented. | `manifold3d` (Python) listed for `check-interface-artifacts.mjs`; `jsonschema` deprecation (`RefResolver`) addressed. | Needed |
 | FR-Q8 | Module dependency boundaries enforced. | Real import boundaries between dataset loading, geometry, device/deployment state, assessment and rendering audited; both backends reuse application ports; calculation runs without DOM/Three.js; views provide no geometric truth; main app does not depend on the standalone preview. Locked by automated tests. | Needed |
@@ -186,6 +187,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-10: Added FR-Q10 (domain model kept current).
 - 2026-10-10: Added FR-B1…B3 (compiled default), FR-Q9 (English docs); FR-A1 not needed now; FR-K9 docs done; FR-Q6 done.
 - 2026-10-10: FR-M4, FR-M5 prioritised next after the plan format.
 - 2026-10-10: Added FR-M4…M9 (simultaneous stations, demonstration mode, coverage metrics, simulated reconstruction); FR-P1 candidates vs selected deployment.

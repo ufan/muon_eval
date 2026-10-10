@@ -10,6 +10,7 @@ Last updated: 2026-10-10
 
 | Module | Spec | Contents |
 |---|---|---|
+| Domain | [DOMAIN_MODEL.md](DOMAIN_MODEL.md) | Bounded contexts, entities, identities, invariants, lifecycles; current vs target and gaps |
 | Architecture | [ARCHITECTURE.md](ARCHITECTURE.md) | Current module layout, data flow, geometry backends and integration boundaries |
 | Architecture | [MODULE_BOUNDARIES.md](MODULE_BOUNDARIES.md) | Module ownership and forbidden dependencies; enforced by `tests/main-architecture.test.mjs` |
 | Calculation | [CALCULATION_MODEL.md](CALCULATION_MODEL.md) | Calculation chain, formulas and parameters of `legacy-quick-response@1.0.0` and its compiled adapter |

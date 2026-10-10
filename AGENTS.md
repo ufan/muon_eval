@@ -18,7 +18,7 @@ It is a rapid evaluation and plan-comparison tool for engineering deployment, no
 
 ## Read first
 
-1. `CONTEXT.md`: use cases, geometry semantics, terminology and current datasets.
+1. `CONTEXT.md`: use cases, geometry semantics, terminology and current datasets; then `docs/specs/DOMAIN_MODEL.md` for how domain concepts relate and what must always hold.
 2. `README.md`: how to run, current capabilities and directory entry points.
 3. The four guideline documents at the top of `docs/`: `ARCHITECTURE_DECISIONS.md`, `FEATURE_REQUIREMENTS.md`, `ROADMAP.md`, `IMPLEMENTATION_PRIORITY.md`.
 4. `docs/specs/`: the specs relevant to the task (current architecture and module boundaries, calculation model, geometry reference contract, projection data and validation); index in `docs/specs/README.md`.
@@ -80,6 +80,7 @@ Raise something to a higher-level generic interface only after a second real dat
 - A repository migration keeps at least `.git/`, `AGENTS.md`, `CONTEXT.md`, `README.md`, `docs/`, application source, `datasets/` and required deployment configuration.
 - One feature or one explainable refactoring unit per commit; geometry, physics-formula and data-format changes are labelled explicitly in the commit message.
 - All documentation is written in English.
+- When a change adds, removes or changes a domain concept, relationship, identity or invariant, update `docs/specs/DOMAIN_MODEL.md` (and the `CONTEXT.md` glossary for new terms) in the same commit.
 
 ## Recommended order of evolution
 
