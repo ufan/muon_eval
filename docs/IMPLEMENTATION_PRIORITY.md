@@ -92,6 +92,8 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | WebAssembly tracer | ADR-005 step 4 | Only if P4 measurements insufficient |
 | Server backend | ADR-001 | Only when T1–T4 observed |
 | Access control | FR-A1 | Answer to OQ-1 |
+| Installable offline web app (PWA) | FR-W1, ADR-024 | When offline use is needed; small |
+| Desktop installer via thin Tauri wrapper | FR-W2, W3 | Answer to OQ-9 |
 | Preview performance extensions | Roadmap "Deferred" | Paused |
 
 ## Done
@@ -104,10 +106,11 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | All documentation in English; `AGENTS.md`/`CONTEXT.md` generalised | OQ-4, OQ-5, FR-K9 | `85b0dfe` |
 | Living domain model created | ADR-022, FR-Q10 | `14c9f8f` |
 | Windows launcher scripts removed (re-add when needed) | owner request | `b4c48f6` |
-| Layered test commands and test directories (#5) | FR-Q1, ADR-023 | this change |
+| Layered test commands and test directories (#5) | FR-Q1, ADR-023 | `6589a4c` |
 
 ## Change log
 
+- 2026-10-10: Desktop distribution items under Later.
 - 2026-10-10: #5 done.
 - 2026-10-10: #5 extended to layered scripts; standing rule ADR-023.
 - 2026-10-10: Standing rule FR-Q10; Done table updated.

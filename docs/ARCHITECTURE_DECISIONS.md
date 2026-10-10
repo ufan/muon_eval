@@ -33,6 +33,7 @@ Last updated: 2026-10-10
 | 021 | Simulated multi-projection reconstruction as a separate pipeline | Proposed |
 | 022 | A living domain model separate from the glossary | Accepted |
 | 023 | Layered, lightweight test-driven development | Accepted |
+| 024 | Desktop distribution as a thin wrapper over the unchanged web app | Proposed |
 
 ---
 
@@ -351,11 +352,25 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - One behaviour is tested once, at the lowest layer that can show it; no geometry mocks (analytic fixtures or real releases); golden baselines change only with a version bump.
 - The everyday loop (`npm test`, L0–L2) stays under about 15 s; slow layers run when their inputs change or before merge/release.
 
+## ADR-024 Desktop distribution as a thin wrapper over the unchanged web app
+
+**Status:** Proposed (owner question 2026-10-10: mainly an online service, may need a standalone desktop app)
+
+**Context.** The app is a static site with only relative URLs and no external calls; it uses ES module workers, blob downloads for exports, file inputs for imports and `localStorage`. It cannot run from `file://` (modules, workers and JSON fetches are blocked), so any desktop form must serve `dist/` and `datasets/` from a real origin. The Windows launcher scripts were removed (2026-10-10); a desktop package would replace them properly.
+
+**Decision.** Desktop support is a packaging layer, never a fork: the wrapper serves the same `dist/` + `datasets/` build and adds only a window, menus, native open/save dialogs, update checks and (later) local dataset storage. No calculation, geometry or domain logic in the wrapper (ADR-002). Stages, each triggered by need:
+1. **Installable web app (PWA)**: a web manifest and a service worker that caches the app and bundled datasets, so users can "install" it from the online service and use it offline. No installer, no signing; works in Chromium-based browsers and partly in Safari/Firefox. Cheapest; try first.
+2. **Thin native wrapper with Tauri** when a real downloadable installer is needed (offline distribution, IT-managed machines, native file access for user-loaded datasets ADR-019). Serves the files through its asset protocol; uses the system webview (WebView2 on Windows, WKWebView on macOS, WebKitGTK on Linux), so installers stay small (~10 MB plus datasets). Exports need a small save-dialog bridge because downloads behave differently per webview.
+3. **Electron instead of Tauri** only if WebGL/worker behaviour of the system webviews proves inconsistent (mainly Linux WebKitGTK) or an in-process Node batch runner is wanted. Bundles Chromium, so behaviour matches the browser tests exactly, at ~100 MB+ per installer.
+
+**Consequences.** One build serves the online service and the desktop package; browser acceptance (L5) covers the wrapper's content, plus a short smoke test per packaged OS. Code signing and notarisation (Windows, macOS) are the main recurring cost of stages 2–3. `localStorage` in a wrapper belongs to the app's own origin, so plans move between web and desktop by export/import (FR-P1).
+
 ---
 
 ## Open questions
 
 - **OQ-2 UI framework choice** (Preact vs Svelte), decided when ADR-004 starts.
+- **OQ-9 Desktop distribution need.** Is an installable offline web app (ADR-024 stage 1) enough, or is a downloadable installer required? For which operating systems, and must it work fully offline?
 
 ## Resolved questions
 
@@ -371,6 +386,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-10: ADR-024 desktop distribution; OQ-9.
 - 2026-10-10: ADR-023 accepted; OQ-8 resolved (local tests only).
 - 2026-10-10: ADR-023 layered test strategy; OQ-8 continuous integration.
 - 2026-10-10: Windows launcher scripts (`serve.ps1`, `.cmd`) removed; references updated in ADR-004 and ADR-018.

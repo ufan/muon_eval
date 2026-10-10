@@ -111,6 +111,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 | Server backend | T1 shared plans, T2 scan scale, T3 routine Geant4, T4 access control | Small backend: storage + job queue; workers reuse the core (FR-P3, FR-S6, FR-G3) |
 | WebAssembly tracer | Phase 3 measurements still insufficient | Rust/C++ → WASM; must pass conformance rays/points (ADR-005 step 4) |
 | Access control | OQ-1 answer | Authenticated hosting (FR-A1) |
+| Desktop distribution | A real offline or installer need (OQ-9) | PWA first (FR-W1); thin Tauri wrapper when an installer is needed (FR-W2, W3); never a fork of the app (ADR-024) |
 
 ## Deferred
 
@@ -118,6 +119,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-10: Desktop distribution added as a conditional track.
 - 2026-10-10: "Where we are" updated (compiled default, `datasets/`, English docs); default-switch item replaced by FR-B1.
 - 2026-10-10: Multi-station overview and demonstration moved ahead of scanning as Phase 2 (owner decision, OQ-7); later phases renumbered 3–7.
 - 2026-10-10: Phase 4 extended to multi-station overview/demonstration/coverage; new Phase 5 simulated reconstruction; physics validation renumbered to Phase 6.

@@ -180,6 +180,15 @@ Not urgent; staged after bundled datasets.
 | FR-L5 | Offline converter. | CLI turns glTF/OBJ/STL (later IFC/STEP) plus a material map and frame declaration into a package, reusing compiler checks. | Needed (later) |
 | FR-L6 | In-app light authoring. | Assign materials/densities to imported meshes, set frames/origin, declare variables. | Needed (later) |
 
+## W. Distribution (ADR-024)
+
+| ID | Requirement | Acceptance criteria | Status |
+|---|---|---|---|
+| FR-W1 | Installable offline web app. | Web manifest and service worker cache the app and bundled datasets; after one online visit the app installs and runs offline; updates replace the cache atomically; a dataset release's integrity hashes still verify. | Needed (later) |
+| FR-W2 | Downloadable desktop app. | Thin wrapper (Tauri first) packages the same `dist/` + `datasets/`; no logic beyond window, menus, native open/save dialogs and updates; exports and imports work; L5 browser checks plus a per-OS smoke test pass. Target operating systems per OQ-9. | Open (OQ-9) |
+| FR-W3 | Signed, updatable installers. | Code signing/notarisation for the target OSes; versioned releases with an update channel. | Open (with FR-W2) |
+| FR-W4 | Plans portable between web and desktop. | Export/import of plans (FR-P1) is the transfer path; stored state never assumes one origin. | Needed (with FR-P1) |
+
 ## A. Access and security
 
 | ID | Requirement | Acceptance criteria | Status |
@@ -188,6 +197,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-10: Added W (distribution) FR-W1…W4.
 - 2026-10-10: FR-Q1 done.
 - 2026-10-10: FR-Q1 layered test commands; FR-Q11 invariant tests (ADR-023).
 - 2026-10-10: Added FR-Q10 (domain model kept current).
