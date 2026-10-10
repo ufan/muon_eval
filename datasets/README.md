@@ -12,9 +12,9 @@ datasets/
 
 Serving: the application fetches `./datasets/registry.json`.
 
-- Local development servers (`serve.ps1`, `scripts/static-paths.mjs` used by the check scripts and tests) map `/datasets/` to this directory.
+- The development servers in the check scripts and tests (`scripts/static-paths.mjs`) map `/datasets/` to this directory.
 - Docker copies this directory into the web root.
-- Static hosts that can only publish `dist/` need `node scripts/sync-datasets.mjs` first; it copies the registry and every registered release into `dist/datasets/` (gitignored).
+- Any other static server (including a local one) that serves only `dist/` needs `node scripts/sync-datasets.mjs` first; it copies the registry and every registered release into `dist/datasets/` (gitignored).
 
 Validation: `python3 scripts/check-dataset-release.py`, `node scripts/check-geometry-conformance.mjs`, `node scripts/check-semantic-mapping.mjs`.
 

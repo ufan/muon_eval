@@ -2,6 +2,3 @@
 .openai
 *.tar.gz
 *.zip
-启动本机离线版.cmd
-启动局域网共享.cmd
-serve.ps1

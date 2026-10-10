@@ -101,7 +101,8 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | Compiled backend made the default | OQ-3, ADR-011 | `eba2f6f` |
 | Stale v0.1.0 `dam_spec` files removed | FR-Q6 | `03436ee` |
 | All documentation in English; `AGENTS.md`/`CONTEXT.md` generalised | OQ-4, OQ-5, FR-K9 | `85b0dfe` |
-| Living domain model created | ADR-022, FR-Q10 | this change |
+| Living domain model created | ADR-022, FR-Q10 | `14c9f8f` |
+| Windows launcher scripts removed (re-add when needed) | owner request | this change |
 
 ## Change log
 

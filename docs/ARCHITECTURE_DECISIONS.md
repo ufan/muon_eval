@@ -81,7 +81,7 @@ Last updated: 2026-10-10
 - Adopt Vite plus a small UI framework (Preact or Svelte; OQ-2) when building the first new plan or scan screen, not before.
 - Use the framework for new form/list/table screens only. The 3D scene and projection canvas stay framework-free. The old page is migrated piece by piece.
 - Framework state must not own calculation inputs or results; the existing deployment state and assessment controller remain the source. UI state (e.g. sidebar expansion) never enters scientific result files.
-- The switch supersedes ADR-013: source moves to `src/` with a built static output. In the same change, update hosting binding (`.openai/hosting.json`), Docker/nginx, `serve.ps1`, `AGENTS.md` checks (`node --check dist/app.js`) and README.
+- The switch supersedes ADR-013: source moves to `src/` with a built static output. In the same change, update hosting binding (`.openai/hosting.json`), Docker/nginx, `AGENTS.md` checks (`node --check dist/app.js`) and README.
 
 ## ADR-005 Performance strategy: algorithm first, native code last
 
@@ -283,7 +283,7 @@ docs/
 
 **Decision.**
 - Make `datasets/<dataset-id>/<release>/` a top-level source directory: release files, schemas, conformance baselines and the dataset's own spec document (`README.md`, moved from `docs/specs/datasets/`), versioned together. Shared package schemas go in `datasets/_schemas/`.
-- Served at `/datasets/`; the registry is `datasets/registry.json` with `base_url` relative to it. Local dev servers (`serve.ps1`, `scripts/static-paths.mjs`) map `/datasets/` to the directory, Docker copies it into the web root, and static hosts that publish only `dist/` run `scripts/sync-datasets.mjs` first (output `dist/datasets/`, gitignored). With the build step (ADR-004) this becomes part of the asset pipeline.
+- Served at `/datasets/`; the registry is `datasets/registry.json` with `base_url` relative to it. The check scripts and tests (`scripts/static-paths.mjs`) map `/datasets/` to the directory, Docker copies it into the web root, and any server that publishes only `dist/` runs `scripts/sync-datasets.mjs` first (output `dist/datasets/`, gitignored). With the build step (ADR-004) this becomes part of the asset pipeline.
 - Consider Git LFS or release artifacts for large binaries once more datasets arrive.
 - **Cost:** a copy step before serving/deploying; test/script paths and hosting must be updated in the same change.
 
@@ -357,6 +357,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-10: Windows launcher scripts (`serve.ps1`, `.cmd`) removed; references updated in ADR-004 and ADR-018.
 - 2026-10-10: ADR-022 living domain model.
 - 2026-10-10: Recorded owner decisions OQ-1, OQ-3, OQ-4, OQ-5 (compiled default in ADR-011, English-only docs in ADR-015, terminology in ADR-016); added Resolved questions table.
 - 2026-10-10: ADR-018 accepted and implemented (OQ-6).

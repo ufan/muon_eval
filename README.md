@@ -4,27 +4,22 @@ A static Three.js web application for exploring muography detector deployments: 
 
 ## Quick start
 
-Local Windows machine:
-
-```powershell
-.\启动本机离线版.cmd
-```
-
-Open `http://127.0.0.1:8765/`. Do not open `dist/index.html` directly: browsers block ES modules and JSON on `file://` pages.
-
-Or run the server directly:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\serve.ps1 -BindAddress 127.0.0.1 -Port 8765 -OpenBrowser
-```
-
 Docker:
 
 ```bash
 docker compose up -d --build
 ```
 
-Open `http://localhost:8080/`. See [the deployment guide](docs/guides/DEPLOYMENT.md) for LAN sharing, servers and static hosting.
+Open `http://localhost:8080/`.
+
+Any static HTTP server works once the datasets are copied into `dist/`:
+
+```bash
+node scripts/sync-datasets.mjs
+python3 -m http.server 8765 --directory dist
+```
+
+Open `http://127.0.0.1:8765/`. Do not open `dist/index.html` directly: browsers block ES modules and JSON on `file://` pages. See [the deployment guide](docs/guides/DEPLOYMENT.md) for servers and static hosting.
 
 ## Directory layout
 
@@ -59,7 +54,7 @@ Open `http://localhost:8080/`. See [the deployment guide](docs/guides/DEPLOYMENT
 - Expected counts, transmission, material-contribution and response numeric layers; legacy structural significance and target contours on the legacy backend.
 - Hovering a projection pixel highlights the 3D ray and material path.
 - Station metrics, comparison, versioned snapshot export; legacy 3D flux cloud.
-- Local, LAN, Docker/Nginx and static-hosting deployment.
+- Docker/Nginx and static-hosting deployment.
 
 ## Checks
 
