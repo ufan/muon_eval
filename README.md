@@ -46,13 +46,12 @@ docker compose up -d --build
 - `dist/vendor/three/`：离线 Three.js 0.186.0。
 - `.openai/hosting.json`：当前在线站点的可选托管绑定，不参与应用运行。
 - `docs/CALCULATION_MODELS.md`：计算链、公式、输出解释、参数与假定。
-- `docs/GEOMETRY_SPEC_REFACTOR.md`：长期几何数据职责、Geometry IR、后端边界与验证原则。
 - [有限模型图案解释工作流](docs/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison)：经批准的有限模型参考线、开天/接受度解释、可复现站点姿态比较及 v1 导出/重放；包含独立预览派生资产的离线生成方法。主应用默认仍为 legacy DDA，并未自动迁移为编译网格后端。
 - [投影数据与数值解释](docs/PROJECTION_DATA.md)：结果快照、材料贡献、等值线、图坐标及导出契约。
 - [几何参考线与派生资产](docs/GEOMETRY_REFERENCES.md)：参考线语义、资格、CSG 复用与源绑定产物。
 - [投影验证](docs/PROJECTION_VALIDATION.md)：数值容差、特征尺度、性能目标与解析测试基线。
-- `docs/`：架构、当前数据集几何、路线图和迁移说明。
-- `docs/planning/`：架构决策、功能需求、总体路线与实施优先级（英文，随讨论维护）。
+- `docs/`：当前架构、计算模型、当前数据集几何和迁移说明（参考文档，不含待办）。
+- `docs/planning/`：架构决策、功能需求、总体路线与实施优先级；所有未完成工作只在此维护（英文）。
 
 ## 当前能力
 
@@ -109,7 +108,7 @@ URL 中的 `+` 必须编码为 `%2B`；界面自动生成正确 URL。发布版�
 
 默认仍为 legacy 发布和 DDA；回到对应发布版本即可继续使用旧连续水位与兼容功能。compiled 的有限范围、聚合源实体归属及物理标定限制仍然存在，显式接入不代表施工级或真实物理域认证。
 
-数据格式 v0.7.0 作为独立发布标识进入注册表和显式主应用 compiled 路径；默认 UI 仍使用旧格式 v0.6.2。当前接入能力与验证入口见 [架构说明](docs/ARCHITECTURE.md#当前几何后端与接入边界)；未完成工作见 [路线图](docs/ROADMAP.md)。
+数据格式 v0.7.0 作为独立发布标识进入注册表和显式主应用 compiled 路径；默认 UI 仍使用旧格式 v0.6.2。当前接入能力与验证入口见 [架构说明](docs/ARCHITECTURE.md#当前几何后端与接入边界)；未完成工作见 [路线图](docs/planning/ROADMAP.md)。
 
 通过 HTTP 服务访问 `/geometry-preview.html` 可查看共享网格/BVH 后端：四档发布工况、参考点射线材料长度、空腔/虚几何显示与组件拾取。显示与计算使用同一批模型坐标缓冲；该预览独立于主部署应用，目前不支持连续水位或完整目标显著度评估。局域网 HTTP 也执行资产校验，无运行时外部依赖。
 

@@ -2,7 +2,7 @@
 
 Developer contract for calculation identity, material contributions, numerical contours, graph coordinates and contour export/replay. These modules consume computation-owned results; display settings never become geometry truth or alter scientific arrays.
 
-Related: [Geometry reference methods and artifacts](GEOMETRY_REFERENCES.md) · [Projection interpretation workflow](PROJECTION_WORKFLOW.md) · [Projection and reference validation](PROJECTION_VALIDATION.md) · [Unfinished work](ROADMAP.md).
+Related: [Geometry reference methods and artifacts](GEOMETRY_REFERENCES.md) · [Projection interpretation workflow](PROJECTION_WORKFLOW.md) · [Projection and reference validation](PROJECTION_VALIDATION.md) · [Unfinished work](planning/ROADMAP.md).
 
 - [Calculation contracts](#calculation-contracts)
 - [Material contributions](#material-contributions)

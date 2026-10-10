@@ -17,7 +17,7 @@ app.js：发布/后端/工况选择与依赖装配
 
 发布目录固定为 `dist/`，运行时不访问 CDN 或后端 API。
 
-本文记录当前实现与目标边界，不记录任务完成流水。长期几何设计原则见 [GEOMETRY_SPEC_REFACTOR](GEOMETRY_SPEC_REFACTOR.md)；未完成工作仅在 [ROADMAP](ROADMAP.md) 维护。
+本文记录当前实现与目标边界，不记录任务完成流水。架构决策（含长期几何数据原则）见 [ARCHITECTURE_DECISIONS](planning/ARCHITECTURE_DECISIONS.md)；未完成工作、需求与优先级仅在 [planning/](planning/ROADMAP.md) 维护。
 
 ## 核心数据流
 
@@ -89,7 +89,7 @@ node scripts/check-semantic-mapping.mjs
 
 命令中的周宁 release ID 是数据集示例，不是平台规则。Conformance 脚本报告资格门槛与发布门槛是否满足，并保留最大误差；analytic 的迁移公差不能冒充 compiled 发布公差。控制点检查排除距地形面小于 5 m 的点，因此不覆盖该边界带；具体数值策略以脚本及数据集基准为准，不构成测绘精度声明。
 
-可选 HTTP 浏览器检查：node scripts/check-compiled-preview.mjs，支持 --playwright /absolute/path/to/playwright/index.mjs。Playwright/Chromium 仅是开发依赖，截图写入临时目录；检查桌面/窄屏、共享显示/计算、拾取、工况、取消与原主应用。最新未完成回归与性能限制见 ROADMAP，不以旧测试结果宣称已通过。
+可选 HTTP 浏览器检查：node scripts/check-compiled-preview.mjs，支持 --playwright /absolute/path/to/playwright/index.mjs。Playwright/Chromium 仅是开发依赖，截图写入临时目录；检查桌面/窄屏、共享显示/计算、拾取、工况、取消与原主应用。最新未完成回归与性能限制见 planning/FEATURE_REQUIREMENTS.md（FR-N），不以旧测试结果宣称已通过。
 
 ## 当前投影与解释模块
 
@@ -105,7 +105,7 @@ evaluateLegacyTargetSignificance 接受显式 flux 与系统误差；未命中�
 
 `projection-pattern-fields.js` 将同次计算的原生网格、材料路径/柱密度与预先快照的几何元数据转换为标准化字段，并将 `contribution-contours.js` 的 D3 数值等值线映射到各图自己的等宽显示单元。探测器加权斜率中心按分段坐标转换，不与材料图按像素索引对齐；两个图独立提取，不引入重采样或响应公式副本。预览接入独立材料/数量/级别控制，`contribution-view.js` 只消费映射后的线数据生成固定 CSS 像素宽度 SVG；结果与提取设置限定的缓存不修改科学数组。`contribution-export.js` 提供独立 v1 等值线导出与离线重放验证，显示样式不进入科学身份，旧结果导出不迁移。浏览器最坏性能仍待验证。
 
-异步图层计算：`numeric-pattern-work.js` 复用上述纯字段、D3 提取和原生网格映射核心；`numeric-pattern-worker.js` 仅保存每张图的当前精简标量输入，不重新追踪射线。`numeric-pattern-client.js` 使用计算结果身份、设置键和有界缓存管理异步工作；输入变化时终止 worker、清除任务，旧结果不能更新当前图。UI 仅插入 worker 准备的 SVG 路径、图例和来源信息。结构参考 worker 同样承担字段验证、映射和路径文本准备；保留原始斜率空间线用于导出。`pattern-timing.js` 的诊断不进入科学结果；`demand-render.js` 按需调度 3D 显示并保留相机阻尼。详见 [未完成工作](ROADMAP.md)；这些改动不代表物理界面认证或默认后端迁移。
+异步图层计算：`numeric-pattern-work.js` 复用上述纯字段、D3 提取和原生网格映射核心；`numeric-pattern-worker.js` 仅保存每张图的当前精简标量输入，不重新追踪射线。`numeric-pattern-client.js` 使用计算结果身份、设置键和有界缓存管理异步工作；输入变化时终止 worker、清除任务，旧结果不能更新当前图。UI 仅插入 worker 准备的 SVG 路径、图例和来源信息。结构参考 worker 同样承担字段验证、映射和路径文本准备；保留原始斜率空间线用于导出。`pattern-timing.js` 的诊断不进入科学结果；`demand-render.js` 按需调度 3D 显示并保留相机阻尼。详见 [未完成工作](planning/IMPLEMENTATION_PRIORITY.md)；这些改动不代表物理界面认证或默认后端迁移。
 
 结构参考线纯核心渐进拆为 `structural-reference-candidates.js`（已复用/验证的 VTK 候选边）、`structural-reference-qualification.js`（显式完整面资格记录的验证与过滤）及 `structural-reference-projection.js`（透视除法前整段视场/径向射程裁切）。这些模块不依赖渲染器，不修改射线/响应结果；供显式面资格及有限模型消费者使用；有限模型预览已经接入，真实物理界面认证仍未完成。编译器域盖面开发审计与限制见 [结构参考线契约](GEOMETRY_REFERENCES.md#candidate-qualification-and-projection)。
 
@@ -113,7 +113,7 @@ evaluateLegacyTargetSignificance 接受显式 flux 与系统误差；未命中�
 
 [派生界面资格产物](GEOMETRY_REFERENCES.md#derived-interface-artifact-contract) v1.0.0 已实现源/工况/几何哈希、原生输入回执、域策略与面谱系绑定，以及纯模块校验；开发生成器默认输出到新临时目录，不改发布资产。加载后的 Float64 派生缓冲使用同一 `triangle-bvh.js` 验证空气/非空气区间，一致性检查比较非空气区间、端点与长度，并要求科学缓冲不变。此产物不授予物理包络资格；有限模型参考线在预览中使用；真实物理域认证与最坏浏览器性能仍未完成。BVH 同时接受 Float32/Float64，现有科学输入保持 Float32 与原数值行为。
 
-几何数据契约、Geometry IR、运行时产物与 DD4hep/GDML 后端的详细建议见 `GEOMETRY_SPEC_REFACTOR.md`。
+几何数据契约、Geometry IR、运行时产物与 DD4hep/GDML 后端的决策见 [ARCHITECTURE_DECISIONS](planning/ARCHITECTURE_DECISIONS.md) ADR-008…011，数据契约要求见 FEATURE_REQUIREMENTS FR-D。
 
 有限模型操作与契约见 [图案解释工作流](PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison)：`finite-reference-worker.js` 校验独立派生资产，`finite-model-references.js` 消费有限模型边界（不授予真实物理界面资格）。已接入独立参考线、响应数值等值线、开天上下文、悬停谱系和 v1 图层/比较导出。`response-patterns.js` 使用共享响应直接保留的开天计数；`pattern-comparison.js` 定义统一指标，`pattern-comparison-batch.js` 复用单站科学核心进行显式小批量计算。`legacy-pattern-adapter.js` 与 `main-pattern-view.js` 将兼容的数值图层和比较接入主应用，明确保留 legacy DDA 身份；编译参考线仍只在兼容的独立预览中显示；主应用只迁移冻结几何与共享评估，不引入参考线/性能扩展。既有物理公式与发布几何保持不变。
 
@@ -129,7 +129,7 @@ UI 从 capabilities 禁用不支持的连续水位、旧目标/显著度、彩�
 
 ## 主应用源码入口
 
-保持无构建步骤的原生 ES Modules；文件直接位于 dist/modules，不维护另一份 src 镜像。
+保持无构建步骤的原生 ES Modules；文件直接位于 dist/modules，不维护另一份 src 镜像（决策见 ADR-013，计划由 ADR-004 取代）。
 
 | 模块 | 拥有的职责 | 不允许的依赖 |
 | --- | --- | --- |
@@ -149,12 +149,7 @@ UI 从 capabilities 禁用不支持的连续水位、旧目标/显著度、彩�
 
 ## 重构原则
 
-- 先抽离纯函数，不改变 UI 和数值结果。
-- 先建立回归测试，再合并视觉几何与计算几何。
-- `dam_spec.json` 保持独立、可版本化、可被浏览器与 Geant4 共同消费。
-- 扫描功能必须调用与单站点评估相同的计算核心，禁止复制另一套算法。
-- 长任务应支持取消、进度和缓存；首选 Web Worker，避免阻塞 UI。
-- UI 状态与工程方案状态分离；侧栏展开状态不应进入科学结果文件。
+已迁移至 [ARCHITECTURE_DECISIONS ADR-012](planning/ARCHITECTURE_DECISIONS.md#adr-012-refactoring-principles)。
 
 ## 建议测试层次
 

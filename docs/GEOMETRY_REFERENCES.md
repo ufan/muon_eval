@@ -2,7 +2,7 @@
 
 Developer reference for through-material mesh lines, qualification, offline interface construction and source-bound artifacts. Finite-model references are useful deployment context, not certified surveyed interfaces. Native preprocessing libraries are development-only; runtime computation does not depend on DOM or renderer objects.
 
-Related: [Projection data and numerical interpretation](PROJECTION_DATA.md) · [Projection interpretation workflow](PROJECTION_WORKFLOW.md) · [Projection and reference validation](PROJECTION_VALIDATION.md) · [Unfinished work](ROADMAP.md).
+Related: [Projection data and numerical interpretation](PROJECTION_DATA.md) · [Projection interpretation workflow](PROJECTION_WORKFLOW.md) · [Projection and reference validation](PROJECTION_VALIDATION.md) · [Unfinished work](planning/ROADMAP.md).
 
 - [Reference semantics and library choice](#reference-semantics-and-library-choice)
 - [Candidate qualification and projection](#candidate-qualification-and-projection)

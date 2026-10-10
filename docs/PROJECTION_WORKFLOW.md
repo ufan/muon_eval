@@ -2,7 +2,7 @@
 
 User and integration guide for reading material/response maps, configuring reference layers, comparing sites and poses, and exporting/replaying results. Start here for operation; use the data and geometry documents for implementation details.
 
-Related: [Projection data and numerical interpretation](PROJECTION_DATA.md) · [Geometry reference methods and artifacts](GEOMETRY_REFERENCES.md) · [Projection and reference validation](PROJECTION_VALIDATION.md) · [Unfinished work](ROADMAP.md).
+Related: [Projection data and numerical interpretation](PROJECTION_DATA.md) · [Geometry reference methods and artifacts](GEOMETRY_REFERENCES.md) · [Projection and reference validation](PROJECTION_VALIDATION.md) · [Unfinished work](planning/ROADMAP.md).
 
 - [Material contour controls](#material-contour-controls)
 - [Finite-model interpretation and comparison](#finite-model-interpretation-and-comparison)
@@ -28,7 +28,7 @@ The old envelope controls are relabeled **Sampled boundary diagnostics**. Their 
 
 Separate SVG layers sit exactly over each scientific raster, with pointer events disabled so pixel picking still reaches the canvas. Each contour uses a 1.5 CSS-pixel colour stroke plus a 3.5 CSS-pixel dark halo. `vector-effect="non-scaling-stroke"` keeps stroke width independent of bin count, CSS resizing and device pixel ratio. Each graph's own coordinate mapping supplies paths; SVG viewBox uses that graph's bin count. CSS clips the overlay to its graph; paths remain open rather than adding frame closures.
 
-The line layer does not write scientific arrays/configuration. Worker clients scope asynchronous work and bounded caches to result identities and settings; invalidation clears old overlays. Visibility/style changes do not trace rays. DOM rendering remains on the main thread. Cold/worst-case performance remains unqualified; see [acceptance budgets](PROJECTION_VALIDATION.md#acceptance-requirements) and [unfinished work](ROADMAP.md). Separate [versioned contour downloads](PROJECTION_DATA.md#contour-export-and-replay) preserve scientific fields, lines and settings.
+The line layer does not write scientific arrays/configuration. Worker clients scope asynchronous work and bounded caches to result identities and settings; invalidation clears old overlays. Visibility/style changes do not trace rays. DOM rendering remains on the main thread. Cold/worst-case performance remains unqualified; see [acceptance budgets](PROJECTION_VALIDATION.md#acceptance-requirements) and [unfinished work](planning/ROADMAP.md). Separate [versioned contour downloads](PROJECTION_DATA.md#contour-export-and-replay) preserve scientific fields, lines and settings.
 
 ## Finite-model interpretation and comparison
 
@@ -102,4 +102,4 @@ The explicit batch API `pattern-comparison-batch.js` snapshots configurations an
 
 Tests cover all six analytic geometries, internal/external/off-axis views, 25/65/129 geometry mapping (129 is a geometry-only display grid, not a new live scientific evaluator), source line endpoints and cap exclusions, partial-water native CSG evidence, all four real packaged scenarios, response attribution/zero support/thresholds, backend identity, unchanged science and both export schemas. Existing strict analytic/native regressions and the recorded 864-ray source-bound consistency gate remain in force. None of these establish survey accuracy or exhaustive real-surface correctness.
 
-HTTP browser acceptance includes independent controls with depth diagnostics off, fixed stroke widths, hover provenance, response context, saved comparisons/download/import, pose/scenario cancellation, desktop/narrow display and main-app numeric integration. Runtime costs are recorded separately from cold preprocessing; browser performance on every deployment machine is not guaranteed. Remaining work is listed in [ROADMAP](ROADMAP.md).
+HTTP browser acceptance includes independent controls with depth diagnostics off, fixed stroke widths, hover provenance, response context, saved comparisons/download/import, pose/scenario cancellation, desktop/narrow display and main-app numeric integration. Runtime costs are recorded separately from cold preprocessing; browser performance on every deployment machine is not guaranteed. Remaining work is listed in [ROADMAP](planning/ROADMAP.md).
