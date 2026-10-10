@@ -116,7 +116,7 @@ classDiagram
 
 ## 4. Invariants
 
-These must always hold; code and tests enforce them where noted.
+These must always hold; code and tests enforce them where noted. Each invariant needs at least one test that fails if it is broken (FR-Q11, [TEST_STRATEGY](TEST_STRATEGY.md)).
 
 1. A point and a direction are different types: translation applies to points only. (`coordinates.js`, tests)
 2. Material = positive volumes − negative volumes, resolved by the declared material precedence; virtual geometry and markers never enter physics. (`compiled-mesh-runtime.js`)

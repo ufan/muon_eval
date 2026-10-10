@@ -32,6 +32,7 @@ Last updated: 2026-10-10
 | 020 | Multi-station view composes per-station results | Accepted (priority) / Proposed (design) |
 | 021 | Simulated multi-projection reconstruction as a separate pipeline | Proposed |
 | 022 | A living domain model separate from the glossary | Accepted |
+| 023 | Layered, lightweight test-driven development | Proposed |
 
 ---
 
@@ -338,11 +339,24 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - `docs/specs/DOMAIN_MODEL.md` is the living domain model, marking each element Current, Partial or Target, listing invariants and code-vs-model gaps with their requirement IDs, and keeping a change log.
 - Any change that adds, removes or changes a domain concept, relationship, identity or invariant updates the model (and the glossary for new terms) in the same commit (`AGENTS.md`, FR-Q10). Decisions that reshape the model are also recorded here as ADRs.
 
+## ADR-023 Layered, lightweight test-driven development
+
+**Status:** Proposed (owner preference 2026-10-10: TDD preferred but not heavy)
+
+**Context.** The Node suite has 34 files (about 32 s in parallel, 90 s sequentially): most are fast pure-function tests, a handful load real datasets and take 3–18 s each, and browser acceptance takes minutes. There is no single command, no layering and no record of which tests to run when.
+
+**Decision.**
+- Seven layers: L0 static, L1 unit, L2 contract, L3 data conformance, L4 integration, L5 browser acceptance, L6 performance, each with a speed budget and a trigger ([TEST_STRATEGY](specs/TEST_STRATEGY.md)).
+- Test first for pure calculation functions, bug fixes (reproduce first), data formats and domain invariants; not for views, layout or exploratory spikes.
+- One behaviour is tested once, at the lowest layer that can show it; no geometry mocks (analytic fixtures or real releases); golden baselines change only with a version bump.
+- The everyday loop (`npm test`, L0–L2) stays under about 15 s; slow layers run when their inputs change or before merge/release.
+
 ---
 
 ## Open questions
 
 - **OQ-2 UI framework choice** (Preact vs Svelte), decided when ADR-004 starts.
+- **OQ-8 Continuous integration.** Run the layers automatically (e.g. GitHub Actions: L0–L2 on every push, L4 on pull requests, L3/L5 on data or UI changes), or keep them local for now?
 
 ## Resolved questions
 
@@ -357,6 +371,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-10: ADR-023 layered test strategy; OQ-8 continuous integration.
 - 2026-10-10: Windows launcher scripts (`serve.ps1`, `.cmd`) removed; references updated in ADR-004 and ADR-018.
 - 2026-10-10: ADR-022 living domain model.
 - 2026-10-10: Recorded owner decisions OQ-1, OQ-3, OQ-4, OQ-5 (compiled default in ADR-011, English-only docs in ADR-015, terminology in ADR-016); added Resolved questions table.

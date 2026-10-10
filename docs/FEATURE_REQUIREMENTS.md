@@ -139,7 +139,8 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
-| FR-Q1 | One test command. | `package.json` with `npm test` running all `tests/*.test.mjs` and the fast checks; README updated. | Needed |
+| FR-Q1 | Layered test commands. | `package.json` with `npm test` (L0–L2, < 15 s) and `test:integration`, `test:data`, `test:browser`, `test:all` per [TEST_STRATEGY](specs/TEST_STRATEGY.md); tests moved into layer directories; README updated. | Needed |
+| FR-Q11 | Every domain invariant is tested. | Each invariant in DOMAIN_MODEL §4 maps to at least one test that fails if it is broken; bug fixes start with a reproducing test (ADR-023). | Standing |
 | FR-Q2 | Readable source. | Prettier-formatted modules and CSS in a behaviour-free commit. | Needed |
 | FR-Q3 | Static type checking. | `tsc --noEmit --checkJs` passes on pure modules; branded point/direction/frame types (ADR-003). | Needed |
 | FR-Q4 | Safe rendering of user text. | Station names and other user/imported text rendered with `textContent`, not `innerHTML`. | Needed |
@@ -187,6 +188,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-10: FR-Q1 layered test commands; FR-Q11 invariant tests (ADR-023).
 - 2026-10-10: Added FR-Q10 (domain model kept current).
 - 2026-10-10: Added FR-B1…B3 (compiled default), FR-Q9 (English docs); FR-A1 not needed now; FR-K9 docs done; FR-Q6 done.
 - 2026-10-10: FR-M4, FR-M5 prioritised next after the plan format.

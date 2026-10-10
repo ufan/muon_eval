@@ -19,6 +19,7 @@ Last updated: 2026-10-10
 
 ## Standing rules
 
+- ADR-023: test first for pure functions, bug fixes, formats and invariants; P0 fixes (#1–#4) each start with a failing test.
 - FR-Q10: changes to domain concepts update `docs/specs/DOMAIN_MODEL.md` in the same commit.
 - FR-K1: every change keeps generic modules free of subject-specific (dam) logic; when touching a module that has such leaks, prefer moving them into the dataset declaration or a bounded adapter.
 
@@ -26,7 +27,7 @@ Last updated: 2026-10-10
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| 5 | `package.json` with `npm test` | FR-Q1 | Glob `tests/*.test.mjs` plus fast checks | Todo |
+| 5 | `package.json` with layered test scripts; tests moved into `tests/unit`, `tests/contract`, `tests/integration` | FR-Q1, ADR-023 | `npm test` = L0–L2 under ~15 s; classification in TEST_STRATEGY §2 | Todo |
 | 6 | Bounded module-dependency audit | FR-Q8 | Was "next priority" in the former `docs/ROADMAP.md`; no projection or performance features in this item | Todo |
 | 7 | Prettier reformat (behaviour-free commit) | FR-Q2 | Separate commit, no logic changes | Todo |
 | 8 | `@ts-check` + JSDoc + `tsc --noEmit` on pure modules; branded point/direction/frame types | FR-Q3, ADR-003 | Start with `coordinates.js`, `detector-pose.js`, tracers | Todo |
@@ -106,6 +107,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 
 ## Change log
 
+- 2026-10-10: #5 extended to layered scripts; standing rule ADR-023.
 - 2026-10-10: Standing rule FR-Q10; Done table updated.
 - 2026-10-10: Legacy-only notes on #2 and #4; #9 narrowed; compiled-default gaps and station import added under Later; Done table added.
 - 2026-10-10: New P3 multi-station overview (#14–#17) ahead of scan performance (now P4, #18–#22) by owner decision; phase references updated.

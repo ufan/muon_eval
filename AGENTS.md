@@ -55,6 +55,7 @@ Raise something to a higher-level generic interface only after a second real dat
 
 ## Changes and verification
 
+- Follow the layered test strategy in `docs/specs/TEST_STRATEGY.md`: write the test first for pure functions, bug fixes, data formats and domain invariants; test each behaviour once at the lowest layer that shows it; run slow layers (data conformance, integration, browser) when their inputs change or before merge/release.
 - After changing JavaScript, run at least `node --check dist/app.js`; check every affected entry point and run the related tests.
 - Run `git diff --check` before committing.
 - After changing a data spec, validate it against its schema and check `assertions`, `unknowns`, versions and coordinate metadata.
