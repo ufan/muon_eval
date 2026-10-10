@@ -52,6 +52,7 @@ docker compose up -d --build
 - [几何参考线与派生资产](docs/GEOMETRY_REFERENCES.md)：参考线语义、资格、CSG 复用与源绑定产物。
 - [投影验证](docs/PROJECTION_VALIDATION.md)：数值容差、特征尺度、性能目标与解析测试基线。
 - `docs/`：架构、当前数据集几何、路线图和迁移说明。
+- `docs/planning/`：架构决策、功能需求、总体路线与实施优先级（英文，随讨论维护）。
 
 ## 当前能力
 
