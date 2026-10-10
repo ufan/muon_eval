@@ -20,10 +20,10 @@
 
 1. `CONTEXT.md`：通用使用场景、几何语义、术语和当前数据集。
 2. `README.md`：运行方式、当前能力和目录入口。
-3. `docs/ARCHITECTURE.md`：当前计算链和目标模块边界。
-4. `docs/CALCULATION_MODELS.md`：当前公式、参数、输出含义、假定和验证边界。
-5. 当前数据集的坐标与几何说明；现有周宁示例见 `docs/GEOMETRY_AND_COORDINATES.md`。
-6. `docs/planning/`（架构决策、需求、路线图、实施优先级）和 `docs/MIGRATION_CHECKLIST.md`。
+3. `docs/` 顶层四份设计指导文件：`ARCHITECTURE_DECISIONS.md`、`FEATURE_REQUIREMENTS.md`、`ROADMAP.md`、`IMPLEMENTATION_PRIORITY.md`。
+4. `docs/specs/`：按任务读取相关规格——当前架构与模块边界、计算模型（公式、参数、假定）、几何参考契约、投影数据与验证；索引见 `docs/specs/README.md`。
+5. 当前数据集的坐标与几何规格；现有周宁示例见 `docs/specs/datasets/zhouning-lower-reservoir-dam.md`。
+6. `docs/guides/`：结果解读、投影工作流和 `MIGRATION_CHECKLIST.md`。
 
 开始修改前检查 `git status --short`，保留用户已有改动，不要假定工作树是干净的。
 

@@ -2,7 +2,7 @@
 
 What the platform must do, with acceptance criteria. IDs are stable. Statuses: **Needed**, **In progress**, **Done**, **Standing** (a permanent rule every dataset/change must satisfy), **Deferred** (waiting for a trigger), **Open** (needs a decision).
 
-Product goals, users, use cases and non-goals are defined in [`../../CONTEXT.md`](../../CONTEXT.md) §1; this file does not repeat them. All open work lives here or in the [implementation priority](IMPLEMENTATION_PRIORITY.md); reference docs carry no task lists (ADR-015).
+Product goals, users, use cases and non-goals are defined in [`../CONTEXT.md`](../CONTEXT.md) §1; this file does not repeat them. All open work lives here or in the [implementation priority](IMPLEMENTATION_PRIORITY.md); specs and guides carry no task lists (ADR-015).
 
 Related: [Architecture decisions](ARCHITECTURE_DECISIONS.md) · [Roadmap](ROADMAP.md) · [Implementation priority](IMPLEMENTATION_PRIORITY.md)
 
@@ -14,9 +14,9 @@ Last updated: 2026-10-10
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
-| FR-C1 | Calculation results must not depend on evaluation history. | The same input gives identical results regardless of what was computed before, in any session or worker. Today the flux cache (`muon-response.js`) returns the first value in a quantised bucket: measured up to ~5% per-pixel error near the horizon (cosZ 0.1, Emin 5 GeV), while `CALCULATION_MODELS.md` §2 says "last few digits". Fix is labelled as a physics-model revision with a new `RESPONSE_MODEL_VERSION`. | Needed |
+| FR-C1 | Calculation results must not depend on evaluation history. | The same input gives identical results regardless of what was computed before, in any session or worker. Today the flux cache (`muon-response.js`) returns the first value in a quantised bucket: measured up to ~5% per-pixel error near the horizon (cosZ 0.1, Emin 5 GeV), while [calculation model spec](specs/CALCULATION_MODEL.md) §2 says "last few digits". Fix is labelled as a physics-model revision with a new `RESPONSE_MODEL_VERSION`. | Needed |
 | FR-C2 | Exports must record the actual ray length used. | Legacy results record the 500 m radial cutoff (`legacy-geometry-adapter.js`); the "not a radial cutoff" limitation text is corrected. Cross-backend comparisons state the different ray lengths, or the legacy cap is aligned with the compiled enclosing length. | Needed |
-| FR-C3 | Detector acceptance formula is physically justified and documented. | Decide whether the per-pixel count includes the projected-area cos θ factor (currently cos³θ; planar detectors normally need cos⁴θ, ~1.7× at the default field edge, ~2.2× at corners). Either fix (model revision) or document the omission in `CALCULATION_MODELS.md` §10. | Open |
+| FR-C3 | Detector acceptance formula is physically justified and documented. | Decide whether the per-pixel count includes the projected-area cos θ factor (currently cos³θ; planar detectors normally need cos⁴θ, ~1.7× at the default field edge, ~2.2× at corners). Either fix (model revision) or document the omission in [calculation model spec](specs/CALCULATION_MODEL.md) §10. | Open |
 | FR-C4 | No dead or misleading computation in the update path. | `quickMetrics()` no longer traces 81 unused rays per update or computes the unused `12000 × sin(el)^1.7` count. | Needed |
 | FR-C5 | Every result is reproducible and traceable. | Records at least the items in `CONTEXT.md` §7: app and model versions; dataset release ID and file hashes where available; coordinate convention; device; environment/scenario; stations and poses; sampling, exposure, thresholds, ray length; units; generation time; approximations and warnings. | Needed (legacy backend gaps) |
 | FR-C6 | Stale results never overwrite newer state. | Holds under cancellation, caching, workers and late completion (ADR-011). | Standing |
@@ -57,7 +57,7 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
-| FR-X1 | Formal definition of detector local frame and slopes `sx`, `sy`. | Written definition in `CONTEXT.md`/`CALCULATION_MODELS.md`, matching `detector-pose.js`. | Needed |
+| FR-X1 | Formal definition of detector local frame and slopes `sx`, `sy`. | Written definition in `CONTEXT.md`/`specs/CALCULATION_MODEL.md`, matching `detector-pose.js`. | Needed |
 | FR-X2 | Asymmetric / non-three-layer readout. | Both axes binned by their own strip count; layer count used in efficiency. Currently fixed `ε³` and `stripsX` on both axes. | Needed (later) |
 | FR-X3 | Detector calibration inputs. | Effective area, trigger efficiency and direction-dependent efficiency from calibration, replacing the empirical edge factor. | Needed (later) |
 
@@ -116,7 +116,7 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
-| FR-N1 | Interactive overlay budgets. | Meet the budgets in [`../PROJECTION_VALIDATION.md` §3](../PROJECTION_VALIDATION.md#3-performance-budget), measured in desktop and narrow-screen HTTP browsers with recorded hardware; Node timings do not close browser gates. | Needed |
+| FR-N1 | Interactive overlay budgets. | Meet the budgets in [`../PROJECTION_VALIDATION.md` §3](specs/PROJECTION_VALIDATION.md#3-performance-budget), measured in desktop and narrow-screen HTTP browsers with recorded hardware; Node timings do not close browser gates. | Needed |
 | FR-N2 | Preview chunked-transfer regression. | Latest preview chunked-transfer change passes browser regression, including the narrow-screen overlay check that previously failed. | Needed |
 | FR-N3 | Cold start, peak memory and worst-case interaction measured. | Recorded for the real release worst cases. | Needed |
 | FR-N4 | Layout. | Common desktop and narrow screens; WebGL camera aspect and model scale unchanged after sidebar toggle or container resize (`AGENTS.md`). | Standing |
@@ -142,5 +142,6 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 
 ## Change log
 
+- 2026-10-10: Moved from `docs/planning/` to `docs/` top level; links updated to `specs/` and `guides/`.
 - 2026-10-10: Merged open items from `docs/ROADMAP.md`, `GEOMETRY_SPEC_REFACTOR.md` (§2, §7), `CONTEXT.md` §9, `CALCULATION_MODELS.md` §16/§18 and `GEOMETRY_AND_COORDINATES.md` §6. Added sections D, E, GE, X, V, N and FR-C6, FR-M3, FR-Q8.
 - 2026-10-10: Initial requirements from review discussion.

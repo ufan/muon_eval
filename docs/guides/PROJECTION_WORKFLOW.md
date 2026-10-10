@@ -2,7 +2,7 @@
 
 User and integration guide for reading material/response maps, configuring reference layers, comparing sites and poses, and exporting/replaying results. Start here for operation; use the data and geometry documents for implementation details.
 
-Related: [Projection data and numerical interpretation](PROJECTION_DATA.md) · [Geometry reference methods and artifacts](GEOMETRY_REFERENCES.md) · [Projection and reference validation](PROJECTION_VALIDATION.md) · [Unfinished work](planning/ROADMAP.md).
+Related: [Projection data and numerical interpretation](../specs/PROJECTION_DATA.md) · [Geometry reference methods and artifacts](../specs/GEOMETRY_REFERENCES.md) · [Projection and reference validation](../specs/PROJECTION_VALIDATION.md) · [Unfinished work](../ROADMAP.md).
 
 - [Material contour controls](#material-contour-controls)
 - [Finite-model interpretation and comparison](#finite-model-interpretation-and-comparison)
@@ -28,7 +28,7 @@ The old envelope controls are relabeled **Sampled boundary diagnostics**. Their 
 
 Separate SVG layers sit exactly over each scientific raster, with pointer events disabled so pixel picking still reaches the canvas. Each contour uses a 1.5 CSS-pixel colour stroke plus a 3.5 CSS-pixel dark halo. `vector-effect="non-scaling-stroke"` keeps stroke width independent of bin count, CSS resizing and device pixel ratio. Each graph's own coordinate mapping supplies paths; SVG viewBox uses that graph's bin count. CSS clips the overlay to its graph; paths remain open rather than adding frame closures.
 
-The line layer does not write scientific arrays/configuration. Worker clients scope asynchronous work and bounded caches to result identities and settings; invalidation clears old overlays. Visibility/style changes do not trace rays. DOM rendering remains on the main thread. Cold/worst-case performance remains unqualified; see [acceptance budgets](PROJECTION_VALIDATION.md#acceptance-requirements) and [unfinished work](planning/ROADMAP.md). Separate [versioned contour downloads](PROJECTION_DATA.md#contour-export-and-replay) preserve scientific fields, lines and settings.
+The line layer does not write scientific arrays/configuration. Worker clients scope asynchronous work and bounded caches to result identities and settings; invalidation clears old overlays. Visibility/style changes do not trace rays. DOM rendering remains on the main thread. Cold/worst-case performance remains unqualified; see [acceptance budgets](../specs/PROJECTION_VALIDATION.md#acceptance-requirements) and [unfinished work](../ROADMAP.md). Separate [versioned contour downloads](../specs/PROJECTION_DATA.md#contour-export-and-replay) preserve scientific fields, lines and settings.
 
 ## Finite-model interpretation and comparison
 
@@ -55,7 +55,7 @@ Derived runtime assets are separate from immutable dataset releases, under `dist
 node scripts/package-interface-assets.mjs /path/to/verified/interface-artifacts
 
 # Otherwise reproduce in a temporary native environment as documented in
-# GEOMETRY_REFERENCES.md#derived-interface-artifact-contract, then package the new output directory.
+# docs/specs/GEOMETRY_REFERENCE_CONTRACT.md#derived-interface-artifact-contract, then package the new output directory.
 PYTHONPATH=/path/to/native/packages node scripts/check-interface-artifacts.mjs
 node scripts/package-interface-assets.mjs /path/printed/by/the/check
 ```
@@ -70,7 +70,7 @@ Open-sky counts are retained directly from `evaluateProjectionPixel` with opt-in
 
 Adjacent-bin inspection shows raw transmission difference, counts in both bins, open-sky support, angular separation, native strip-difference ranges and the existing display angular-resolution parameter. These are diagnostics, not independent-bin significance, feature width, physical resolution or calibrated detectability. Increasing the sample grid does not increase detector resolution. Existing display smoothing and counterfactual/significance formulas are not changed or extended.
 
-Method policy: retain numerical D3 isolines; do not adopt Canny/OpenCV/WASM. No edge detector is used, so there is no unbenchmarked detector adoption. Analytic open-sky fixtures have varying acceptance/counts but constant attenuation, whereas the opening/material fixtures have attenuation contrast. Three fixed level sets (.01/.1/.5/.9, .005/.05/.25/.75, .02/.2/.6/.95) exercise threshold sensitivity at unchanged raw values. An RGB or gradient edge map adds no material attribution; adopting an edge detector later requires a separate demonstrated-value benchmark against these scalar isolines. Upstream/library research and licenses remain in the [contour contract](PROJECTION_DATA.md#numerical-contour-extraction) and [structural policy](GEOMETRY_REFERENCES.md#reference-semantics-and-library-choice).
+Method policy: retain numerical D3 isolines; do not adopt Canny/OpenCV/WASM. No edge detector is used, so there is no unbenchmarked detector adoption. Analytic open-sky fixtures have varying acceptance/counts but constant attenuation, whereas the opening/material fixtures have attenuation contrast. Three fixed level sets (.01/.1/.5/.9, .005/.05/.25/.75, .02/.2/.6/.95) exercise threshold sensitivity at unchanged raw values. An RGB or gradient edge map adds no material attribution; adopting an edge detector later requires a separate demonstrated-value benchmark against these scalar isolines. Upstream/library research and licenses remain in the [contour contract](../specs/PROJECTION_DATA.md#numerical-contour-extraction) and [structural policy](../specs/GEOMETRY_REFERENCES.md#reference-semantics-and-library-choice).
 
 ### Reproducible deployment comparison
 
@@ -102,4 +102,4 @@ The explicit batch API `pattern-comparison-batch.js` snapshots configurations an
 
 Tests cover all six analytic geometries, internal/external/off-axis views, 25/65/129 geometry mapping (129 is a geometry-only display grid, not a new live scientific evaluator), source line endpoints and cap exclusions, partial-water native CSG evidence, all four real packaged scenarios, response attribution/zero support/thresholds, backend identity, unchanged science and both export schemas. Existing strict analytic/native regressions and the recorded 864-ray source-bound consistency gate remain in force. None of these establish survey accuracy or exhaustive real-surface correctness.
 
-HTTP browser acceptance includes independent controls with depth diagnostics off, fixed stroke widths, hover provenance, response context, saved comparisons/download/import, pose/scenario cancellation, desktop/narrow display and main-app numeric integration. Runtime costs are recorded separately from cold preprocessing; browser performance on every deployment machine is not guaranteed. Remaining work is listed in [ROADMAP](planning/ROADMAP.md).
+HTTP browser acceptance includes independent controls with depth diagnostics off, fixed stroke widths, hover provenance, response context, saved comparisons/download/import, pose/scenario cancellation, desktop/narrow display and main-app numeric integration. Runtime costs are recorded separately from cold preprocessing; browser performance on every deployment machine is not guaranteed. Remaining work is listed in [ROADMAP](../ROADMAP.md).

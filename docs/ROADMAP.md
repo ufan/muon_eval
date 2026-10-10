@@ -89,5 +89,6 @@ Can advance alongside Phases 1–4 when data or evidence becomes available.
 
 ## Change log
 
+- 2026-10-10: Moved from `docs/planning/` to `docs/` top level; links updated to `specs/` and `guides/`.
 - 2026-10-10: Merged former `docs/ROADMAP.md` (milestones, follow-up features, validation boundaries) and the dependency order from `GEOMETRY_SPEC_REFACTOR.md` §6; added "Where we are", Phase 5 scope, geometry parallel track and Deferred.
 - 2026-10-10: Initial roadmap from review discussion.

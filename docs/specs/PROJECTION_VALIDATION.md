@@ -1,8 +1,8 @@
 # Projection and reference validation
 
-Numerical tolerances, feature-scale rules, performance targets and analytical fixtures. Requirements and regression scopes are not claims of survey accuracy, physical detectability or completed browser qualification. Remaining work belongs in the planning set (planning/FEATURE_REQUIREMENTS.md, planning/IMPLEMENTATION_PRIORITY.md), not in a completed-task log.
+Numerical tolerances, feature-scale rules, performance targets and analytical fixtures. Requirements and regression scopes are not claims of survey accuracy, physical detectability or completed browser qualification. Remaining work belongs in the top-level design documents ([../FEATURE_REQUIREMENTS.md](../FEATURE_REQUIREMENTS.md), [../IMPLEMENTATION_PRIORITY.md](../IMPLEMENTATION_PRIORITY.md)), not in a completed-task log.
 
-Related: [Projection data and numerical interpretation](PROJECTION_DATA.md) · [Geometry reference methods and artifacts](GEOMETRY_REFERENCES.md) · [Projection interpretation workflow](PROJECTION_WORKFLOW.md) · [Unfinished work](planning/ROADMAP.md).
+Related: [Projection data and numerical interpretation](PROJECTION_DATA.md) · [Geometry reference methods and artifacts](GEOMETRY_REFERENCES.md) · [Projection interpretation workflow](../guides/PROJECTION_WORKFLOW.md) · [Unfinished work](../ROADMAP.md).
 
 - [Acceptance requirements](#acceptance-requirements)
 - [Analytical fixtures](#analytical-fixtures)

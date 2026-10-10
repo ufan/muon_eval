@@ -2,7 +2,7 @@
 
 Developer contract for calculation identity, material contributions, numerical contours, graph coordinates and contour export/replay. These modules consume computation-owned results; display settings never become geometry truth or alter scientific arrays.
 
-Related: [Geometry reference methods and artifacts](GEOMETRY_REFERENCES.md) · [Projection interpretation workflow](PROJECTION_WORKFLOW.md) · [Projection and reference validation](PROJECTION_VALIDATION.md) · [Unfinished work](planning/ROADMAP.md).
+Related: [Geometry reference methods and artifacts](GEOMETRY_REFERENCES.md) · [Projection interpretation workflow](../guides/PROJECTION_WORKFLOW.md) · [Projection and reference validation](PROJECTION_VALIDATION.md) · [Unfinished work](../ROADMAP.md).
 
 - [Calculation contracts](#calculation-contracts)
 - [Material contributions](#material-contributions)
@@ -130,7 +130,7 @@ Implementation: `dist/modules/contribution-export.js`; validation/replay tests: 
 
 In the HTTP geometry preview, each graph has a new contour JSON button beside its existing raw JSON button. Files are named `material-contribution-contours-<scenario>-v1.json` and `assessment-contribution-contours-<scenario>-v1.json`. Each button exports its own completed calculation; pending/invalidated results disable that graph's button. It cannot silently combine graphs with different snapshots.
 
-The original raw material/assessment downloads remain v0.1.0 and unchanged. They are **not** automatically interpreted as this format. Readers reject unsupported document, generator or pattern versions. Any later incompatible change needs an explicit versioned migration and fixture tests; no guessed/implicit migration is supplied. This contour format has no dedicated browser import UI; combined layer/comparison replay is described in PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison.
+The original raw material/assessment downloads remain v0.1.0 and unchanged. They are **not** automatically interpreted as this format. Readers reject unsupported document, generator or pattern versions. Any later incompatible change needs an explicit versioned migration and fixture tests; no guessed/implicit migration is supplied. This contour format has no dedicated browser import UI; combined layer/comparison replay is described in ../guides/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison.
 
 ### Document shape
 

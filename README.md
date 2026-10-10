@@ -45,13 +45,13 @@ docker compose up -d --build
 - `dist/data/dam_spec.schema.json`：规格 schema。
 - `dist/vendor/three/`：离线 Three.js 0.186.0。
 - `.openai/hosting.json`：当前在线站点的可选托管绑定，不参与应用运行。
-- `docs/CALCULATION_MODELS.md`：计算链、公式、输出解释、参数与假定。
-- [有限模型图案解释工作流](docs/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison)：经批准的有限模型参考线、开天/接受度解释、可复现站点姿态比较及 v1 导出/重放；包含独立预览派生资产的离线生成方法。主应用默认仍为 legacy DDA，并未自动迁移为编译网格后端。
-- [投影数据与数值解释](docs/PROJECTION_DATA.md)：结果快照、材料贡献、等值线、图坐标及导出契约。
-- [几何参考线与派生资产](docs/GEOMETRY_REFERENCES.md)：参考线语义、资格、CSG 复用与源绑定产物。
-- [投影验证](docs/PROJECTION_VALIDATION.md)：数值容差、特征尺度、性能目标与解析测试基线。
-- `docs/`：当前架构、计算模型、当前数据集几何和迁移说明（参考文档，不含待办）。
-- `docs/planning/`：架构决策、功能需求、总体路线与实施优先级；所有未完成工作只在此维护（英文）。
+- [有限模型图案解释工作流](docs/guides/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison)：经批准的有限模型参考线、开天/接受度解释、可复现站点姿态比较及 v1 导出/重放；包含独立预览派生资产的离线生成方法。主应用默认仍为 legacy DDA，并未自动迁移为编译网格后端。
+- [投影数据与数值解释](docs/specs/PROJECTION_DATA.md)：结果快照、材料贡献、等值线、图坐标及导出契约。
+- [几何参考线与派生资产](docs/specs/GEOMETRY_REFERENCES.md)：参考线语义、资格、CSG 复用与源绑定产物。
+- [投影验证](docs/specs/PROJECTION_VALIDATION.md)：数值容差、特征尺度、性能目标与解析测试基线。
+- `docs/`：顶层为四份设计指导文件——[架构决策](docs/ARCHITECTURE_DECISIONS.md)、[功能需求](docs/FEATURE_REQUIREMENTS.md)、[路线图](docs/ROADMAP.md)、[实施优先级](docs/IMPLEMENTATION_PRIORITY.md)；所有未完成工作只在此维护（英文）。
+- `docs/specs/`：模块化规格（当前架构、模块边界、计算模型、几何参考契约、投影数据与验证、数据集坐标）；索引见 [specs/README](docs/specs/README.md)。
+- `docs/guides/`：结果解读、投影工作流和仓库迁移等使用/操作指南。
 
 ## 当前能力
 
@@ -108,7 +108,7 @@ URL 中的 `+` 必须编码为 `%2B`；界面自动生成正确 URL。发布版�
 
 默认仍为 legacy 发布和 DDA；回到对应发布版本即可继续使用旧连续水位与兼容功能。compiled 的有限范围、聚合源实体归属及物理标定限制仍然存在，显式接入不代表施工级或真实物理域认证。
 
-数据格式 v0.7.0 作为独立发布标识进入注册表和显式主应用 compiled 路径；默认 UI 仍使用旧格式 v0.6.2。当前接入能力与验证入口见 [架构说明](docs/ARCHITECTURE.md#当前几何后端与接入边界)；未完成工作见 [路线图](docs/planning/ROADMAP.md)。
+数据格式 v0.7.0 作为独立发布标识进入注册表和显式主应用 compiled 路径；默认 UI 仍使用旧格式 v0.6.2。当前接入能力与验证入口见 [架构说明](docs/specs/ARCHITECTURE.md#当前几何后端与接入边界)；未完成工作见 [路线图](docs/ROADMAP.md)。
 
 通过 HTTP 服务访问 `/geometry-preview.html` 可查看共享网格/BVH 后端：四档发布工况、参考点射线材料长度、空腔/虚几何显示与组件拾取。显示与计算使用同一批模型坐标缓冲；该预览独立于主部署应用，目前不支持连续水位或完整目标显著度评估。局域网 HTTP 也执行资产校验，无运行时外部依赖。
 
@@ -122,7 +122,7 @@ Verified semantic target 可选择发布组件直接映射的水体/空腔，显
 
 两张投影另有默认启用的材料包络：白色混凝土、橙色近场岩体。轮廓从同次 BVH 射线的材料占据和空气交界计算，不依赖实体映射或颜色对比；可关闭空气交界深度突变特征。轮廓受角采样和发布网格边界限制，不是精确 CAD 边线，显示开关不改变计算结果。
 
-预览新增 Material contribution contours：按材料独立选择路径长度（m）或材料水当量贡献（m.w.e.）等值线，支持明确物理级别与标注的自适应检查级别。两图使用各自实际采样坐标，独立 SVG 图层保持 CSS 像素线宽；关闭深度/边界诊断不影响贡献线。图例记录级别、覆盖及不完整/歧义状态。自适应级别不可直接跨视图比较。每张图新增独立的 contour JSON v1 导出，保留字段、级别、来源快照和完整性，显示设置单独保存；旧原始 JSON 不变。见 [贡献线预览](docs/PROJECTION_WORKFLOW.md#material-contour-controls) 和 [导出/重放契约](docs/PROJECTION_DATA.md#contour-export-and-replay)。
+预览新增 Material contribution contours：按材料独立选择路径长度（m）或材料水当量贡献（m.w.e.）等值线，支持明确物理级别与标注的自适应检查级别。两图使用各自实际采样坐标，独立 SVG 图层保持 CSS 像素线宽；关闭深度/边界诊断不影响贡献线。图例记录级别、覆盖及不完整/歧义状态。自适应级别不可直接跨视图比较。每张图新增独立的 contour JSON v1 导出，保留字段、级别、来源快照和完整性，显示设置单独保存；旧原始 JSON 不变。见 [贡献线预览](docs/guides/PROJECTION_WORKFLOW.md#material-contour-controls) 和 [导出/重放契约](docs/specs/PROJECTION_DATA.md#contour-export-and-replay)。
 
 导入 schema 与校验值检查（开发环境需要 Python `jsonschema>=4.10`，站点运行无此依赖）：
 

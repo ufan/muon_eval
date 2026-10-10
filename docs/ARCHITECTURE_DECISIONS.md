@@ -2,7 +2,7 @@
 
 Decision log for the platform's architecture. Each entry records the context, the decision, its status and what would make us revisit it. Statuses: **Accepted** (agreed or already in force), **Proposed** (recommended, not yet confirmed), **Superseded**, **Open** (needs a decision).
 
-This file holds *why and what we decided*. How the code currently works is described in [`../ARCHITECTURE.md`](../ARCHITECTURE.md) and the other reference docs (see ADR-015).
+This file holds *why and what we decided*. How the code currently works is specified in [`specs/`](specs/README.md) (see ADR-015).
 
 Related: [Feature requirements](FEATURE_REQUIREMENTS.md) · [Roadmap](ROADMAP.md) · [Implementation priority](IMPLEMENTATION_PRIORITY.md)
 
@@ -24,7 +24,7 @@ Last updated: 2026-10-10
 | 012 | Refactoring principles | Accepted |
 | 013 | Native ES modules in `dist/`, no build step (current) | Accepted (to be superseded by 004) |
 | 014 | Structural reference lines: material-qualified mesh contours | Accepted |
-| 015 | Documentation structure: planning set + reference docs | Proposed |
+| 015 | Documentation structure: guidelines on top, specs and guides below | Proposed |
 
 ---
 
@@ -194,41 +194,52 @@ DD4hep XML does not replace the strict JSON contract: Compact XML has no fixed s
 
 **Status:** Accepted, current practice; planned to be superseded by ADR-004 (migrated from `ARCHITECTURE.md` "主应用源码入口")
 
-**Decision.** Native ES modules live directly in `dist/modules`; there is no separate `src/` mirror and no build step. The module ownership table in `../ARCHITECTURE.md` defines which module owns what and which dependencies are forbidden; `tests/main-architecture.test.mjs` enforces it.
+**Decision.** Native ES modules live directly in `dist/modules`; there is no separate `src/` mirror and no build step. The module ownership table in [`specs/MODULE_BOUNDARIES.md`](specs/MODULE_BOUNDARIES.md) defines which module owns what and which dependencies are forbidden; `tests/main-architecture.test.mjs` enforces it.
 
 ## ADR-014 Structural reference lines: material-qualified mesh contours
 
-**Status:** Accepted (summary; full decision and evidence in [`../GEOMETRY_REFERENCES.md`](../GEOMETRY_REFERENCES.md#reference-semantics-and-library-choice))
+**Status:** Accepted (summary; full decision and evidence in [`specs/GEOMETRY_REFERENCES.md`](specs/GEOMETRY_REFERENCES.md#reference-semantics-and-library-choice))
 
 **Decision.** Use material-qualified perspective apparent contours plus separately labelled feature creases and verified patch-boundary references, projected through material into detector-local slope space. Reuse the established mesh-edge/co-face-normal method by adapting the small relevant part of pinned `vtkPolyDataSilhouette` 9.5.2 (BSD-3-Clause notices retained) into a renderer-independent module; native VTK remains the numerical reference. Do not invent a new silhouette algorithm or substitute depth jumps for geometry. Candidate curves are not interfaces until qualified by dataset semantics and shared material classification. Manifold CSG is a development-time tool only, not a browser dependency. Finite-model references are explicitly not certified physical interfaces (FR-GE4).
 
-## ADR-015 Documentation structure: planning set + reference docs
+## ADR-015 Documentation structure: guidelines on top, specifications and guides one level down
 
-**Status:** Proposed
+**Status:** Proposed (layout requested 2026-10-10; under review)
 
-**Context.** Planning content (decisions, open work, priorities) was spread across `ROADMAP.md`, `GEOMETRY_SPEC_REFACTOR.md`, `ARCHITECTURE.md`, `CONTEXT.md` and checklists inside reference docs.
+**Context.** Decisions, open work, specifications and usage guidance were mixed across `ROADMAP.md`, `GEOMETRY_SPEC_REFACTOR.md`, `ARCHITECTURE.md`, `CALCULATION_MODELS.md`, `CONTEXT.md` and checklists inside reference docs.
 
 **Decision.**
-- **Planning set** (`docs/planning/`, maintained as decisions change): architecture decisions, feature requirements, roadmap, implementation priority. All open work, decisions and priorities live only here.
-- **Reference docs** describe the current implementation and contracts and are updated with the code: `ARCHITECTURE.md` (current modules), `CALCULATION_MODELS.md`, `GEOMETRY_AND_COORDINATES.md`, `GEOMETRY_REFERENCES.md`, `PROJECTION_DATA.md`, `PROJECTION_WORKFLOW.md`, `PROJECTION_VALIDATION.md`. They contain no task lists; they link to the planning set for open items.
-- **Project entry docs** stay at the root: `AGENTS.md` (rules), `CONTEXT.md` (domain glossary and semantics), `README.md` (usage). Operational: `MIGRATION_CHECKLIST.md`, `部署说明.md`.
+
+```text
+docs/
+├─ ARCHITECTURE_DECISIONS.md   ┐
+├─ FEATURE_REQUIREMENTS.md     │ guidelines: decisions, requirements,
+├─ ROADMAP.md                  │ direction and priority; the only place
+├─ IMPLEMENTATION_PRIORITY.md  ┘ for open work
+├─ specs/      modular specifications the code must match (index: specs/README.md)
+│  └─ datasets/   per-dataset specs
+└─ guides/     usage and operation: result interpretation, projection workflow, migration
+```
+
+- Specs and guides contain no task lists; they link to the guideline files for open items.
+- Specs keep their original language and section numbering where other docs cite them.
+- Root entry docs stay: `AGENTS.md` (rules), `CONTEXT.md` (domain context and semantics), `README.md` (usage), `部署说明.md` (deployment).
 
 **Migration status:**
 
-| Original | Status |
+| Original | Now |
 |---|---|
-| `docs/ROADMAP.md` | Fully merged into roadmap, priority and requirements; removed |
-| `docs/GEOMETRY_SPEC_REFACTOR.md` | Fully merged into ADR-008…011 and FR-D, FR-V; removed |
-| `docs/ARCHITECTURE.md` | Decisions moved (ADR-011…013); current-state description stays |
-| `CONTEXT.md` §9 checklist | Moved to requirements; glossary stays |
-| `docs/CALCULATION_MODELS.md` §18 checklist | Moved to FR-V; formulas and §16 uncertainties stay |
-| `docs/GEOMETRY_AND_COORDINATES.md` §6 risks | Moved to FR-GE; coordinate rules stay |
-| `docs/GEOMETRY_REFERENCES.md` §1 decision | Summarised in ADR-014; detail stays |
-| `docs/PROJECTION_VALIDATION.md` budgets | Referenced by FR-N1; detail stays |
-| `docs/PROJECTION_DATA.md`, `PROJECTION_WORKFLOW.md` | Reference only; links updated |
-| `docs/MIGRATION_CHECKLIST.md` | Operational, unchanged |
+| `docs/ROADMAP.md` | Merged into `ROADMAP.md`, `IMPLEMENTATION_PRIORITY.md`, `FEATURE_REQUIREMENTS.md`; old file removed |
+| `docs/GEOMETRY_SPEC_REFACTOR.md` | Merged into ADR-008…011 and FR-D, FR-V; removed |
+| `docs/ARCHITECTURE.md` | Decisions → ADR-011…013; module table → `specs/MODULE_BOUNDARIES.md`; rest → `specs/ARCHITECTURE.md` |
+| `docs/CALCULATION_MODELS.md` | §2–§13 + §18 prose → `specs/CALCULATION_MODEL.md` (numbering kept); §1, §14–§17 → `guides/RESULT_INTERPRETATION.md`; §18 checklist → FR-V |
+| `docs/GEOMETRY_AND_COORDINATES.md` | → `specs/datasets/zhouning-lower-reservoir-dam.md`; §6 risks → FR-GE |
+| `docs/GEOMETRY_REFERENCES.md` | Normative rules → `specs/GEOMETRY_REFERENCE_CONTRACT.md`; decision/evidence/reproduction → `specs/GEOMETRY_REFERENCES.md`; decision summarised in ADR-014 |
+| `docs/PROJECTION_DATA.md`, `docs/PROJECTION_VALIDATION.md` | → `specs/` unchanged in content |
+| `docs/PROJECTION_WORKFLOW.md`, `docs/MIGRATION_CHECKLIST.md` | → `guides/` unchanged in content |
+| `CONTEXT.md` §9 checklist | → requirements; §3–§7 are spec candidates (see `specs/README.md`) |
 
-**Open:** language. Planning set is English; reference docs are Chinese and English mixed (OQ-4).
+**Open:** language (OQ-4).
 
 ---
 
@@ -237,9 +248,10 @@ DD4hep XML does not replace the strict JSON contract: Compact XML has no fixed s
 - **OQ-1 Sensitivity of dam geometry.** The current public instance serves full geometry to anyone with the URL. Confirm with the data owner whether access control is required; if so, T4 applies.
 - **OQ-2 UI framework choice** (Preact vs Svelte), decided when ADR-004 starts.
 - **OQ-3 Default backend switch.** Whether and when the main app's default moves from legacy DDA to the compiled backend, and the acceptance evidence required (ADR-011).
-- **OQ-4 Documentation language.** One language for all docs, or English planning set with Chinese reference docs.
+- **OQ-4 Documentation language.** One language for all docs, or English guideline files with specs/guides in their current (mixed Chinese/English) languages.
 
 ## Change log
 
+- 2026-10-10: ADR-015 rewritten for the new layout: guideline files at `docs/` top level, `specs/` and `guides/` below.
 - 2026-10-10: Merged decisions from `GEOMETRY_SPEC_REFACTOR.md`, `ARCHITECTURE.md` and `GEOMETRY_REFERENCES.md` (ADR-008…014); added ADR-015 and OQ-3, OQ-4.
 - 2026-10-10: Initial log from review discussion (ADR-001…007, OQ-1…2).

@@ -104,7 +104,7 @@
 
 通量模型、衰减模型、计数单位、曝光时间和统计假设应在计算模块及输出元数据中明确版本化。
 
-当前实现采用的具体计算链、公式、参数和界面输出解释见 `docs/CALCULATION_MODELS.md`。
+当前实现采用的具体计算链、公式、参数和界面输出解释见 `docs/specs/CALCULATION_MODEL.md`，结果解读见 `docs/guides/RESULT_INTERPRETATION.md`。
 
 ## 6. 评估语义
 
@@ -140,11 +140,11 @@
 - 数据集注册表：`dist/data/datasets.json`；默认发布标识为 `zhouning-lower-reservoir-dam@0.6.2`。
 - 当前 UI 规格与 schema：`dist/data/datasets/zhouning-lower-reservoir-dam/0.6.2/`。
 - 原生格式 v0.7.0 发布标识为 `zhouning-lower-reservoir-dam@0.6.2+schema0.7.0`，独立目录保存；主应用可显式选择 compiled 后端和已发布冻结工况，默认仍为 legacy。连续水位与聚合源实体归属未解决。
-- 坐标和几何说明：`docs/GEOMETRY_AND_COORDINATES.md`
+- 坐标和几何说明：`docs/specs/datasets/zhouning-lower-reservoir-dam.md`
 - 数据集 ID、数据版本、schema 版本和发布标识分别记录；同一数据版本允许具有不同格式的发布包，缓存和方案引用必须区分完整发布标识。
 
 未来新增坝体时，应为每个数据集建立同等级的元数据和说明，并使用共同接口加载。
 
 ## 9. 待逐步补充
 
-待补充的领域定义已迁移为需求条目，统一在 [`docs/planning/FEATURE_REQUIREMENTS.md`](docs/planning/FEATURE_REQUIREMENTS.md) 维护（FR-D、FR-X1、FR-V3、FR-S2/S3、FR-M1/M2、FR-P1、FR-D9）。本文件只保留已确定的语义；`TBD` 项在需求完成后回填到对应章节。
+待补充的领域定义已迁移为需求条目，统一在 [`docs/FEATURE_REQUIREMENTS.md`](docs/FEATURE_REQUIREMENTS.md) 维护（FR-D、FR-X1、FR-V3、FR-S2/S3、FR-M1/M2、FR-P1、FR-D9）。本文件只保留已确定的语义；`TBD` 项在需求完成后回填到对应章节。

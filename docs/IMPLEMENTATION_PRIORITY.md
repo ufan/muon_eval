@@ -12,7 +12,7 @@ Last updated: 2026-10-10
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| 1 | Make flux integration history-independent | FR-C1 | Physics-model revision; bump `RESPONSE_MODEL_VERSION`; update frozen baseline tests and `CALCULATION_MODELS.md` §2/§9 | Todo |
+| 1 | Make flux integration history-independent | FR-C1 | Physics-model revision; bump `RESPONSE_MODEL_VERSION`; update frozen baseline tests and `specs/CALCULATION_MODEL.md` §2/§9 | Todo |
 | 2 | Record the legacy 500 m ray cutoff in exports; fix limitation text | FR-C2, FR-C5 | `legacy-pattern-adapter.js`, `legacy-geometry-adapter.js` | Todo |
 | 3 | Decide the cos θ projected-area factor | FR-C3 | Needs owner decision; then fix as model revision or document | Blocked (decision) |
 | 4 | Remove dead work in `quickMetrics()` | FR-C4 | Keep only `center` and `dirDoc` | Todo |
@@ -73,5 +73,6 @@ Last updated: 2026-10-10
 
 ## Change log
 
+- 2026-10-10: Moved from `docs/planning/` to `docs/` top level; links updated to `specs/` and `guides/`.
 - 2026-10-10: Merged former `docs/ROADMAP.md`: dependency audit (#6), browser regressions, geometry-track and deferred items; added #10 (FR-X1); renumbered.
 - 2026-10-10: Initial priority list from review discussion.

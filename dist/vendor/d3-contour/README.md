@@ -17,4 +17,4 @@ node node_modules/esbuild/bin/esbuild node_modules/d3-contour/src/contours.js --
 
 Prepend the existing one-line version/license pointer, retain the licenses, verify the hash, then update the vendor file through a reviewed patch. esbuild is a temporary development tool only (MIT); no project-wide build or npm dependency is introduced. Benchmark and scientific tests run directly with Node using the checked-in asset.
 
-Adoption scope and hazards: `docs/PROJECTION_DATA.md#numerical-contour-extraction`. This module exports the contour generator as its default export; application entries consume it through the shared contour adapter.
+Adoption scope and hazards: `docs/specs/PROJECTION_DATA.md#numerical-contour-extraction`. This module exports the contour generator as its default export; application entries consume it through the shared contour adapter.
