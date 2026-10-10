@@ -13,7 +13,8 @@ Last updated: 2026-10-10
 - A rapid evaluation and comparison tool; never construction-grade, safety-certification or approval conclusions.
 - Offline static app; no large framework or plugin system without proven need; one calculation core shared by every consumer (ADR-001, ADR-002, ADR-012).
 - Correctness and reproducibility before features; tests before extracting pure modules; measure before optimising (ADR-005).
-- Abstractions are validated by a second real dam dataset, not by guesses (ADR-008).
+- A subject-neutral platform: dams first, then other subjects such as blast furnaces and tunnels. Every decision keeps that path open, but each kind is supported only when it is actually added (ADR-016).
+- Abstractions are validated by real datasets (a second dam, then a second kind), not by guesses (ADR-008).
 - Server, WebAssembly and Geant4 automation are conditional, unlocked only by observed triggers.
 
 ## Where we are
@@ -75,6 +76,21 @@ Can advance alongside Phases 1–4 when data or evidence becomes available.
 - Second real dam dataset (FR-D9) and the pending contract specs in FR-D2, D3, D5, D7.
 - Default backend switch decision (OQ-3, ADR-011).
 
+## Generalisation track (ADR-016…018)
+
+Gradual; each stage is triggered by real need, not built ahead.
+
+| Stage | Content | When |
+|---|---|---|
+| G0 | No new dam-specific code in generic modules (FR-K1); plan/scan schemas subject-neutral (FR-P1) | Now, standing |
+| G1 | Dataset-declared kind, variables, layers, targets, capabilities (FR-K2, K3); compiled package as the generic contract (ADR-017); datasets as top-level directory (ADR-018, OQ-6) | After Phase 1 formats exist |
+| G2 | Second dam dataset validates the abstractions (FR-D9) | When data is available |
+| G3 | First non-dam subject (blast furnace or tunnel) with its physics prerequisites (FR-K4…K7) and baselines (FR-K8) | When a real project needs it |
+
+## User-loaded geometry track (ADR-019)
+
+Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline converter from common formats (FR-L5). U3: in-app material/frame authoring (FR-L6). U1 can start after G1.
+
 ## Conditional tracks (unlocked by triggers, any time after Phase 1)
 
 | Track | Unlocked by | Content |
@@ -89,6 +105,7 @@ Can advance alongside Phases 1–4 when data or evidence becomes available.
 
 ## Change log
 
+- 2026-10-10: Added subject-neutral principle, generalisation track (G0–G3) and user-loaded geometry track (U1–U3).
 - 2026-10-10: Moved from `docs/planning/` to `docs/` top level; links updated to `specs/` and `guides/`.
 - 2026-10-10: Merged former `docs/ROADMAP.md` (milestones, follow-up features, validation boundaries) and the dependency order from `GEOMETRY_SPEC_REFACTOR.md` §6; added "Where we are", Phase 5 scope, geometry parallel track and Deferred.
 - 2026-10-10: Initial roadmap from review discussion.

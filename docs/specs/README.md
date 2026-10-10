@@ -19,6 +19,8 @@ Last updated: 2026-10-10
 | Projection | [PROJECTION_VALIDATION.md](PROJECTION_VALIDATION.md) | English | Numerical gates, feature-scale policy, performance budgets, analytical fixtures |
 | Datasets | [datasets/zhouning-lower-reservoir-dam.md](datasets/zhouning-lower-reservoir-dam.md) | 中文 | Zhouning frames and transforms, geometry types, display and calculation rules, change checklist |
 
+`specs/datasets/` holds the *description* of each dataset (frames, transforms, geometry rules); the data itself is in `dist/data/datasets/`. ADR-018 proposes moving both into one top-level `datasets/<id>/<release>/` directory so each dataset and its description are versioned together.
+
 Machine-readable specs live with the data: dataset schemas under `dist/data/datasets/<id>/<version>/` (e.g. `schema/dam-dataset.schema.json`) and the registry `dist/data/datasets.json`.
 
 ## Not yet extracted (candidates)

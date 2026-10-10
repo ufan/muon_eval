@@ -25,6 +25,10 @@ Last updated: 2026-10-10
 | 013 | Native ES modules in `dist/`, no build step (current) | Accepted (to be superseded by 004) |
 | 014 | Structural reference lines: material-qualified mesh contours | Accepted |
 | 015 | Documentation structure: guidelines on top, specs and guides below | Proposed |
+| 016 | Subject-neutral evaluation platform | Accepted (direction) |
+| 017 | Compiled geometry package is the generic runtime contract | Proposed |
+| 018 | Datasets move to a top-level `datasets/` directory | Proposed |
+| 019 | User-loaded geometry in stages, client-side first | Proposed |
 
 ---
 
@@ -121,7 +125,7 @@ Any replacement tracer must pass the existing `conformance_rays.json` / `conform
 
 ## ADR-008 Dams are explicit, versioned data products
 
-**Status:** Accepted (migrated from `GEOMETRY_SPEC_REFACTOR.md` §1, §4)
+**Status:** Accepted (migrated from `GEOMETRY_SPEC_REFACTOR.md` §1, §4); generalised from dams to any imaging subject by ADR-016
 
 **Decision.**
 - Each dam is loaded as an explicit, versioned dataset. The UI does not simultaneously interpret the source spec, run CSG, stitch terrain, build display meshes, classify materials and intersect rays. Generic code never hard-codes a dam's dimensions, section count or survey coordinates.
@@ -241,6 +245,56 @@ docs/
 
 **Open:** language (OQ-4).
 
+## ADR-016 Subject-neutral evaluation platform
+
+**Status:** Accepted as direction (owner, 2026-10-10); implemented gradually
+
+**Context.** Only one dam dataset exists today, but the platform is meant to evaluate muography deployments for other dams, blast furnaces, tunnels and future subject types. Dam terms currently leak into generic code: 17 modules mention dam/upstream/downstream/spillway/gallery, including `dataset-loader.js`, `application-selection.js` and the compiled backend's capability list (`layers: ['dam','terrain','upwater','downwater','cone']`). The legacy environment accepts only `upstream`/`downstream` water levels.
+
+**Decision.**
+- The core (geometry runtime, ray tracing, response, projection, scans, plans, exports) knows only generic concepts: materials with densities, closed volumes, terrain, dataset-declared variables, stations, poses, devices. It never branches on a subject kind or name.
+- Each dataset declares a `kind` (e.g. `dam`, `blast-furnace`, `tunnel`) plus its own variables, display layers, semantic targets and capabilities. UI controls and labels are generated from these declarations.
+- Kind-specific knowledge lives in (1) dataset packages, (2) offline compilers that turn source data into the generic package (ADR-017), and (3) where unavoidable, small explicit adapters registered in `application-backends.js`. No plugin system until a second subject kind proves the pattern (consistent with ADR-008, `AGENTS.md`).
+- Physics must not silently assume rock-like matter or open-sky geometry: energy loss per material, deep overburden and in-material detector positions are explicit requirements before the corresponding subject kinds are supported (FR-K4…K6).
+- Terminology: keep **dataset** as the generic unit, qualified by `kind`. Do not use "scenario" for the subject, because it already means a frozen environment variant (low/mid/high/extreme) (OQ-5).
+- The technology choices stand: static browser app, WebGL rendering, framework-free JS core, glTF/GLB runtime geometry, WebAssembly only if measured. Nothing in them is dam-specific.
+
+## ADR-017 Compiled geometry package is the generic runtime contract
+
+**Status:** Proposed
+
+**Context.** Two geometry paths exist. The legacy path interprets the Zhouning parametric dam spec in the browser (`geometry-kernel.js`, `legacy-geometry-adapter.js`) and cannot generalise. The compiled path consumes closed GLB meshes with material metadata, a manifest, terrain heightfields and checksums, and validates closure/winding when building the BVH. Nothing in it is dam-specific except declared names.
+
+**Decision.**
+- The runtime contract for every subject kind is the compiled package: manifest (identity, frames, materials, variables/frozen variants, layers, targets, checksums) + GLB physics/display meshes + optional terrain heightfield + optional conformance baselines.
+- Source formats (dam parametric spec, CAD, survey, furnace drawings) are converted offline by kind-specific compilers. The browser never runs kind-specific CSG (consistent with ADR-009).
+- The legacy dam path remains a bounded compatibility adapter until the default-backend decision (OQ-3); new subject kinds go only through the compiled path.
+- Continuous variables (e.g. water level, burden level) need explicit per-kind resolvers; frozen variants are supported first (ADR-011).
+
+## ADR-018 Datasets move to a top-level `datasets/` directory
+
+**Status:** Proposed (owner's question 2026-10-10; not yet moved)
+
+**Context.** Dataset releases (spec JSON, schemas, GLB, terrain, conformance baselines) live inside the deployable web root `dist/data/datasets/`, mixed with application code. Their descriptive spec currently sits apart from them in `docs/specs/datasets/`. Binary assets are large (~2.6 MB per GLB, four per release, terrain duplicated across 0.6.1/0.6.2/0.7).
+
+**Decision.**
+- Make `datasets/<dataset-id>/<release>/` a top-level source directory: release files, schemas, conformance baselines and the dataset's own spec document (`README.md`, moved from `docs/specs/datasets/`), versioned together. Shared package schemas go in `datasets/_schemas/`.
+- `dist/` receives only the bundled datasets through an explicit step: a small copy script now (no build step, ADR-013), the Vite public/asset pipeline later (ADR-004). The registry lists what is bundled.
+- Consider Git LFS or release artifacts for large binaries once more datasets arrive.
+- **Cost:** a copy step before serving/deploying; test/script paths and hosting must be updated in the same change.
+
+## ADR-019 User-loaded geometry in stages, client-side first
+
+**Status:** Proposed (owner direction 2026-10-10: needed eventually, not urgent)
+
+**Decision.** Stages, each usable on its own:
+1. **Bundled datasets** (today).
+2. **Load a packaged dataset from a local file or folder** in the browser via the File API, validated exactly like bundled ones (schema, checksums, closure/winding, units/frames). Stored locally (IndexedDB), referenced in plans by release ID plus content hash. Results from packages without conformance baselines are labelled unverified throughout. Untrusted input has size, triangle and JSON limits, no code execution and fails closed. No server needed, so ADR-001 holds.
+3. **Offline converter** (CLI) from common mesh/CAD formats (glTF, OBJ, STL first; IFC/STEP later) with material mapping and frame declaration into the package format, reusing the existing compiler checks.
+4. **In-app light authoring**: assign materials/densities to imported meshes, set frames and origin, declare variables.
+
+A server becomes relevant only if loaded geometry must be shared across a team (trigger T1) or protected (T4).
+
 ---
 
 ## Open questions
@@ -249,9 +303,12 @@ docs/
 - **OQ-2 UI framework choice** (Preact vs Svelte), decided when ADR-004 starts.
 - **OQ-3 Default backend switch.** Whether and when the main app's default moves from legacy DDA to the compiled backend, and the acceptance evidence required (ADR-011).
 - **OQ-4 Documentation language.** One language for all docs, or English guideline files with specs/guides in their current (mixed Chinese/English) languages.
+- **OQ-5 Generic terminology.** Keep "dataset" + `kind` (recommended), or introduce a term such as "subject"/"site" in UI and docs. When should `AGENTS.md` and `CONTEXT.md` (currently dam-worded) be generalised: now, or with the first non-dam kind?
+- **OQ-6 Dataset directory move (ADR-018).** Move now with a copy script, or together with the build step (ADR-004)?
 
 ## Change log
 
+- 2026-10-10: Added ADR-016 (subject-neutral platform), ADR-017 (compiled package as generic contract), ADR-018 (top-level datasets), ADR-019 (user-loaded geometry), OQ-5, OQ-6; ADR-008 generalised.
 - 2026-10-10: ADR-015 rewritten for the new layout: guideline files at `docs/` top level, `specs/` and `guides/` below.
 - 2026-10-10: Merged decisions from `GEOMETRY_SPEC_REFACTOR.md`, `ARCHITECTURE.md` and `GEOMETRY_REFERENCES.md` (ADR-008…014); added ADR-015 and OQ-3, OQ-4.
 - 2026-10-10: Initial log from review discussion (ADR-001…007, OQ-1…2).

@@ -81,7 +81,7 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
-| FR-P1 | Save/load a complete plan. | Versioned JSON schema with migrations: full dataset release ID, stations, poses, device, response, environment/scenario, sampling, model version. Round-trip test: load → save gives an identical file. Current exports (including `compiled-deployment-snapshot` v0.1) are not full round-trip plans. | Needed |
+| FR-P1 | Save/load a complete plan. | Versioned, subject-neutral JSON schema with migrations: full dataset release ID (plus content hash for user-loaded datasets), stations, poses, device, response, environment/scenario, sampling, model version. Round-trip test: load → save gives an identical file. Current exports (including `compiled-deployment-snapshot` v0.1) are not full round-trip plans. | Needed |
 | FR-P2 | Plans shareable without a server. | Plan files are diff-friendly and usable from git or a shared folder. | Needed |
 | FR-P3 | Team plan sharing with concurrent editing, permissions and audit trail. | Only when server trigger T1 is met (ADR-001). | Deferred |
 
@@ -134,6 +134,35 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | FR-Q7 | Dev dependencies documented. | `manifold3d` (Python) listed for `check-interface-artifacts.mjs`; `jsonschema` deprecation (`RefResolver`) addressed. | Needed |
 | FR-Q8 | Module dependency boundaries enforced. | Real import boundaries between dataset loading, geometry, device/deployment state, assessment and rendering audited; both backends reuse application ports; calculation runs without DOM/Three.js; views provide no geometric truth; main app does not depend on the standalone preview. Locked by automated tests. | Needed |
 
+## K. Subject generality (ADR-016, ADR-017)
+
+The platform evaluates any imaging subject (dams, blast furnaces, tunnels, …). Support is added kind by kind; these requirements keep the core from closing that path.
+
+| ID | Requirement | Acceptance criteria | Status |
+|---|---|---|---|
+| FR-K1 | No subject-specific logic in generic modules. | Core, plan, scan and export code never branch on a subject kind or name; new code adds no dam terms to generic modules. Existing leaks (17 modules today) are removed as each is touched. | Standing |
+| FR-K2 | Dataset-declared kind and variables. | Each dataset declares `kind` and its environment variables (name, label, unit, range, frozen variants). UI controls are generated from them; the legacy `upstream`/`downstream` pair becomes one such declaration. | Needed |
+| FR-K3 | Dataset-declared layers, targets and capabilities. | Display layers, semantic targets and capability flags come from the dataset/backend declaration, not hard-coded lists such as `['dam','upwater','downwater']`. | Needed |
+| FR-K4 | Material-dependent energy loss. | Energy-loss parameters (or range tables) per material instead of one rock-like `a, b` for all matter; required before high-Z subjects such as blast furnaces (iron, slag). Physics-model revision. | Needed (before non-rock subjects) |
+| FR-K5 | Deep overburden and site conditions. | Flux integration valid for large columns (current `10⁵ GeV` upper limit and `Emin` range); altitude/geomagnetic corrections from site conditions. Required before tunnels/underground sites. | Needed (before tunnels) |
+| FR-K6 | Detector placement inside or below material. | Stations inside solids or underground and the pose ranges they need (e.g. near-horizontal, zenith) are supported and tested on the compiled path. | Needed (later) |
+| FR-K7 | Large terrain. | Kilometre-scale DEM heightfields with level of detail for display and a heightfield ray backend (ADR-010). | Needed (later) |
+| FR-K8 | Per-kind baselines. | Each new subject kind ships at least one reference dataset with control points, material points and reference rays, extending the `AGENTS.md` dataset checklist. | Standing |
+| FR-K9 | Generic wording in rules and context. | `AGENTS.md`, `CONTEXT.md` and UI text describe the generic platform with dams as one kind (timing: OQ-5). | Open |
+
+## L. User-loaded geometry (ADR-019)
+
+Not urgent; staged after bundled datasets.
+
+| ID | Requirement | Acceptance criteria | Status |
+|---|---|---|---|
+| FR-L1 | Load a packaged dataset from a local file or folder. | Browser File API, no server; same validation as bundled datasets (schema, checksums, closure/winding, units/frames). | Needed (later) |
+| FR-L2 | Unverified labelling. | Packages without conformance baselines are marked unverified in the UI, results and exports. | Needed (later) |
+| FR-L3 | Untrusted-input limits. | File size, triangle count and JSON size/depth limits; no code execution; fail closed with a clear message. | Needed (later) |
+| FR-L4 | Local persistence and plan references. | Loaded datasets kept locally (IndexedDB); plans reference them by release ID plus content hash and refuse to run against a different file. | Needed (later) |
+| FR-L5 | Offline converter. | CLI turns glTF/OBJ/STL (later IFC/STEP) plus a material map and frame declaration into a package, reusing compiler checks. | Needed (later) |
+| FR-L6 | In-app light authoring. | Assign materials/densities to imported meshes, set frames/origin, declare variables. | Needed (later) |
+
 ## A. Access and security
 
 | ID | Requirement | Acceptance criteria | Status |
@@ -142,6 +171,7 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 
 ## Change log
 
+- 2026-10-10: Added K (subject generality) and L (user-loaded geometry); FR-P1 made subject-neutral.
 - 2026-10-10: Moved from `docs/planning/` to `docs/` top level; links updated to `specs/` and `guides/`.
 - 2026-10-10: Merged open items from `docs/ROADMAP.md`, `GEOMETRY_SPEC_REFACTOR.md` (§2, §7), `CONTEXT.md` §9, `CALCULATION_MODELS.md` §16/§18 and `GEOMETRY_AND_COORDINATES.md` §6. Added sections D, E, GE, X, V, N and FR-C6, FR-M3, FR-Q8.
 - 2026-10-10: Initial requirements from review discussion.

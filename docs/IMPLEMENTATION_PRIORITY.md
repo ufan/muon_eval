@@ -17,6 +17,10 @@ Last updated: 2026-10-10
 | 3 | Decide the cos θ projected-area factor | FR-C3 | Needs owner decision; then fix as model revision or document | Blocked (decision) |
 | 4 | Remove dead work in `quickMetrics()` | FR-C4 | Keep only `center` and `dirDoc` | Todo |
 
+## Standing rule
+
+- FR-K1: every change keeps generic modules free of subject-specific (dam) logic; when touching a module that has such leaks, prefer moving them into the dataset declaration or a bounded adapter.
+
 ## P1 — Tooling, hygiene and boundaries (Phase 0)
 
 | # | Item | Ref | Notes | Status |
@@ -32,7 +36,7 @@ Last updated: 2026-10-10
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| 11 | Plan / scan / result schemas with versions and migrations | FR-P1, FR-P2, ADR-006 | Becomes the future API contract | Todo |
+| 11 | Plan / scan / result schemas with versions and migrations | FR-P1, FR-P2, ADR-006, FR-K1 | Becomes the future API contract; subject-neutral, references datasets by release ID (+ content hash) | Todo |
 | 12 | Async, cancellable assessment port | ADR-006 | Change limited to `assessment-controller.js` | Todo |
 | 13 | Headless batch runner (Node CLI) | FR-S5, ADR-006 | Plan in, results out; future server worker | Todo |
 
@@ -65,6 +69,10 @@ Last updated: 2026-10-10
 | Physical-domain certification, entity attribution, compiled ROI | FR-GE4, FR-M3 | Geometry track; needs data evidence |
 | Geometry debt (cavity, spillway rules, terrain, contours) | FR-GE1…GE3, GE5 | Geometry track |
 | Second dam dataset | FR-D9 | When data is available |
+| Dataset-declared kind/variables/layers/targets; compiled package as generic contract | FR-K2, K3, ADR-017 | Generalisation G1, after P2 |
+| Move datasets to top-level `datasets/` | ADR-018 | OQ-6 decision |
+| Material-dependent energy loss, deep-overburden flux, in-material stations, large terrain | FR-K4…K7 | Before the first non-dam subject (G3) |
+| Load packaged dataset from file; converter; in-app authoring | FR-L1…L6 | User-geometry track U1–U3, not urgent |
 | Default backend switch | OQ-3 | Decision first |
 | WebAssembly tracer | ADR-005 step 4 | Only if P3 measurements insufficient |
 | Server backend | ADR-001 | Only when T1–T4 observed |
@@ -73,6 +81,7 @@ Last updated: 2026-10-10
 
 ## Change log
 
+- 2026-10-10: Added standing rule FR-K1; generalisation and user-geometry items under Later; #11 made subject-neutral.
 - 2026-10-10: Moved from `docs/planning/` to `docs/` top level; links updated to `specs/` and `guides/`.
 - 2026-10-10: Merged former `docs/ROADMAP.md`: dependency audit (#6), browser regressions, geometry-track and deferred items; added #10 (FR-X1); renumbered.
 - 2026-10-10: Initial priority list from review discussion.
