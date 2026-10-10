@@ -41,8 +41,7 @@ docker compose up -d --build
 - `dist/style.css`：基础样式。
 - `dist/projection.css`：投影窗与热云样式。
 - `dist/layout-overrides.css`：后续布局与响应式覆盖。
-- `dist/data/dam_spec.json`：当前周宁数据集的坝体几何、材料、候选站点和工程参数源。
-- `dist/data/dam_spec.schema.json`：规格 schema。
+- `datasets/`：数据集发布（注册表 `datasets/registry.json`）。
 - `dist/vendor/three/`：离线 Three.js 0.186.0。
 - `.openai/hosting.json`：当前在线站点的可选托管绑定，不参与应用运行。
 - [有限模型图案解释工作流](docs/guides/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison)：经批准的有限模型参考线、开天/接受度解释、可复现站点姿态比较及 v1 导出/重放；包含独立预览派生资产的离线生成方法。主应用默认仍为 legacy DDA，并未自动迁移为编译网格后端。
