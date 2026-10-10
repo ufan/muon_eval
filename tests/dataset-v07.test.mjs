@@ -17,10 +17,10 @@ const { spec, geometry } = dataset;
 const kernel = createV07QualificationKernel(dataset);
 const near = (actual, expected) => actual.forEach((value, axis) => assert.ok(Math.abs(value - expected[axis]) < 1e-9, `${actual} != ${expected}`));
 
-test('registry keeps legacy default and separates native release identity', async () => {
+test('registry defaults to the native compiled release and keeps legacy identity separate', async () => {
   const registry = await readJson(registryUrl);
-  assert.equal(registry.default_dataset, 'zhouning-lower-reservoir-dam@0.6.2');
-  const legacy = await loadRegisteredDataset();
+  assert.equal(registry.default_dataset, release);
+  const legacy = await loadRegisteredDataset('zhouning-lower-reservoir-dam@0.6.2');
   assert.equal(legacy.geometry, null);
   assert.equal(legacy.identity.dataset_version, dataset.identity.dataset_version);
   assert.notEqual(legacy.id, dataset.id);
@@ -148,14 +148,14 @@ test('qualification material queries obey bounds and reject invalid ray inputs',
 });
 
 test('actual HTTP loader verifies native assets and lazy scenario meshes', async t => {
-  let corrupt = false, nativeDefault = false;
+  let corrupt = false, legacyDefault = true;
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url, 'http://localhost');
       const path = resolveStaticPath(url.pathname);
       let bytes = await readFile(path);
-      if (nativeDefault && url.pathname.endsWith('/registry.json')) {
-        const registry = JSON.parse(bytes.toString()); registry.default_dataset = release;
+      if (legacyDefault && url.pathname.endsWith('/registry.json')) {
+        const registry = JSON.parse(bytes.toString()); registry.default_dataset = 'zhouning-lower-reservoir-dam@0.6.2';
         bytes = Buffer.from(JSON.stringify(registry));
       }
       if (corrupt && url.pathname.endsWith('/dam_spec_v070.json')) bytes = Buffer.from(bytes.toString().replace('0.6.2', '0.6.3'));
@@ -175,7 +175,7 @@ test('actual HTTP loader verifies native assets and lazy scenario meshes', async
   await assert.rejects(loaded.loadCompiledScenario('missing'), /Unknown compiled scenario/);
   const legacy = await loadDefaultDataset(address);
   assert.equal(legacy.id, 'zhouning-lower-reservoir-dam@0.6.2');
-  nativeDefault = true;
+  legacyDefault = false; // the real registry defaults to the native release
   await assert.rejects(loadDefaultDataset(address, { digest: sha256 }), /legacy-only compatibility loader/);
   corrupt = true;
   await assert.rejects(loadDataset(release, address, { digest: sha256 }), /SHA-256 mismatch/);

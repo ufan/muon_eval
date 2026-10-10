@@ -1,6 +1,6 @@
 {
   "format_version": "0.1",
-  "default_dataset": "zhouning-lower-reservoir-dam@0.6.2",
+  "default_dataset": "zhouning-lower-reservoir-dam@0.6.2+schema0.7.0",
   "datasets": {
     "zhouning-lower-reservoir-dam@0.6.2+schema0.7.0": {
       "adapter": "dam-spec-v07",

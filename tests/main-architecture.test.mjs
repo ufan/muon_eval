@@ -14,7 +14,7 @@ import { loadRegisteredDataset } from '../scripts/dataset-fixture.mjs';
 import { legacyCalculationBaseline } from './fixtures/legacy-calculation-baseline.mjs';
 import { legacyTargetBaseline, legacyTargetSignificance } from './fixtures/legacy-target-baseline.mjs';
 
-const dataset=await loadRegisteredDataset(),geometry=createLegacyGeometryAdapter(dataset);
+const dataset=await loadRegisteredDataset('zhouning-lower-reservoir-dam@0.6.2'),geometry=createLegacyGeometryAdapter(dataset);
 const stations=legacyDefaultStations(dataset,geometry),configuration=defaultDeviceConfiguration();
 const input=()=>({station:{...stations[0]},...structuredClone(configuration),environment:{upstream:295}});
 function oldDirection(c,sx,sy){const az=MathUtils.degToRad(c.az),el=MathUtils.degToRad(c.el),center=new Vector3(Math.cos(el)*Math.cos(az),Math.cos(el)*Math.sin(az),Math.sin(el)).normalize(),right=new Vector3(-Math.sin(az),Math.cos(az),0),up=new Vector3(-Math.sin(el)*Math.cos(az),-Math.sin(el)*Math.sin(az),Math.cos(el));const d=center.addScaledVector(right,sx).addScaledVector(up,sy).normalize();return new Vector3(d.y,d.x,d.z).normalize();}

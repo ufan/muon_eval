@@ -9,7 +9,7 @@ import { defaultAssessmentDevice, defaultAssessmentResponse } from '../dist/modu
 import { loadRegisteredDataset, readJson } from '../scripts/dataset-fixture.mjs';
 import { createLegacyTraceBaseline } from './fixtures/legacy-trace-baseline.mjs';
 
-const dataset = await loadRegisteredDataset(), spec = dataset.spec;
+const dataset = await loadRegisteredDataset('zhouning-lower-reservoir-dam@0.6.2'), spec = dataset.spec;
 const kernel = createGeometryKernel({spec, terrainNear:dataset.terrainNear, terrainFar:dataset.terrainFar});
 const h = dataset.terrainNear.header;
 const bounds = {min:{x:h.origin[1],y:h.origin[0],z:150},max:{x:h.origin[1]+(h.shape[1]-1)*h.spacing[1],y:h.origin[0]+(h.shape[0]-1)*h.spacing[0],z:600}};

@@ -9,7 +9,7 @@ import { integratedSurfaceFlux } from '../dist/modules/muon-response.js';
 import { loadRegisteredDataset, readJson } from '../scripts/dataset-fixture.mjs';
 import { legacyTargetBaseline, legacyTargetSignificance } from './fixtures/legacy-target-baseline.mjs';
 
-const dataset=await loadRegisteredDataset(),adapter=createLegacyGeometryAdapter(dataset);
+const dataset=await loadRegisteredDataset('zhouning-lower-reservoir-dam@0.6.2'),adapter=createLegacyGeometryAdapter(dataset);
 const ids=adapter.targetIds,materials=adapter.materials;
 const interpret=createLegacyTargetInterpreter({materials,targetIds:ids});
 const normalize=(x,y,z)=>{const n=Math.sqrt(x*x+y*y+z*z);return{x:x/n,y:y/n,z:z/n};};

@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createLegacyGeometryAdapter } from '../dist/modules/legacy-geometry-adapter.js';
 import { loadRegisteredDataset } from '../scripts/dataset-fixture.mjs';
 
-const dataset=await loadRegisteredDataset(),adapter=createLegacyGeometryAdapter(dataset);
+const dataset=await loadRegisteredDataset('zhouning-lower-reservoir-dam@0.6.2'),adapter=createLegacyGeometryAdapter(dataset);
 const copyDataset=()=>({...dataset,...structuredClone({spec:dataset.spec,identity:dataset.identity,
   terrainNear:dataset.terrainNear,terrainFar:dataset.terrainFar})});
 
