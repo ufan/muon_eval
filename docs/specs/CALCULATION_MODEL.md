@@ -377,6 +377,36 @@ The configured angular resolution is converted into a Gaussian `σ` in projectio
 
 The conversion approximates angle by the local slope step, which is not a strict spherical convolution at large slopes; at the image border only in-image pixels are renormalized. Significance is currently not convolved with the same resolution.
 
+### 11.6 One ray per pixel (measured, FR-V12)
+
+Each pixel's count is evaluated on one ray: the pixel's weighted-mean direction, traced from the detector centre. A real detector integrates over every native strip-difference direction in the pixel (8 × 8 for a 65² final grid with the default 256 strips) and over entry points across the area that is aligned on both outer planes for that direction. Measured on 2026-10-12 with `scripts/experiment-pixel-sampling.mjs` (model `legacy-quick-response@3.0.0`, release `zhouning-lower-reservoir-dam@0.6.2+schema0.7.0`, scenario `low`, default device, 30-day exposure, 65² grid). The reference averages counts, not columns, over all native directions × 4 × 4 entry points (converged: 6 × 6 entry points gave identical statistics). It was run on six candidate stations (three in galleries, two on platforms, one on the bank) × four poses (azimuth 90°, 270° and 0° at 30° elevation; azimuth 90° at 60°), 101,400 pixels in all, with 29–2,900 mean counts per pixel:
+
+| Quantity | Result |
+| --- | --- |
+| Total count per pose | within ±0.6% of the reference (24 of 24 poses) |
+| Count-weighted mean per-pixel error | 0.1–2.0% |
+| Pixels off by more than 1σ / 2σ of the counting error | 1.3–4.7% / 0.4–2.8% per pose |
+| Largest pull | 4–62σ, in high-count pixels on platform stations |
+| Cause of pixels > 2σ | 91% at material boundaries (neighbour columns differ by > 20 m.w.e. and > 20%), 3% at the horizon, 6% other |
+| Entry position alone (centre direction, 4 × 4 entry points) | total +0.0–0.3%, count-weighted error ≤ 0.34%, pulls ≤ 1σ except isolated pixels (≤ 0.2% of pixels > 1σ) |
+| Direction alone (8 × 8 directions, centre entry point) | reproduces the full reference statistics (it is the whole effect) |
+
+Uniform sub-direction sampling converges slowly at edges (four poses: azimuth 270°/30° and 90°/60° at the upper gallery, both platforms and the bank):
+
+| Rays per pixel | > 1σ | > 2σ | Largest pull | Count-weighted error |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 (current) | 2.73% | 1.76% | 61.7 | 0.55% |
+| 4 | 1.32% | 0.87% | 36.7 | 0.19% |
+| 9 | 0.83% | 0.49% | 23.0 | 0.09% |
+| 16 | 0.50% | 0.23% | 17.4 | 0.06% |
+
+Interpretation:
+
+- Totals, transmission-weighted summaries and comparisons of stations or poses are not affected beyond ±0.6%.
+- Per-pixel values at material edges (subject outline, gallery walls, openings, terrain line) are aliased: the centre ray picks one side of an edge that the real pixel averages across. This matters for quantitative per-pixel use: anomaly footprints and ΔN at their edges (FR-H5), pixel-wise significance and reconstruction inputs (FR-M7).
+- The detector's finite size (entry position) is negligible for these stations, including in galleries; it does not need to be modelled.
+- Remedy, when per-pixel accuracy is needed: refine only pixels whose neighbours' columns differ strongly (a few percent of pixels) with all native directions, as an explicit, versioned calculation option. Its accuracy target is this reference, kept as an L4 test.
+
 ## 12. Legacy target structures, outlines and significance
 
 ### 12.1 Target mask

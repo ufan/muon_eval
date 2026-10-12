@@ -15,7 +15,7 @@ Last updated: 2026-10-12
 | 1 | Make flux integration history-independent | FR-C1 | Physics-model revision `legacy-quick-response@2.0.0`; frozen baseline tests and `specs/CALCULATION_MODEL.md` §2/§9 updated | Done |
 | 2 | Record the legacy 500 m ray cutoff in exports; fix limitation text | FR-C2, FR-C5 | `legacy-pattern-adapter.js`, `legacy-geometry-adapter.js`; legacy compatibility path only since OQ-3 | Done |
 | 3 | Projected-area cos θ factor; remove the edge factor | FR-C3 | Model revision `legacy-quick-response@3.0.0`; evidence in `specs/CALCULATION_MODEL.md` §10.3 | Done |
-| 3a | Measure in-pixel ray sampling error against a converged reference; document or plan a sampling option | FR-V12 | `scripts/experiment-pixel-sampling.mjs`; owner asked for the experiment before #4 | In progress |
+| 3a | Measure in-pixel ray sampling error against a converged reference; document or plan a sampling option | FR-V12 | `scripts/experiment-pixel-sampling.mjs`; results in `specs/CALCULATION_MODEL.md` §11.6 | Done |
 | 4 | Remove dead work in `quickMetrics()` | FR-C4 | Keep only `center` and `dirDoc`; legacy path only | Todo |
 
 ## Standing rules
@@ -63,7 +63,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
 | AN2 | Generic regions, host clipping and density models (pure modules, test first) | FR-H2…H4 | Analytic fixtures at L2 | Todo |
-| AN3 | Perturbative evaluation over stored traces; sensitivity outputs | FR-H5, FR-H6 | #1 (FR-C1) done | Todo |
+| AN3 | Perturbative evaluation over stored traces; sensitivity outputs | FR-H5, FR-H6 | #1 (FR-C1) done; include edge-adaptive in-pixel sampling (FR-V12, spec §11.6) with the experiment reference as an L4 test | Todo |
 | AN4 | Anomaly in 3D view and projection footprint | FR-H9 | Same definition as physics | Todo |
 | AN5 | Sweeps and systematics | FR-H7, FR-H8 | Feeds scans (P4) and reconstruction | Todo |
 
@@ -114,6 +114,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 | Item | Ref | Commit |
 |---|---|---|
+| In-pixel ray sampling error measured (#3a) | FR-V12 | this branch |
 | Projected-area factor added, edge factor removed (#3), model `legacy-quick-response@3.0.0` | FR-C3 | `3aa22b4` |
 | Legacy 500 m ray cutoff recorded in exports (#2) | FR-C2 | `cbbc1b0` |
 | History-independent flux integral (#1), model `legacy-quick-response@2.0.0` | FR-C1 | `5de4693` |
@@ -127,6 +128,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-12: #3a done; edge-adaptive sampling attached to AN3.
 - 2026-10-12: Added #3a (FR-V12) ahead of #4.
 - 2026-10-12: #3 done (owner decision: both changes as one model revision).
 - 2026-10-12: #2 done.
