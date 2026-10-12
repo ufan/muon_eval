@@ -132,6 +132,7 @@ Scene composition (Target): **scene = release + environment state + active anoma
 | Trace | Value | Per ray: material totals, `materialColumns`, `mwe`, segments, entity lengths | Current |
 | ProjectionResult | Value, versioned | `kind` ∈ {`compiled-detector-assessment`, `legacy-detector-assessment`, `material-column-projection`}, `schemaVersion`, identity (release, backend, scenario, variables, asset hashes), config, device, response, `modelVersion`, pixels, limitations | Current |
 | Per-station result cache | Keyed by snapshot key | Lets the overview and detail modes share results | Target (ADR-020) |
+| Coverage (view) | Derived view of a station | Geometric coverage = device acceptance × pose (no physics); physical coverage = expected counts per steradian from a result. A view of results, never an input; bound to the result's snapshot key | Target (ADR-026) |
 | Exports | Value, versioned | `compiled-deployment-snapshot` 0.1.0, contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison`, legacy plan JSON | Current; not yet a round-trip plan format |
 
 ## 3. Identities
@@ -207,6 +208,7 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-12: Added Coverage as a derived view (ADR-026).
 - 2026-10-12: Renamed "deficiency" to "anomaly" (AnomalyHypothesis).
 - 2026-10-12: Added anomaly hypotheses (Target, ADR-025): context, concepts, scene composition, invariants 12–14, register row.
 - 2026-10-12: Added §7 kind variation register (observed Zhouning RCC dam vs assumed other kinds).
