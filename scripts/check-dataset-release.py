@@ -19,9 +19,9 @@ def load(path):
 
 
 def check(release_id, archive=None):
-    registry = load(ROOT / 'dist/data/datasets.json')
+    registry = load(ROOT / 'datasets/registry.json')
     entry = registry['datasets'][release_id]
-    base = (ROOT / 'dist/data' / entry['base_url']).resolve()
+    base = (ROOT / 'datasets' / entry['base_url']).resolve()
     if entry.get('adapter') != 'dam-spec-v07':
         raise ValueError('This import gate requires a native v0.7 release')
     for relative, expected in entry['integrity'].items():

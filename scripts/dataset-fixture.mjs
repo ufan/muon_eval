@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { loadDataset } from '../dist/modules/dataset-loader.js';
+import { registryUrl } from './static-paths.mjs';
 
-export const registryUrl = new URL('../dist/data/datasets.json', import.meta.url);
+export { registryUrl };
 export const sha256 = bytes => createHash('sha256').update(new Uint8Array(bytes)).digest('hex');
 export const readJson = async url => JSON.parse(await readFile(url, 'utf8'));
 export async function loadRegisteredDataset(id = null) {

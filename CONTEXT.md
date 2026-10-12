@@ -1,160 +1,167 @@
 # CONTEXT.md
 
-本文档是项目的领域上下文模板，用于统一产品用途、几何语义、物理量和术语。它面向人工开发者及任何 AI 工具，不依赖特定厂商或产品。内容允许逐步完善；未知或未决定的内容应明确标为 `TBD`，不要自行猜测。
+Domain context for the project: product purpose, geometry semantics, physical quantities and terminology (the glossary). The domain model itself (contexts, relationships, identities, invariants, lifecycles) is kept in `docs/specs/DOMAIN_MODEL.md` and updated with development. It is written for human developers and any AI tool, independent of vendor or product. It may be completed gradually; unknown or undecided content is marked `TBD` rather than guessed.
 
-坝体实例的尺寸和坐标不应成为本文件中的平台规则。实例特有内容放在“当前数据集”或独立数据集文档中。
+A subject's dimensions and coordinates are never platform rules here. Dataset-specific content belongs in "Current datasets" below or in the dataset's own `datasets/<dataset-id>/README.md`.
 
-## 1. 产品上下文
+## 1. Product context
 
-### 目标
+### Goal
 
-通过统一的数据模型和快速近似计算，帮助用户探索、筛选和比较坝体缪子成像的探测器部署方案。
+Help users explore, filter and compare muography detector deployment plans for an imaging subject, using a common data model and fast approximate calculation. Subjects are described by datasets of a declared **kind**: dams first; blast furnaces, tunnels and other subjects later. Support for each kind is added gradually. The current implementation knows one roller-compacted-concrete dam; other subjects (and other dam types) may need different display and interaction, geometry semantics and regions of interest, recorded in the kind variation register of `docs/specs/DOMAIN_MODEL.md`.
 
-### 主要用户（待补充）
+### Main users (to be completed)
 
-- 缪子探测与数据分析人员；
-- 坝体工程、测绘和结构专业人员；
-- 负责现场部署、运行和方案评审的人员。
+- Muon detection and data-analysis staff;
+- Engineering, survey and structural specialists for the subject (dam, plant, tunnel, …);
+- Staff responsible for field deployment, operation and plan review;
+- Potential customers, through demonstrations of a deployment.
 
-### 通用使用场景
+### General use cases
 
-1. 加载一个坝体数据集，检查坐标、几何语义和材料定义。
-2. 配置探测器构型和响应参数。
-3. 创建或选择候选站点，调整位置与姿态并查看预期投影。
-4. 扫描可行区域或姿态空间，以约束和相对指标筛选候选方案。
-5. 同时比较或联合显示多个站点，评估覆盖互补性。
-6. 保存可复现的部署方案，并输出数据、动画或评估报告。
+1. Load a dataset and check its coordinates, geometry semantics and material definitions.
+2. Configure the detector and its response parameters.
+3. Create or select candidate stations, adjust position and pose and inspect the expected projection.
+4. Scan feasible regions or the pose space, filtering candidates by constraints and relative metrics.
+5. Show several selected stations at once to see the whole deployment, compare coverage and demonstrate the plan.
+6. Simulate multi-projection reconstruction to judge what 3D picture a deployment could recover.
+7. Save reproducible deployment plans and export data, animations or evaluation reports.
+8. Eventually, load new subject geometry rather than only choosing bundled datasets.
 
-### 非目标与边界
+### Non-goals and boundaries
 
-- 不替代 Geant4 等完整粒子输运模拟。
-- 不替代工程 CAD/BIM、测绘数据库或施工图设计。
-- 不单独给出结构安全、施工安全或行政审批结论。
-- 当前快速模型的适用精度、误差范围和验证状态：`TBD`。
+- Does not replace full particle-transport simulation such as Geant4.
+- Does not replace engineering CAD/BIM, survey databases or construction design.
+- Does not on its own give structural-safety, construction-safety or regulatory conclusions.
+- Applicable accuracy, error range and validation status of the current fast model: `TBD` (FR-V2).
 
-## 2. 核心对象
+## 2. Core objects
 
-| 对象 | 通用含义 | 关键内容 |
+| Object | General meaning | Key contents |
 | --- | --- | --- |
-| 数据集 Dataset | 一座坝体及其坐标、几何、材料和元数据的版本化集合 | ID、版本、单位、坐标变换、来源、未知项 |
-| 场景 Scene | 数据集与某一环境状态的组合 | 水位、启用材料区、显示选项 |
-| 探测器构型 Detector Configuration | 与坝体无关的设备几何与响应参数 | 灵敏面积、条宽、读出数、层距、效率、角分布、死区 |
-| 站点 Station | 探测器参考点及工程语义 | 坐标、名称、可达性/安装约束、所属区域 |
-| 姿态 Pose | 探测器在站点的空间朝向 | 方位角、仰角、局部坐标基 |
-| 部署方案 Deployment Plan | 一个或多个探测器及其运行配置 | 数据集版本、环境、设备、站点、姿态、计算设置 |
-| 扫描 Scan | 在受约束参数空间中批量计算和比较方案 | 范围、步长、约束、指标、排名、稳健性 |
+| Dataset | A versioned collection describing one imaging subject: coordinates, geometry, materials and metadata | ID, `kind`, version, units, coordinate transforms, sources, unknowns |
+| Kind | The type of subject a dataset describes (`dam`, `blast-furnace`, `tunnel`, …) | Kind-specific variables, layers and targets are declared by the dataset, not by generic code |
+| Scenario | A frozen environment variant of a dataset (e.g. water levels low/mid/high/extreme) | Variable values; the compiled geometry for that variant |
+| Scene | A dataset release combined with one environment state (a scenario or environment variable values). It fixes the physical geometry and materials used in calculation | Release, scenario or variable values. Which material regions exist follows from the environment state (e.g. water level, gate states), never from display choices |
+| View state | How a scene and its results are displayed | Layer visibility, colours, transparency, camera, overlays, selection. Not part of the scene or of any calculation input |
+| Detector configuration | Device geometry and response parameters, independent of the subject | Sensitive area, strip pitch, readout count, layer spacing, efficiency, angular model, dead time |
+| Station | A detector reference point with engineering meaning | Coordinates, name, accessibility/installation constraints, area |
+| Pose | The detector's orientation at a station | Azimuth, elevation, local basis |
+| Assessment | One station evaluated in a scene: the scene combined with a detector configuration, a station and a pose | Calculation settings; produces a projection result |
+| Deployment plan | A scene combined with one or more stations, each with a pose and a detector configuration; distinguishes candidate stations from the selected deployment | Scene (release + environment), stations, poses, devices, calculation settings |
+| Anomaly (hypothesis) | A structural problem of the subject that the deployment is meant to investigate (voids, loosened or densified zones, seepage, furnace cohesive zone, hearth wall thinning, …), modelled as a parameterised change of the subject's physical state (proposed, ADR-025) | Region, density model (void, loosening, densification, saturation, replacement), host materials, size/position/density/development parameters |
+| Geometric / physical acceptance | Geometric: which directions the detector can register at all (device geometry only). Physical: expected muon counts per direction, including flux, transmission and response | Used for the coverage highlight (FR-M10) |
+| Sensitivity | How well a plan would detect an anomaly: change in counts and its significance against statistical and systematic uncertainty | ΔN, significance, exposure to reach a threshold, minimum detectable size/contrast |
+| Scan | Batch calculation and comparison over a constrained parameter space | Ranges, steps, constraints, metrics, ranking, robustness |
 
-对象标识、必填字段和文件 schema：`TBD`。
+Note: "scenario" means a frozen environment variant, never the subject itself; the subject is a dataset of some kind.
 
-## 3. 几何语义
+Composition: **scene** = dataset release + environment state (+ active anomaly hypotheses, proposed ADR-025); **assessment** = scene + detector configuration + station + pose; **deployment plan** = scene + stations (each with pose and detector configuration). Display options belong to the **view state**, which is never part of any of these.
 
-### 基本类型
+How these objects relate, their identities, invariants and lifecycles are modelled in [`docs/specs/DOMAIN_MODEL.md`](docs/specs/DOMAIN_MODEL.md); this file keeps the glossary. Object identifiers, required fields and file schemas: `TBD` (FR-P1).
 
-- **实体 Solid**：占据空间且具有材料属性的正体积。
-- **负体积 Void**：从实体中扣除的空间；默认无材料，不应被当作填充物显示。
-- **材料区 Material Region**：密度或成分一致、可参与射线柱密度计算的区域。
-- **内部设施 Internal Feature**：廊道、观察室、电梯井等具有工程含义的空腔或构件。
-- **环境体 Environment Volume**：库水、尾水、空气或围岩等随场景变化或位于坝体外部的介质。
-- **视觉代理 Visual Proxy**：为了辨识或交互而绘制的辅助几何；不得隐式参与材料计算。
-- **目标 Target / ROI**：用户希望在投影或扫描中重点辨识、覆盖或比较的结构/区域。
-- **边界与轮廓 Boundary / Contour**：材料或语义区域在三维空间、射线域或投影平面中的边界表达。
+## 3. Geometry semantics
 
-### 几何真值原则
+### Basic types
 
-材料几何应由正体积、负体积、材料优先级和边界规则共同定义。渲染网格不是唯一真值；视觉显示、点分类、射线求交和投影轮廓必须可追溯到同一数据定义。
+- **Solid**: a positive volume that occupies space and has a material.
+- **Void**: space subtracted from solids; it has no material by default and is not shown as a filled body.
+- **Material region**: a region of uniform density or composition that contributes to ray column density.
+- **Internal feature**: a cavity or component with engineering meaning (e.g. galleries, observation rooms, elevator shafts in a dam; tapholes or cooling channels in a furnace).
+- **Environment volume**: media that change between scenes or lie outside the subject: reservoir and tail water, furnace burden, overburden, air, surrounding rock.
+- **Visual proxy**: auxiliary geometry drawn for recognition or interaction; it never takes part in material calculation implicitly.
+- **Target / ROI**: a structure or region the user wants to identify, cover or compare in projections or scans.
+- **Boundary / contour**: the boundary of a material or semantic region in 3D space, ray space or the projection plane.
 
-边界包含规则、重叠材料优先级、容差和退化几何处理：`TBD`。
+### Geometric truth
 
-## 4. 坐标与方向语义
+Display options belong to the view state, not the scene: hiding a material region, internal feature or environment volume changes only what is drawn and never removes it from classification, ray paths, column density or any other calculation.
 
-每个数据集必须声明：
+Material geometry is defined by positive volumes, negative volumes, material priority and boundary rules together. The render mesh is not the only truth: display, point classification, ray intersection and projection contours must all trace back to the same data definition.
 
-- 原始坐标系名称、单位、原点、手性和轴向；
-- 标准化模型坐标系及其与原始坐标的双向变换；
-- 高程基准、零点和显示方式；
-- 真北、工程轴线或坝轴与方位角的关系；
-- Three.js/渲染坐标适配；
-- 已知控制点和变换误差。
+Boundary inclusion, overlapping-material priority, tolerances and degenerate geometry handling: `TBD` (FR-D5).
 
-推荐通用模型使用右手坐标系，但不得假定所有数据源与当前示例使用相同轴向。
+## 4. Coordinate and direction semantics
 
-需要严格区分：
+Every dataset declares:
 
-- **点 Point**：受旋转和平移影响；
-- **方向 Direction**：只受旋转影响；
-- **姿态 Orientation**：定义局部坐标基或等价旋转；
-- **方位角 Azimuth**：零方向、正方向和范围必须由坐标约定明确；
-- **仰角 Elevation**：相对水平面的角度，正负方向和合法范围必须明确；
-- **高程 Elevation datum value**：空间坐标量，不应与姿态仰角混淆。
+- the source frame's name, units, origin, handedness and axes;
+- the normalized model frame and the forward and inverse transforms between them;
+- the elevation datum, zero point and display convention;
+- the relation of true north, the subject's main axis (e.g. a dam axis) and azimuth;
+- the adaptation to Three.js/render coordinates;
+- known control points and transform error.
 
-## 5. 射线与投影术语
+A right-handed model frame is recommended, but no data source may be assumed to use the same axes as the current example.
 
-| 术语 | 定义草案 |
+Keep these strictly apart:
+
+- **Point**: affected by rotation and translation;
+- **Direction**: affected by rotation only;
+- **Orientation**: defines a local basis or equivalent rotation;
+- **Azimuth**: zero direction, positive sense and range defined by the coordinate convention;
+- **Elevation angle**: angle above the horizontal plane; sign and valid range stated explicitly;
+- **Elevation datum value**: a spatial coordinate, never to be confused with the pose's elevation angle.
+
+## 5. Ray and projection terms
+
+| Term | Draft definition |
 | --- | --- |
-| 射线 Ray | 从探测器参考点沿某一局部方向延伸的有向线 |
-| 材料路径长度 | 射线在某一材料区域内的累计几何长度 |
-| 柱密度 / 水当量 m.w.e. | 沿射线积分的面密度，以等效水厚表示 |
-| 开天通量 Open-sky flux | 无目标遮挡条件下的参考缪子通量 |
-| 透射率 Transmission | 通过材料后的预期通量与参考通量之比 |
-| 预计计数 Expected count | 给定设备响应和曝光时间下的期望事件数 |
-| 局部斜率 `sx`, `sy` | 探测器局部坐标中射线方向的二维参数化；精确定义 `TBD` |
-| 投影像素 Projection bin | 局部方向空间中的一个离散方向单元 |
-| 结构显著度 | 目标与参考假设的可分辨程度；统计定义 `TBD` |
-| ROI | 投影、空间或扫描参数域中被选定的重点区域 |
+| Ray | A directed line from the detector reference point along a local direction |
+| Material path length | Total geometric length of a ray inside one material region |
+| Column density / water equivalent (m.w.e.) | Areal density integrated along the ray, expressed as equivalent water thickness |
+| Open-sky flux | Reference muon flux with no target material |
+| Transmission | Expected flux after the material divided by the reference flux |
+| Expected count | Expected number of events for a given device response and exposure time |
+| Local slopes `sx`, `sy` | 2D parameterization of a ray direction in the detector-local frame; exact definition `TBD` (FR-X1) |
+| Projection bin | One discrete direction cell in local direction space |
+| Structural significance | How distinguishable a target is from a reference hypothesis; statistical definition `TBD` |
+| ROI | A selected region in the projection, in space or in the scan parameter domain |
 
-通量模型、衰减模型、计数单位、曝光时间和统计假设应在计算模块及输出元数据中明确版本化。
+Flux model, attenuation model, count units, exposure time and statistical assumptions are versioned explicitly in calculation modules and output metadata.
 
-当前实现采用的具体计算链、公式、参数和界面输出解释见 `docs/CALCULATION_MODELS.md`。
+The current calculation chain, formulas, parameters and UI outputs are specified in `docs/specs/CALCULATION_MODEL.md`; their interpretation is in `docs/guides/RESULT_INTERPRETATION.md`.
 
-## 6. 评估语义
+## 6. Evaluation semantics
 
-以下维度应分开表达，避免用一个绝对分数替代所有判断：
+Keep these dimensions separate rather than collapsing them into one absolute score:
 
-- **单站物理指标**：路径、柱密度、透射率、计数、方向覆盖等原始量。
-- **扫描相对指标**：在同一约束和数据集内的分位数、排名、帕累托位置或相对改善。
-- **稳健性**：位置、姿态、设备参数或几何不确定性变化时结果的稳定程度。
-- **多站点互补性**：覆盖重叠、目标交叉视角和新增信息量。
-- **工程可实施性**：空间、运输、供电、通信、维护和现场作业条件。
-- **安全与合规**：独立的工程输入，不从物理投影指标自动推导。
+- **Single-station physical metrics**: raw quantities such as paths, column density, transmission, counts and direction coverage.
+- **Relative scan metrics**: quantiles, ranks, Pareto position or relative improvement within the same constraints and dataset.
+- **Robustness**: stability of results when position, pose, device parameters or geometry uncertainty change.
+- **Multi-station complementarity**: coverage overlap, crossing views of targets and added information.
+- **Reconstruction quality** (simulated): density error, contrast recovery and resolution achievable from all projections together.
+- **Engineering feasibility**: space, transport, power, communications, maintenance and site-work conditions.
+- **Safety and compliance**: independent engineering inputs, never derived automatically from projection metrics.
 
-扫描约束、默认比较集和推荐排序方法：`TBD`。
+Scan constraints, default comparison set and recommended ranking method: `TBD` (FR-S2).
 
-## 7. 可复现性最低要求
+## 7. Minimum reproducibility record
 
-一次可复现的计算或导出至少记录：
+A reproducible calculation or export records at least:
 
-- 应用版本和计算模型版本；
-- 数据集 ID、版本和几何/材料版本；
-- 坐标约定及必要的变换版本；
-- 探测器构型；
-- 环境状态；
-- 所有站点和姿态；
-- 采样网格、曝光时间、阈值及其他计算设置；
-- 输出量、单位和生成时间；
-- 已知近似、警告和未解析项。
+- application version and calculation-model version;
+- dataset ID, kind, release and geometry/material versions;
+- coordinate convention and any transform version;
+- detector configuration;
+- environment state or scenario;
+- all stations and poses;
+- sampling grid, exposure time, thresholds and other calculation settings;
+- output quantities, units and generation time;
+- known approximations, warnings and unresolved items.
 
-## 8. 当前内置数据集
+## 8. Current datasets
 
-当前实现以内置的周宁下库大坝数据集作为首个验证案例，而不是平台默认语义。
+The bundled Zhouning lower-reservoir dam dataset is the first validation case, not the platform's default semantics.
 
-- 数据集注册表：`dist/data/datasets.json`；默认发布标识为 `zhouning-lower-reservoir-dam@0.6.2`。
-- 当前 UI 规格与 schema：`dist/data/datasets/zhouning-lower-reservoir-dam/0.6.2/`。
-- 原生格式 v0.7.0 发布标识为 `zhouning-lower-reservoir-dam@0.6.2+schema0.7.0`，独立目录保存；主应用可显式选择 compiled 后端和已发布冻结工况，默认仍为 legacy。连续水位与聚合源实体归属未解决。
-- 坐标和几何说明：`docs/GEOMETRY_AND_COORDINATES.md`
-- 数据集 ID、数据版本、schema 版本和发布标识分别记录；同一数据版本允许具有不同格式的发布包，缓存和方案引用必须区分完整发布标识。
+- Dataset registry: `datasets/registry.json`. The default release is `zhouning-lower-reservoir-dam@0.6.2+schema0.7.0` on the compiled GLB/BVH backend, with frozen scenarios low/mid/high/extreme.
+- The legacy release `zhouning-lower-reservoir-dam@0.6.2` (directory `datasets/zhouning-lower-reservoir-dam/0.6.2/`) remains selectable as a compatibility path with the legacy DDA backend and continuous water level.
+- Continuous water level on compiled geometry and aggregate source-entity attribution are unresolved.
+- Coordinates and geometry rules: `datasets/zhouning-lower-reservoir-dam/README.md`.
+- Dataset ID, data version, schema version and release ID are recorded separately; one data version may have release packages in different formats, so caches and plan references always use the full release ID.
 
-未来新增坝体时，应为每个数据集建立同等级的元数据和说明，并使用共同接口加载。
+Every future dataset, of any kind, gets metadata and a description at the same level and is loaded through the common interface.
 
-## 9. 待逐步补充
+## 9. Open definitions
 
-- [ ] 数据集 manifest 和目录规范
-- [ ] 通用几何 schema 与扩展机制
-- [ ] 材料库、密度单位和优先级
-- [ ] 坐标变换精度与控制点格式
-- [ ] 探测器局部坐标和 `sx` / `sy` 的正式定义
-- [ ] 投影、通量和衰减模型的版本说明
-- [ ] 扫描约束、指标、排名和稳健性定义
-- [ ] 多站点联合目标函数
-- [ ] 工程可实施性输入及其与物理指标的边界
-- [ ] 保存/加载、结果和报告 schema
-- [ ] 第二个坝体数据集的适配经验与通用接口修订
+Domain definitions still to be written are tracked as requirements in [`docs/FEATURE_REQUIREMENTS.md`](docs/FEATURE_REQUIREMENTS.md) (FR-D, FR-K, FR-X1, FR-V3, FR-S2/S3, FR-M1/M2, FR-P1, FR-D9). This file keeps only settled semantics; `TBD` items are filled in here once their requirements are done.

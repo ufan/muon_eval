@@ -1,0 +1,116 @@
+# Interpreting and using results
+
+For developers and end users: what the current fast-evaluation results mean, where they apply, how sensitive they are to parameters, what is uncertain and how to use them. The formulas and calculation chain themselves are in the [calculation model spec](../specs/CALCULATION_MODEL.md) ("spec §N" below refers to its sections).
+
+After reading this, a user should be able to answer: what a given image shows, how a given number is obtained, which step a parameter change affects, and which assumptions a result depends on.
+
+## 1. Scope and limits of conclusions
+
+The current model is suitable for:
+
+- quickly comparing candidate stations, poses and device configurations;
+- judging whether the field of view covers the target structure;
+- estimating material lengths, column density, transmission trends and count magnitudes in different directions;
+- screening plans for later high-fidelity simulation, site surveys and deployment design.
+
+The current model is not:
+
+- particle-by-particle Monte Carlo transport such as Geant4;
+- an engineering digital twin with full terrain, material inhomogeneity and complete CAD/BIM;
+- a final performance prediction calibrated with measured background, trigger, reconstruction efficiency and environmental changes;
+- an automatic conclusion about structural safety, construction safety or deployment accessibility.
+
+Expected counts and significance are therefore **comparison metrics and magnitude estimates within one model**. Until geometry, flux, detector response and field data are validated, they must not be used on their own as engineering commitments.
+
+## 2. Exact meaning of the side-panel metrics
+
+| UI metric | Source of the final value | How to read it |
+| --- | --- | --- |
+| Central-ray concrete path | Centre pixel of the 65×65 projection | Total concrete length along the central viewing direction |
+| Central-ray column density (m.w.e.) | Centre pixel of the 65×65 projection | Water-equivalent sum of concrete, water and rock along the central direction |
+| Expected count | Sum over all 65×65 pixels | Total event magnitude for the current device, exposure and fast physics model |
+| Weighted field transmission | `sum(Nthrough)/sum(Nopen)` | Whole-field transmission weighted by area, solid angle and response |
+| Central-ray main-grid cells | Number of segments recorded for the centre ray | Auxiliary information about computational complexity/path segmentation, not a physical performance metric |
+| Effective ray path range | Minimum–maximum concrete length over the projection | The span of concrete thickness covered by the current field of view |
+
+The side-panel heading "station assessment" does not mean a relative scan ranking has been done. These are mostly single-station raw or derived metrics; future scans compare quantiles, ranks, robustness and multi-objective trade-offs under common constraints.
+
+## 3. Parameter sensitivity and choices
+
+| Parameter change | Main effect | Advice |
+| --- | --- | --- |
+| Station position | Geometric intersections, all material paths and contours | Make sure coordinates and the station's engineering meaning are reliable first |
+| Azimuth/elevation | Target coverage, zenith-angle flux and paths | Adjust in small steps and wait for the final projection |
+| Water level / scenario | Water paths, column density and water-body outlines | Record the scenario in results |
+| Material density | Column density, minimum energy, transmission and counts | Use measured values and keep the uncertainty range |
+| Sensitive area | Counts change roughly linearly | Enter the actual effective area, not the housing size |
+| Strip pitch / count / layer spacing | Slope step, field of view and pixel acceptance | The combination must match the real readout geometry |
+| Single-layer efficiency | Three-layer coincidence changes as `ε³` | Do not substitute single-layer efficiency for a system efficiency calibration |
+| Dead-time loss | Total counts change linearly | Use the effective live-time fraction |
+| Exposure time | Counts linear, significance sub-linear | Keep it the same when comparing plans |
+| Angular resolution | Image smoothing and structure visibility | Currently smooths counts/transmission only; raw rays are unchanged |
+| Systematic error | Affects structural significance only | Should come from calibration or a sensitivity range, not be tuned freely |
+| Angular flux model | Zenith dependence and absolute counts | Gaisser by default; cos² only for rough comparison |
+
+Developers must not "optimize" how a plan looks by tuning systematic error, the edge factor or colour scales. Parameter changes need a physical or calibration basis and must appear in exported results.
+
+## 4. Main current uncertainties and technical debt
+
+### Geometry
+
+- Hydraulic-cavity visual clipping and material classification still have two implementations that can drift (legacy backend);
+- some chute, bottom-outlet, observation-room and lower-gallery dimensions are approximate or assumed;
+- the full reservoir bed, both banks and external rock terrain are missing;
+- the engineering bounding box can truncate external rock paths.
+
+### Physics
+
+- Continuous energy loss ignores stochastic transport and scattering;
+- the surface flux model and its unit normalization have not been checked against measured data at this site;
+- materials are represented by mean density only;
+- atmospheric, seasonal and charge-ratio corrections are not included.
+
+### Detector
+
+- Three-layer efficiency is treated as independent identical efficiencies `ε³`;
+- the edge efficiency is an empirical formula;
+- trigger, noise, reconstruction, energy- and direction-dependent efficiencies are not modelled;
+- angular resolution is an approximate 2D Gaussian display smoothing.
+
+### Statistics
+
+- Significance uses a single-pixel Gaussian approximation and one proportional systematic error;
+- ROI combination ignores pixel correlation and multiple testing;
+- selecting several targets takes the maximum, not a joint fit;
+- there is no uncertainty propagation for geometry, density or response parameters.
+
+## 5. Using and verifying results
+
+### End users
+
+1. Confirm the dataset release, station, pose, device and scenario/water level.
+2. Wait until the final projection is done before recording side-panel metrics.
+3. Look at counts, transmission, target outlines and the hovered 3D ray together; never judge structure from a single brightness image.
+4. Compare stations only under identical parameters and constraints.
+5. Run sensitivity checks on density, position, angle and geometry extent for leading candidates.
+6. Confirm the final plan with high-fidelity simulation or measured data.
+
+### Developers
+
+Any change to the calculation chain establishes at least these regression quantities:
+
+- forward and inverse transforms of control points;
+- material classification of representative points;
+- per-material path lengths and column density of reference rays;
+- `Emin` at fixed `X`;
+- spectrum and integrated flux at fixed energy/zenith angle;
+- field of view, solid-angle weights and open-sky counts at fixed device parameters;
+- centre pixel, total count and weighted transmission at a fixed station;
+- target counterfactual counts and significance;
+- consistent trends between the 25×25 preview and the 65×65 final result.
+
+When the model or default parameters change, increase the corresponding model version and state in exports and the change log that values are not directly comparable with the old version.
+
+## 6. Further validation
+
+Validation material still to be produced is tracked as requirements in [`../FEATURE_REQUIREMENTS.md`](../FEATURE_REQUIREMENTS.md): FR-V (physics and validation), FR-X (detector), FR-S2/FR-M1 (scans and multi-station).

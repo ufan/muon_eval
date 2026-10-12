@@ -2,7 +2,7 @@ import { adaptDamSpecV07 } from './dam-spec-v07.js';
 import { validateBundle, validateTerrainHeader, verifySha256 } from './dataset-validation.js';
 
 // fetch/digest injection lets Node tests exercise the actual browser loading path.
-export async function loadDataset(id = null, registryUrl = './data/datasets.json', options = {}) {
+export async function loadDataset(id = null, registryUrl = './datasets/registry.json', options = {}) {
   const fetcher = options.fetch || globalThis.fetch;
   const registryAddress = new URL(registryUrl, options.baseUrl || globalThis.location?.href || import.meta.url);
   const fetchBytes = async url => {
@@ -81,7 +81,7 @@ export async function loadDataset(id = null, registryUrl = './data/datasets.json
   return { id, identity, base, entry, spec, geometry, candidates, detectorModels, siteConditions, compiledManifest, terrainNear, terrainFar, loadCompiledScenario };
 }
 
-export async function loadDefaultDataset(registryUrl = './data/datasets.json', options = {}) {
+export async function loadDefaultDataset(registryUrl = './datasets/registry.json', options = {}) {
   const dataset = await loadDataset(null, registryUrl, options);
   if (dataset.geometry) throw new Error('loadDefaultDataset is a legacy-only compatibility loader; use loadDataset with explicit application backend selection for v0.7');
   return dataset;

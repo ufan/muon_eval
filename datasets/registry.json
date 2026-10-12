@@ -1,0 +1,96 @@
+{
+  "format_version": "0.1",
+  "default_dataset": "zhouning-lower-reservoir-dam@0.6.2+schema0.7.0",
+  "datasets": {
+    "zhouning-lower-reservoir-dam@0.6.2+schema0.7.0": {
+      "adapter": "dam-spec-v07",
+      "status": "qualification",
+      "base_url": "./zhouning-lower-reservoir-dam/0.6.2+schema0.7.0/",
+      "spec": "dam_spec_v070.json",
+      "schema": "schema/dam-dataset.schema.json",
+      "profile": "schema/zhouning.profile.schema.json",
+      "artifact_schema": "schema/compiled-artifacts.schema.json",
+      "deployment_candidates": "deployment_candidates.json",
+      "detector_models": "detector_models.json",
+      "site_conditions": "site_conditions.json",
+      "compiled_manifest": "compiled/manifest.json",
+      "terrain_near": {
+        "header": "compiled/terrain_effective_near.json",
+        "data": "compiled/terrain_effective_near.f32"
+      },
+      "terrain_far": {
+        "header": "compiled/terrain_far.json",
+        "data": "compiled/terrain_far.f32"
+      },
+      "conformance": {
+        "points": "compiled/conformance_points.json",
+        "rays": "compiled/conformance_rays.json"
+      },
+      "integrity": {
+        "CONFORMANCE_REPORT.json": "5391ea6e7254bed4f955c9a6bf0644e63b16c8035d99bc5978b3f715729cec3d",
+        "RELEASE_REPORT.json": "af5709ed7d41309e087d409e7a3bd95520918aab624232399f6cb0b73b302937",
+        "dam_spec_v070.json": "b102d7e7f07bd79b6d0d6a0e6c02d81848cad41fff446d629e668d7f78a5627d",
+        "deployment_candidates.json": "68bac767e3dc40baf8f2106cefa455a7c311e4dff72b6ef044fbfa1ec2e64b1e",
+        "detector_models.json": "8435b1f2c108f98ff053f45b8f435f61da9c8847dde6d65e29cb04305ac9ba9b",
+        "site_conditions.json": "59f33b375f91b822acf2aec6637eb7b810edcb6a5056cf4b0ada14639cf4e5ba",
+        "compiled/conformance_check.json": "f52c3877a211307d52ee9a568a2934629d73b7404346f369e47e3332966ca8e1",
+        "compiled/conformance_points.json": "1a3c582d1b64fbd4275be8c0e179455dcf5b8a5fd4b3e40c42d31f57db2b3eb7",
+        "compiled/conformance_rays.json": "4a7bba3db6e2ecbbb01fba1e8c4e915a442fe7bf15fde38ff022cd8778ea584b",
+        "compiled/manifest.json": "9d1d9b263a807405350babe4c14695d90ded7bf5a8d6c038e8693ff517fa4f30",
+        "compiled/scene_extreme.glb": "cabb82c5f3904f7c5010dac5e4cb0eb20be439bff95f73fc41bfa7fca94e9b43",
+        "compiled/scene_high.glb": "a00760145b99ba0ffb556c937606e362dd1cd259cc67c0142a4861943e9a05f6",
+        "compiled/scene_low.glb": "16e99b60d5a3cac7b19bf00607fe3ab4b39881d3a055cf40e1ac97206f55fe23",
+        "compiled/scene_mid.glb": "b1ee63bae23c17b588cc4ae60e863ea3b5872660e821dd54d5ea0308652ba62a",
+        "compiled/terrain_effective_near.f32": "bb633ad1c8069c9773f62b3f66284a646fcfeeaa45803f09a5bd5f3a27f88e00",
+        "compiled/terrain_effective_near.json": "646330726366d1400f404110601bae348db1d52b898fac38f657a37dfd32931a",
+        "compiled/terrain_far.f32": "9b7cd47d7a32b365f5b2c2c11ed8bfe49fa7eb83f2fc9a5890f02f5d17e5dfb5",
+        "compiled/terrain_far.json": "ab1f0579a6822be6d06b58e77eb0576da66f0453988115f740535805f683c6a9",
+        "schema/compiled-artifacts.schema.json": "93bc55a9a4e5bcc317e3105282859f41f37028f76fe3ebf9f7c1d78670a12175",
+        "schema/dam-dataset.schema.json": "4f9166252fb5f9d51801218518279243bede0f848966fd3d5a714fc126cf5dce",
+        "schema/zhouning.profile.schema.json": "8d243489c78e67593aaad6678421961837e27499a215acdad447ef72b435dfbe"
+      }
+    },
+    "zhouning-lower-reservoir-dam@0.6.2": {
+      "base_url": "./zhouning-lower-reservoir-dam/0.6.2/",
+      "spec": "dam_spec.json",
+      "schema": "dam_spec.schema.json",
+      "deployment_candidates": "deployment_candidates.json",
+      "detector_models": "detector_models.json",
+      "site_conditions": "site_conditions.json",
+      "compiled_manifest": "compiled/manifest.json",
+      "terrain_near": {
+        "header": "compiled/terrain_effective_near.json",
+        "data": "compiled/terrain_effective_near.f32"
+      },
+      "terrain_far": {
+        "header": "compiled/terrain_far.json",
+        "data": "compiled/terrain_far.f32"
+      },
+      "conformance": {
+        "points": "compiled/conformance_points.json",
+        "rays": "compiled/conformance_rays.json"
+      }
+    },
+    "zhouning-lower-reservoir-dam@0.6.1": {
+      "base_url": "./zhouning-lower-reservoir-dam/0.6.1/",
+      "spec": "dam_spec.json",
+      "schema": "dam_spec.schema.json",
+      "deployment_candidates": "deployment_candidates.json",
+      "detector_models": "detector_models.json",
+      "site_conditions": "site_conditions.json",
+      "compiled_manifest": "compiled/manifest.json",
+      "terrain_near": {
+        "header": "compiled/terrain_effective_near.json",
+        "data": "compiled/terrain_effective_near.f32"
+      },
+      "terrain_far": {
+        "header": "compiled/terrain_far.json",
+        "data": "compiled/terrain_far.f32"
+      },
+      "conformance": {
+        "points": "compiled/conformance_points.json",
+        "rays": "compiled/conformance_rays.json"
+      }
+    }
+  }
+}

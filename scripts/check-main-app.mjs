@@ -1,6 +1,7 @@
 // Optional HTTP browser acceptance. No application runtime dependency on Playwright.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { resolveStaticPath } from './static-paths.mjs';
 import { readFile } from 'node:fs/promises';
 import { once } from 'node:events';
 import { extname } from 'node:path';
@@ -9,9 +10,12 @@ import { replayPatternComparison } from '../dist/modules/pattern-comparison.js';
 
 const options=new Map();
 for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i],value=process.argv[i+1];if(!['--playwright','--chromium'].includes(key)||!value)throw Error('Usage: node scripts/check-main-app.mjs [--playwright /path/index.mjs] [--chromium /path/browser]');options.set(key,value);}
+// Environment fallback lets `npm run test:browser` locate an existing Playwright/Chromium.
+if(!options.has('--playwright')&&process.env.PLAYWRIGHT_MODULE)options.set('--playwright',process.env.PLAYWRIGHT_MODULE);
+if(!options.has('--chromium')&&process.env.CHROMIUM_PATH)options.set('--chromium',process.env.CHROMIUM_PATH);
 const {chromium}=await import(options.has('--playwright')?pathToFileURL(options.get('--playwright')).href:'playwright');
 const root=new URL('../dist/',import.meta.url),mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json'};
-const server=createServer(async(request,response)=>{try{const path=new URL(request.url,'http://localhost').pathname,file=new URL('.'+(path==='/'?'/index.html':path),root);if(!file.href.startsWith(root.href)){response.writeHead(403).end();return;}response.setHeader('Content-Type',mime[extname(file.pathname)]||'application/octet-stream');response.end(await readFile(file));}catch{response.writeHead(404).end();}});
+const server=createServer(async(request,response)=>{try{const path=new URL(request.url,'http://localhost').pathname,file=resolveStaticPath(path);if(!file){response.writeHead(403).end();return;}response.setHeader('Content-Type',mime[extname(file.pathname)]||'application/octet-stream');response.end(await readFile(file));}catch{response.writeHead(404).end();}});
 server.listen(0,'127.0.0.1');await once(server,'listening');let browser;
 try{
  browser=await chromium.launch({headless:true,...(options.has('--chromium')?{executablePath:options.get('--chromium')} : {}),args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
@@ -20,7 +24,7 @@ try{
  const invoke=selector=>page.locator(selector).evaluate(e=>e.click());
  const setInput=(selector,value,event='input')=>page.locator(selector).evaluate((e,{value,event})=>{e.value=value;e.dispatchEvent(new Event(event,{bubbles:true}));},{value,event});
  async function exported(){const pending=page.waitForEvent('download');await invoke('#mainExportComparison');const download=await pending;return replayPatternComparison(JSON.parse(await readFile(await download.path(),'utf8')));}
- await page.goto('http://127.0.0.1:'+server.address().port);await ready();
+ await page.goto('http://127.0.0.1:'+server.address().port+'/?dataset='+encodeURIComponent('zhouning-lower-reservoir-dam@0.6.2')+'&backend=legacy');await ready();
  assert.match(await page.locator('#projectionReadout').innerText(),/893,771/);
  await page.locator('#mainPatternControls').evaluate(e=>e.open=true);
  await invoke('#mainCaptureComparison');

@@ -1,6 +1,6 @@
 // Pure segment projection. Liang–Barsky/Cyrus–Beck parametric half-space
 // clipping before perspective division, plus analytic segment/sphere range
-// intersection. References and numerical scope: docs/GEOMETRY_REFERENCES.md#candidate-qualification-and-projection.
+// intersection. References and numerical scope: docs/specs/GEOMETRY_REFERENCE_CONTRACT.md#candidate-qualification-and-projection.
 import { detectorBasis } from './material-projection.js';
 export const STRUCTURAL_PROJECTION_VERSION = '1.0.0';
 const dot = (a, b) => a.reduce((sum, value, i) => sum + value * b[i], 0);

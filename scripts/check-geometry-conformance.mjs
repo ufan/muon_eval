@@ -6,7 +6,7 @@ import { verifySha256 } from '../dist/modules/dataset-validation.js';
 import { sha256 } from './dataset-fixture.mjs';
 import { loadCompiledMeshRuntime } from '../dist/modules/compiled-mesh-runtime.js';
 
-const registry = JSON.parse(await readFile(new URL('../dist/data/datasets.json', import.meta.url), 'utf8'));
+const registry = JSON.parse(await readFile(new URL('../datasets/registry.json', import.meta.url), 'utf8'));
 const args = process.argv.slice(2);
 const options = {};
 for (let i = 0; i < args.length; i += 2) {
@@ -18,7 +18,7 @@ if (options['--backend'] && !['analytic', 'compiled'].includes(options['--backen
 const datasetId = options['--dataset'] || registry.default_dataset;
 const entry = registry.datasets[datasetId];
 if (!entry) throw new Error(`Dataset ${datasetId} is not registered`);
-const base = new URL(`../dist/data/${entry.base_url.replace(/^\.\//, '')}`, import.meta.url);
+const base = new URL(`../datasets/${entry.base_url.replace(/^\.\//, '')}`, import.meta.url);
 const readJson = async relative => JSON.parse(await readFile(new URL(relative, base), 'utf8'));
 const [spec, header, farHeader, reference, rayReference] = await Promise.all([
   readJson(entry.spec),
