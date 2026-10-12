@@ -113,7 +113,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 | Item | Ref | Commit |
 |---|---|---|
-| History-independent flux integral (#1), model `legacy-quick-response@2.0.0` | FR-C1 | this branch |
+| History-independent flux integral (#1), model `legacy-quick-response@2.0.0` | FR-C1 | `5de4693` |
 | Datasets moved to top-level `datasets/` with sync script | ADR-018 | `dc48ed3` |
 | Compiled backend made the default | OQ-3, ADR-011 | `eba2f6f` |
 | Stale v0.1.0 `dam_spec` files removed | FR-Q6 | `03436ee` |
