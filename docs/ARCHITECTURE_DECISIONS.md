@@ -419,7 +419,8 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - *No search.* Coverage is a per-point test, not a search over rays: a surface point `p` is covered by a station when its direction from the detector `d = p − origin` points forward (`d·forward > 0`), its slopes lie inside the device range (`|sx| ≤ maxSlopeX`, `|sy| ≤ maxSlopeY`), it lies within the ray length, and (for physical coverage) the direction is above the horizon. This is the same set of points that the detector's rays would cross, evaluated backwards from the point, so the cost is per screen pixel and independent of the number of rays.
 - *Which surfaces.* By default only the subject's own surfaces (for the dam: dam body and its structures), not terrain, water or air; a toggle adds terrain and water, since rays do continue into the hillside. Internal surfaces (galleries, cavities) are tinted when internal display is on. The dataset will declare which layers count as "subject" (FR-K3); until then the dam layer is used.
 - *What the eye sees.* Normal depth-tested rendering shows the footprint on the surfaces facing the camera, like a spotlight cast from the detector onto the subject. Turning the camera around shows the footprint on the far side too, because rays cross the subject; that is intended (through-material coverage), and the legend says so.
-- *Visual encoding.* (1) a light tint over the full field of view; (2) a stronger tint over the core field of view (half the maximum slope per axis, the existing `coreFov` definition), where acceptance is concentrated; (3) crisp outlines of both boundaries with constant screen width; (4) the detector marker and the pyramid edges in the same station colour, ending where they first enter the subject; (5) the part below the horizon shown hatched or desaturated as "no muon flux". In physical mode a log brightness ramp of counts per steradian replaces the flat tints; outlines stay.
+- *Defaults (owner, 2026-10-12):* full field of view only, on subject surfaces only. The core field of view and terrain/water are optional toggles.
+- *Visual encoding.* (1) a tint over the full field of view; (2) optionally, a stronger tint over the core field of view (half the maximum slope per axis, the existing `coreFov` definition), off by default; (3) crisp outlines of the shown boundaries with constant screen width; (4) the detector marker and the pyramid edges in the same station colour, ending where they first enter the subject; (5) the part below the horizon shown hatched or desaturated as "no muon flux". In physical mode a log brightness ramp of counts per steradian replaces the flat tints; outlines stay.
 - *Interaction.* Hovering a tinted point shows which stations cover it, its slopes in each detector and (physical mode) the expected counts per steradian; clicking jumps to the matching projection pixel. This is the reverse of the existing pixel → ray link, so 3D view and projection image can be read together.
 - *Multi-station.* Each station keeps its colour for tint and outline; overlaps show blended colours, with an optional "number of covering stations" mode.
 
@@ -428,7 +429,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 ## Open questions
 
 - **OQ-2 UI framework choice** (Preact vs Svelte), decided when ADR-004 starts.
-- **OQ-11 Physical-coverage brightness unit.** Expected counts per steradian (recommended: matches the projection image and is binning-independent), or counts per unit surface area (also falls off with distance, showing how densely an area is probed)? Both can be offered later.
+- **OQ-11 Physical-coverage brightness unit.** Expected counts per steradian (recommended) or counts per square metre perpendicular to the ray (`= counts per steradian / r²`)? Per steradian is the same for every point along a direction, matches the projection image and is binning-independent; per area falls off as 1/r² (about 25× between 50 m and 250 m) and answers a different question, the density of muons through a fixed-size patch, which anomaly sensitivity (ADR-025) evaluates properly. Recommendation: per steradian by default; per-area as an optional view later.
 - **OQ-9 Desktop distribution need.** Is an installable offline web app (ADR-024 stage 1) enough, or is a downloadable installer required? For which operating systems, and must it work fully offline?
 
 ## Resolved questions
@@ -446,6 +447,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-12: ADR-026 defaults set (full field of view, subject surfaces); OQ-11 explanation added.
 - 2026-10-12: ADR-026 clarified: per-point coverage test, highlighted surfaces, visual encoding and interaction.
 - 2026-10-12: ADR-026 coverage highlight; OQ-11.
 - 2026-10-12: ADR-025 accepted; OQ-10 resolved (placement before scanning).
