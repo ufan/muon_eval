@@ -53,6 +53,16 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | 16 | Per-station projections side by side | FR-M4 | Reuses `projection-canvas-view.js` | Todo |
 | 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | Short animation export later | Todo |
 
+## Proposed — Deficiency hypotheses (ADR-025; placement pending OQ-10)
+
+| # | Item | Ref | Notes | Status |
+|---|---|---|---|---|
+| D1 | Deficiency schema as part of the plan format | FR-H1, FR-H11 | Design together with #11 | Proposed |
+| D2 | Generic regions, host clipping and density models (pure modules, test first) | FR-H2…H4 | Analytic fixtures at L2 | Proposed |
+| D3 | Perturbative evaluation over stored traces; sensitivity outputs | FR-H5, FR-H6 | Needs #1 (FR-C1) | Proposed |
+| D4 | Deficiency in 3D view and projection footprint | FR-H9 | Same definition as physics | Proposed |
+| D5 | Sweeps and systematics | FR-H7, FR-H8 | Feeds scans (P4) and reconstruction | Proposed |
+
 ## P4 — Scan performance and features (Phase 3)
 
 | # | Item | Ref | Notes | Status |
@@ -110,6 +120,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 
 ## Change log
 
+- 2026-10-12: Proposed deficiency items D1–D5 pending OQ-10.
 - 2026-10-10: Desktop distribution items under Later.
 - 2026-10-10: #5 done.
 - 2026-10-10: #5 extended to layered scripts; standing rule ADR-023.

@@ -52,6 +52,11 @@ data contract + coordinate adapters → pure geometry query interfaces
 **Depends on:** plan schema with selected deployment, async cancellable assessment port (Phase 1). Built in the current page; does not wait for the new UI stack (ADR-004) or scan workers.
 **Exit:** overview and detail modes over one plan; per-station results cached; demonstration layout with camera presets and screenshot export.
 
+## Proposed: deficiency hypotheses and sensitivity (ADR-025, placement pending OQ-10)
+
+**Goal:** evaluate whether a plan would detect a specified structural deficiency, with quantified sensitivity and systematics.
+**Covers:** FR-H1…H9, later H10. Recommended placement: right after Phase 1 (with or just after Phase 2), before scanning, because scan ranking and reconstruction quality are defined by sensitivity to deficiencies. Prerequisite: FR-C1.
+
 ## Phase 3 — Workstation-scale scanning
 
 **Goal:** large station/pose scans with constraints, ranking and robustness on one workstation.
@@ -119,6 +124,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-12: Proposed deficiency-hypothesis phase (ADR-025), placement pending OQ-10.
 - 2026-10-12: Evidence-driven generalisation noted; G2/G3 start with a kind profile.
 - 2026-10-10: Desktop distribution added as a conditional track.
 - 2026-10-10: "Where we are" updated (compiled default, `datasets/`, English docs); default-switch item replaced by FR-B1.

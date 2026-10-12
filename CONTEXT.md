@@ -49,11 +49,13 @@ Help users explore, filter and compare muography detector deployment plans for a
 | Pose | The detector's orientation at a station | Azimuth, elevation, local basis |
 | Assessment | One station evaluated in a scene: the scene combined with a detector configuration, a station and a pose | Calculation settings; produces a projection result |
 | Deployment plan | A scene combined with one or more stations, each with a pose and a detector configuration; distinguishes candidate stations from the selected deployment | Scene (release + environment), stations, poses, devices, calculation settings |
+| Deficiency (hypothesis) | A structural problem the deployment is meant to investigate, modelled as a parameterised change of the subject's physical state (proposed, ADR-025) | Region, density model (void, loosening, densification, saturation, replacement), host materials, size/position/density/development parameters |
+| Sensitivity | How well a plan would detect a deficiency: change in counts and its significance against statistical and systematic uncertainty | ΔN, significance, exposure to reach a threshold, minimum detectable size/contrast |
 | Scan | Batch calculation and comparison over a constrained parameter space | Ranges, steps, constraints, metrics, ranking, robustness |
 
 Note: "scenario" means a frozen environment variant, never the subject itself; the subject is a dataset of some kind.
 
-Composition: **scene** = dataset release + environment state; **assessment** = scene + detector configuration + station + pose; **deployment plan** = scene + stations (each with pose and detector configuration). Display options belong to the **view state**, which is never part of any of these.
+Composition: **scene** = dataset release + environment state (+ active deficiency hypotheses, proposed ADR-025); **assessment** = scene + detector configuration + station + pose; **deployment plan** = scene + stations (each with pose and detector configuration). Display options belong to the **view state**, which is never part of any of these.
 
 How these objects relate, their identities, invariants and lifecycles are modelled in [`docs/specs/DOMAIN_MODEL.md`](docs/specs/DOMAIN_MODEL.md); this file keeps the glossary. Object identifiers, required fields and file schemas: `TBD` (FR-P1).
 
