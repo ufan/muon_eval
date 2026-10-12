@@ -1,6 +1,6 @@
 # Muography Deployment Evaluation
 
-A static Three.js web application for exploring muography detector deployments: candidate stations, poses, material paths and expected projections for an imaging subject. The bundled Zhouning lower-reservoir dam is the first dataset and validation case; the platform is designed to support other dams and other subject kinds (blast furnaces, tunnels, …) gradually.
+A static web application (all calculation runs in the browser; no server-side computation) for exploring muography detector deployments. Geometry and physics are framework-free JavaScript; Three.js is used only for 3D display. It covers candidate stations, poses, material paths and expected projections for an imaging subject. The bundled Zhouning lower-reservoir dam is the first dataset and validation case; the platform is designed to support other dams and other subject kinds (blast furnaces, tunnels, …) gradually.
 
 ## Quick start
 

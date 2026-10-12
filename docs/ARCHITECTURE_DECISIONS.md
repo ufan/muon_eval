@@ -36,6 +36,7 @@ Last updated: 2026-10-10
 | 024 | Desktop distribution as a thin wrapper over the unchanged web app | Proposed |
 | 025 | Anomaly hypotheses in the physical scene; perturbative sensitivity evaluation | Accepted |
 | 026 | Coverage highlight by GPU projective texturing of acceptance and count maps | Proposed |
+| 027 | Three.js for display only; geometry and physics in own framework-free modules | Accepted (retrospective) |
 
 ---
 
@@ -44,6 +45,16 @@ Last updated: 2026-10-10
 **Status:** Accepted
 
 **Context.** All computation runs in one browser. The app is served as a static folder (`dist/`) through local HTTP, Docker/nginx or static hosting. `AGENTS.md` requires offline operation without runtime CDN or external services.
+
+"Static" describes the server, not the app: the server only delivers files, while the application is fully interactive and computes everything in the browser. Rationale (recorded retrospectively 2026-10-12; the original choice predates this log):
+
+- *Where it is used.* Field sites, plant networks and customer intranets are often offline or restricted; a static bundle runs from any web server, a laptop or (ADR-024) a desktop wrapper without installing a runtime.
+- *Interactivity.* Pose changes re-run ray tracing and response on the user's machine with no network round trip; a 65×65 projection takes ~0.4 s locally (ADR-005).
+- *Operations and cost.* No application server, database, sessions or scaling to run, patch and secure; hosting is file serving. Each user brings their own compute.
+- *Data handling.* Datasets and plans stay in the user's browser unless exported; there is no server-side store to protect.
+- *Reproducibility.* A deployment is a fixed set of versioned files plus checksummed dataset releases.
+
+Costs accepted: no shared plans or central results, compute bounded by one machine, the whole dataset is downloaded, and nothing can be kept secret from the user. Those are exactly the triggers below.
 
 **Decision.** Do not build a server or a React-plus-backend stack yet. Add a backend only when one of these triggers is actually observed:
 
@@ -435,6 +446,30 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 **GPU cost on integrated graphics (2026-10-12).** The scene is small: 33 components with ~131k triangles (~65k vertices) plus two terrain grids (281×287 and 201×201, ~240k triangles), drawn at device pixel ratio ≤ 2 with antialiasing and on-demand rendering (no frames while idle). Per fragment and station the coverage test is a few dot products, two divisions, range checks and one 65×65 texture lookup (~30 operations), small next to the existing physically based lighting of `MeshStandardMaterial`. Estimate at 1920×1080, overdraw ~3 under transparency and 8 stations: of the order of 5–10 GFLOP per frame, i.e. ~0.3–0.6 TFLOPS for 60 fps. Intel Iris Xe (11th gen Core i5 and later, ~1.5–2 TFLOPS) has ample headroom; older UHD 620 (8th gen, ~0.4 TFLOPS) is expected to stay interactive (≥30 fps) with a few stations, with 60 fps not guaranteed at high pixel ratio. This is an estimate, not a measurement (the development container only has a software renderer), so FR-N5 requires measuring on reference hardware. Safeguards: on-demand rendering; pixel ratio capped lower (e.g. 1.25) during camera interaction; a cheaper subject material (Lambert) and outline-off quality setting when frame time exceeds budget; stations beyond the per-pass limit drawn in an extra pass.
 
+## ADR-027 Three.js for display only; geometry and physics in own framework-free modules
+
+**Status:** Accepted, recorded retrospectively (2026-10-12)
+
+**Context.** The README called the project "a static Three.js web application", which suggests Three.js does the geometry work. It does not: only the view modules (`compiled-geometry-view`, `compiled-scene-view`, `legacy-scene-view`, `projection-canvas-view`, `geometry-preview`) import it. GLB decoding, closure/winding validation, the BVH, ray–mesh intervals, material classification, DDA tracing, response and projection are the project's own modules with no Three.js dependency (ADR-002; enforced by `tests/integration/main-architecture.test.mjs`). Heavy geometry construction (CSG of the parametric spec, terrain stitching) happens offline in the dataset compiler; Manifold and VTK are development-time references only (ADR-009, ADR-014).
+
+**Decision and rationale.**
+- *Display: Three.js (vendored, pinned, MIT).* Mature WebGL2 renderer with a very large user base, native glTF/GLB support matching the runtime package format (ADR-017), standard materials plus custom shaders (needed for the coverage highlight, ADR-026), orbit controls, and a modest size that can be vendored offline without a build step. It is a library, not an engine, so it does not impose an application structure.
+- *Geometry and physics: own modules.* Scientific results must be reproducible, testable in Node without a browser, independent of renderer versions, and use the semantics we need (closed-mesh validation, double precision where required, winning-material intervals, entity lineage). Renderer objects never enter results, so the display library can change without touching physics.
+
+**Alternatives considered.**
+
+| Option | Role it could play | Why not (now) |
+|---|---|---|
+| Babylon.js | Display | Capable full engine but larger and more opinionated; no feature we need that Three.js lacks |
+| Raw WebGL / WebGPU | Display | Far more code for the same result; WebGPU can be adopted later through Three.js |
+| CesiumJS | Display of georeferenced, kilometre-scale terrain | Globe/ECEF-oriented and heavy; worth re-evaluating if large georeferenced terrain becomes central (tunnels, FR-K7) |
+| VTK.js | Scientific visualisation, volume rendering | Strong for volumes; a candidate for reconstruction display (FR-M9) alongside Three.js, not as the main app renderer |
+| Unity / Unreal (WebGL export) | Display | Heavy runtime and toolchain, not a geometry truth source (ADR-010) |
+| three-mesh-bvh | Ray queries | Tied to Three.js geometry objects; we need renderer-independent buffers, closure checks, interval semantics and Node tests |
+| opencascade.js (OCCT), Manifold in the browser | CAD/CSG at runtime | Large WebAssembly payloads; CSG belongs to the offline compiler (ADR-009) |
+
+**Revisit when.** A display need that Three.js serves poorly appears (large georeferenced terrain, heavy volume rendering), or WebGPU compute becomes worthwhile for batch rays (ADR-005, ADR-010).
+
 ---
 
 ## Open questions
@@ -458,6 +493,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-12: ADR-001 rationale for "static" recorded; ADR-027 Three.js for display only (retrospective); README wording corrected.
 - 2026-10-12: ADR-026 GPU cost estimate for integrated graphics and safeguards.
 - 2026-10-12: OQ-11 resolved (per steradian); ADR-026 transparency handling: tint mixed into surface materials, front-facing shell plus internal features, minimum opacity, dashed hidden edges.
 - 2026-10-12: ADR-026 defaults set (full field of view, subject surfaces); OQ-11 explanation added.
