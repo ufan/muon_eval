@@ -25,7 +25,7 @@ try{
  const setInput=(selector,value,event='input')=>page.locator(selector).evaluate((e,{value,event})=>{e.value=value;e.dispatchEvent(new Event(event,{bubbles:true}));},{value,event});
  async function exported(){const pending=page.waitForEvent('download');await invoke('#mainExportComparison');const download=await pending;return replayPatternComparison(JSON.parse(await readFile(await download.path(),'utf8')));}
  await page.goto('http://127.0.0.1:'+server.address().port+'/?dataset='+encodeURIComponent('zhouning-lower-reservoir-dam@0.6.2')+'&backend=legacy');await ready();
- assert.match(await page.locator('#projectionReadout').innerText(),/896,953/);
+ assert.match(await page.locator('#projectionReadout').innerText(),/933,593/);
  await page.locator('#mainPatternControls').evaluate(e=>e.open=true);
  await invoke('#mainCaptureComparison');
  // Rendering/selection must not alter the captured scientific result.

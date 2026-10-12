@@ -1,10 +1,10 @@
 # Calculation model
 
-This spec defines the calculation chain, formulas and parameters by which the current fast-evaluation model (`legacy-quick-response@2.0.0` and its compiled adapter) turns subject data, detector position and pose into rays, projections and numerical metrics. It is a normative description the code must match, not a promise of full muon transport or detector calibration.
+This spec defines the calculation chain, formulas and parameters by which the current fast-evaluation model (`legacy-quick-response@3.0.0` and its compiled adapter) turns subject data, detector position and pose into rays, projections and numerical metrics. It is a normative description the code must match, not a promise of full muon transport or detector calibration.
 
 - Any change to formulas, default parameters or numerical behaviour is a model revision: increase the model version, update the frozen baseline tests and label it in the commit message.
 - The meaning of results, their limits, parameter sensitivity and usage advice are in the [result interpretation guide](../guides/RESULT_INTERPRETATION.md).
-- Known open corrections to this spec (ray-length recording, the acceptance cos θ factor) are FR-C2 and FR-C3 in the [feature requirements](../FEATURE_REQUIREMENTS.md).
+- Resolved corrections are recorded as FR-C1…C3 in the [feature requirements](../FEATURE_REQUIREMENTS.md).
 - Section numbers follow the former `CALCULATION_MODELS.md` so existing references (§2–§13) stay valid.
 - The bundled Zhouning dam is the worked example; dam-specific items (water levels, concrete, dam targets) are the dam kind's instance of the generic quantities.
 
@@ -38,7 +38,7 @@ projections, structure outlines, significance, flux cloud and side-panel metrics
 
 The legacy calculation entry is `dist/modules/main-assessment.js`, which takes station, device, response and environment snapshots and an injected geometry interface; the compiled entry is `compiled-main-assessment.js` over `compiled-assessment.js`. Direction arithmetic is in `detector-pose.js`, rays come from the bound geometry context, and legacy target interpretation is in `legacy-target-interpretation.js`. `dist/app.js` only assembles dependencies.
 
-`dist/modules/muon-response.js` holds the spectrum, integral, energy-loss and significance formulas; `detector-projection.js` holds native strip-difference binning, pixel response, batched projection and Gaussian display smoothing. `assessment-controller.js` manages cancellation and publication without reading the DOM or importing a geometry backend. The quick preview and final result share one input/environment snapshot; `main-page.js` only receives results to update the DOM. The model identifier is `legacy-quick-response@2.0.0` (2.0.0 removed the quantised flux cache of 1.0.0, FR-C1); module boundaries do not change the physics model.
+`dist/modules/muon-response.js` holds the spectrum, integral, energy-loss and significance formulas; `detector-projection.js` holds native strip-difference binning, pixel response, batched projection and Gaussian display smoothing. `assessment-controller.js` manages cancellation and publication without reading the DOM or importing a geometry backend. The quick preview and final result share one input/environment snapshot; `main-page.js` only receives results to update the DOM. The model identifier is `legacy-quick-response@3.0.0` (2.0.0 removed the quantised flux cache of 1.0.0, FR-C1; 3.0.0 added the projected-area factor and removed the edge factor, FR-C3); module boundaries do not change the physics model.
 
 Existing approximations are kept: counts use a fixed three-layer efficiency `ε³`; both axes are binned with `stripsX` (the current UI has symmetric readout); and the integrated flux is evaluated exactly for every input, so results never depend on evaluation history (FR-C1; 1.0.0 returned the first value of a quantised cache bucket, up to ~5% per pixel near the horizon). The fixed `10⁵ GeV` integration upper limit and the old behaviour at extreme energies are unchanged and need a separate model revision rather than a silent change during refactoring. Tests with frozen old formulas verify exact numerical agreement for both angular models, 25/65 grids, per-pixel counts/transmission and display smoothing.
 
@@ -112,7 +112,7 @@ Each projection direction is built from the central direction, the local right d
 d(sx, sy) = normalize(d0 + sx · right + sy · up)
 ```
 
-`sx` and `sy` are dimensionless slopes, not angles; they are the local rightward and upward offsets. The corresponding off-axis angle is about `atan(sqrt(sx² + sy²))`.
+`sx` and `sy` are dimensionless slopes, not angles; they are the local rightward and upward offsets. Because `d0`, `right` and `up` are orthonormal, the off-axis angle from the detector normal is exactly `θ = atan(sqrt(sx² + sy²))`.
 
 Total baseline and native slope step:
 
@@ -280,13 +280,12 @@ The central direction can be produced by the most strip pairs, edge directions b
 
 ### 10.2 Pixel solid angle
 
-The current approximation is:
-
 ```text
-dΩ = nativeSlopeStep² × Wx × Wy / (1 + sx² + sy²)^(3/2)
+cos θ = 1 / sqrt(1 + sx² + sy²)
+dΩ    = nativeSlopeStep² × Wx × Wy × cos³θ
 ```
 
-where `Wx` and `Wy` are the sums of the native strip-difference weights aggregated into the pixel. The denominator is the Jacobian from the local slope plane to solid angle. Whether a further projected-area factor `cos θ` belongs here is open (FR-C3).
+where `Wx` and `Wy` are the sums of the native strip-difference weights aggregated into the pixel and θ is the angle from the detector normal (the pose axis; `sx`, `sy` are tangents in the orthonormal detector basis, §4.3). `cos³θ` is the Jacobian from the local slope plane to solid angle.
 
 ### 10.3 Response and counts
 
@@ -296,22 +295,31 @@ The base response factor is:
 response = layerEfficiency³ × deadLiveFraction
 ```
 
-Expected counts per pixel:
+Expected counts per pixel (`legacy-quick-response@3.0.0`, FR-C3):
 
 ```text
-Npixel = Φthrough × activeArea × exposureSeconds × dΩ
-         × response × edgeFactor
+Npixel = Φthrough × activeArea × cos θ × exposureSeconds × dΩ × response
 ```
 
-The current edge correction is:
+`Φthrough` is an intensity per unit area perpendicular to the ray (cm⁻² s⁻¹ sr⁻¹), so the planar detector presents `activeArea × cos θ` to a ray at angle θ. For one native strip-difference pair `(m, n)` this is exactly the two-plane geometric factor (étendue)
 
 ```text
-edgeFactor = 0.85 + 0.15 sqrt(acceptanceWeight / (stripsX × stripsY))
+G(m, n) = (N − |m|)(N − |n|) p² × (p / D)² × cos⁴θ      p = strip pitch, D = baseline
 ```
 
-It lowers the edge of the field of view further. It is an empirical approximation, not an efficiency map from detailed trigger/reconstruction simulation.
+because `activeArea × w(m) × w(n) = (N − |m|)(N − |n|) p²` is the area of the two planes that is aligned along that direction. This is the radiometric cos⁴ law and the standard telescope acceptance in muography (e.g. Lesparre et al. 2010, *Geophys. J. Int.* 183, 1348: detection surface × angular aperture).
 
-The absolute expected count depends on the surface flux normalization, unit consistency, the device's effective area, independent three-layer efficiencies, dead time and the edge model above. Not included:
+Verification (2026-10-12):
+
+- An independent Monte Carlo of an isotropic field crossing a 32 × 32 two-plane telescope (cosine-law crossings of plane 1, pixel-pair counting on plane 2, `p/D = 1/8`, 3 × 10⁸ rays) agrees with `G(m, n)` within statistics from 0° to 74° (ratios 0.973–1.011, each within 2σ); the formula without `cos θ` (models ≤ 2.0.0) is high by exactly `1/cos θ`. The only systematic residual is the bin-centre evaluation, −1.1% at θ = 0 for `p/D = 1/8`, scaling as `(p/D)²` (≈ 6 × 10⁻⁵ for the default device).
+- `integratedSurfaceFlux(1, 1)` gives a vertical intensity of 60 m⁻² s⁻¹ sr⁻¹ above 1 GeV and 0.6 cm⁻² min⁻¹ through a horizontal surface (∫ I cos θ dΩ), consistent with the PDG values (~70 m⁻² s⁻¹ sr⁻¹; ~1 cm⁻² min⁻¹ for all energies), confirming that the intensity is per perpendicular area.
+- L1 tests (`tests/unit/detector-projection.test.mjs`) assert `G(m, n)` exactly on the native grid, the open-sky total as the sum of `G`, and that the count factor does not depend on the display grid size.
+
+Removed in 3.0.0: the former `edgeFactor = 0.85 + 0.15 sqrt(acceptanceWeight / (stripsX × stripsY))`. It was introduced without a source as an extra roll-off on top of the overlap fraction that was already in the formula (double counting the geometry), and after the change to native strip binning its argument became a sum of native weights divided by `N²` rather than an overlap fraction. It then acted as an undeclared global efficiency of 0.850–0.862 that also varied with the display grid size (25² vs 65² differ by 0.8% at the centre). A tracking or reconstruction efficiency, if needed, must be an explicit, labelled response parameter (FR-X3).
+
+Effect of 3.0.0 relative to 2.0.0 for the default device (256 strips, 1.6 mm pitch, 0.30 m baseline): counts × 1.17 at the centre of the field, × 0.69 at the edge of one axis (θ ≈ 54°), × 0.54 at the corners (θ ≈ 65°); the whole-field open-sky total for an isotropic field changes by about +0.5% (the removed ≈ 0.855 factor and the added `cos θ` nearly cancel in the sum, not per pixel). Transmission is unchanged.
+
+The absolute expected count depends on the surface flux normalization, unit consistency, the device's effective area, independent three-layer efficiencies and dead time. Not included:
 
 - energy-dependent detection efficiency;
 - direction-dependent trigger and reconstruction efficiency calibration;

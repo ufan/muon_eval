@@ -14,7 +14,7 @@ Last updated: 2026-10-12
 |---|---|---|---|---|
 | 1 | Make flux integration history-independent | FR-C1 | Physics-model revision `legacy-quick-response@2.0.0`; frozen baseline tests and `specs/CALCULATION_MODEL.md` §2/§9 updated | Done |
 | 2 | Record the legacy 500 m ray cutoff in exports; fix limitation text | FR-C2, FR-C5 | `legacy-pattern-adapter.js`, `legacy-geometry-adapter.js`; legacy compatibility path only since OQ-3 | Done |
-| 3 | Decide the cos θ projected-area factor | FR-C3 | Needs owner decision; then fix as model revision or document | Blocked (decision) |
+| 3 | Projected-area cos θ factor; remove the edge factor | FR-C3 | Model revision `legacy-quick-response@3.0.0`; evidence in `specs/CALCULATION_MODEL.md` §10.3 | Done |
 | 4 | Remove dead work in `quickMetrics()` | FR-C4 | Keep only `center` and `dirDoc`; legacy path only | Todo |
 
 ## Standing rules
@@ -113,6 +113,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 | Item | Ref | Commit |
 |---|---|---|
+| Projected-area factor added, edge factor removed (#3), model `legacy-quick-response@3.0.0` | FR-C3 | this branch |
 | Legacy 500 m ray cutoff recorded in exports (#2) | FR-C2 | `cbbc1b0` |
 | History-independent flux integral (#1), model `legacy-quick-response@2.0.0` | FR-C1 | `5de4693` |
 | Datasets moved to top-level `datasets/` with sync script | ADR-018 | `dc48ed3` |
@@ -125,6 +126,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-12: #3 done (owner decision: both changes as one model revision).
 - 2026-10-12: #2 done.
 - 2026-10-12: #1 done.
 - 2026-10-12: #15a includes FR-N5 measurement.

@@ -80,7 +80,7 @@ try {
   const assessmentExport = JSON.parse(await readFile(await assessmentDownload.path(), 'utf8'));
   assert.equal(assessmentExport.kind, 'compiled-detector-assessment');
   assert.equal(assessmentExport.scenarioId, 'low'); assert.equal(assessmentExport.pixels.length, 625);
-  assert.equal(assessmentExport.modelVersion, 'legacy-quick-response@2.0.0');
+  assert.equal(assessmentExport.modelVersion, 'legacy-quick-response@3.0.0');
   assert.equal(assessmentExport.semanticAudit.targets.length, 22);
   assert.deepEqual(assessmentExport.semanticAudit.unresolvedComponents, ['concrete', 'rock', 'steel_gates']);
   assert.equal(await page.locator('#column').textContent(), `Column density: ${assessmentExport.pixels[312].mwe.toFixed(2)} m.w.e.`);

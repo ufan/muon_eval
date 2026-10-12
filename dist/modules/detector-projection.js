@@ -26,9 +26,12 @@ export function evaluateProjectionPixel({ bx, by, dir, q, device, response, flux
   // Fixed three-layer coincidence is retained, even if device.layers differs.
   const response0 = response.layerEfficiency ** 3 * response.deadLiveFraction;
   const open = flux(dir.z, 1), through = flux(dir.z, minimumMuonEnergy(q.mwe));
-  const dOmega = device.nativeSlopeStep ** 2 * acceptanceWeight / (1 + sx * sx + sy * sy) ** 1.5;
-  const edge = .85 + .15 * Math.sqrt(Math.max(0, acceptanceWeight / (device.stripsX * device.stripsY)));
-  const factor = areaCm2 * seconds * dOmega * response0 * edge;
+  // Two-plane geometric factor (FR-C3): area x overlap weight is the aligned
+  // plane area, cosTheta projects it onto the ray (intensity is per area
+  // perpendicular to the ray), and a slope cell spans step^2 cos^3 sr.
+  const cosTheta = 1 / Math.sqrt(1 + sx * sx + sy * sy);
+  const dOmega = device.nativeSlopeStep ** 2 * acceptanceWeight * cosTheta ** 3;
+  const factor = areaCm2 * cosTheta * seconds * dOmega * response0;
   const count = through * factor, openCount = open * factor, transmission = open > 0 ? through / open : 0;
   return { value: { sx, sy, dir, q, count, ...(includeContext ? { openCount } : {}), transmission, factor, sigByTarget: {},
     nativeRangeX: [bx.first, bx.last], nativeRangeY: [by.first, by.last] }, openCount };

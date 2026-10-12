@@ -13,7 +13,8 @@ const response = { layerEfficiency: .95, deadLiveFraction: .98, angularResolutio
 const sampleRay = (sx, sy) => ({ dir: { x: sx, y: sy, z: .55 / Math.sqrt(1 + sx * sx + sy * sy) },
   q: { mwe: 100 + 50 * (sx + 1.4) + 300 * (sy + 1.4), totals: { concrete: 20 } } });
 
-// Frozen orchestration formula from app.js before extraction. Test-only.
+// Frozen orchestration formula (app.js before extraction, revised by
+// legacy-quick-response@3.0.0: projected area, no edge factor). Test-only.
 function referencePass(n, device, response, sampleRay) {
   const baseline = legacyCalculationBaseline(device, response), bins = baseline.nativeAxisBins(n);
   const areaCm2 = device.width * device.height * 1e4, seconds = response.exposureDays * 86400;
@@ -23,9 +24,8 @@ function referencePass(n, device, response, sampleRay) {
     const bx = bins[col], by = bins[row], sx = bx.slope, sy = by.slope;
     const acceptanceWeight = bx.sumWeight * by.sumWeight, { dir, q } = sampleRay(sx, sy);
     const open = baseline.integratedSurfaceFlux(dir.z, 1), through = baseline.integratedSurfaceFlux(dir.z, baseline.minimumMuonEnergy(q.mwe));
-    const dOmega = device.nativeSlopeStep ** 2 * acceptanceWeight / (1 + sx * sx + sy * sy) ** 1.5;
-    const edge = .85 + .15 * Math.sqrt(Math.max(0, acceptanceWeight / (device.stripsX * device.stripsY)));
-    const factor = areaCm2 * seconds * dOmega * response0 * edge;
+    const cosTheta = 1 / Math.sqrt(1 + sx * sx + sy * sy), dOmega = device.nativeSlopeStep ** 2 * acceptanceWeight * cosTheta ** 3;
+    const factor = areaCm2 * cosTheta * seconds * dOmega * response0;
     const count = through * factor, openCount = open * factor, transmission = open > 0 ? through / open : 0;
     total += count; openTotal += openCount;
     values.push({ sx, sy, dir, q, count, transmission, factor, sigByTarget: {},
@@ -73,7 +73,7 @@ test('complete 25/65-bin count projections exactly match legacy results with bot
     let state;
     do { state = pass.advance(3); } while (!state.done);
     const { modelVersion, ...actual } = state.result;
-    assert.equal(modelVersion, 'legacy-quick-response@2.0.0');
+    assert.equal(modelVersion, 'legacy-quick-response@3.0.0');
     assert.deepEqual(actual, expected);
     assert.strictEqual(pass.advance(3).result, state.result);
   }
