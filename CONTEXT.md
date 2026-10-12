@@ -42,14 +42,18 @@ Help users explore, filter and compare muography detector deployment plans for a
 | Dataset | A versioned collection describing one imaging subject: coordinates, geometry, materials and metadata | ID, `kind`, version, units, coordinate transforms, sources, unknowns |
 | Kind | The type of subject a dataset describes (`dam`, `blast-furnace`, `tunnel`, …) | Kind-specific variables, layers and targets are declared by the dataset, not by generic code |
 | Scenario | A frozen environment variant of a dataset (e.g. water levels low/mid/high/extreme) | Variable values; the compiled geometry for that variant |
-| Scene | A dataset combined with one environment state for display and calculation | Variables, enabled material regions, display options |
+| Scene | A dataset release combined with one environment state (a scenario or environment variable values). It fixes the physical geometry and materials used in calculation | Release, scenario or variable values. Which material regions exist follows from the environment state (e.g. water level, gate states), never from display choices |
+| View state | How a scene and its results are displayed | Layer visibility, colours, transparency, camera, overlays, selection. Not part of the scene or of any calculation input |
 | Detector configuration | Device geometry and response parameters, independent of the subject | Sensitive area, strip pitch, readout count, layer spacing, efficiency, angular model, dead time |
 | Station | A detector reference point with engineering meaning | Coordinates, name, accessibility/installation constraints, area |
 | Pose | The detector's orientation at a station | Azimuth, elevation, local basis |
-| Deployment plan | One or more detectors with their operating configuration; distinguishes candidate stations from the selected deployment | Dataset release, environment, devices, stations, poses, calculation settings |
+| Assessment | One station evaluated in a scene: the scene combined with a detector configuration, a station and a pose | Calculation settings; produces a projection result |
+| Deployment plan | A scene combined with one or more stations, each with a pose and a detector configuration; distinguishes candidate stations from the selected deployment | Scene (release + environment), stations, poses, devices, calculation settings |
 | Scan | Batch calculation and comparison over a constrained parameter space | Ranges, steps, constraints, metrics, ranking, robustness |
 
 Note: "scenario" means a frozen environment variant, never the subject itself; the subject is a dataset of some kind.
+
+Composition: **scene** = dataset release + environment state; **assessment** = scene + detector configuration + station + pose; **deployment plan** = scene + stations (each with pose and detector configuration). Display options belong to the **view state**, which is never part of any of these.
 
 How these objects relate, their identities, invariants and lifecycles are modelled in [`docs/specs/DOMAIN_MODEL.md`](docs/specs/DOMAIN_MODEL.md); this file keeps the glossary. Object identifiers, required fields and file schemas: `TBD` (FR-P1).
 
@@ -67,6 +71,8 @@ How these objects relate, their identities, invariants and lifecycles are modell
 - **Boundary / contour**: the boundary of a material or semantic region in 3D space, ray space or the projection plane.
 
 ### Geometric truth
+
+Display options belong to the view state, not the scene: hiding a material region, internal feature or environment volume changes only what is drawn and never removes it from classification, ray paths, column density or any other calculation.
 
 Material geometry is defined by positive volumes, negative volumes, material priority and boundary rules together. The render mesh is not the only truth: display, point classification, ray intersection and projection contours must all trace back to the same data definition.
 

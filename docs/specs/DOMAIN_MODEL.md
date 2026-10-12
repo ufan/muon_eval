@@ -10,7 +10,7 @@ How this relates to other documents:
 
 Each element below is marked **Current** (exists in code), **Partial** (exists implicitly or incompletely) or **Target** (decided, not built).
 
-Last updated: 2026-10-10
+Last updated: 2026-10-12
 
 ## 1. Bounded contexts
 
@@ -35,6 +35,8 @@ classDiagram
   class Dataset { id; kind; title }
   class Release { releaseId; datasetVersion; schemaVersion; status; adapter }
   class Scenario { id; label; variables }
+  class Scene { release; scenario or variables }
+  class ViewState { layers; colours; camera; overlays; selection }
   class Material { id; density_g_cm3; priority }
   class Entity { id; realization: solid|void|virtual; sources; unknowns }
   class Component { componentId; material; flags: physics/display/pick; sourceEntityId? }
@@ -43,8 +45,8 @@ classDiagram
   class DetectorConfiguration { device; response }
   class Station { id; name; position (model frame) }
   class Pose { azimuthDeg; elevationDeg }
-  class DeploymentPlan { releaseId; candidates; selected deployment; environment }
-  class AssessmentInput { station; pose; device; response; environment }
+  class DeploymentPlan { scene; candidates; selected deployment }
+  class AssessmentInput { scene; station; pose; device; response }
   class ProjectionResult { kind; schemaVersion; identity; config; pixels; limitations }
   Dataset "1" --> "*" Release
   Release "1" --> "1" Frame
@@ -54,10 +56,14 @@ classDiagram
   Scenario "1" --> "*" Component : compiled GLB
   Component "*" --> "0..1" Entity : evidenced mapping
   Release "1" --> "*" Candidate
-  DeploymentPlan "*" --> "1" Release
+  Scene "*" --> "1" Release
+  Scene "*" --> "0..1" Scenario : frozen variant
+  ViewState ..> Scene : displays, never changes
+  DeploymentPlan "*" --> "1" Scene
   DeploymentPlan "1" --> "*" Station : candidates / selected
   Station "1" --> "1" Pose
   DeploymentPlan "1" --> "*" DetectorConfiguration
+  AssessmentInput ..> Scene
   AssessmentInput ..> Station
   AssessmentInput ..> DetectorConfiguration
   ProjectionResult ..> AssessmentInput : snapshot of
@@ -80,6 +86,13 @@ classDiagram
 | Candidate | Value | Candidate ID | Dataset-supplied suggested station position in the source frame, with host entity and rationale; not a recommendation of pose | Current |
 | Site conditions, detector models | Value | Per release | Sidecars; detector model sidecar is not used as calibration | Current (unused for physics) |
 
+### 2.1a Scene and view state
+
+| Concept | Kind | Identity | Notes | Status |
+|---|---|---|---|---|
+| Scene | Value | Release ID + scenario ID or environment variable values | The physical world of a calculation: geometry and materials follow from the release and environment state only. Composition: scene = release + environment state | Partial: the code passes release and `environment` separately rather than as one scene value |
+| ViewState | Value, per view | — | Layer visibility, colours, transparency, camera, overlays, selection. Owned by the views and `main-page`; never part of a scene, snapshot key or result | Current |
+
 ### 2.2 Detector
 
 | Concept | Kind | Notes | Status |
@@ -93,14 +106,14 @@ classDiagram
 |---|---|---|---|
 | Station | Entity within a plan | Name and position in the model frame; currently also carries the pose (`az`, `el`) | Partial: station and pose not separated |
 | Pose | Value | Azimuth from model `X+` towards `Y+`, elevation above horizontal; detector-local basis follows | Current |
-| DeploymentPlan | Aggregate root | Release reference (+ content hash for user-loaded datasets), environment/scenario, candidate stations, **selected deployment** (subset with pose and device each), calculation settings, schema version | Target (FR-P1, ADR-020); today `deployment-state` holds candidates + one `active` index and is stored per release ID in `localStorage` |
+| DeploymentPlan | Aggregate root | Scene (release reference + content hash for user-loaded datasets, environment/scenario), candidate stations, **selected deployment** (subset with pose and device each), calculation settings, schema version | Target (FR-P1, ADR-020); today `deployment-state` holds candidates + one `active` index and is stored per release ID in `localStorage` |
 | Selection | Value | Which stations are deployed; drives the multi-station overview | Target (FR-M4) |
 
 ### 2.4 Assessment and results
 
 | Concept | Kind | Notes | Status |
 |---|---|---|---|
-| AssessmentInput | Value, immutable snapshot | Station, device, response, environment copied at calculation start | Current |
+| AssessmentInput | Value, immutable snapshot | Scene (release + environment) + station + pose + device + response, copied at calculation start. Composition: assessment = scene + detector configuration + station + pose | Current (scene implicit) |
 | Session | Process | Binds one geometry context; produces preview (25²) then final (65²) from the same snapshot; cancellable | Current |
 | Trace | Value | Per ray: material totals, `materialColumns`, `mwe`, segments, entity lengths | Current |
 | ProjectionResult | Value, versioned | `kind` ∈ {`compiled-detector-assessment`, `legacy-detector-assessment`, `material-column-projection`}, `schemaVersion`, identity (release, backend, scenario, variables, asset hashes), config, device, response, `modelVersion`, pixels, limitations | Current |
@@ -120,7 +133,7 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 
 1. A point and a direction are different types: translation applies to points only. (`coordinates.js`, tests)
 2. Material = positive volumes − negative volumes, resolved by the declared material precedence; virtual geometry and markers never enter physics. (`compiled-mesh-runtime.js`)
-3. Display, classification and ray intersection express the same geometry; display state never changes scientific results. (architecture tests)
+3. Display, classification and ray intersection express the same geometry. View state is never part of a scene, snapshot or result: hiding a material region, internal feature or environment volume never removes it from physics. (Module boundaries in `tests/integration/main-architecture.test.mjs`; overlay independence per PROJECTION_VALIDATION §1; a direct layer-toggle test is a gap, §6)
 4. A frozen scenario's geometry is never interpolated to represent another environment.
 5. A device configuration means the same thing for every dataset; datasets never supply uncalibrated device parameters implicitly.
 6. A result always carries the identity of everything it was computed from (release, backend, scenario/variables, model version, device, response, sampling, ray length) and its limitations. (FR-C5; legacy ray length still missing, FR-C2)
@@ -148,6 +161,8 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 | Flux cache makes results history-dependent | Invariant 8 | FR-C1 |
 | Legacy results do not record the 500 m ray cutoff | Invariant 6 | FR-C2 |
 | One rock-like energy loss for all materials | Material | FR-K4 |
+| Scene is not one value in code (release and environment passed separately) | Scene | FR-P1 (plan schema) |
+| No direct test that toggling every display layer leaves the projection result and snapshot key unchanged | Invariant 3 | FR-Q11 |
 
 ## 7. Open modelling questions
 
@@ -158,4 +173,5 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 
 ## Change log
 
+- 2026-10-12: Clarified Scene vs ViewState: display options belong to the view state, never the scene; scene = release + environment state; assessment = scene + detector + station + pose; plan = scene + stations. Invariant 3 restated; two gaps added.
 - 2026-10-10: Initial model from the current code and decisions ADR-008…021.
