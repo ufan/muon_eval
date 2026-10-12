@@ -35,19 +35,18 @@ function referencePass(n, device, response, sampleRay) {
   return { n, values, total, weightedTransmission: openTotal > 0 ? total / openTotal : 0 };
 }
 
-test('spectrum, energy loss and ordered quantized flux calls exactly match the frozen formulas', () => {
+test('spectrum, energy loss and integrated flux exactly match the frozen formulas', () => {
   for (const angularModel of ['gaisser', 'cos2']) {
-    const baseline = legacyCalculationBaseline(device, { ...response, angularModel }), cache = new Map();
+    const baseline = legacyCalculationBaseline(device, { ...response, angularModel });
     for (const cosZ of [0, .01, .101, .102, .5, .99, 1]) {
       assert.equal(cosThetaStar(cosZ), baseline.cosThetaStar(cosZ));
       for (const energy of [1, 10, 100, 10000]) assert.equal(gaisserFlux(energy, cosZ), baseline.gaisserFlux(energy, cosZ));
       for (const mwe of [-1, 0, 50, 500, 2000]) {
         const energy = minimumMuonEnergy(mwe);
         assert.equal(energy, baseline.minimumMuonEnergy(mwe));
-        assert.equal(integratedSurfaceFlux(cosZ, energy, angularModel, cache), baseline.integratedSurfaceFlux(cosZ, energy));
+        assert.equal(integratedSurfaceFlux(cosZ, energy, angularModel), baseline.integratedSurfaceFlux(cosZ, energy));
       }
     }
-    assert.deepEqual(cache, baseline.fluxCache);
   }
 });
 
@@ -74,7 +73,7 @@ test('complete 25/65-bin count projections exactly match legacy results with bot
     let state;
     do { state = pass.advance(3); } while (!state.done);
     const { modelVersion, ...actual } = state.result;
-    assert.equal(modelVersion, 'legacy-quick-response@1.0.0');
+    assert.equal(modelVersion, 'legacy-quick-response@2.0.0');
     assert.deepEqual(actual, expected);
     assert.strictEqual(pass.advance(3).result, state.result);
   }

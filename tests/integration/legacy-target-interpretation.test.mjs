@@ -67,11 +67,11 @@ test('complete 25/65 projections and every target significance retain exact froz
     for(const by of bins)for(const bx of bins){const dir=normalize(bx.slope,1,.4+by.slope);
       rays.push({dir,trace:context.traceDoc(origin,dir,{cellM:5,refineM:n===25?1.5:.5})});}
     function run(derive,significance) {
-      const cache=new Map(),flux=(z,e)=>integratedSurfaceFlux(z,e,response.angularModel,cache);let index=0;
+      const flux=(z,e)=>integratedSurfaceFlux(z,e,response.angularModel);let index=0;
       const pass=createProjectionPass({n,device,response,flux,includeContext:true,sampleRay:()=>{const {dir,trace}=rays[index++];return{dir,q:derive(trace)};}});
       let state;do{state=pass.advance(3);}while(!state.done);
       for(const pixel of state.result.values)for(const id of ids)pixel.sigByTarget[id]=significance(pixel,id,{flux,systematicFraction:response.systematicFraction});
-      return{result:state.result,cache};
+      return{result:state.result};
     }
     assert.deepEqual(run(interpret,evaluateLegacyTargetSignificance),run(q=>legacyTargetBaseline(q,materials,ids),legacyTargetSignificance));
   }

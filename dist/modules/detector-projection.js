@@ -60,8 +60,7 @@ export function applyProjectionResolution(values, n, device, response) {
 export function createProjectionPass({ n, device, response, sampleRay, flux, axisBinCache, includeContext = false }) {
   device = { ...device }; response = { ...response };
   if (!Number.isInteger(n) || n < 1 || n > 2 * device.stripsX - 1) throw new Error('Invalid detector projection size');
-  const cache = new Map();
-  flux ||= (cosZ, energy) => integratedSurfaceFlux(cosZ, energy, response.angularModel, cache);
+  flux ||= (cosZ, energy) => integratedSurfaceFlux(cosZ, energy, response.angularModel);
   const binsX = nativeAxisBins(n, device, axisBinCache), binsY = nativeAxisBins(n, device, axisBinCache);
   const values = []; let total = 0, openTotal = 0, row = 0, result;
   function advance(rows) {

@@ -1,10 +1,10 @@
 # Calculation model
 
-This spec defines the calculation chain, formulas and parameters by which the current fast-evaluation model (`legacy-quick-response@1.0.0` and its compiled adapter) turns subject data, detector position and pose into rays, projections and numerical metrics. It is a normative description the code must match, not a promise of full muon transport or detector calibration.
+This spec defines the calculation chain, formulas and parameters by which the current fast-evaluation model (`legacy-quick-response@2.0.0` and its compiled adapter) turns subject data, detector position and pose into rays, projections and numerical metrics. It is a normative description the code must match, not a promise of full muon transport or detector calibration.
 
 - Any change to formulas, default parameters or numerical behaviour is a model revision: increase the model version, update the frozen baseline tests and label it in the commit message.
 - The meaning of results, their limits, parameter sensitivity and usage advice are in the [result interpretation guide](../guides/RESULT_INTERPRETATION.md).
-- Known open corrections to this spec (history-dependent cache, ray-length recording, the acceptance cos θ factor) are FR-C1…C3 in the [feature requirements](../FEATURE_REQUIREMENTS.md).
+- Known open corrections to this spec (ray-length recording, the acceptance cos θ factor) are FR-C2 and FR-C3 in the [feature requirements](../FEATURE_REQUIREMENTS.md).
 - Section numbers follow the former `CALCULATION_MODELS.md` so existing references (§2–§13) stay valid.
 - The bundled Zhouning dam is the worked example; dam-specific items (water levels, concrete, dam targets) are the dam kind's instance of the generic quantities.
 
@@ -38,9 +38,9 @@ projections, structure outlines, significance, flux cloud and side-panel metrics
 
 The legacy calculation entry is `dist/modules/main-assessment.js`, which takes station, device, response and environment snapshots and an injected geometry interface; the compiled entry is `compiled-main-assessment.js` over `compiled-assessment.js`. Direction arithmetic is in `detector-pose.js`, rays come from the bound geometry context, and legacy target interpretation is in `legacy-target-interpretation.js`. `dist/app.js` only assembles dependencies.
 
-`dist/modules/muon-response.js` holds the spectrum, integral, energy-loss and significance formulas; `detector-projection.js` holds native strip-difference binning, pixel response, batched projection and Gaussian display smoothing. `assessment-controller.js` manages cancellation and publication without reading the DOM or importing a geometry backend. The quick preview and final result share one input/environment snapshot; `main-page.js` only receives results to update the DOM. The model identifier is `legacy-quick-response@1.0.0`; module boundaries do not change the physics model.
+`dist/modules/muon-response.js` holds the spectrum, integral, energy-loss and significance formulas; `detector-projection.js` holds native strip-difference binning, pixel response, batched projection and Gaussian display smoothing. `assessment-controller.js` manages cancellation and publication without reading the DOM or importing a geometry backend. The quick preview and final result share one input/environment snapshot; `main-page.js` only receives results to update the DOM. The model identifier is `legacy-quick-response@2.0.0` (2.0.0 removed the quantised flux cache of 1.0.0, FR-C1); module boundaries do not change the physics model.
 
-Existing approximations are kept: counts use a fixed three-layer efficiency `ε³`; both axes are binned with `stripsX` (the current UI has symmetric readout); and the integrated flux is cached with quantization by model/zenith angle/energy. A quantization bucket returns the value of its first call, so cache history can change results (measured up to ~5% per pixel near the horizon; FR-C1); the main app still shares this cache. The fixed `10⁵ GeV` integration upper limit and the old behaviour at extreme energies are unchanged and need a separate model revision rather than a silent change during refactoring. Tests with frozen old formulas verify exact numerical agreement for both angular models, 25/65 grids, per-pixel counts/transmission and display smoothing.
+Existing approximations are kept: counts use a fixed three-layer efficiency `ε³`; both axes are binned with `stripsX` (the current UI has symmetric readout); and the integrated flux is evaluated exactly for every input, so results never depend on evaluation history (FR-C1; 1.0.0 returned the first value of a quantised cache bucket, up to ~5% per pixel near the horizon). The fixed `10⁵ GeV` integration upper limit and the old behaviour at extreme energies are unchanged and need a separate model revision rather than a silent change during refactoring. Tests with frozen old formulas verify exact numerical agreement for both angular models, 25/65 grids, per-pixel counts/transmission and display smoothing.
 
 ## 3. Inputs, state and versions
 
@@ -241,7 +241,7 @@ The default is the Modified Gaisser parameterization in the code. The spectral s
 - a low-energy correction;
 - an effective zenith-angle `cos(θ*)` correction.
 
-The code integrates in log energy from `Emin` to `10⁵ GeV` in 44 intervals to obtain the integrated flux in that zenith direction. For performance, `cosZ` and `log10(Emin)` are quantized and cached, so nearby inputs can reuse the same integral value (see FR-C1).
+The code integrates in log energy from `Emin` to `10⁵ GeV` in 44 intervals to obtain the integrated flux in that zenith direction. The integral is evaluated for the exact `cosZ` and `Emin` of every call, with no cache: the result depends only on its inputs (FR-C1). This costs about 45 ms per 65×65 pass on one core, about a tenth of the ray tracing.
 
 ### 9.2 cos²θ mode
 

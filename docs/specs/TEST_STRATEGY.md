@@ -25,7 +25,7 @@ Measured 2026-10-10 (single file, sequential). The full Node suite takes about 3
 | Layer | Files |
 |---|---|
 | L0 | `node --check` on every entry point; `git diff --check` |
-| L1 | `contribution-contours`, `contribution-view`, `demand-render`, `numeric-pattern-client`, `pattern-capture-store`, `pattern-input-chunks`, `pattern-timing`, `projection-color-scale`, `projection-pattern-contract`, `structural-reference-projection`, `structural-reference-qualification` (each ≈ 0.1–0.3 s) |
+| L1 | `muon-response`, `contribution-contours`, `contribution-view`, `demand-render`, `numeric-pattern-client`, `pattern-capture-store`, `pattern-input-chunks`, `pattern-timing`, `projection-color-scale`, `projection-pattern-contract`, `structural-reference-projection`, `structural-reference-qualification` (each ≈ 0.1–0.3 s) |
 | L2 | `calculation-core` (frozen formulas), `projection-pattern-fixtures` (analytic oracle, ≈ 4 s), `contour-benchmark`, `derived-interface-artifact`, `interface-csg`, `structural-reference-benchmark`, `structural-reference-candidates` (recorded native evidence) |
 | L3 | `scripts/check-dataset-release.py`, `scripts/check-geometry-conformance.mjs`, `scripts/check-semantic-mapping.mjs`, `scripts/check-interface-artifacts.mjs` (needs `manifold3d`); tests `dataset-v07`, `compiled-mesh`, `semantic-mapping`, `structural-reference-domain` |
 | L4 | `main-architecture` (≈ 13 s), `dda-ray-tracer` (≈ 18 s), `main-compiled-backend`, `legacy-target-interpretation`, `compiled-assessment`, `projection-pattern-fields`, `material-projection`, `material-envelopes`, `material-contributions`, `contribution-export`, `pattern-interpretation`, `legacy-geometry-adapter` |
@@ -39,7 +39,7 @@ Some L4 files test behaviour that could be shown at L1/L2 with synthetic inputs 
 Test first:
 
 - **Pure calculation functions** (coordinates, directions, flux, acceptance, tracing rules, contour extraction, metrics): write the failing L1 test from the spec, then the code.
-- **Every bug fix**: first a test that reproduces the bug and fails, at the lowest layer that shows it. Example: FR-C1 starts with an L1 test asserting that the same flux input gives the same value regardless of what was evaluated before.
+- **Every bug fix**: first a test that reproduces the bug and fails, at the lowest layer that shows it. Example: FR-C1 started with an L1 test (`tests/unit/muon-response.test.mjs`) showing that a projection pixel's count changed with the pixels evaluated before it.
 - **Data formats and contracts** (plan/scan/result schemas, exports): write the round-trip and rejection tests (L2) with the schema.
 - **Domain invariants** in [DOMAIN_MODEL.md](DOMAIN_MODEL.md) §4: each invariant has at least one test that would fail if it were broken.
 
@@ -74,6 +74,5 @@ Single layers: `npm run test:unit`, `npm run test:contract`. L0 is `npm run chec
 
 ## 6. Gaps
 
-- Domain invariant 8 (history independence) has no test and is currently violated (FR-C1).
 - No type checking at L0 yet (FR-Q3).
 - Some L4 files contain cases that belong at L1/L2 (§2); move them down when touching those files.

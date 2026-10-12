@@ -8,11 +8,11 @@ export const MAIN_TRACE_SETTINGS=Object.freeze({mainCell:5,refine:.5,previewRefi
 
 // A service owns its caches; every session owns a detached input/environment snapshot.
 export function createMainAssessment({geometry,trace=MAIN_TRACE_SETTINGS}) {
- const fluxCache=new Map(),nativeBinCache=new Map(),TRACE={...trace};
+ const nativeBinCache=new Map(),TRACE={...trace};
  function createSession(input){
   const {station:c,device:DEVICE,response:RESPONSE,environment}=structuredClone(input);
   const geometryContext=geometry.bindEnvironment(environment),origin=geometryContext.modelPointToDoc(c);
-  const flux=(z,e)=>calculateSurfaceFlux(z,e,RESPONSE.angularModel,fluxCache);
+  const flux=(z,e)=>calculateSurfaceFlux(z,e,RESPONSE.angularModel);
   const direction=(sx,sy)=>directionFromSlopes(c,sx,sy,geometryContext);
   const traceRay=(dir,cell=TRACE.mainCell,refine=TRACE.refine)=>geometryContext.traceDoc(origin,dir,{cellM:cell,refineM:refine});
   const interpretTargets=createLegacyTargetInterpreter({materials:geometryContext.materials,targetIds:geometryContext.targetIds});
@@ -27,5 +27,5 @@ export function createMainAssessment({geometry,trace=MAIN_TRACE_SETTINGS}) {
   }
   return Object.freeze({cloud,quickMetrics,projection,centralRay:()=>traceRay(directionDoc(c,geometryContext)),ensureTargetSignificance(data,id){if(data?.quality!=='final')return;for(const v of data.values)if(!Object.hasOwn(v.sigByTarget,id))v.sigByTarget[id]=evaluateLegacyTargetSignificance(v,id,{flux,systematicFraction:RESPONSE.systematicFraction});}});
  }
- return Object.freeze({createSession,clearCaches(){nativeBinCache.clear();fluxCache.clear();}});
+ return Object.freeze({createSession,clearCaches(){nativeBinCache.clear();}});
 }

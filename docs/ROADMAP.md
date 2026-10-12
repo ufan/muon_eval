@@ -57,7 +57,7 @@ data contract + coordinate adapters → pure geometry query interfaces
 
 **Goal:** evaluate whether a plan would detect a specified anomaly, with quantified sensitivity and systematics (ADR-025). Placed before scanning because scan ranking and reconstruction quality are defined by sensitivity to anomalies (OQ-10, 2026-10-12).
 **Covers:** FR-H1…H11 (H10 kind generators later). The anomaly format (FR-H1) is designed together with the plan format in Phase 1.
-**Depends on:** FR-C1 (history-independent flux, priority #1); plan format (Phase 1).
+**Depends on:** FR-C1 (history-independent flux, priority #1, done); plan format (Phase 1).
 **Exit:** generic regions and density models with host clipping; perturbative evaluation matching full retracing on analytic fixtures; sensitivity outputs, sweeps and systematics; anomalies shown in 3D and as projection footprints.
 
 ## Phase 4 — Workstation-scale scanning

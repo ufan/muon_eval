@@ -153,7 +153,7 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 5. A device configuration means the same thing for every dataset; datasets never supply uncalibrated device parameters implicitly.
 6. A result always carries the identity of everything it was computed from (release, backend, scenario/variables, model version, device, response, sampling, ray length) and its limitations. (FR-C5; legacy ray length still missing, FR-C2)
 7. A stale result is never published over a newer input. (`assessment-controller.js`, tests)
-8. Results are history-independent: the same input gives the same output. **Currently violated** by the flux cache (FR-C1).
+8. Results are history-independent: the same input gives the same output. (`muon-response.js` has no cache since `legacy-quick-response@2.0.0`; `tests/unit/muon-response.test.mjs`)
 9. Generic code never branches on a dataset's kind or name. (FR-K1; existing leaks being removed)
 10. Aggregate components never acquire source-entity ownership by name or proximity.
 11. Unknown or approximate dimensions stay explicit metadata; they are never replaced by unexplained constants.
@@ -176,7 +176,6 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 | Legacy environment is `{upstream, downstream}`; compiled uses scenario variables | Scenario, environment | FR-K2, FR-E1 |
 | Station carries pose; no plan aggregate; single active station | Station, Pose, DeploymentPlan | FR-P1, ADR-020 |
 | Stations stored per release are invisible after the default changed | DeploymentPlan | FR-B2 |
-| Flux cache makes results history-dependent | Invariant 8 | FR-C1 |
 | Legacy results do not record the 500 m ray cutoff | Invariant 6 | FR-C2 |
 | One rock-like energy loss for all materials | Material | FR-K4 |
 | Scene is not one value in code (release and environment passed separately) | Scene | FR-P1 (plan schema) |
@@ -208,6 +207,7 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-12: Invariant 8 now holds and is tested (FR-C1); gap row removed.
 - 2026-10-12: Added Coverage as a derived view (ADR-026).
 - 2026-10-12: Renamed "deficiency" to "anomaly" (AnomalyHypothesis).
 - 2026-10-12: Added anomaly hypotheses (Target, ADR-025): context, concepts, scene composition, invariants 12–14, register row.

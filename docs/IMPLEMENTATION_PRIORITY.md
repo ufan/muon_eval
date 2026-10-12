@@ -4,7 +4,7 @@ Ordered work queue. Top items first; each item references its requirement (FR) o
 
 Related: [Architecture decisions](ARCHITECTURE_DECISIONS.md) · [Feature requirements](FEATURE_REQUIREMENTS.md) · [Roadmap](ROADMAP.md)
 
-Last updated: 2026-10-10
+Last updated: 2026-10-12
 
 ---
 
@@ -12,7 +12,7 @@ Last updated: 2026-10-10
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| 1 | Make flux integration history-independent | FR-C1 | Physics-model revision; bump `RESPONSE_MODEL_VERSION`; update frozen baseline tests and `specs/CALCULATION_MODEL.md` §2/§9 | Todo |
+| 1 | Make flux integration history-independent | FR-C1 | Physics-model revision `legacy-quick-response@2.0.0`; frozen baseline tests and `specs/CALCULATION_MODEL.md` §2/§9 updated | Done |
 | 2 | Record the legacy 500 m ray cutoff in exports; fix limitation text | FR-C2, FR-C5 | `legacy-pattern-adapter.js`, `legacy-geometry-adapter.js`; legacy compatibility path only since OQ-3 | Todo |
 | 3 | Decide the cos θ projected-area factor | FR-C3 | Needs owner decision; then fix as model revision or document | Blocked (decision) |
 | 4 | Remove dead work in `quickMetrics()` | FR-C4 | Keep only `center` and `dirDoc`; legacy path only | Todo |
@@ -57,12 +57,12 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 
 ## P4 — Anomaly hypotheses and sensitivity (Phase 3)
 
-Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan format; #1 (FR-C1) must be done first.
+Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan format; its prerequisite #1 (FR-C1) is done.
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
 | AN2 | Generic regions, host clipping and density models (pure modules, test first) | FR-H2…H4 | Analytic fixtures at L2 | Todo |
-| AN3 | Perturbative evaluation over stored traces; sensitivity outputs | FR-H5, FR-H6 | Needs #1 (FR-C1) | Todo |
+| AN3 | Perturbative evaluation over stored traces; sensitivity outputs | FR-H5, FR-H6 | #1 (FR-C1) done | Todo |
 | AN4 | Anomaly in 3D view and projection footprint | FR-H9 | Same definition as physics | Todo |
 | AN5 | Sweeps and systematics | FR-H7, FR-H8 | Feeds scans (P4) and reconstruction | Todo |
 
@@ -113,6 +113,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 | Item | Ref | Commit |
 |---|---|---|
+| History-independent flux integral (#1), model `legacy-quick-response@2.0.0` | FR-C1 | this branch |
 | Datasets moved to top-level `datasets/` with sync script | ADR-018 | `dc48ed3` |
 | Compiled backend made the default | OQ-3, ADR-011 | `eba2f6f` |
 | Stale v0.1.0 `dam_spec` files removed | FR-Q6 | `03436ee` |
@@ -123,6 +124,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-12: #1 done.
 - 2026-10-12: #15a includes FR-N5 measurement.
 - 2026-10-12: Added #15a coverage highlight in P3.
 - 2026-10-12: Anomaly work placed as P4 (Phase 3) before scans (now P5); AN1 moved into P2 with the plan format; phase references renumbered.

@@ -34,6 +34,6 @@ export function createCompiledMainAssessment({ runtime }) {
         ensureTargetSignificance() { throw new Error('Source-entity significance is unavailable for the compiled backend'); },
       });
     },
-    clearCaches() {}, // Existing compiled response caches are scoped to each pass.
+    clearCaches() {}, // No compiled response state outlives a pass.
   });
 }

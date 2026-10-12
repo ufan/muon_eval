@@ -14,7 +14,7 @@ Last updated: 2026-10-10
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
-| FR-C1 | Calculation results must not depend on evaluation history. | The same input gives identical results regardless of what was computed before, in any session or worker. Today the flux cache (`muon-response.js`) returns the first value in a quantised bucket: measured up to ~5% per-pixel error near the horizon (cosZ 0.1, Emin 5 GeV), while [calculation model spec](specs/CALCULATION_MODEL.md) §2 says "last few digits". Fix is labelled as a physics-model revision with a new `RESPONSE_MODEL_VERSION`. | Needed |
+| FR-C1 | Calculation results must not depend on evaluation history. | The same input gives identical results regardless of what was computed before, in any session or worker. The former flux cache (`muon-response.js`) returned the first value in a quantised bucket (up to ~5% per-pixel error near the horizon); since `legacy-quick-response@2.0.0` the integral is evaluated exactly per input. | Done |
 | FR-C2 | Exports must record the actual ray length used. | Legacy results record the 500 m radial cutoff (`legacy-geometry-adapter.js`); the "not a radial cutoff" limitation text is corrected. Cross-backend comparisons state the different ray lengths, or the legacy cap is aligned with the compiled enclosing length. | Needed |
 | FR-C3 | Detector acceptance formula is physically justified and documented. | Decide whether the per-pixel count includes the projected-area cos θ factor (currently cos³θ; planar detectors normally need cos⁴θ, ~1.7× at the default field edge, ~2.2× at corners). Either fix (model revision) or document the omission in [calculation model spec](specs/CALCULATION_MODEL.md) §10. | Open |
 | FR-C4 | No dead or misleading computation in the update path. | `quickMetrics()` no longer traces 81 unused rays per update or computes the unused `12000 × sin(el)^1.7` count. | Needed |
@@ -216,6 +216,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-12: FR-C1 done (`legacy-quick-response@2.0.0`).
 - 2026-10-12: FR-M9 overlay in one scene (Three.js first); FR-L5 CAD import via OpenCascade/IfcOpenShell.
 - 2026-10-12: FR-N5 integrated-GPU budget for the coverage highlight.
 - 2026-10-12: FR-M10 transparency behaviour; physical brightness per steradian (OQ-11).
