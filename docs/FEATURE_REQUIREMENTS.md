@@ -150,6 +150,7 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | FR-N1 | Interactive overlay budgets. | Meet the budgets in [`../PROJECTION_VALIDATION.md` §3](specs/PROJECTION_VALIDATION.md#3-performance-budget), measured in desktop and narrow-screen HTTP browsers with recorded hardware; Node timings do not close browser gates. | Needed |
 | FR-N2 | Preview chunked-transfer regression. | Latest preview chunked-transfer change passes browser regression, including the narrow-screen overlay check that previously failed. | Needed |
 | FR-N3 | Cold start, peak memory and worst-case interaction measured. | Recorded for the real release worst cases. | Needed |
+| FR-N5 | Coverage highlight on integrated graphics. | Measured on reference laptops (Intel Core i5 with Iris Xe, and with UHD 620) at 1920×1080 in Chrome/Edge: orbiting with coverage on and 8 stations stays ≥ 30 fps (target 60 fps on Iris Xe); idle uses no GPU (on-demand rendering); automatic quality fallback (lower pixel ratio during interaction, Lambert shading, outlines off) when frame time exceeds budget. | Needed (with FR-M10) |
 | FR-N4 | Layout. | Common desktop and narrow screens; WebGL camera aspect and model scale unchanged after sidebar toggle or container resize (`AGENTS.md`). | Standing |
 
 ## Q. Quality, tooling and hygiene
@@ -215,6 +216,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-12: FR-N5 integrated-GPU budget for the coverage highlight.
 - 2026-10-12: FR-M10 transparency behaviour; physical brightness per steradian (OQ-11).
 - 2026-10-12: FR-M10 defaults: full field of view, subject surfaces.
 - 2026-10-12: FR-M10 acceptance criteria clarified (surfaces, encoding, interaction).

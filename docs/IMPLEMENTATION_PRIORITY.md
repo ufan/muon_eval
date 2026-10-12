@@ -51,7 +51,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 |---|---|---|---|---|
 | 14 | Plan state: candidates vs selected deployment; per-station result cache keyed by snapshot | ADR-020, FR-P1 | Needs #11, #12; no recompute for unchanged stations; stale results never shown | Todo |
 | 15 | Overview mode in 3D: all selected stations, colour per station, field-of-view cones, ray coverage on the subject; summary table; click → detail mode | FR-M4 | Reuses scene views; subject-neutral labels (FR-K1) | Todo |
-| 15a | Coverage highlight: geometric (live, single colour per station) and physical (count/sr brightness from the result) via projective texturing; slope-mapping L1 test against `detector-pose.js` | FR-M10, ADR-026 | Single-station first (no plan needed), then multi-station with #15 | Todo |
+| 15a | Coverage highlight: geometric (live, single colour per station) and physical (count/sr brightness from the result) via projective texturing; slope-mapping L1 test against `detector-pose.js` | FR-M10, ADR-026 | Single-station first (no plan needed), then multi-station with #15; measure FR-N5 on an Intel i5 laptop | Todo |
 | 16 | Per-station projections side by side | FR-M4 | Reuses `projection-canvas-view.js` | Todo |
 | 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | Short animation export later | Todo |
 
@@ -123,6 +123,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-12: #15a includes FR-N5 measurement.
 - 2026-10-12: Added #15a coverage highlight in P3.
 - 2026-10-12: Anomaly work placed as P4 (Phase 3) before scans (now P5); AN1 moved into P2 with the plan format; phase references renumbered.
 - 2026-10-12: Renamed "deficiency" to "anomaly"; items AN1–AN5.

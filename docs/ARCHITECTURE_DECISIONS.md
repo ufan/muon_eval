@@ -433,6 +433,8 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - *Pyramid edges.* Drawn solid where visible and dashed where hidden behind opaque surfaces, instead of the current always-on-top lines.
 - *Water and terrain* (when toggled on) follow the same rules; water stays visually secondary (lower tint strength) so the subject reads first.
 
+**GPU cost on integrated graphics (2026-10-12).** The scene is small: 33 components with ~131k triangles (~65k vertices) plus two terrain grids (281×287 and 201×201, ~240k triangles), drawn at device pixel ratio ≤ 2 with antialiasing and on-demand rendering (no frames while idle). Per fragment and station the coverage test is a few dot products, two divisions, range checks and one 65×65 texture lookup (~30 operations), small next to the existing physically based lighting of `MeshStandardMaterial`. Estimate at 1920×1080, overdraw ~3 under transparency and 8 stations: of the order of 5–10 GFLOP per frame, i.e. ~0.3–0.6 TFLOPS for 60 fps. Intel Iris Xe (11th gen Core i5 and later, ~1.5–2 TFLOPS) has ample headroom; older UHD 620 (8th gen, ~0.4 TFLOPS) is expected to stay interactive (≥30 fps) with a few stations, with 60 fps not guaranteed at high pixel ratio. This is an estimate, not a measurement (the development container only has a software renderer), so FR-N5 requires measuring on reference hardware. Safeguards: on-demand rendering; pixel ratio capped lower (e.g. 1.25) during camera interaction; a cheaper subject material (Lambert) and outline-off quality setting when frame time exceeds budget; stations beyond the per-pass limit drawn in an extra pass.
+
 ---
 
 ## Open questions
@@ -456,6 +458,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-12: ADR-026 GPU cost estimate for integrated graphics and safeguards.
 - 2026-10-12: OQ-11 resolved (per steradian); ADR-026 transparency handling: tint mixed into surface materials, front-facing shell plus internal features, minimum opacity, dashed hidden edges.
 - 2026-10-12: ADR-026 defaults set (full field of view, subject surfaces); OQ-11 explanation added.
 - 2026-10-12: ADR-026 clarified: per-point coverage test, highlighted surfaces, visual encoding and interaction.
