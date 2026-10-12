@@ -14,6 +14,7 @@ Last updated: 2026-10-10
 - Offline static app; no large framework or plugin system without proven need; one calculation core shared by every consumer (ADR-001, ADR-002, ADR-012).
 - Correctness and reproducibility before features; tests before extracting pure modules; measure before optimising (ADR-005).
 - A subject-neutral platform: dams first, then other subjects such as blast furnaces and tunnels. Every decision keeps that path open, but each kind is supported only when it is actually added (ADR-016). Today's code knows one RCC dam; subjects may differ in display/interaction, geometry semantics and regions of interest, so generic abstractions wait for real second examples.
+- Standing rules apply in every phase: FR-C6, FR-B3, FR-D1…D8, FR-K1, FR-K8, FR-K10, FR-Q9…Q11, FR-V1, FR-N4.
 - Abstractions are validated by real datasets (a second dam, then a second kind), not by guesses (ADR-008).
 - Server, WebAssembly and Geant4 automation are conditional, unlocked only by observed triggers.
 
@@ -42,20 +43,20 @@ data contract + coordinate adapters → pure geometry query interfaces
 ## Phase 1 — Plans as first-class, versioned data
 
 **Goal:** a complete deployment plan can be saved, loaded, shared as a file and migrated across versions.
-**Covers:** FR-P1, FR-P2; ADR-006 seams (schemas, async cancellable assessment port).
+**Covers:** FR-P1, FR-P2; ADR-006 seams (schemas, async cancellable assessment port). Station export/import between releases (FR-B2) uses the same format.
 **Exit:** round-trip plan tests; plan/scan/result schemas stable enough to serve as a future API contract.
 
 ## Phase 2 — Multi-station overview and demonstration
 
-**Goal:** show the selected deployment as a whole: all selected stations at once for overview and customer demonstration. Prioritised ahead of scanning by the owner (2026-10-10).
-**Covers:** FR-M4, FR-M5; ADR-020.
+**Goal:** show the selected deployment as a whole: all selected stations at once for overview and customer demonstration, with each detector's field-of-view coverage highlighted on the subject. Prioritised ahead of scanning by the owner (2026-10-10).
+**Covers:** FR-M4, FR-M5, FR-M10 (coverage highlight), FR-N5 (integrated-GPU budget); ADR-020, ADR-026. The single-station coverage highlight needs no plan format and can land before the rest of this phase.
 **Depends on:** plan schema with selected deployment, async cancellable assessment port (Phase 1). Built in the current page; does not wait for the new UI stack (ADR-004) or scan workers.
-**Exit:** overview and detail modes over one plan; per-station results cached; demonstration layout with camera presets and screenshot export.
+**Exit:** overview and detail modes over one plan; per-station results cached; coverage highlight (geometric and physical, per steradian) in single- and multi-station views, correct under transparency and measured on an Intel Core i5 laptop; demonstration layout with camera presets and screenshot export.
 
 ## Phase 3 — Anomaly hypotheses and sensitivity
 
 **Goal:** evaluate whether a plan would detect a specified anomaly, with quantified sensitivity and systematics (ADR-025). Placed before scanning because scan ranking and reconstruction quality are defined by sensitivity to anomalies (OQ-10, 2026-10-12).
-**Covers:** FR-H1…H9, later H10. The anomaly format (FR-H1) is designed together with the plan format in Phase 1.
+**Covers:** FR-H1…H11 (H10 kind generators later). The anomaly format (FR-H1) is designed together with the plan format in Phase 1.
 **Depends on:** FR-C1 (history-independent flux, priority #1); plan format (Phase 1).
 **Exit:** generic regions and density models with host clipping; perturbative evaluation matching full retracing on analytic fixtures; sensitivity outputs, sweeps and systematics; anomalies shown in 3D and as projection footprints.
 
@@ -118,7 +119,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 | Server backend | T1 shared plans, T2 scan scale, T3 routine Geant4, T4 access control | Small backend: storage + job queue; workers reuse the core (FR-P3, FR-S6, FR-G3) |
 | WebAssembly tracer | Phase 4 measurements still insufficient | Rust/C++ → WASM; must pass conformance rays/points (ADR-005 step 4) |
 | Access control | OQ-1 answer | Authenticated hosting (FR-A1) |
-| Desktop distribution | A real offline or installer need (OQ-9) | PWA first (FR-W1); thin Tauri wrapper when an installer is needed (FR-W2, W3); never a fork of the app (ADR-024) |
+| Desktop distribution | A real offline or installer need (OQ-9) | PWA first (FR-W1); thin Tauri wrapper when an installer is needed (FR-W2, W3); plans move between web and desktop by export/import (FR-W4); never a fork of the app (ADR-024) |
 
 ## Deferred
 
@@ -126,6 +127,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-12: Phase 2 now covers the coverage highlight (FR-M10) and its GPU budget (FR-N5); FR-H11, FR-B2, FR-W4 and standing rules referenced.
 - 2026-10-12: Anomaly hypotheses placed as Phase 3 (OQ-10); scanning and later phases renumbered 4–8.
 - 2026-10-12: Renamed "deficiency" to "anomaly".
 - 2026-10-12: Proposed anomaly-hypothesis phase (ADR-025), placement pending OQ-10.
