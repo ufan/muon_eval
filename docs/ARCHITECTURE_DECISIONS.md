@@ -428,7 +428,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **Multi-station.** Up to N projectors in one pass (texture array, uniforms per station). Geometric mode: colour per station, overlaps show blended colours or a "number of covering stations" mode. Physical mode: either per-station hue with brightness, or one combined brightness of summed counts per steradian.
 - **Consistency.** The JS mirror of the shader's direction→slope mapping is tested against the core's slope→direction mapping (`detector-pose.js`) at L1, so view and calculation agree on directions.
 - **Interior coverage later.** Surface highlighting shows where rays cross surfaces, not how deeply a volume is probed. Volume coverage (per-voxel counts, stations, angular diversity) comes from stored traces in a worker (FR-M6, ADR-021) and is a separate layer.
-- **Replaces the legacy flux cloud on the compiled default.** The physical highlight serves the same purpose from the shared result, closing that part of FR-B1 without copying the legacy heuristic.
+- **Replaces the legacy flux cloud** (migration target MT-4, owner decision 2026-10-12). The physical highlight serves the same purpose from the shared result, closing that part of FR-B1 without copying the legacy heuristic.
 
 **What is tested, what is highlighted and how users read it (clarified 2026-10-12).** Goal: a user recognises at a glance which part of the subject each deployed detector sees.
 

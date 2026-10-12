@@ -51,10 +51,10 @@ Features the legacy backend had and the compiled backend does not provide yet. T
 
 | # | Feature (UI) | Legacy behaviour | Compiled path | Required? |
 |---|---|---|---|---|
-| MT-1 | Continuous upstream water level (slider in the environment layers) | Any level 260–305 m re-classified the parametric geometry | Frozen scenarios only; needs FR-E1 (one scene model for continuous variables and frozen variants) and FR-K2 (dataset-declared variables) | Owner to decide |
+| MT-1 | Continuous upstream water level (slider in the environment layers) | Any level 260–305 m re-classified the parametric geometry | Frozen scenarios only; needs FR-E1 (one scene model for continuous variables and frozen variants) and FR-K2 (dataset-declared variables) | Deferred (owner, 2026-10-12): not needed at this stage |
 | MT-2 | Target structure layers (elevator, spillway, platform, water, dam, gallery outlines on the projection) | Hard-coded dam target IDs with DDA-cell masks and edge heuristics | Semantic targets from the dataset (22 direct targets already verified in the preview, FR-GE4 for aggregates); dataset-declared, not dam IDs (FR-K1) | Likely |
 | MT-3 | Structural significance projection mode | Counterfactual column (fill/empty a target) with single-pixel Gaussian significance | Replaced by anomaly hypotheses and sensitivity (FR-H1…H11, ADR-025); entity ROI significance needs FR-M3 | Superseded by FR-H |
-| MT-4 | 3D muon flux cloud (volumetric heat cloud, combined contribution / transmission modes) | 17 × 17 sampled rays drawn as particles | The physical coverage highlight (FR-M10, ADR-026) is planned to serve the same purpose from the shared result; a separate cloud only if the owner still wants it | Owner to decide |
+| MT-4 | 3D muon flux cloud (volumetric heat cloud, combined contribution / transmission modes) | 17 × 17 sampled rays drawn as particles | Replaced by the physical coverage highlight (FR-M10, ADR-026); no separate cloud | Superseded (owner, 2026-10-12) |
 | MT-5 | Gallery, observation room and elevator shaft layer (coloured internal features) | Legacy proxy meshes | Compiled internal features exist (preview shows cavities); needs dataset-declared display layers (FR-K3) | Likely |
 | MT-6 | Legacy deployment plan JSON (water level, device, candidates, active ray) | `legacy-deployment-adapter.js` | Superseded by the compiled snapshot export now and the versioned plan format (FR-P1) later | Superseded |
 | — | DDA main grid size control; coarse 9 × 9 quick metrics | DDA-specific; quick metrics traced 81 unused rays (FR-C4) | Not applicable: no DDA; the 25² preview replaces quick metrics | Dropped |
@@ -231,6 +231,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-12: MT-1 deferred; MT-4 superseded by the coverage highlight (owner).
 - 2026-10-12: FR-B3 legacy backend retired (owner); migration targets MT-1…MT-6 listed under B; FR-B1 reworded; FR-C4 done; FR-V6 dropped.
 - 2026-10-12: FR-V12 measured and documented; edge-adaptive sampling tied to AN3.
 - 2026-10-12: Added FR-V12 in-pixel ray sampling accuracy (owner request); experiment first.

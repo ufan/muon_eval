@@ -101,7 +101,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 | Dataset-declared kind/variables/layers/targets; compiled package as generic contract | FR-K2, K3, ADR-017 | Generalisation G1, after P2 |
 | Material-dependent energy loss, deep-overburden flux, in-material stations, large terrain | FR-K4…K7 | Before the first non-dam subject (G3) |
 | Load packaged dataset from file; converter; in-app authoring | FR-L1…L6 | User-geometry track U1–U3, not urgent |
-| Compiled backend migration targets MT-1…MT-6 (continuous water, target layers, flux cloud, internal-feature layer; significance superseded by anomalies; legacy plan JSON superseded) | FR-B1, FR-E1, FR-M3, FR-K3 | After P3; parts depend on FR-K3 and FR-GE4; owner decides MT-1 and MT-4 |
+| Compiled backend migration targets MT-1…MT-6 (continuous water, target layers, flux cloud, internal-feature layer; significance superseded by anomalies; legacy plan JSON superseded) | FR-B1, FR-E1, FR-M3, FR-K3 | After P3; parts depend on FR-K3 and FR-GE4; MT-1 deferred, MT-4 replaced by #15a coverage highlight (owner) |
 | Station export/import between releases | FR-B2 | With the plan format (#11) or later |
 | WebAssembly tracer | ADR-005 step 4 | Only if P5 measurements insufficient |
 | Server backend | ADR-001 | Only when T1–T4 observed |

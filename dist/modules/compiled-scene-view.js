@@ -6,6 +6,11 @@ import { detectorBasis } from './detector-pose.js';
 // View-only model Z-up → scene Y-up transform. Never classify or trace a mesh here.
 export const compiledPointToScene = ([x,y,z]) => new THREE.Vector3(x,z,-y);
 const materialColors = { concrete:0xc0bcb0, rock:0x809488, water:0x49a7ff, steel:0xffad58, air:0x63ffe8 };
+// Display style of the main app (owner preference: the former legacy scene's look).
+// View-only: it replaces the GLB display colours and never touches the shared buffers.
+const LOOK = { background:0x071018, fogDensity:.00155, dam:0xaaa79c, steel:0x73808b, edge:0x3f5159, rock:0x6e756f,
+  upwater:0x176b9d, downwater:0x2584ad, gridMajor:0x35505d, gridMinor:0x1d3038 };
+const lookMaterial = (color, options = {}) => new THREE.MeshStandardMaterial({ color, roughness:.78, metalness:.02, ...options });
 function clear(group) {
   group.traverse(object => { object.geometry?.dispose(); for (const material of Array.isArray(object.material) ? object.material : [object.material]) material?.dispose(); });
   group.clear();
@@ -14,9 +19,9 @@ function clear(group) {
 export function createCompiledSceneView({ runtime, waterLayers, root=document, onResize=()=>{} }) {
   const $=selector=>root.querySelector(selector),container=$('#webgl');
   const geometryView=createCompiledGeometryView(runtime),detectorGroup=new THREE.Group(),rayGroup=new THREE.Group(),projectionGroup=new THREE.Group();
-  const scene=new THREE.Scene();scene.background=new THREE.Color(0x071018);
-  scene.add(geometryView.group,detectorGroup,rayGroup,projectionGroup,new THREE.HemisphereLight(0xe3f4ff,0x34404a,2.5));
-  const light=new THREE.DirectionalLight(0xffffff,2);light.position.set(200,400,200);scene.add(light);
+  const scene=new THREE.Scene();scene.background=new THREE.Color(LOOK.background);scene.fog=new THREE.FogExp2(LOOK.background,LOOK.fogDensity);
+  scene.add(geometryView.group,detectorGroup,rayGroup,projectionGroup,new THREE.HemisphereLight(0xbfe3ff,0x17221b,2.4));
+  const light=new THREE.DirectionalLight(0xfff0d6,3.1);light.position.set(160,260,150);scene.add(light);
   const box=new THREE.Box3(),wholeBox=new THREE.Box3();geometryView.group.updateMatrixWorld(true);
   for(const component of runtime.components) {
     if(!component.metadata.flags.physics)continue;
@@ -25,13 +30,24 @@ export function createCompiledSceneView({ runtime, waterLayers, root=document, o
     if(['concrete','steel'].includes(component.metadata.material_id))box.union(bounds);
   }
   if(box.isEmpty())box.copy(wholeBox);
+  applyLook();
+  // Ground grid at the base of the structure, sized from its footprint (former legacy view: 520 m, 20 m cells).
+  const footprint=box.getSize(new THREE.Vector3()),gridSize=Math.max(100,Math.ceil(2.25*Math.max(footprint.x,footprint.z)/20)*20);
+  const ground=new THREE.GridHelper(gridSize,gridSize/20,LOOK.gridMajor,LOOK.gridMinor);ground.position.set(box.getCenter(new THREE.Vector3()).x,box.min.y+.05,box.getCenter(new THREE.Vector3()).z);scene.add(ground);
   const target=box.getCenter(new THREE.Vector3()),radius=Math.max(1,box.getSize(new THREE.Vector3()).length()/2);
   const camera=new THREE.PerspectiveCamera(40,1,.1,Math.max(2000,wholeBox.getSize(new THREE.Vector3()).length()*5));
   let renderer,controls,observer,currentStation=null,currentDevice=null;
   const layerState=new Map();
+  function applyLook(){for(const component of runtime.components){const mesh=geometryView.meshes.get(component.componentId),layer=materialLayer(component);let material=null;
+    if(component.metadata.material_id==='concrete')material=lookMaterial(LOOK.dam,{transparent:true,opacity:.78,flatShading:true,side:THREE.DoubleSide});
+    else if(component.metadata.material_id==='steel')material=lookMaterial(LOOK.steel,{flatShading:true,side:THREE.DoubleSide});
+    else if(layer==='terrain')material=lookMaterial(LOOK.rock,{transparent:true,opacity:.38,side:THREE.DoubleSide,depthWrite:false,flatShading:true});
+    else if(layer==='upwater'||layer==='downwater')material=lookMaterial(LOOK[layer],{transparent:true,opacity:.42,roughness:.18,metalness:.08,side:THREE.DoubleSide,depthWrite:false});
+    if(!material)continue;mesh.material.dispose();mesh.material=material;
+    if(layer==='dam')mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry,25),new THREE.LineBasicMaterial({color:LOOK.edge,transparent:true,opacity:.5})));}}
   function resize(){if(!renderer)return;const bounds=container.getBoundingClientRect();if(!bounds.width||!bounds.height)return;camera.aspect=bounds.width/bounds.height;camera.updateProjectionMatrix();renderer.setSize(bounds.width,bounds.height,false);}
-  function setView(mode){if(!controls)return;const axes={perspective:[1,1,1],front:[-1,0,.1],cross:[0,-1,.1],top:[0,0,1]};if(!axes[mode])throw new Error('Unknown scene view');
-    const halfVertical=THREE.MathUtils.degToRad(camera.fov/2),halfHorizontal=Math.atan(Math.tan(halfVertical)*camera.aspect),distance=radius/Math.sin(Math.min(halfVertical,halfHorizontal))*1.1;
+  function setView(mode){if(!controls)return;const axes={perspective:[.74,-.61,.27],front:[-1,0,.1],cross:[0,-1,.1],top:[0,0,1]};if(!axes[mode])throw new Error('Unknown scene view');
+    const halfVertical=THREE.MathUtils.degToRad(camera.fov/2),halfHorizontal=Math.atan(Math.tan(halfVertical)*camera.aspect),distance=radius/Math.sin(Math.min(halfVertical,halfHorizontal))*(mode==='perspective'?.7:1.1);
     const offset=compiledPointToScene(axes[mode]).normalize().multiplyScalar(distance);camera.position.copy(target).add(offset);controls.target.copy(target);controls.update();$('#viewSelect').value=mode;}
   function updateScale(){const height=Math.max(1,container.clientHeight),distance=camera.position.distanceTo(controls.target),mpp=2*distance*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/height;
     const power=10**Math.floor(Math.log10(mpp*90)),length=power*([1,2,5,10].find(value=>value>=mpp*90/power)||10);$('#scaleBar').style.width=(length/mpp).toFixed(0)+'px';$('#scaleLabel').textContent=length.toPrecision(2)+' m';}
@@ -57,12 +73,12 @@ export function createCompiledSceneView({ runtime, waterLayers, root=document, o
     const arrow=new THREE.ArrowHelper(dir,origin,radius*.2,0x65fff0);arrow.line.material.depthTest=arrow.cone.material.depthTest=false;group.add(arrow);
   }
   return Object.freeze({
-    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();});observer.observe(container);resize();renderer.setAnimationLoop(()=>{controls.update();updateScale();renderer.render(scene,camera);});$('#loading').style.display='none';},
+    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();});observer.observe(container);resize();renderer.setAnimationLoop(()=>{controls.update();updateScale();renderer.render(scene,camera);});$('#loading').style.display='none';},
     resize,setView,setLayer,setDamOpacity,drawDetector,
     showRay:(trace,station,direction)=>displayTrace(rayGroup,trace,station,direction),
     showProjectionPixel(data,x,y){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);},
     clearProjection(){clear(projectionGroup);},showFlux(){},drawFluxCloud(){},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},
-    dispose(){renderer?.setAnimationLoop(null);observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
+    dispose(){renderer?.setAnimationLoop(null);observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
   });
 }

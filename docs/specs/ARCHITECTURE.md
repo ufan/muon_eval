@@ -34,7 +34,7 @@ Dependency-direction rules are in the [module boundaries spec](MODULE_BOUNDARIES
 
 Inputs are owned by deployment-state and published read-only; views own selection, colour, camera and layer state. Each assessment session copies the station, device, response and environment and binds one geometry context; the preview and final passes consume the same session. When inputs change, the controller cancels pending batches and invalidates the old generation, so stale results cannot be published. Native slope bins are cached per device; the flux integral has no cache (FR-C1).
 
-The compiled main-app view reuses the computation-owned buffers of compiled-geometry-view; geometry-preview is standalone and not a main-app dependency.
+The compiled main-app view reuses the computation-owned buffers of compiled-geometry-view and applies the display style of the former legacy scene (owner preference, 2026-10-12): dark background with fog and ground grid, translucent dam with edges, translucent rock and dark water, legacy lighting and perspective preset. The style replaces only the GLB display colours in the view; geometry-preview is standalone and not a main-app dependency.
 
 ## Current calculation strategy
 
