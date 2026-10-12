@@ -113,7 +113,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 | Item | Ref | Commit |
 |---|---|---|
-| Projected-area factor added, edge factor removed (#3), model `legacy-quick-response@3.0.0` | FR-C3 | this branch |
+| Projected-area factor added, edge factor removed (#3), model `legacy-quick-response@3.0.0` | FR-C3 | `3aa22b4` |
 | Legacy 500 m ray cutoff recorded in exports (#2) | FR-C2 | `cbbc1b0` |
 | History-independent flux integral (#1), model `legacy-quick-response@2.0.0` | FR-C1 | `5de4693` |
 | Datasets moved to top-level `datasets/` with sync script | ADR-018 | `dc48ed3` |
