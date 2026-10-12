@@ -49,48 +49,6 @@
         "schema/dam-dataset.schema.json": "4f9166252fb5f9d51801218518279243bede0f848966fd3d5a714fc126cf5dce",
         "schema/zhouning.profile.schema.json": "8d243489c78e67593aaad6678421961837e27499a215acdad447ef72b435dfbe"
       }
-    },
-    "zhouning-lower-reservoir-dam@0.6.2": {
-      "base_url": "./zhouning-lower-reservoir-dam/0.6.2/",
-      "spec": "dam_spec.json",
-      "schema": "dam_spec.schema.json",
-      "deployment_candidates": "deployment_candidates.json",
-      "detector_models": "detector_models.json",
-      "site_conditions": "site_conditions.json",
-      "compiled_manifest": "compiled/manifest.json",
-      "terrain_near": {
-        "header": "compiled/terrain_effective_near.json",
-        "data": "compiled/terrain_effective_near.f32"
-      },
-      "terrain_far": {
-        "header": "compiled/terrain_far.json",
-        "data": "compiled/terrain_far.f32"
-      },
-      "conformance": {
-        "points": "compiled/conformance_points.json",
-        "rays": "compiled/conformance_rays.json"
-      }
-    },
-    "zhouning-lower-reservoir-dam@0.6.1": {
-      "base_url": "./zhouning-lower-reservoir-dam/0.6.1/",
-      "spec": "dam_spec.json",
-      "schema": "dam_spec.schema.json",
-      "deployment_candidates": "deployment_candidates.json",
-      "detector_models": "detector_models.json",
-      "site_conditions": "site_conditions.json",
-      "compiled_manifest": "compiled/manifest.json",
-      "terrain_near": {
-        "header": "compiled/terrain_effective_near.json",
-        "data": "compiled/terrain_effective_near.f32"
-      },
-      "terrain_far": {
-        "header": "compiled/terrain_far.json",
-        "data": "compiled/terrain_far.f32"
-      },
-      "conformance": {
-        "points": "compiled/conformance_points.json",
-        "rays": "compiled/conformance_rays.json"
-      }
     }
   }
 }

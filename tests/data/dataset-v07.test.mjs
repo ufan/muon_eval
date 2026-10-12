@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { loadDataset, loadDefaultDataset } from '../../dist/modules/dataset-loader.js';
+import { loadDataset } from '../../dist/modules/dataset-loader.js';
 import { adaptDamSpecV07 } from '../../dist/modules/dam-spec-v07.js';
 import { createCoordinateTransform } from '../../dist/modules/coordinates.js';
 import { createV07QualificationKernel, containsSourceGeometry } from '../../dist/modules/geometry-v07-qualification.js';
@@ -17,16 +17,12 @@ const { spec, geometry } = dataset;
 const kernel = createV07QualificationKernel(dataset);
 const near = (actual, expected) => actual.forEach((value, axis) => assert.ok(Math.abs(value - expected[axis]) < 1e-9, `${actual} != ${expected}`));
 
-test('registry defaults to the native compiled release and keeps legacy identity separate', async () => {
+test('registry lists only native compiled releases and defaults to one', async () => {
   const registry = await readJson(registryUrl);
   assert.equal(registry.default_dataset, release);
-  const legacy = await loadRegisteredDataset('zhouning-lower-reservoir-dam@0.6.2');
-  assert.equal(legacy.geometry, null);
-  assert.equal(legacy.identity.dataset_version, dataset.identity.dataset_version);
-  assert.notEqual(legacy.id, dataset.id);
+  for (const entry of Object.values(registry.datasets)) assert.equal(entry.adapter, 'dam-spec-v07');
   assert.equal(geometry.identity.release_id, release);
-  const oldVersion = await loadRegisteredDataset('zhouning-lower-reservoir-dam@0.6.1');
-  assert.equal(oldVersion.identity.dataset_version, '0.6.1');
+  assert.equal(dataset.identity.dataset_version, '0.6.2');
 });
 
 test('native adapter preserves source provenance, semantic entities and scenario state', () => {
@@ -148,14 +144,14 @@ test('qualification material queries obey bounds and reject invalid ray inputs',
 });
 
 test('actual HTTP loader verifies native assets and lazy scenario meshes', async t => {
-  let corrupt = false, legacyDefault = true;
+  let corrupt = false, legacyEntry = false;
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url, 'http://localhost');
       const path = resolveStaticPath(url.pathname);
       let bytes = await readFile(path);
-      if (legacyDefault && url.pathname.endsWith('/registry.json')) {
-        const registry = JSON.parse(bytes.toString()); registry.default_dataset = 'zhouning-lower-reservoir-dam@0.6.2';
+      if (legacyEntry && url.pathname.endsWith('/registry.json')) {
+        const registry = JSON.parse(bytes.toString()); delete registry.datasets[release].adapter;
         bytes = Buffer.from(JSON.stringify(registry));
       }
       if (corrupt && url.pathname.endsWith('/dam_spec_v070.json')) bytes = Buffer.from(bytes.toString().replace('0.6.2', '0.6.3'));
@@ -173,10 +169,10 @@ test('actual HTTP loader verifies native assets and lazy scenario meshes', async
   assert.equal(mesh.variables.water_up_level, 298);
   assert.ok(mesh.components.some(c => c.component_id === 'concrete'));
   await assert.rejects(loaded.loadCompiledScenario('missing'), /Unknown compiled scenario/);
-  const legacy = await loadDefaultDataset(address);
-  assert.equal(legacy.id, 'zhouning-lower-reservoir-dam@0.6.2');
-  legacyDefault = false; // the real registry defaults to the native release
-  await assert.rejects(loadDefaultDataset(address, { digest: sha256 }), /legacy-only compatibility loader/);
+  // Releases without the native adapter (the retired legacy format) are rejected.
+  legacyEntry = true;
+  await assert.rejects(loadDataset(release, address, { digest: sha256 }), /Unsupported dataset adapter/);
+  legacyEntry = false;
   corrupt = true;
   await assert.rejects(loadDataset(release, address, { digest: sha256 }), /SHA-256 mismatch/);
 });
