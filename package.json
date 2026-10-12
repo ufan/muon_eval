@@ -13,7 +13,7 @@
     "test:contract": "node --test \"tests/contract/*.test.mjs\"",
     "test:data": "node --test \"tests/data/*.test.mjs\" && node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0 --backend compiled > /dev/null && node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2 > /dev/null && node scripts/check-semantic-mapping.mjs > /dev/null && python3 scripts/check-dataset-release.py",
     "test:integration": "node --test \"tests/integration/*.test.mjs\"",
-    "test:browser": "node scripts/check-main-compiled-app.mjs && node scripts/check-main-app.mjs",
+    "test:browser": "node scripts/check-main-compiled-app.mjs",
     "test:browser:preview": "node scripts/check-compiled-preview.mjs",
     "test:all": "npm test && npm run test:data && npm run test:integration && npm run test:browser",
     "sync-datasets": "node scripts/sync-datasets.mjs"

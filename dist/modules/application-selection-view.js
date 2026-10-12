@@ -5,9 +5,9 @@ export function createApplicationSelectionView({ registry, selection, scenarios,
   panel.innerHTML='<h2>数据集与计算后端</h2><label>发布版本<select id="datasetSelect"></select></label><label>几何后端<select id="backendSelect"></select></label><label id="scenarioSelectLabel">冻结工况<select id="scenarioSelect"></select></label><button id="loadSelection" type="button">载入所选配置</button><p id="applicationBackendInfo" class="hint"></p>';
   root.querySelector('.left').prepend(panel);const $=id=>panel.querySelector('#'+id);
   const option=(select,value,label)=>{const node=root.createElement('option');node.value=value;node.textContent=label;select.append(node);};
-  for(const [id,entry] of Object.entries(registry.datasets))if(!entry.adapter||entry.adapter==='dam-spec-v07')option($('datasetSelect'),id,id);
+  for(const [id,entry] of Object.entries(registry.datasets))if(entry.adapter==='dam-spec-v07')option($('datasetSelect'),id,id);
   $('datasetSelect').value=selection.datasetId;
-  function configureBackend(){const entry=registry.datasets[$('datasetSelect').value],backend=entry.adapter==='dam-spec-v07'?'compiled':'legacy';$('backendSelect').replaceChildren();option($('backendSelect'),backend,backend==='compiled'?'Compiled GLB / BVH':'Legacy analytic / DDA');
+  function configureBackend(){const backend='compiled';$('backendSelect').replaceChildren();option($('backendSelect'),backend,'Compiled GLB / BVH');
     const current=$('datasetSelect').value===selection.datasetId;const available=current&&backend==='compiled';$('scenarioSelectLabel').hidden=!available;$('scenarioSelect').disabled=!available;}
   for(const scenario of scenarios)option($('scenarioSelect'),scenario.id,`${scenario.label} · ${Object.entries(scenario.variables).map(([key,value])=>`${key}=${value}`).join(' / ')}`);
   if(selection.scenarioId)$('scenarioSelect').value=selection.scenarioId;

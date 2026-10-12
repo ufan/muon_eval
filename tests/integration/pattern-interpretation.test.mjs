@@ -15,8 +15,6 @@ import { comparePatternResults, createPatternComparisonExport, replayPatternComp
 import { loadRegisteredDataset } from '../../scripts/dataset-fixture.mjs';
 import { loadCompiledMeshRuntime } from '../../dist/modules/compiled-mesh-runtime.js';
 import { sha256Portable } from '../../dist/modules/sha256.js';
-import { adaptLegacyPatternResult } from '../../dist/modules/legacy-pattern-adapter.js';
-import { createProjectionPass } from '../../dist/modules/detector-projection.js';
 import { createPatternSnapshot, createPatternField } from '../../dist/modules/projection-pattern-contract.js';
 import { createPatternLayerExport, replayPatternLayerExport } from '../../dist/modules/pattern-layer-export.js';
 import { evaluatePatternComparisonBatch } from '../../dist/modules/pattern-comparison-batch.js';
@@ -146,28 +144,6 @@ test('comparison indicators/pose sensitivity share single-site definitions and r
   const mismatch = comparePatternResults([a, exposure], selection); assert.equal(mismatch.comparable, false);
   assert.ok(mismatch.differences[1].fields.includes('response')); assert.equal(mismatch.sensitivity[0].state, 'incomparable');
   assert.throws(() => comparePatternResults([a], { ...selection, id: 'invented' }));
-});
-
-test('legacy adapter reads completed core outputs without retracing and preserves backend identity/counts/columns', () => {
-  const pass = createProjectionPass({ n: 3, device, response, includeContext: true,
-    sampleRay: (sx, sy) => ({ dir: { x: sx, y: sy, z: 1 }, q: { totals: { concrete: 2, air: 1 }, mwe: 4.8, targetLengths: {} } }) });
-  const done = pass.advance(3).result, saved = structuredClone(done);
-  const result = adaptLegacyPatternResult({ pass: done, identity: { release_id: 'legacy-test@1' }, materials: { concrete: { density: 2.4 }, air: { density: 0 } },
-    station: { x: 0, y: 0, z: 0, az: 0, el: 30 }, device, response, environment: { upstream: 1 }, traceSettings: { radialCutoffM: 500, maximumRayDistanceM: 700 }, directionToModel: dir => [dir.x, dir.y, dir.z] });
-  // FR-C2: the export records the radial cutoff the DDA tracer applied.
-  assert.equal(result.config.length, 500); assert.equal(prepareProjectionPattern(result).snapshot.inputs.sampling.rayLengthM, 500);
-  assert.deepEqual(result.diagnostics, { enclosingMaximumRayDistanceM: 700, radialCutoffBinds: true });
-  assert.ok(result.limitations.some(text => /500 m radial cutoff/.test(text)));
-  assert.equal(adaptLegacyPatternResult({ pass: done, identity: { release_id: 'legacy-test@1' }, materials: { concrete: { density: 2.4 }, air: { density: 0 } },
-    station: { x: 0, y: 0, z: 0, az: 0, el: 30 }, device, response, environment: { upstream: 1 }, traceSettings: { radialCutoffM: 500, maximumRayDistanceM: 300 },
-    directionToModel: dir => [dir.x, dir.y, dir.z] }).diagnostics.radialCutoffBinds, false);
-  assert.throws(() => adaptLegacyPatternResult({ pass: done, identity: { release_id: 'legacy-test@1' }, materials: { concrete: { density: 2.4 }, air: { density: 0 } },
-    station: { x: 0, y: 0, z: 0, az: 0, el: 30 }, device, response, environment: { upstream: 1 }, traceSettings: { maximumRayDistanceM: 300 },
-    directionToModel: dir => [dir.x, dir.y, dir.z] }), /radial cutoff/);
-  assert.equal(result.backend, 'legacy-dda@1.0.0'); assert.equal(result.kind, 'legacy-detector-assessment');
-  assert.equal(result.totalCount, done.total); assert.ok(result.pixels.every(p => p.materialColumns.concrete === 4.8));
-  assert.equal(prepareProjectionPattern(result).snapshot.inputs.backendVersion, result.backend);
-  assert.deepEqual(done, saved); responsePattern(result);
 });
 
 test('explicit batch/single sites reuse the same response core and indicators, snapshot settings and cancel', async () => {

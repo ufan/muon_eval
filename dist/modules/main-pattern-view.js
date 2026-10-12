@@ -4,7 +4,7 @@ import { responsePattern } from './response-patterns.js';
 import { drawContributionPaths } from './contribution-view.js';
 import { comparePatternResults, createPatternComparisonExport, replayPatternComparison } from './pattern-comparison.js';
 
-export function createMainPatternView({ canvas, host, backendLabel = 'legacy DDA' }) {
+export function createMainPatternView({ canvas, host, backendLabel = 'compiled' }) {
   const wrapper = document.createElement('div'); wrapper.style.cssText = 'grid-column:2;grid-row:1;position:relative;min-width:0';
   canvas.before(wrapper); wrapper.append(canvas); canvas.style.width = '100%'; canvas.style.display = 'block';
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.id = 'mainPatternOverlay';

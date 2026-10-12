@@ -2,8 +2,6 @@ import { loadDataset } from './modules/dataset-loader.js';
 import { resolveApplicationSelection } from './modules/application-selection.js';
 import { createApplicationBackend } from './modules/application-backends.js';
 import { createAssessmentController } from './modules/assessment-controller.js';
-import { MAIN_TRACE_SETTINGS } from './modules/main-assessment.js';
-import { createLegacySceneView } from './modules/legacy-scene-view.js';
 import { createCompiledSceneView } from './modules/compiled-scene-view.js';
 import { createProjectionCanvasView } from './modules/projection-canvas-view.js';
 import { createApplicationSelectionView } from './modules/application-selection-view.js';
@@ -15,10 +13,9 @@ async function main(){
  const registry=await response.json(),selection=resolveApplicationSelection(registry,location.search);
  const dataset=await loadDataset(selection.datasetId),backend=await createApplicationBackend(dataset,selection);
  const state=createDeploymentState({stations:backend.stations,environment:backend.environment});let page;
- const viewPorts={dataset,geometry:backend.geometry,runtime:backend.runtime,waterLayers:backend.waterLayers,traceCellM:MAIN_TRACE_SETTINGS.mainCell,onResize:()=>page?.constrainProjectionPanel()};
- const sceneView=selection.backend==='legacy'?createLegacySceneView(viewPorts):createCompiledSceneView(viewPorts);
+ const sceneView=createCompiledSceneView({dataset,runtime:backend.runtime,waterLayers:backend.waterLayers,onResize:()=>page?.constrainProjectionPanel()});
  const projectionView=createProjectionCanvasView({onHover:(data,x,y)=>sceneView.showProjectionPixel(data,x,y),onLeave:()=>sceneView.clearProjection()});
- createApplicationSelectionView({registry,selection:backend.selection,scenarios:backend.scenarios,backendLabel:selection.backend,description:backend.environmentDescription,title:dataset.identity.title??dataset.spec.title,frame:dataset.geometry?.source.frames.model_frame});
+ createApplicationSelectionView({registry,selection:backend.selection,scenarios:backend.scenarios,backendLabel:selection.backend,description:backend.environmentDescription,title:dataset.identity.title,frame:dataset.geometry?.source.frames.model_frame});
  page=createMainPage({datasetId:dataset.id,datasetVersion:dataset.identity.dataset_version,state,sceneView,projectionView,capabilities:backend.capabilities,
   backendLabel:selection.backend,environmentDescription:backend.environmentDescription,exportFileName:backend.exportFileName,exportPlan:backend.exportPlan,createController:ports=>{
    const controller=createAssessmentController({assessment:backend.assessment,...ports});
