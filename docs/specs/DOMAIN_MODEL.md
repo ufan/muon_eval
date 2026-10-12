@@ -21,7 +21,7 @@ Last updated: 2026-10-12
 | Deployment planning | Where and how detectors are placed | Station, Pose, Candidate, DeploymentPlan, Selection | `deployment-state`, `*-deployment-adapter` (Partial: no plan aggregate yet) |
 | Assessment | What a deployment would see: rays, columns, counts | AssessmentInput (snapshot), Session, Trace, ProjectionResult | `main-assessment`, `compiled-main-assessment`, `compiled-assessment`, `detector-projection`, `muon-response`, `assessment-controller` |
 | Interpretation | Derived numerical layers and comparisons on results | PatternField, Overlay, Comparison, Export | `projection-pattern-*`, `contribution-*`, `pattern-comparison*`, `finite-model-references` |
-| Deficiency & sensitivity | What problem the deployment must detect, and how well it would | DeficiencyHypothesis, Region, DensityModel, HostConstraint, ParameterSweep, SensitivityResult | Target (ADR-025, FR-H); legacy counterfactual significance is a dam-specific precursor |
+| Anomaly & sensitivity | What problem the deployment must detect, and how well it would | AnomalyHypothesis, Region, DensityModel, HostConstraint, ParameterSweep, SensitivityResult | Target (ADR-025, FR-H); legacy counterfactual significance is a dam-specific precursor |
 | Scan | Many assessments over a constrained space | ScanDefinition, ScanResult, Ranking | Target (FR-S1…S5) |
 | Reconstruction | 3D picture recoverable from several projections | VoxelGrid, SimulatedMeasurement, Reconstruction, QualityMetrics | Target (ADR-021, FR-M6…M9) |
 | Presentation | How results are shown; never a source of truth | Scene views, canvases, demonstration mode | `*-scene-view`, `projection-canvas-view`, `main-page` |
@@ -94,18 +94,18 @@ classDiagram
 | Scene | Value | Release ID + scenario ID or environment variable values | The physical world of a calculation: geometry and materials follow from the release and environment state only. Composition: scene = release + environment state | Partial: the code passes release and `environment` separately rather than as one scene value |
 | ViewState | Value, per view | — | Layer visibility, colours, transparency, camera, overlays, selection. Owned by the views and `main-page`; never part of a scene, snapshot key or result | Current |
 
-### 2.1b Deficiency hypotheses (Target, ADR-025)
+### 2.1b Anomaly hypotheses (Target, ADR-025)
 
 | Concept | Kind | Notes |
 |---|---|---|
-| DeficiencyHypothesis | Entity within a plan or study | Parameterised change of the physical state: region + density model + host constraint + parameters (size, position, density, development step). Not part of a dataset release; datasets may ship templates |
+| AnomalyHypothesis | Entity within a plan or study | Parameterised change of the physical state: region + density model + host constraint + parameters (size, position, density, development step). Not part of a dataset release; datasets may ship templates |
 | Region | Value | Analytic primitive or closed mesh in the model frame; kind generators (furnace cohesive zone, hearth wall profile, seepage surface) produce regions |
 | DensityModel | Value | Void, relative change, absolute density, material replacement, fluid saturation |
 | HostConstraint | Value | Materials/entities the change may act on; applied after material precedence |
-| ParameterSweep | Value | Ranges and steps over deficiency parameters (and development steps over time) |
+| ParameterSweep | Value | Ranges and steps over anomaly parameters (and development steps over time) |
 | SensitivityResult | Value, versioned | Baseline and perturbed counts, ΔN, significance (stat/sys), exposure to threshold, footprint; labelled simulated hypothesis |
 
-Scene composition (Target): **scene = release + environment state + active deficiency hypotheses**. A baseline scene has none; sensitivity compares a scene with and without a deficiency using the same snapshot and stored traces.
+Scene composition (Target): **scene = release + environment state + active anomaly hypotheses**. A baseline scene has none; sensitivity compares a scene with and without an anomaly using the same snapshot and stored traces.
 
 ### 2.2 Detector
 
@@ -156,9 +156,9 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 9. Generic code never branches on a dataset's kind or name. (FR-K1; existing leaks being removed)
 10. Aggregate components never acquire source-entity ownership by name or proximity.
 11. Unknown or approximate dimensions stay explicit metadata; they are never replaced by unexplained constants.
-12. (Target) An active deficiency is part of the physical scene whether or not the view shows it; it never modifies the dataset release.
-13. (Target) A deficiency changes only its declared host materials inside its region, after material precedence.
-14. (Target) Baseline and perturbed results of a sensitivity evaluation come from the same snapshot and traces; the deficiency definition is part of the snapshot identity.
+12. (Target) An active anomaly is part of the physical scene whether or not the view shows it; it never modifies the dataset release.
+13. (Target) An anomaly changes only its declared host materials inside its region, after material precedence.
+14. (Target) Baseline and perturbed results of a sensitivity evaluation come from the same snapshot and traces; the anomaly definition is part of the snapshot identity.
 
 ## 5. Lifecycles
 
@@ -200,14 +200,15 @@ What may differ between subject kinds, so that generic code is not shaped by the
 | Regions of interest | Discrete cavities and features: galleries, rooms, shaft, spillway, water body | Seepage zones, internal erosion, core integrity | Continuous zones: cohesive zone, deadman, refractory wear profile | Voids, fracture zones, density anomalies in overburden | Legacy dam targets; compiled semantic targets by canonical ID only (FR-M3) |
 | Detector placement | Outside the dam and in galleries; mostly looking up and across | Downstream toe, galleries | Around the furnace near ground level; near-horizontal views | Inside the tunnel looking up | Station + pose; upward rays only (FR-K6) |
 | Display and interaction | External 3D view, internal proxies, water layers, slope-space projections | Cross-sections through zones | Cut-away / sectional views of a closed vessel; time slider | Underground viewpoint; terrain above | Dam layer list hard-coded in backends (FR-K3) |
-| Typical deficiencies (owner-stated needs) | Voids, loosened or densified zones without clear structural features; seepage zone development | Seepage, internal erosion, core defects | Cohesive-zone shape; hearth wall thickness (erosion) | Voids, fracture zones, water-bearing zones | None yet; ADR-025 proposes generic regions + kind generators |
+| Typical anomalies (owner-stated needs) | Voids, loosened or densified zones without clear structural features; seepage zone development | Seepage, internal erosion, core defects | Cohesive-zone shape; hearth wall thickness (erosion) | Voids, fracture zones, water-bearing zones | None yet; ADR-025 proposes generic regions + kind generators |
 | Main physics prerequisites | Open sky, rock-like matter, moderate columns | Similar to the dam | High-Z energy loss (FR-K4); small subject, short rays | Deep overburden, large columns (FR-K5) | Rock-like energy loss; `10⁵ GeV` cap |
 
 Add a column (and a kind profile, FR-K10) when a new kind or dam type is considered; move a cell from assumed to observed only with a real dataset.
 
 ## Change log
 
-- 2026-10-12: Added deficiency hypotheses (Target, ADR-025): context, concepts, scene composition, invariants 12–14, register row.
+- 2026-10-12: Renamed "deficiency" to "anomaly" (AnomalyHypothesis).
+- 2026-10-12: Added anomaly hypotheses (Target, ADR-025): context, concepts, scene composition, invariants 12–14, register row.
 - 2026-10-12: Added §7 kind variation register (observed Zhouning RCC dam vs assumed other kinds).
 - 2026-10-12: Clarified Scene vs ViewState: display options belong to the view state, never the scene; scene = release + environment state; assessment = scene + detector + station + pose; plan = scene + stations. Invariant 3 restated; two gaps added.
 - 2026-10-10: Initial model from the current code and decisions ADR-008…021.

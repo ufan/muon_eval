@@ -104,11 +104,11 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | FR-S5 | Headless batch runner. | Node CLI: reads a plan/scan file, uses all cores, writes versioned results the app can load. Same modules as the browser. | Needed |
 | FR-S6 | Distributed or shared scan execution. | Only when server trigger T2 is met. | Deferred |
 
-## H. Deficiency hypotheses and sensitivity (ADR-025)
+## H. Anomaly hypotheses and sensitivity (ADR-025)
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
-| FR-H1 | Deficiency definition format. | Versioned schema: region, density model, host constraint, parameters with ranges, optional development steps; stored in the plan (FR-P1) or a study file, never in a dataset release; datasets may ship suggested templates. | Proposed |
+| FR-H1 | Anomaly definition format. | Versioned schema: region, density model, host constraint, parameters with ranges, optional development steps; stored in the plan (FR-P1) or a study file, never in a dataset release; datasets may ship suggested templates. | Proposed |
 | FR-H2 | Generic regions. | Sphere, ellipsoid, box, cylinder, extruded polygon and closed mesh regions in the model frame; ray–region intersection exact against analytic fixtures. | Proposed |
 | FR-H3 | Density models. | Void, relative change, absolute density, material replacement, fluid saturation (porosity × fluid density); per-material columns kept. | Proposed |
 | FR-H4 | Host clipping. | The change applies only to the declared host materials/entities inside the region, after material precedence; regions outside any host have no effect and are reported. | Proposed |
@@ -116,9 +116,9 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | FR-H6 | Sensitivity outputs. | Per pixel and per footprint: N, N′, ΔN, significance (statistical and systematic terms), exposure needed for a chosen significance; footprint outline in each projection. | Proposed |
 | FR-H7 | Parameter sweeps. | Sweeps over size, density change, position and development step produce sensitivity curves and minimum detectable size/contrast, comparable across plans. | Proposed |
 | FR-H8 | Systematics. | Nuisance variations from declared uncertainties (density ranges, unknowns, flux model, device efficiency); results with and without systematics. | Proposed |
-| FR-H9 | View. | Deficiency regions shown in 3D and as projection footprints from the same definition; hiding them in the view never changes physics. | Proposed |
+| FR-H9 | View. | Anomaly regions shown in 3D and as projection footprints from the same definition; hiding them in the view never changes physics. | Proposed |
 | FR-H10 | Kind generators. | Kind-specific parametric shapes (e.g. dam seepage surface, furnace cohesive zone, hearth wall thickness profile) produce generic regions; each needs a kind profile (FR-K10). | Proposed (later) |
-| FR-H11 | Labelling and identity. | Deficiency definitions are part of the snapshot identity; outputs are labelled simulated hypotheses. | Proposed |
+| FR-H11 | Labelling and identity. | Anomaly definitions are part of the snapshot identity; outputs are labelled simulated hypotheses. | Proposed |
 
 ## M. Multi-station and reporting
 
@@ -214,7 +214,8 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
-- 2026-10-12: Added H (deficiency hypotheses and sensitivity), all Proposed pending OQ-10.
+- 2026-10-12: Renamed "deficiency" to "anomaly" (owner); FR-H unchanged otherwise.
+- 2026-10-12: Added H (anomaly hypotheses and sensitivity), all Proposed pending OQ-10.
 - 2026-10-12: FR-K10 kind profile; FR-K3 to be designed from two real examples.
 - 2026-10-10: Added W (distribution) FR-W1…W4.
 - 2026-10-10: FR-Q1 done.

@@ -34,7 +34,7 @@ Last updated: 2026-10-10
 | 022 | A living domain model separate from the glossary | Accepted |
 | 023 | Layered, lightweight test-driven development | Accepted |
 | 024 | Desktop distribution as a thin wrapper over the unchanged web app | Proposed |
-| 025 | Deficiency hypotheses in the physical scene; perturbative sensitivity evaluation | Proposed |
+| 025 | Anomaly hypotheses in the physical scene; perturbative sensitivity evaluation | Proposed |
 
 ---
 
@@ -381,29 +381,29 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 **Consequences.** One build serves the online service and the desktop package; browser acceptance (L5) covers the wrapper's content, plus a short smoke test per packaged OS. Code signing and notarisation (Windows, macOS) are the main recurring cost of stages 2–3. `localStorage` in a wrapper belongs to the app's own origin, so plans move between web and desktop by export/import (FR-P1).
 
-## ADR-025 Deficiency hypotheses in the physical scene; perturbative sensitivity evaluation
+## ADR-025 Anomaly hypotheses in the physical scene; perturbative sensitivity evaluation
 
 **Status:** Proposed (owner requirement 2026-10-12)
 
-**Context.** Detectors are deployed to investigate a structural deficiency of the subject. Without an explicit deficiency the tool can only say what a station sees, not whether a plan would detect the problem. Owner examples: voids, loosened or densified zones without clear structural features; a blast furnace's cohesive-zone shape and hearth wall thickness changes; development of a seepage (saturated) zone. Today the only related mechanism is the legacy counterfactual significance, a dam-specific heuristic on predefined targets that does not exist on the compiled default (FR-B1). Both backends already keep per-ray segments (material, entry and exit distance), so a deficiency can be applied to a stored trace without retracing the subject.
+**Context.** Detectors are deployed to investigate a structural anomaly of the subject. Without an explicit anomaly the tool can only say what a station sees, not whether a plan would detect the problem. Owner examples: voids, loosened or densified zones without clear structural features; a blast furnace's cohesive-zone shape and hearth wall thickness changes; development of a seepage (saturated) zone. Today the only related mechanism is the legacy counterfactual significance, a dam-specific heuristic on predefined targets that does not exist on the compiled default (FR-B1). Both backends already keep per-ray segments (material, entry and exit distance), so an anomaly can be applied to a stored trace without retracing the subject.
 
 **Decision.**
-- **Concept.** A *deficiency hypothesis* is a user- or dataset-supplied, parameterised change of the subject's physical state: a **region** (geometry), a **density model** (what changes inside it), a **host constraint** (which materials/entities it may affect) and **parameters** with ranges (size, position, density, time/development step). It is not part of the immutable dataset release.
-- **Scene.** The physical scene becomes: release + environment state + active deficiency hypotheses. A deficiency is part of the physical state when active, independent of whether the view shows it; the view renders it from the same definition (glossary rule: view state never changes physics).
+- **Concept.** A *anomaly hypothesis* is a user- or dataset-supplied, parameterised change of the subject's physical state: a **region** (geometry), a **density model** (what changes inside it), a **host constraint** (which materials/entities it may affect) and **parameters** with ranges (size, position, density, time/development step). It is not part of the immutable dataset release.
+- **Scene.** The physical scene becomes: release + environment state + active anomaly hypotheses. An anomaly is part of the physical state when active, independent of whether the view shows it; the view renders it from the same definition (glossary rule: view state never changes physics).
 - **Geometry.** Generic regions first: analytic primitives (sphere, ellipsoid, box, cylinder, extruded polygon) and closed meshes (BVH, same rules as compiled components). Host clipping applies after material classification: the change acts only on the resolved host material inside the region, so "positive minus negative volumes" and material precedence stay intact. Kind-specific shapes (cohesive-zone surfaces, hearth wall thickness profiles, seepage surfaces) are produced by **kind generators** that output generic regions; they follow ADR-016 (kind profile first).
 - **Density models.** Void (density → 0), relative change (Δρ/ρ: loosening, densification), absolute replacement, material replacement, and fluid saturation (porosity × fluid density, for seepage). Per-material columns are kept so FR-K4 material-dependent energy loss can apply later.
-- **Evaluation.** Perturbative: trace the baseline scene once per station/pose; for each deficiency variant compute the column change from region ∩ host segments along each stored ray, then recompute counts with the shared response core. Outputs per pixel and per region footprint: baseline and perturbed counts, ΔN, significance with statistical and systematic terms, and exposure time needed to reach a chosen significance. Sweeps over size, density, position and development step give sensitivity curves and minimum detectable size/contrast. Exactness is checked against full retracing on analytic fixtures (L2).
+- **Evaluation.** Perturbative: trace the baseline scene once per station/pose; for each anomaly variant compute the column change from region ∩ host segments along each stored ray, then recompute counts with the shared response core. Outputs per pixel and per region footprint: baseline and perturbed counts, ΔN, significance with statistical and systematic terms, and exposure time needed to reach a chosen significance. Sweeps over size, density, position and development step give sensitivity curves and minimum detectable size/contrast. Exactness is checked against full retracing on analytic fixtures (L2).
 - **Systematics.** Nuisance variations come from declared uncertainties: dataset density ranges and unknowns, flux model, device efficiency, geometry approximations. Results report significance with and without them, so the final observation states what is detectable and under which assumptions.
-- **Uses.** Becomes the main objective for scan ranking (FR-S2), multi-station comparison (ADR-020) and the ground truth for simulated reconstruction (ADR-021). It also gives the compiled default a deficiency-based sensitivity that does not need entity attribution, replacing the legacy counterfactual heuristic over time.
+- **Uses.** Becomes the main objective for scan ranking (FR-S2), multi-station comparison (ADR-020) and the ground truth for simulated reconstruction (ADR-021). It also gives the compiled default an anomaly-based sensitivity that does not need entity attribution, replacing the legacy counterfactual heuristic over time.
 - **Prerequisite.** FR-C1 (history-independent flux) must be fixed first: the quantised flux cache can map small column changes to the same cached value, making ΔN artificially zero or noisy.
-- **Labelling.** Every result based on a deficiency is labelled as a simulated hypothesis with its full definition in the snapshot identity.
+- **Labelling.** Every result based on an anomaly is labelled as a simulated hypothesis with its full definition in the snapshot identity.
 
 ---
 
 ## Open questions
 
 - **OQ-2 UI framework choice** (Preact vs Svelte), decided when ADR-004 starts.
-- **OQ-10 Deficiency priority and vocabulary.** Where do deficiency hypotheses go in the order (recommended: right after the plan format and before scan performance, since scans rank by sensitivity)? Is "deficiency" the preferred English term (alternatives: "anomaly", "defect")?
+- **OQ-10 Anomaly priority.** Where do anomaly hypotheses go in the order? Recommended: right after the plan format and before scan performance, since scans rank by sensitivity.
 - **OQ-9 Desktop distribution need.** Is an installable offline web app (ADR-024 stage 1) enough, or is a downloadable installer required? For which operating systems, and must it work fully offline?
 
 ## Resolved questions
@@ -417,10 +417,12 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 | OQ-6 Dataset directory move | Move now | ADR-018 |
 | OQ-7 Multi-station overview priority | Ahead of scan performance | ADR-020 |
 | OQ-8 Continuous integration | Keep tests local for now | ADR-023, TEST_STRATEGY |
+| OQ-10 (term) Name for the structural problem under investigation | "Anomaly" (not "deficiency" or "defect"); 2026-10-12 | ADR-025, glossary |
 
 ## Change log
 
-- 2026-10-12: ADR-025 deficiency hypotheses and perturbative sensitivity; OQ-10.
+- 2026-10-12: Term "anomaly" adopted instead of "deficiency" (owner); OQ-10 now covers placement only.
+- 2026-10-12: ADR-025 anomaly hypotheses and perturbative sensitivity; OQ-10.
 - 2026-10-12: ADR-016 extended with "limits of current evidence" (one RCC dam); ADR-017 marked provisional.
 - 2026-10-10: ADR-024 desktop distribution; OQ-9.
 - 2026-10-10: ADR-023 accepted; OQ-8 resolved (local tests only).
