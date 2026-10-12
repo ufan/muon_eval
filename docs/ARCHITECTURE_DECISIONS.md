@@ -37,6 +37,7 @@ Last updated: 2026-10-10
 | 025 | Anomaly hypotheses in the physical scene; perturbative sensitivity evaluation | Accepted |
 | 026 | Coverage highlight by GPU projective texturing of acceptance and count maps | Proposed |
 | 027 | Three.js for display only; geometry and physics in own framework-free modules | Accepted (retrospective) |
+| 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
 
 ---
 
@@ -71,7 +72,7 @@ Costs accepted: no shared plans or central results, compute bounded by one machi
 
 **Status:** Accepted
 
-**Context.** Calculation modules (`dist/modules/*` such as `muon-response.js`, `detector-projection.js`, `dda-ray-tracer.js`, `triangle-bvh.js`, `compiled-assessment.js`) have no DOM or Three.js dependency and already run under `node --test` and `scripts/`.
+**Context.** Calculation modules (`dist/modules/*` such as `muon-response.js`, `detector-projection.js`, `triangle-bvh.js`, `compiled-assessment.js`) have no DOM or Three.js dependency and already run under `node --test` and `scripts/`.
 
 **Decision.** Keep the calculation core as plain modules with no UI framework or rendering dependency. Every consumer (single-point evaluation, scans, ranking, comparison, export, batch runner, any future server worker) uses this one core; no second copy of formulas in another language or layer. Rendering is never a source of geometric truth.
 
@@ -131,7 +132,7 @@ Any replacement tracer must pass the existing `conformance_rays.json` / `conform
 1. Plan / scan / result schemas, versioned with migrations; they become the future API contract.
 2. Asynchronous, cancellable assessment port (Promise + AbortSignal, as `evaluateCompiledAssessment` already does); only `assessment-controller.js` changes.
 3. Deterministic calculation: no result may depend on evaluation history (FR-C1).
-4. Traceable results for every backend: legacy results need equivalent identity and must record the actual ray cutoff, or server scans are compiled-backend only.
+4. Traceable results for every backend (the legacy backend recorded its ray cutoff, FR-C2, before it was retired, ADR-028).
 5. Headless batch runner (Node CLI: plan in, results out) that later becomes the server worker unchanged.
 6. Server language: Node reusing the same modules. If Python is preferred for orchestration, it calls Node/WebAssembly workers; formulas are never reimplemented.
 
@@ -184,7 +185,7 @@ DD4hep XML does not replace the strict JSON contract: Compact XML has no fixed s
 **Status:** Accepted (migrated from `GEOMETRY_SPEC_REFACTOR.md` §5)
 
 **Decision.**
-- Terrain: regular height field, bilinear sampling, 2D grid / DDA traversal.
+- Terrain: regular height field, bilinear sampling (the legacy 3D DDA tracer was retired with ADR-028).
 - Complex dam bodies: compiled closed triangle meshes + BVH.
 - Simple detectors and regular solids: analytic intersection.
 - Material overlaps are resolved by the compiler via priority, not by running full CSG inside the ray loop.
@@ -200,6 +201,7 @@ DD4hep XML does not replace the strict JSON contract: Compact XML has no fixed s
 - The main app resolves a full release ID, backend and scenario explicitly; unknown or incompatible combinations fail closed and never fall back to another backend or scenario.
 - Changing the default backend is an explicit migration: dataset, device semantics, environment, ROI, rays and response are validated separately before the default entry changes. A working standalone preview never replaces the production backend automatically.
 - **Default switched to compiled (OQ-3, owner decision 2026-10-10).** The registry default is the v0.7 release on the compiled GLB/BVH backend; the legacy DDA release stays selectable as a compatibility path. Validation: full test suite and browser acceptance of both apps. Accepted gaps on the default path, tracked as FR-B1: continuous water level (FR-E1), legacy target contours/significance and entity ROI (FR-M3, FR-GE4), coloured internal proxies and the flux cloud. New work targets the compiled path; legacy-only fixes are lower priority.
+- **Legacy backend retired (owner decision 2026-10-12, ADR-028).** The compiled backend is the only scientific backend; the gaps above are migration targets MT-1…MT-6.
 - Frozen scenarios and continuous environment resolution are different capabilities; finite snapshots must never be interpolated to fake continuous-water material geometry.
 - Source geometry, visuals, material classification and rays express the same facts. Camera transforms, visibility, normals, colours and display smoothing never change material paths.
 - Result snapshots bind the full effective input; asynchronous cancellation, caches and UI updates never let a stale result overwrite newer state.
@@ -304,7 +306,7 @@ Consequences:
 - The runtime contract for every subject kind is the compiled package: manifest (identity, frames, materials, variables/frozen variants, layers, targets, checksums) + GLB physics/display meshes + optional terrain heightfield + optional conformance baselines.
 - Source formats (dam parametric spec, CAD, survey, furnace drawings) are converted offline by kind-specific compilers. The browser never runs kind-specific CSG (consistent with ADR-009).
 - The contract is provisional: it is derived from one dam and is expected to change when a second kind arrives (ADR-016, limits of current evidence).
-- The legacy dam path remains a bounded compatibility adapter; the compiled path is the default (OQ-3) and new subject kinds go only through it.
+- The compiled path is the only runtime path; the legacy dam path was retired (ADR-028) and new subject kinds go only through the compiled package.
 - Continuous variables (e.g. water level, burden level) need explicit per-kind resolvers; frozen variants are supported first (ADR-011).
 
 ## ADR-018 Datasets move to a top-level `datasets/` directory
@@ -440,7 +442,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 **Transparency (2026-10-12).** The subject can be made transparent (dam opacity slider; materials are double-sided, transparent below opacity 1 and stop writing depth below 0.72). An additive overlay pass would then stack the highlight on the front face, the back face and every internal surface, so brightness would show the number of layers rather than counts. Therefore:
 
-- *Tint inside the surface's own material, not an additive overlay.* The coverage term is injected into the subject materials' shaders (as the legacy view already does for clipping) and **mixes** the surface colour towards the highlight colour; the surface keeps its own opacity. Each surface is tinted at most once and composites exactly like the surface itself, so the existing transparency sorting applies unchanged. (This replaces the "overlay pass with additive blending" sketched above.)
+- *Tint inside the surface's own material, not an additive overlay.* The coverage term is injected into the subject materials' shaders (as the retired legacy view did for clipping) and **mixes** the surface colour towards the highlight colour; the surface keeps its own opacity. Each surface is tinted at most once and composites exactly like the surface itself, so the existing transparency sorting applies unchanged. (This replaces the "overlay pass with additive blending" sketched above.)
 - *Which layers are tinted.* Outer shell: only its front-facing side (`gl_FrontFacing`), so a covered line of sight through a transparent dam shows one tinted shell, not two. Internal features (galleries, rooms, shafts, cavities): tinted on both sides when covered, so with a transparent shell the user sees directly which internal features lie in the field of view. This is the main payoff of transparency.
 - *Readable at low opacity.* Covered regions keep a minimum opacity (e.g. 0.35) and the outline is drawn at full opacity, so the highlight does not vanish when the shell is almost transparent. Uncovered surfaces keep the user's opacity.
 - *Physical brightness is read on one layer.* Counts per steradian map to the tint's colour value, not to added light, so overlapping translucent layers do not brighten each other. The legend states that brightness refers to each tinted surface.
@@ -453,7 +455,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 **Status:** Accepted, recorded retrospectively (2026-10-12)
 
-**Context.** The README called the project "a static Three.js web application", which suggests Three.js does the geometry work. It does not: only the view modules (`compiled-geometry-view`, `compiled-scene-view`, `legacy-scene-view`, `projection-canvas-view`, `geometry-preview`) import it. GLB decoding, closure/winding validation, the BVH, ray–mesh intervals, material classification, DDA tracing, response and projection are the project's own modules with no Three.js dependency (ADR-002; enforced by `tests/integration/main-architecture.test.mjs`). Heavy geometry construction (CSG of the parametric spec, terrain stitching) happens offline in the dataset compiler; Manifold and VTK are development-time references only (ADR-009, ADR-014).
+**Context.** The README called the project "a static Three.js web application", which suggests Three.js does the geometry work. It does not: only the view modules (`compiled-geometry-view`, `compiled-scene-view`, `projection-canvas-view`, `geometry-preview`; formerly also `legacy-scene-view`) import it. GLB decoding, closure/winding validation, the BVH, ray–mesh intervals, material classification, DDA tracing, response and projection are the project's own modules with no Three.js dependency (ADR-002; enforced by `tests/integration/main-architecture.test.mjs`). Heavy geometry construction (CSG of the parametric spec, terrain stitching) happens offline in the dataset compiler; Manifold and VTK are development-time references only (ADR-009, ADR-014).
 
 **Decision and rationale.**
 - *Display: Three.js (vendored, pinned, MIT).* Mature WebGL2 renderer with a very large user base, native glTF/GLB support matching the runtime package format (ADR-017), standard materials plus custom shaders (needed for the coverage highlight, ADR-026), orbit controls, and a modest size that can be vendored offline without a build step. It is a library, not an engine, so it does not impose an application structure.
@@ -472,6 +474,22 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 | opencascade.js (OCCT), Manifold in the browser | CAD/CSG at runtime | Large WebAssembly payloads; CSG belongs to the offline compiler (ADR-009). OCCT itself is useful offline, see ADR-009 |
 
 **Revisit when.** A display need that Three.js serves poorly appears (large georeferenced terrain, heavy volume rendering), or WebGPU compute becomes worthwhile for batch rays (ADR-005, ADR-010).
+
+---
+
+## ADR-028 Retire the legacy backend; keep its UI with gated migration targets
+
+**Status:** Accepted, implemented (owner decision 2026-10-12)
+
+**Context.** Since OQ-3 the compiled GLB/BVH backend is the default. The legacy backend interpreted the Zhouning parametric spec in the browser (analytic kernel, 3D DDA tracer, legacy adapters and scene view) on separate releases 0.6.1/0.6.2. It cannot generalise to other subjects (ADR-016, ADR-017), doubled test and maintenance effort, and carried legacy-only fixes (FR-C2, FR-C4). Some of its features have no compiled counterpart yet.
+
+**Decision.**
+- Remove the old geometry: releases 0.6.1/0.6.2, `geometry-kernel.js`, `dda-ray-tracer.js`, `legacy-geometry-adapter.js`, `main-assessment.js`, `legacy-scene-view.js` and the legacy-only interpretation, pattern and plan adapters. The compiled backend is the only scientific backend; selection fails closed for anything else.
+- Keep the main-app UI, styling and display unchanged. Features the compiled backend does not provide yet stay visible and gated by backend capabilities, together with the generic hooks they use (optional controller hooks, projection target drawing, capability gates).
+- Track those features as migration targets MT-1…MT-6 ([feature requirements](FEATURE_REQUIREMENTS.md), section B). Each is re-implemented on the compiled path from the shared core and compiled geometry, superseded, or explicitly dropped by the owner; legacy heuristics are not copied back. The last commit with the legacy implementation (`e938091`) is the reference.
+- Previously exported legacy results can still be replayed; their numbers are not comparable with current models (FR-C1…C3 revisions).
+
+**Consequences.** One geometry path to test and document; legacy-only requirements resolved (FR-C4) or dropped (FR-V6); continuous water level is unavailable until MT-1/FR-E1; stations saved under the legacy release IDs are no longer shown (FR-B2).
 
 ---
 
@@ -496,6 +514,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-12: ADR-028 legacy backend retired (owner); ADR-010, ADR-011, ADR-017, ADR-027 and ADR-006 item 4 updated.
 - 2026-10-12: VTK.js and OpenCascade assessed: reconstruction display in Three.js first (VTK.js fallback); OCCT as offline CAD front end of compilers and the converter (ADR-009, ADR-021, ADR-027).
 - 2026-10-12: ADR-001 rationale for "static" recorded; ADR-027 Three.js for display only (retrospective); README wording corrected.
 - 2026-10-12: ADR-026 GPU cost estimate for integrated graphics and safeguards.

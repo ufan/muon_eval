@@ -58,7 +58,6 @@ Developers must not "optimize" how a plan looks by tuning systematic error, effi
 
 ### Geometry
 
-- Hydraulic-cavity visual clipping and material classification still have two implementations that can drift (legacy backend);
 - some chute, bottom-outlet, observation-room and lower-gallery dimensions are approximate or assumed;
 - the full reservoir bed, both banks and external rock terrain are missing;
 - the engineering bounding box can truncate external rock paths.

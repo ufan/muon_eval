@@ -29,7 +29,7 @@ data contract + coordinate adapters → pure geometry query interfaces
 ```
 
 - Dataset registry, release IDs, checksum-verified loading; v0.7.0 release with compiled GLB/BVH backend.
-- Main app runs the compiled GLB/BVH backend by default (frozen scenarios); legacy DDA with continuous water level stays selectable as a compatibility path; shared response core.
+- Main app runs the compiled GLB/BVH backend (frozen scenarios), the only scientific backend since the legacy DDA backend and its parametric geometry were retired (FR-B3); legacy-only features stay in the UI as gated migration targets (MT-1…MT-6); shared response core.
 - Dataset releases live in the top-level `datasets/` directory; all documentation is in English.
 - Calculation, state, scheduling and views separated into modules; numeric pattern layers and finite-model references in the preview.
 - Not done: continuous water on compiled geometry, physical-domain certification, entity-level ROI on compiled, full plan save/load, scans.
@@ -95,7 +95,7 @@ Can advance alongside Phases 1–4 when data or evidence becomes available.
 - Physical-domain and interface certification, aggregate entity attribution (FR-GE4), then compiled entity ROI (FR-M3).
 - Geometry debt: single cavity implementation, spillway rules into spec, complete terrain, contour quality (FR-GE1…GE3, GE5).
 - Second real dam dataset (FR-D9) and the pending contract specs in FR-D2, D3, D5, D7.
-- Close the compiled default's capability gaps (FR-B1).
+- Close the compiled backend's capability gaps: migration targets MT-1…MT-6 from the retired legacy backend (FR-B1).
 
 ## Generalisation track (ADR-016…018)
 
@@ -127,6 +127,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-12: Legacy backend retired (FR-B3); gaps tracked as migration targets MT-1…MT-6.
 - 2026-10-12: Phase 2 now covers the coverage highlight (FR-M10) and its GPU budget (FR-N5); FR-H11, FR-B2, FR-W4 and standing rules referenced.
 - 2026-10-12: Anomaly hypotheses placed as Phase 3 (OQ-10); scanning and later phases renumbered 4–8.
 - 2026-10-12: Renamed "deficiency" to "anomaly".

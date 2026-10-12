@@ -25,14 +25,14 @@ Measured 2026-10-10 (single file, sequential). The full Node suite takes about 3
 | Layer | Files |
 |---|---|
 | L0 | `node --check` on every entry point; `git diff --check` |
-| L1 | `muon-response`, `detector-projection`, `contribution-contours`, `contribution-view`, `demand-render`, `numeric-pattern-client`, `pattern-capture-store`, `pattern-input-chunks`, `pattern-timing`, `projection-color-scale`, `projection-pattern-contract`, `structural-reference-projection`, `structural-reference-qualification` (each ≈ 0.1–0.3 s) |
+| L1 | `muon-response`, `detector-projection`, `main-architecture`, `contribution-contours`, `contribution-view`, `demand-render`, `numeric-pattern-client`, `pattern-capture-store`, `pattern-input-chunks`, `pattern-timing`, `projection-color-scale`, `projection-pattern-contract`, `structural-reference-projection`, `structural-reference-qualification` (each ≈ 0.1–0.3 s) |
 | L2 | `calculation-core` (frozen formulas), `projection-pattern-fixtures` (analytic oracle, ≈ 4 s), `contour-benchmark`, `derived-interface-artifact`, `interface-csg`, `structural-reference-benchmark`, `structural-reference-candidates` (recorded native evidence) |
 | L3 | `scripts/check-dataset-release.py`, `scripts/check-geometry-conformance.mjs`, `scripts/check-semantic-mapping.mjs`, `scripts/check-interface-artifacts.mjs` (needs `manifold3d`); tests `dataset-v07`, `compiled-mesh`, `semantic-mapping`, `structural-reference-domain` |
-| L4 | `main-architecture` (≈ 13 s), `dda-ray-tracer` (≈ 18 s), `main-compiled-backend`, `legacy-target-interpretation`, `compiled-assessment`, `projection-pattern-fields`, `material-projection`, `material-envelopes`, `material-contributions`, `contribution-export`, `pattern-interpretation`, `legacy-geometry-adapter` |
-| L5 | `scripts/check-main-compiled-app.mjs`, `scripts/check-main-app.mjs`, `scripts/check-compiled-preview.mjs` (finite-model step needs derived assets) |
+| L4 | `main-compiled-backend`, `compiled-assessment`, `projection-pattern-fields`, `material-projection`, `material-envelopes`, `material-contributions`, `contribution-export`, `pattern-interpretation` |
+| L5 | `scripts/check-main-compiled-app.mjs`, `scripts/check-compiled-preview.mjs` (finite-model step needs derived assets) |
 | L6 | `scripts/benchmark-*.mjs` |
 
-Some L4 files test behaviour that could be shown at L1/L2 with synthetic inputs (for example DDA traversal rules in `dda-ray-tracer`). Move such cases down when touching those files, keeping one real-dataset check per module at L4.
+Some L4 files test behaviour that could be shown at L1/L2 with synthetic inputs. Move such cases down when touching those files, keeping one real-dataset check per module at L4.
 
 ## 3. When to write a test first
 
@@ -66,7 +66,7 @@ Tests live in layer directories: `tests/unit`, `tests/contract`, `tests/data`, `
 | `npm test` | L0–L2 | Every commit | ~5 s |
 | `npm run test:data` | L3 | After data/geometry/tracer changes | ~11 s |
 | `npm run test:integration` | L4 | Before push | ~22 s |
-| `npm run test:browser` | L5 (main app: compiled default and legacy) | Before merging UI/flow changes; before release | ~110 s |
+| `npm run test:browser` | L5 (main app) | Before merging UI/flow changes; before release | ~60 s |
 | `npm run test:browser:preview` | L5 (standalone preview; needs derived assets) | When the preview changes | — |
 | `npm run test:all` | L0–L5 | Before release | |
 

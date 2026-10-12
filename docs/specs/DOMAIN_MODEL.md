@@ -16,10 +16,10 @@ Last updated: 2026-10-12
 
 | Context | Responsibility | Main concepts | Code today |
 |---|---|---|---|
-| Dataset & geometry | What the subject is: identity, frames, materials, volumes, scenarios, compiled geometry | Dataset, Release, Kind, Scenario, Material, Entity, Component, Frame | `dataset-loader`, `dataset-validation`, `dam-spec-v07`, `coordinates`, `compiled-glb`, `triangle-bvh`, `compiled-mesh-runtime`; legacy `geometry-kernel`, `legacy-geometry-adapter` |
+| Dataset & geometry | What the subject is: identity, frames, materials, volumes, scenarios, compiled geometry | Dataset, Release, Kind, Scenario, Material, Entity, Component, Frame | `dataset-loader`, `dataset-validation`, `dam-spec-v07`, `coordinates`, `compiled-glb`, `triangle-bvh`, `compiled-mesh-runtime`; `geometry-v07-qualification` (qualification only) |
 | Detector | What measures: device geometry and response, independent of any dataset | DetectorConfiguration (Device, Response) | `detector-defaults`, `device-configuration`, `detector-pose` |
-| Deployment planning | Where and how detectors are placed | Station, Pose, Candidate, DeploymentPlan, Selection | `deployment-state`, `*-deployment-adapter` (Partial: no plan aggregate yet) |
-| Assessment | What a deployment would see: rays, columns, counts | AssessmentInput (snapshot), Session, Trace, ProjectionResult | `main-assessment`, `compiled-main-assessment`, `compiled-assessment`, `detector-projection`, `muon-response`, `assessment-controller` |
+| Deployment planning | Where and how detectors are placed | Station, Pose, Candidate, DeploymentPlan, Selection | `deployment-state`, `compiled-deployment-adapter` (Partial: no plan aggregate yet) |
+| Assessment | What a deployment would see: rays, columns, counts | AssessmentInput (snapshot), Session, Trace, ProjectionResult | `compiled-main-assessment`, `compiled-assessment`, `detector-projection`, `muon-response`, `assessment-controller` |
 | Interpretation | Derived numerical layers and comparisons on results | PatternField, Overlay, Comparison, Export | `projection-pattern-*`, `contribution-*`, `pattern-comparison*`, `finite-model-references` |
 | Anomaly & sensitivity | What problem the deployment must detect, and how well it would | AnomalyHypothesis, Region, DensityModel, HostConstraint, ParameterSweep, SensitivityResult | Target (ADR-025, FR-H); legacy counterfactual significance is a dam-specific precursor |
 | Scan | Many assessments over a constrained space | ScanDefinition, ScanResult, Ranking | Target (FR-S1…S5) |
@@ -130,10 +130,10 @@ Scene composition (Target): **scene = release + environment state + active anoma
 | AssessmentInput | Value, immutable snapshot | Scene (release + environment) + station + pose + device + response, copied at calculation start. Composition: assessment = scene + detector configuration + station + pose | Current (scene implicit) |
 | Session | Process | Binds one geometry context; produces preview (25²) then final (65²) from the same snapshot; cancellable | Current |
 | Trace | Value | Per ray: material totals, `materialColumns`, `mwe`, segments, entity lengths | Current |
-| ProjectionResult | Value, versioned | `kind` ∈ {`compiled-detector-assessment`, `legacy-detector-assessment`, `material-column-projection`}, `schemaVersion`, identity (release, backend, scenario, variables, asset hashes), config, device, response, `modelVersion`, pixels, limitations | Current |
+| ProjectionResult | Value, versioned | `kind` ∈ {`compiled-detector-assessment`, `material-column-projection`} (`legacy-detector-assessment` is accepted only for replaying old exports), `schemaVersion`, identity (release, backend, scenario, variables, asset hashes), config, device, response, `modelVersion`, pixels, limitations | Current |
 | Per-station result cache | Keyed by snapshot key | Lets the overview and detail modes share results | Target (ADR-020) |
 | Coverage (view) | Derived view of a station | Geometric coverage = device acceptance × pose (no physics); physical coverage = expected counts per steradian from a result. A view of results, never an input; bound to the result's snapshot key | Target (ADR-026) |
-| Exports | Value, versioned | `compiled-deployment-snapshot` 0.1.0, contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison`, legacy plan JSON | Current; not yet a round-trip plan format |
+| Exports | Value, versioned | `compiled-deployment-snapshot` 0.1.0, contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison` | Current; not yet a round-trip plan format |
 
 ## 3. Identities
 
@@ -173,9 +173,9 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 | Gap | Model element | Tracked as |
 |---|---|---|
 | No `kind` in registry/specs; dam terms in generic modules | Dataset.kind | FR-K1, FR-K2, FR-K3 |
-| Legacy environment is `{upstream, downstream}`; compiled uses scenario variables | Scenario, environment | FR-K2, FR-E1 |
+| Only frozen scenario variables; no continuous environment variables (the retired legacy backend had a continuous upstream level) | Scenario, environment | FR-K2, FR-E1, MT-1 |
 | Station carries pose; no plan aggregate; single active station | Station, Pose, DeploymentPlan | FR-P1, ADR-020 |
-| Stations stored per release are invisible after the default changed | DeploymentPlan | FR-B2 |
+| Stations stored per release are invisible under another release (e.g. the retired legacy releases) | DeploymentPlan | FR-B2 |
 | One rock-like energy loss for all materials | Material | FR-K4 |
 | Scene is not one value in code (release and environment passed separately) | Scene | FR-P1 (plan schema) |
 | No direct test that toggling every display layer leaves the projection result and snapshot key unchanged | Invariant 3 | FR-Q11 |
@@ -206,6 +206,7 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-12: Legacy backend retired (ADR-028): module lists, ProjectionResult kinds, exports and environment gap updated.
 - 2026-10-12: Legacy ray length recorded (FR-C2); gap row removed.
 - 2026-10-12: Invariant 8 now holds and is tested (FR-C1); gap row removed.
 - 2026-10-12: Added Coverage as a derived view (ADR-026).

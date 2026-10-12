@@ -15,9 +15,9 @@ Last updated: 2026-10-10
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
 | FR-C1 | Calculation results must not depend on evaluation history. | The same input gives identical results regardless of what was computed before, in any session or worker. The former flux cache (`muon-response.js`) returned the first value in a quantised bucket (up to ~5% per-pixel error near the horizon); since `legacy-quick-response@2.0.0` the integral is evaluated exactly per input. | Done |
-| FR-C2 | Exports must record the actual ray length used. | Legacy results record the 500 m radial cutoff (`legacy-geometry-adapter.js`) as `config.length`/`rayLengthM` with a `radialCutoffBinds` diagnostic; the limitation text is corrected. Cross-backend comparisons disclose the differing `sampling`. | Done |
+| FR-C2 | Exports must record the actual ray length used. | Legacy results record the 500 m radial cutoff (`legacy-geometry-adapter.js`) as `config.length`/`rayLengthM` with a `radialCutoffBinds` diagnostic; the limitation text is corrected. Cross-backend comparisons disclose the differing `sampling`. The legacy backend was later retired (FR-B3). | Done |
 | FR-C3 | Detector acceptance formula is physically justified and documented. | Per-pixel counts use the two-plane geometric factor: projected area × slope-cell solid angle (cos⁴θ), verified by derivation, an independent Monte Carlo and the flux normalisation ([calculation model spec](specs/CALCULATION_MODEL.md) §10.3). The undeclared edge factor (≈ 0.85, grid-dependent) is removed. Model `legacy-quick-response@3.0.0`. | Done |
-| FR-C4 | No dead or misleading computation in the update path. | `quickMetrics()` no longer traces 81 unused rays per update or computes the unused `12000 × sin(el)^1.7` count. | Needed |
+| FR-C4 | No dead or misleading computation in the update path. | `quickMetrics()` no longer traces 81 unused rays per update or computes the unused `12000 × sin(el)^1.7` count. Resolved by retiring the legacy backend (FR-B3), which removed `quickMetrics()`. | Done |
 | FR-C5 | Every result is reproducible and traceable. | Records at least the items in `CONTEXT.md` §7: app and model versions; dataset release ID and file hashes where available; coordinate convention; device; environment/scenario; stations and poses; sampling, exposure, thresholds, ray length; units; generation time; approximations and warnings. | Needed (legacy backend gaps) |
 | FR-C6 | Stale results never overwrite newer state. | Holds under cancellation, caching, workers and late completion (ADR-011). | Standing |
 
@@ -41,9 +41,23 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
-| FR-B1 | Close the capability gaps of the compiled default. | Since OQ-3 the default path lacks: continuous water level (FR-E1), target contours/significance and entity ROI (FR-M3, FR-GE4), coloured internal features (dataset-declared layers, FR-K3) and the flux cloud (re-implement from the shared core, no legacy heuristic copy). Each is restored on the compiled path or explicitly dropped. | Needed |
-| FR-B2 | Station continuity across releases. | Stations saved under the legacy release key are not shown on the compiled default; offer station export/import between releases with coordinate validation. | Needed (later) |
-| FR-B3 | Legacy compatibility scope. | Legacy-only fixes (e.g. FR-C2 ray cutoff, FR-C4 quick metrics) stay correct and labelled, but new features target the compiled path only. | Standing |
+| FR-B1 | Close the capability gaps of the compiled backend. | Every migration target in the table below is restored on the compiled path (re-implemented from the shared core and the compiled geometry, never by copying a legacy heuristic) or explicitly dropped by the owner. Until then its UI control stays visible and gated by the backend's capabilities. | Needed |
+| FR-B2 | Station continuity across releases. | Stations are stored per release ID; offer station export/import between releases with coordinate validation (stations saved under the retired legacy releases are no longer shown). | Needed (later) |
+| FR-B3 | Retire the legacy backend. | The legacy parametric geometry (releases 0.6.1/0.6.2, analytic kernel, DDA tracer, legacy adapters and scene view) is removed; the compiled backend is the only scientific backend; the main-app UI is kept, with legacy-only features gated as migration targets. Previously exported legacy results can still be replayed. | Done |
+
+### Migration targets from the retired legacy backend
+
+Features the legacy backend had and the compiled backend does not provide yet. Their controls stay in the UI, gated. The last commit containing the legacy implementation is `e938091`, for reference only: legacy heuristics are not copied.
+
+| # | Feature (UI) | Legacy behaviour | Compiled path | Required? |
+|---|---|---|---|---|
+| MT-1 | Continuous upstream water level (slider in the environment layers) | Any level 260–305 m re-classified the parametric geometry | Frozen scenarios only; needs FR-E1 (one scene model for continuous variables and frozen variants) and FR-K2 (dataset-declared variables) | Owner to decide |
+| MT-2 | Target structure layers (elevator, spillway, platform, water, dam, gallery outlines on the projection) | Hard-coded dam target IDs with DDA-cell masks and edge heuristics | Semantic targets from the dataset (22 direct targets already verified in the preview, FR-GE4 for aggregates); dataset-declared, not dam IDs (FR-K1) | Likely |
+| MT-3 | Structural significance projection mode | Counterfactual column (fill/empty a target) with single-pixel Gaussian significance | Replaced by anomaly hypotheses and sensitivity (FR-H1…H11, ADR-025); entity ROI significance needs FR-M3 | Superseded by FR-H |
+| MT-4 | 3D muon flux cloud (volumetric heat cloud, combined contribution / transmission modes) | 17 × 17 sampled rays drawn as particles | The physical coverage highlight (FR-M10, ADR-026) is planned to serve the same purpose from the shared result; a separate cloud only if the owner still wants it | Owner to decide |
+| MT-5 | Gallery, observation room and elevator shaft layer (coloured internal features) | Legacy proxy meshes | Compiled internal features exist (preview shows cavities); needs dataset-declared display layers (FR-K3) | Likely |
+| MT-6 | Legacy deployment plan JSON (water level, device, candidates, active ray) | `legacy-deployment-adapter.js` | Superseded by the compiled snapshot export now and the versioned plan format (FR-P1) later | Superseded |
+| — | DDA main grid size control; coarse 9 × 9 quick metrics | DDA-specific; quick metrics traced 81 unused rays (FR-C4) | Not applicable: no DDA; the 25² preview replaces quick metrics | Dropped |
 
 ## E. Environment and scenarios
 
@@ -78,7 +92,7 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | FR-V3 | Flux model provenance. | Formal citation, adopted version and unit check for the modified Gaisser formula; model versions documented for projection, flux and attenuation. | Needed |
 | FR-V4 | Energy-loss validation. | Source and material applicability of continuous energy-loss coefficients; comparison with transport simulation. | Needed |
 | FR-V5 | Absolute open-sky count benchmark. | Against measured or literature references. | Needed |
-| FR-V6 | DDA path error. | Legacy DDA paths compared with analytic geometry / high-precision stepping. | Needed |
+| FR-V6 | DDA path error. | Legacy DDA paths compared with analytic geometry / high-precision stepping. | Dropped (DDA retired, FR-B3) |
 | FR-V7 | Angular resolution model. | Spherical convolution or response matrix replaces the 2D Gaussian display smoothing. | Needed (later) |
 | FR-V8 | Statistics. | Likelihood, background model and correlated systematics replace single-pixel Gaussian significance. | Needed (later) |
 | FR-V9 | Uncertainty propagation. | Geometry, density and response uncertainties propagated to results. | Needed (later) |
@@ -217,6 +231,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-12: FR-B3 legacy backend retired (owner); migration targets MT-1…MT-6 listed under B; FR-B1 reworded; FR-C4 done; FR-V6 dropped.
 - 2026-10-12: FR-V12 measured and documented; edge-adaptive sampling tied to AN3.
 - 2026-10-12: Added FR-V12 in-pixel ray sampling accuracy (owner request); experiment first.
 - 2026-10-12: FR-C3 done (owner decision: add cos θ and remove the edge factor in one model revision).

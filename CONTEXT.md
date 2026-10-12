@@ -155,7 +155,7 @@ A reproducible calculation or export records at least:
 The bundled Zhouning lower-reservoir dam dataset is the first validation case, not the platform's default semantics.
 
 - Dataset registry: `datasets/registry.json`. The default release is `zhouning-lower-reservoir-dam@0.6.2+schema0.7.0` on the compiled GLB/BVH backend, with frozen scenarios low/mid/high/extreme.
-- The legacy release `zhouning-lower-reservoir-dam@0.6.2` (directory `datasets/zhouning-lower-reservoir-dam/0.6.2/`) remains selectable as a compatibility path with the legacy DDA backend and continuous water level.
+- The earlier legacy releases 0.6.1 and 0.6.2 (parametric format, legacy DDA backend with continuous water level) were retired (ADR-028); continuous water level is a migration target (MT-1).
 - Continuous water level on compiled geometry and aggregate source-entity attribution are unresolved.
 - Coordinates and geometry rules: `datasets/zhouning-lower-reservoir-dam/README.md`.
 - Dataset ID, data version, schema version and release ID are recorded separately; one data version may have release packages in different formats, so caches and plan references always use the full release ID.

@@ -20,4 +20,4 @@ Validation: `python3 scripts/check-dataset-release.py`, `node scripts/check-geom
 
 | Dataset | Kind | Releases | Spec |
 |---|---|---|---|
-| `zhouning-lower-reservoir-dam` | dam | 0.6.1, 0.6.2, 0.6.2+schema0.7.0 | [README](zhouning-lower-reservoir-dam/README.md) |
+| `zhouning-lower-reservoir-dam` | dam | 0.6.2+schema0.7.0 | [README](zhouning-lower-reservoir-dam/README.md) |

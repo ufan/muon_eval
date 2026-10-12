@@ -16,7 +16,7 @@ Last updated: 2026-10-12
 | 2 | Record the legacy 500 m ray cutoff in exports; fix limitation text | FR-C2, FR-C5 | `legacy-pattern-adapter.js`, `legacy-geometry-adapter.js`; legacy compatibility path only since OQ-3 | Done |
 | 3 | Projected-area cos θ factor; remove the edge factor | FR-C3 | Model revision `legacy-quick-response@3.0.0`; evidence in `specs/CALCULATION_MODEL.md` §10.3 | Done |
 | 3a | Measure in-pixel ray sampling error against a converged reference; document or plan a sampling option | FR-V12 | `scripts/experiment-pixel-sampling.mjs`; results in `specs/CALCULATION_MODEL.md` §11.6 | Done |
-| 4 | Remove dead work in `quickMetrics()` | FR-C4 | Keep only `center` and `dirDoc`; legacy path only | Todo |
+| 4 | Retire the legacy backend (owner decision; covers FR-C4: `quickMetrics()` removed with it) | FR-B3, FR-C4 | Remove old geometry (releases 0.6.1/0.6.2, analytic kernel, DDA, legacy adapters/scene view); keep the UI with legacy-only features gated; list migration targets MT-1…MT-6 | Done |
 
 ## Standing rules
 
@@ -101,7 +101,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 | Dataset-declared kind/variables/layers/targets; compiled package as generic contract | FR-K2, K3, ADR-017 | Generalisation G1, after P2 |
 | Material-dependent energy loss, deep-overburden flux, in-material stations, large terrain | FR-K4…K7 | Before the first non-dam subject (G3) |
 | Load packaged dataset from file; converter; in-app authoring | FR-L1…L6 | User-geometry track U1–U3, not urgent |
-| Compiled default capability gaps: flux cloud, internal features, target outlines/ROI, continuous water | FR-B1, FR-E1, FR-M3 | After P3; parts depend on FR-K3 and FR-GE4 |
+| Compiled backend migration targets MT-1…MT-6 (continuous water, target layers, flux cloud, internal-feature layer; significance superseded by anomalies; legacy plan JSON superseded) | FR-B1, FR-E1, FR-M3, FR-K3 | After P3; parts depend on FR-K3 and FR-GE4; owner decides MT-1 and MT-4 |
 | Station export/import between releases | FR-B2 | With the plan format (#11) or later |
 | WebAssembly tracer | ADR-005 step 4 | Only if P5 measurements insufficient |
 | Server backend | ADR-001 | Only when T1–T4 observed |
@@ -114,6 +114,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 | Item | Ref | Commit |
 |---|---|---|
+| Legacy backend retired; old geometry releases removed (#4) | FR-B3, FR-C4 | `6a13fb0`, `2026c9c` |
 | In-pixel ray sampling error measured (#3a) | FR-V12 | `d887d4d` |
 | Projected-area factor added, edge factor removed (#3), model `legacy-quick-response@3.0.0` | FR-C3 | `3aa22b4` |
 | Legacy 500 m ray cutoff recorded in exports (#2) | FR-C2 | `cbbc1b0` |
@@ -128,6 +129,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-12: #4 replaced by legacy retirement (owner): done; migration targets added under Later.
 - 2026-10-12: #3a done; edge-adaptive sampling attached to AN3.
 - 2026-10-12: Added #3a (FR-V12) ahead of #4.
 - 2026-10-12: #3 done (owner decision: both changes as one model revision).

@@ -120,7 +120,7 @@ Both projection evaluators detach runtime identity, scenario variables and geome
 
 Graph dimensions/styles do not enter scientific snapshot identity. Missing native geometry provenance prevents field preparation; it is not filled with guessed dataset facts. Runtime and result data remain plain objects: consumers must not mutate scientific fields/settings. This unit does not add asynchronous caches or prove stale-result scheduling.
 
-These are additive v0.1.0 result metadata and pattern adapters, distinct from the complete contour export format. Main application DDA, geometry buffers, paths, total columns, count formulas and response smoothing are unchanged.
+These are additive v0.1.0 result metadata and pattern adapters, distinct from the complete contour export format. Geometry buffers, paths, total columns, count formulas and response smoothing are unchanged.
 
 ## Contour export and replay
 
