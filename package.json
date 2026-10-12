@@ -1,8 +1,11 @@
 {
   "name": "muography-deployment-evaluation",
   "private": true,
+  "type": "module",
   "description": "Static muography deployment evaluation app; layered test commands per docs/specs/TEST_STRATEGY.md. No runtime dependencies.",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "check": "node scripts/check-syntax.mjs && git diff --check",
     "test": "npm run check && node --test \"tests/unit/*.test.mjs\" \"tests/contract/*.test.mjs\"",
