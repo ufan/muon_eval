@@ -43,7 +43,7 @@ test('trace settings and model-frame tracing share the bound dataset and legacy 
   const p={x:12.5,y:122,z:57.4},d={x:1,y:0,z:0},o=adapter.modelPointToDoc(p),settings={cellM:5,refineM:.5};
   assert.deepEqual(context.traceModel(p,d,settings),context.traceDoc(o,adapter.modelDirectionToDoc(d),settings));
   const boundsDoc={min:[h.origin[1],h.origin[0],150],max:[h.origin[1]+(h.shape[1]-1)*h.spacing[1],h.origin[0]+(h.shape[0]-1)*h.spacing[0],600]};
-  assert.deepEqual(context.traceSettings(o,settings),{mainCellM:5,refineM:.5,boundsDoc,
+  assert.deepEqual(context.traceSettings(o,settings),{mainCellM:5,refineM:.5,boundsDoc,radialCutoffM:500,
     maximumRayDistanceM:Math.hypot(...[o.x,o.y,o.z].map((v,i)=>Math.max(Math.abs(v-boundsDoc.min[i]),Math.abs(v-boundsDoc.max[i]))))});
   assert.equal(context.maxDistanceM,500);
   assert.equal(context.backend,'legacy-dda@1.0.0');

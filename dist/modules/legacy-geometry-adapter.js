@@ -39,7 +39,9 @@ export function createLegacyGeometryAdapter(dataset) {
     downstream:spec.parameters.water_tail_level?.value??210});
   const kernel = createGeometryKernel({spec,terrainNear,terrainFar});
   const targetIds = Object.freeze(['elevator','spillway','platform','water','dam','gallery']);
-  const trace = createDdaRayTracer({bounds,densities,targetIds,maxDistanceM:500,
+  // DDA rays stop at this radial distance or the domain box, whichever is nearer.
+  const maxDistanceM = 500;
+  const trace = createDdaRayTracer({bounds,densities,targetIds,maxDistanceM,
     classifyPoint:(x,y,z,environment)=>{
       const q=kernel.classifyDoc(x,y,z,environment.upstream);
       return {kind:q.material,targets:q.targets};
@@ -59,7 +61,7 @@ export function createLegacyGeometryAdapter(dataset) {
     const traceDoc=(origin,direction,{cellM,refineM})=>trace(origin,direction,{cellM,refineM,environment});
     return Object.freeze({identity,materials,environment,boundsDoc,targetIds,
       modelPointToDoc,docPointToModel,modelDirectionToDoc:swapDirection,docDirectionToModel:swapDirection,
-      backend:'legacy-dda@1.0.0',maxDistanceM:500,
+      backend:'legacy-dda@1.0.0',maxDistanceM,
       traceDoc,
       traceModel:(origin,direction,settings)=>traceDoc(modelPointToDoc(origin),swapDirection(direction),settings),
       classifyDoc:(x,y,z)=>kernel.classifyDoc(x,y,z,environment.upstream),
@@ -67,7 +69,7 @@ export function createLegacyGeometryAdapter(dataset) {
         point(origin);
         if (![cellM,refineM].every(v=>Number.isFinite(v)&&v>0)) throw new Error('Invalid legacy trace sampling');
         const coordinates=[origin.x,origin.y,origin.z];
-        return {mainCellM:cellM,refineM,boundsDoc,
+        return {mainCellM:cellM,refineM,boundsDoc,radialCutoffM:maxDistanceM,
           maximumRayDistanceM:Math.hypot(...coordinates.map((v,i)=>Math.max(Math.abs(v-boundsDoc.min[i]),Math.abs(v-boundsDoc.max[i]))))};
       }});
   }

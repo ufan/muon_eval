@@ -15,7 +15,7 @@ Last updated: 2026-10-10
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
 | FR-C1 | Calculation results must not depend on evaluation history. | The same input gives identical results regardless of what was computed before, in any session or worker. The former flux cache (`muon-response.js`) returned the first value in a quantised bucket (up to ~5% per-pixel error near the horizon); since `legacy-quick-response@2.0.0` the integral is evaluated exactly per input. | Done |
-| FR-C2 | Exports must record the actual ray length used. | Legacy results record the 500 m radial cutoff (`legacy-geometry-adapter.js`); the "not a radial cutoff" limitation text is corrected. Cross-backend comparisons state the different ray lengths, or the legacy cap is aligned with the compiled enclosing length. | Needed |
+| FR-C2 | Exports must record the actual ray length used. | Legacy results record the 500 m radial cutoff (`legacy-geometry-adapter.js`) as `config.length`/`rayLengthM` with a `radialCutoffBinds` diagnostic; the limitation text is corrected. Cross-backend comparisons disclose the differing `sampling`. | Done |
 | FR-C3 | Detector acceptance formula is physically justified and documented. | Decide whether the per-pixel count includes the projected-area cos θ factor (currently cos³θ; planar detectors normally need cos⁴θ, ~1.7× at the default field edge, ~2.2× at corners). Either fix (model revision) or document the omission in [calculation model spec](specs/CALCULATION_MODEL.md) §10. | Open |
 | FR-C4 | No dead or misleading computation in the update path. | `quickMetrics()` no longer traces 81 unused rays per update or computes the unused `12000 × sin(el)^1.7` count. | Needed |
 | FR-C5 | Every result is reproducible and traceable. | Records at least the items in `CONTEXT.md` §7: app and model versions; dataset release ID and file hashes where available; coordinate convention; device; environment/scenario; stations and poses; sampling, exposure, thresholds, ray length; units; generation time; approximations and warnings. | Needed (legacy backend gaps) |
@@ -216,6 +216,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-12: FR-C2 done.
 - 2026-10-12: FR-C1 done (`legacy-quick-response@2.0.0`).
 - 2026-10-12: FR-M9 overlay in one scene (Three.js first); FR-L5 CAD import via OpenCascade/IfcOpenShell.
 - 2026-10-12: FR-N5 integrated-GPU budget for the coverage highlight.

@@ -1,6 +1,8 @@
 // No legacy tracing/response formulas: adapt the completed shared-core pass.
 export function adaptLegacyPatternResult({ pass, identity, materials, station, device, response, environment, traceSettings, directionToModel }) {
   if (typeof directionToModel !== 'function') throw new Error('Explicit legacy direction-frame adapter required');
+  const cutoff = traceSettings?.radialCutoffM, enclosing = traceSettings?.maximumRayDistanceM;
+  if (!Number.isFinite(cutoff) || cutoff <= 0) throw new Error('Legacy radial cutoff required');
   const n = pass.n;
   const registry = Object.fromEntries(Object.entries(materials).map(([id, material]) => [id, { density: material.density }]));
   // traceRay's existing fallback steel density is supplied by its caller, not
@@ -22,15 +24,15 @@ export function adaptLegacyPatternResult({ pass, identity, materials, station, d
   return { schemaVersion: '0.1.0', kind: 'legacy-detector-assessment', frame: 'model_frame',
     identity: structuredClone(identity), backend: 'legacy-dda@1.0.0', scenarioId: 'legacy-continuous-water',
     variables: structuredClone(environment), config: { origin: [station.x, station.y, station.z], azimuthDeg: station.az,
-      elevationDeg: station.el, bins: n, length: null },
+      elevationDeg: station.el, bins: n, length: cutoff },
     device: { ...device }, response: { ...response }, modelVersion: pass.modelVersion,
     totalCount: pass.total, weightedTransmission: pass.weightedTransmission,
     materialContributionUnits: { totals: 'm', materialColumns: 'm.w.e.' },
     projectionGeometry: { version: '1.0.0', geometryVersion: 'legacy-dda@1.0.0', materials: registry,
       assetIdentity: { status: 'legacy-source-model', releaseId: identity.release_id }, traceSettings: structuredClone(Object.fromEntries(Object.entries(traceSettings).filter(([key]) => key !== 'maximumRayDistanceM'))) },
-    diagnostics: { enclosingMaximumRayDistanceM: traceSettings.maximumRayDistanceM },
+    diagnostics: { enclosingMaximumRayDistanceM: enclosing, radialCutoffBinds: enclosing > cutoff },
     pixels, semanticAudit: null, limitations: ['Legacy DDA source model, not the compiled BVH backend; no compiled finite-reference assets available here.',
       'Column contributions use existing dataset densities and DDA path lengths; geometry uncertainty is unchanged.',
       'Raw results share the existing count/response core. Display smoothing is approximate; no measured-data calibration.',
-      'Legacy trace domain is finite; rayLengthM=null means the recorded domain box, not a radial cutoff. The diagnostic enclosing distance is not a comparison setting.'] };
+      `Legacy rays stop at the ${cutoff} m radial cutoff or the recorded domain box, whichever is nearer; compiled results trace to a length enclosing their whole mesh, so the two differ wherever the cutoff binds. The diagnostic enclosing distance is not a comparison setting.`] };
 }

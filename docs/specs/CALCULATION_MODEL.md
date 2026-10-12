@@ -158,7 +158,7 @@ The same point can also carry target labels such as dam, gallery, elevator shaft
 
 Rays are first intersected with the current engineering bounding box.
 
-The bounds are the `traceSettings.boundsDoc` returned by legacy-geometry-adapter: laterally from terrainNear's origin/shape/spacing, vertically the legacy compatibility domain 150–600 m, with a 500 m range limit. The spec's dam dimensions must never replace this actual calculation domain.
+The bounds are the `traceSettings.boundsDoc` returned by legacy-geometry-adapter: laterally from terrainNear's origin/shape/spacing, vertically the legacy compatibility domain 150–600 m. Each ray also stops at a 500 m radial cutoff (`traceSettings.radialCutoffM`), whichever is nearer; legacy results record it as `config.length` and the snapshot's `sampling.rayLengthM`, with `diagnostics.radialCutoffBinds` saying whether the cutoff falls inside the domain box for that station (FR-C2). The spec's dam dimensions must never replace this actual calculation domain.
 
 No material is accumulated outside the box. If real rock or water extends beyond it, the column density is underestimated. This range is an implementation detail of the current dataset and should in future be declared by the dataset.
 
