@@ -113,7 +113,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 | Item | Ref | Commit |
 |---|---|---|
-| Legacy 500 m ray cutoff recorded in exports (#2) | FR-C2 | this branch |
+| Legacy 500 m ray cutoff recorded in exports (#2) | FR-C2 | `cbbc1b0` |
 | History-independent flux integral (#1), model `legacy-quick-response@2.0.0` | FR-C1 | `5de4693` |
 | Datasets moved to top-level `datasets/` with sync script | ADR-018 | `dc48ed3` |
 | Compiled backend made the default | OQ-3, ADR-011 | `eba2f6f` |
