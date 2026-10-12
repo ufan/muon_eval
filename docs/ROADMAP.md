@@ -13,7 +13,7 @@ Last updated: 2026-10-10
 - A rapid evaluation and comparison tool; never construction-grade, safety-certification or approval conclusions.
 - Offline static app; no large framework or plugin system without proven need; one calculation core shared by every consumer (ADR-001, ADR-002, ADR-012).
 - Correctness and reproducibility before features; tests before extracting pure modules; measure before optimising (ADR-005).
-- A subject-neutral platform: dams first, then other subjects such as blast furnaces and tunnels. Every decision keeps that path open, but each kind is supported only when it is actually added (ADR-016).
+- A subject-neutral platform: dams first, then other subjects such as blast furnaces and tunnels. Every decision keeps that path open, but each kind is supported only when it is actually added (ADR-016). Today's code knows one RCC dam; subjects may differ in display/interaction, geometry semantics and regions of interest, so generic abstractions wait for real second examples.
 - Abstractions are validated by real datasets (a second dam, then a second kind), not by guesses (ADR-008).
 - Server, WebAssembly and Geant4 automation are conditional, unlocked only by observed triggers.
 
@@ -97,8 +97,8 @@ Gradual; each stage is triggered by real need, not built ahead.
 |---|---|---|
 | G0 | No new dam-specific code in generic modules (FR-K1); plan/scan schemas subject-neutral (FR-P1) | Now, standing |
 | G1 | Dataset-declared kind, variables, layers, targets, capabilities (FR-K2, K3); compiled package as the generic contract (ADR-017); datasets as top-level directory (ADR-018, done) | After Phase 1 formats exist |
-| G2 | Second dam dataset validates the abstractions (FR-D9) | When data is available |
-| G3 | First non-dam subject (blast furnace or tunnel) with its physics prerequisites (FR-K4…K7) and baselines (FR-K8) | When a real project needs it |
+| G2 | Second dam dataset, preferably of a different dam type, validates the abstractions (FR-D9); kind profile first (FR-K10) | When data is available |
+| G3 | First non-dam subject (blast furnace or tunnel): kind profile first (FR-K10), then its physics prerequisites (FR-K4…K7), display/interaction and ROI needs, and baselines (FR-K8) | When a real project needs it |
 
 ## User-loaded geometry track (ADR-019)
 
@@ -119,6 +119,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-12: Evidence-driven generalisation noted; G2/G3 start with a kind profile.
 - 2026-10-10: Desktop distribution added as a conditional track.
 - 2026-10-10: "Where we are" updated (compiled default, `datasets/`, English docs); default-switch item replaced by FR-B1.
 - 2026-10-10: Multi-station overview and demonstration moved ahead of scanning as Phase 2 (owner decision, OQ-7); later phases renumbered 3–7.

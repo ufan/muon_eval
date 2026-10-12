@@ -8,7 +8,7 @@ A subject's dimensions and coordinates are never platform rules here. Dataset-sp
 
 ### Goal
 
-Help users explore, filter and compare muography detector deployment plans for an imaging subject, using a common data model and fast approximate calculation. Subjects are described by datasets of a declared **kind**: dams first; blast furnaces, tunnels and other subjects later. Support for each kind is added gradually.
+Help users explore, filter and compare muography detector deployment plans for an imaging subject, using a common data model and fast approximate calculation. Subjects are described by datasets of a declared **kind**: dams first; blast furnaces, tunnels and other subjects later. Support for each kind is added gradually. The current implementation knows one roller-compacted-concrete dam; other subjects (and other dam types) may need different display and interaction, geometry semantics and regions of interest, recorded in the kind variation register of `docs/specs/DOMAIN_MODEL.md`.
 
 ### Main users (to be completed)
 

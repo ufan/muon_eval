@@ -158,8 +158,9 @@ The platform evaluates any imaging subject (dams, blast furnaces, tunnels, …).
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
 | FR-K1 | No subject-specific logic in generic modules. | Core, plan, scan and export code never branch on a subject kind or name; new code adds no dam terms to generic modules. Existing leaks (17 modules today) are removed as each is touched. | Standing |
+| FR-K10 | Kind profile before support. | Before supporting a new subject kind or dam type, write its profile: needs on each axis of the kind variation register (display/interaction, geometry definition/semantics, regions of interest, materials, environment variables, detector placement, physics) and which parts the existing core covers. Generic code changes only where a second real example shows a shared pattern. | Standing |
 | FR-K2 | Dataset-declared kind and variables. | Each dataset declares `kind` and its environment variables (name, label, unit, range, frozen variants). UI controls are generated from them; the legacy `upstream`/`downstream` pair becomes one such declaration. | Needed |
-| FR-K3 | Dataset-declared layers, targets and capabilities. | Display layers, semantic targets and capability flags come from the dataset/backend declaration, not hard-coded lists such as `['dam','upwater','downwater']`. | Needed |
+| FR-K3 | Dataset-declared layers, targets and capabilities. | Display layers, semantic targets and capability flags come from the dataset/backend declaration, not hard-coded lists such as `['dam','upwater','downwater']`. The declaration format is designed from at least two real examples (ADR-016); until then only the dam's existing lists move out of generic code. | Needed |
 | FR-K4 | Material-dependent energy loss. | Energy-loss parameters (or range tables) per material instead of one rock-like `a, b` for all matter; required before high-Z subjects such as blast furnaces (iron, slag). Physics-model revision. | Needed (before non-rock subjects) |
 | FR-K5 | Deep overburden and site conditions. | Flux integration valid for large columns (current `10⁵ GeV` upper limit and `Emin` range); altitude/geomagnetic corrections from site conditions. Required before tunnels/underground sites. | Needed (before tunnels) |
 | FR-K6 | Detector placement inside or below material. | Stations inside solids or underground and the pose ranges they need (e.g. near-horizontal, zenith) are supported and tested on the compiled path. | Needed (later) |
@@ -197,6 +198,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-12: FR-K10 kind profile; FR-K3 to be designed from two real examples.
 - 2026-10-10: Added W (distribution) FR-W1…W4.
 - 2026-10-10: FR-Q1 done.
 - 2026-10-10: FR-Q1 layered test commands; FR-Q11 invariant tests (ADR-023).

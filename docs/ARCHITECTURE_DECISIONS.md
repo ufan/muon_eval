@@ -265,6 +265,20 @@ docs/
 - Terminology (OQ-5, accepted): keep **dataset** as the generic unit, qualified by `kind`. Do not use "scenario" for the subject, because it already means a frozen environment variant (low/mid/high/extreme). `AGENTS.md` and `CONTEXT.md` were generalised away from dam wording on 2026-10-10.
 - The technology choices stand: static browser app, WebGL rendering, framework-free JS core, glTF/GLB runtime geometry, WebAssembly only if measured. Nothing in them is dam-specific.
 
+**Limits of current evidence (owner, 2026-10-12).** The code implements one subject: a single roller-compacted-concrete dam (Zhouning), with transverse sections, galleries, observation rooms, an elevator shaft, spillway orifices and a chute, described by one dam-specific schema (`org.jianweikeyi.dam-geometry`). Other subjects, and even other dam types, may need different:
+
+- **display and user interaction**: cut-away and section views, internal versus external viewpoints, what a user picks and edits;
+- **geometry definition and semantics**: parametric sections versus layered shells versus long linear excavations under terrain; what counts as a cavity, a target or an environment volume; time-varying contents;
+- **regions of interest**: discrete cavities and galleries versus continuous zones (e.g. a furnace's cohesive zone or burden profile) versus anomalies in overburden;
+- and with them physics, environment variables and where detectors can be placed.
+
+Consequences:
+
+- Generalisation is evidence-driven. Nothing is abstracted from the single dam except what the compiled package already needs (materials, closed meshes, frames, scenarios). The dataset-declared kind, variables, layers and targets (FR-K2, K3) are designed from at least two real examples, not from this dam alone.
+- Known differences are recorded in the kind variation register ([DOMAIN_MODEL §7](specs/DOMAIN_MODEL.md#7-kind-variation-register)), marked observed or assumed, before any code generalises them.
+- Before supporting a new kind or a new dam type, write its kind profile (FR-K10): what it needs on each variation axis, and which parts the existing core already covers. Kind-specific needs stay in its dataset, compiler and bounded adapters until a second example shows a shared pattern.
+- Today's "generic" interfaces, including the compiled package contract (ADR-017), are provisional and may change when the second kind arrives.
+
 ## ADR-017 Compiled geometry package is the generic runtime contract
 
 **Status:** Proposed
@@ -274,6 +288,7 @@ docs/
 **Decision.**
 - The runtime contract for every subject kind is the compiled package: manifest (identity, frames, materials, variables/frozen variants, layers, targets, checksums) + GLB physics/display meshes + optional terrain heightfield + optional conformance baselines.
 - Source formats (dam parametric spec, CAD, survey, furnace drawings) are converted offline by kind-specific compilers. The browser never runs kind-specific CSG (consistent with ADR-009).
+- The contract is provisional: it is derived from one dam and is expected to change when a second kind arrives (ADR-016, limits of current evidence).
 - The legacy dam path remains a bounded compatibility adapter; the compiled path is the default (OQ-3) and new subject kinds go only through it.
 - Continuous variables (e.g. water level, burden level) need explicit per-kind resolvers; frozen variants are supported first (ADR-011).
 
@@ -386,6 +401,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-12: ADR-016 extended with "limits of current evidence" (one RCC dam); ADR-017 marked provisional.
 - 2026-10-10: ADR-024 desktop distribution; OQ-9.
 - 2026-10-10: ADR-023 accepted; OQ-8 resolved (local tests only).
 - 2026-10-10: ADR-023 layered test strategy; OQ-8 continuous integration.

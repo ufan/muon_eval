@@ -171,7 +171,24 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 - How are continuous environment variables (e.g. water level, burden level) modelled per kind: declared ranges with kind-specific resolvers, or only frozen scenarios?
 - What are the identity and versioning of a ScanDefinition and a Reconstruction run?
 
+## 7. Kind variation register
+
+What may differ between subject kinds, so that generic code is not shaped by the single dam we have (ADR-016, limits of current evidence). **Observed** means seen in a real dataset in this repository; everything else is an **assumption** to verify with real data before it shapes code.
+
+| Axis | Dam: Zhouning RCC dam (observed) | Other dam types (assumed: arch, earth/rockfill) | Blast furnace (assumed) | Tunnel / underground (assumed) | Generic abstraction today |
+|---|---|---|---|---|---|
+| Geometry definition | Parametric transverse sections (extrusions), boxes, swept galleries, chutes; one dam-specific schema; compiled to closed GLB meshes | Curved arches; zoned embankments with core/filters | Axisymmetric layered shells (steel shell, refractory lining, staves); burden and hearth inside | Long excavation under kilometre-scale terrain; overburden dominates | Compiled package only (ADR-017, provisional) |
+| Materials | Concrete, water, rock, steel, air | Clay core, filters, rockfill; zoned densities | Steel, refractory, coke, ore, slag, hot metal; high-Z | Rock types, water-bearing zones | Material ID + density; one energy-loss law (FR-K4) |
+| Environment variables | Upstream/tail water levels, gate states; frozen scenarios | Reservoir level; pore water / phreatic surface | Burden level, hearth level, campaign age; changes over time | Groundwater; mostly static | Scenario variables (frozen); continuous only on legacy (FR-E1) |
+| Regions of interest | Discrete cavities and features: galleries, rooms, shaft, spillway, water body | Seepage zones, internal erosion, core integrity | Continuous zones: cohesive zone, deadman, refractory wear profile | Voids, fracture zones, density anomalies in overburden | Legacy dam targets; compiled semantic targets by canonical ID only (FR-M3) |
+| Detector placement | Outside the dam and in galleries; mostly looking up and across | Downstream toe, galleries | Around the furnace near ground level; near-horizontal views | Inside the tunnel looking up | Station + pose; upward rays only (FR-K6) |
+| Display and interaction | External 3D view, internal proxies, water layers, slope-space projections | Cross-sections through zones | Cut-away / sectional views of a closed vessel; time slider | Underground viewpoint; terrain above | Dam layer list hard-coded in backends (FR-K3) |
+| Main physics prerequisites | Open sky, rock-like matter, moderate columns | Similar to the dam | High-Z energy loss (FR-K4); small subject, short rays | Deep overburden, large columns (FR-K5) | Rock-like energy loss; `10⁵ GeV` cap |
+
+Add a column (and a kind profile, FR-K10) when a new kind or dam type is considered; move a cell from assumed to observed only with a real dataset.
+
 ## Change log
 
+- 2026-10-12: Added §7 kind variation register (observed Zhouning RCC dam vs assumed other kinds).
 - 2026-10-12: Clarified Scene vs ViewState: display options belong to the view state, never the scene; scene = release + environment state; assessment = scene + detector + station + pose; plan = scene + stations. Invariant 3 restated; two gaps added.
 - 2026-10-10: Initial model from the current code and decisions ADR-008…021.
