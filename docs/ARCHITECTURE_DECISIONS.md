@@ -414,6 +414,15 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **Interior coverage later.** Surface highlighting shows where rays cross surfaces, not how deeply a volume is probed. Volume coverage (per-voxel counts, stations, angular diversity) comes from stored traces in a worker (FR-M6, ADR-021) and is a separate layer.
 - **Replaces the legacy flux cloud on the compiled default.** The physical highlight serves the same purpose from the shared result, closing that part of FR-B1 without copying the legacy heuristic.
 
+**What is tested, what is highlighted and how users read it (clarified 2026-10-12).** Goal: a user recognises at a glance which part of the subject each deployed detector sees.
+
+- *No search.* Coverage is a per-point test, not a search over rays: a surface point `p` is covered by a station when its direction from the detector `d = p − origin` points forward (`d·forward > 0`), its slopes lie inside the device range (`|sx| ≤ maxSlopeX`, `|sy| ≤ maxSlopeY`), it lies within the ray length, and (for physical coverage) the direction is above the horizon. This is the same set of points that the detector's rays would cross, evaluated backwards from the point, so the cost is per screen pixel and independent of the number of rays.
+- *Which surfaces.* By default only the subject's own surfaces (for the dam: dam body and its structures), not terrain, water or air; a toggle adds terrain and water, since rays do continue into the hillside. Internal surfaces (galleries, cavities) are tinted when internal display is on. The dataset will declare which layers count as "subject" (FR-K3); until then the dam layer is used.
+- *What the eye sees.* Normal depth-tested rendering shows the footprint on the surfaces facing the camera, like a spotlight cast from the detector onto the subject. Turning the camera around shows the footprint on the far side too, because rays cross the subject; that is intended (through-material coverage), and the legend says so.
+- *Visual encoding.* (1) a light tint over the full field of view; (2) a stronger tint over the core field of view (half the maximum slope per axis, the existing `coreFov` definition), where acceptance is concentrated; (3) crisp outlines of both boundaries with constant screen width; (4) the detector marker and the pyramid edges in the same station colour, ending where they first enter the subject; (5) the part below the horizon shown hatched or desaturated as "no muon flux". In physical mode a log brightness ramp of counts per steradian replaces the flat tints; outlines stay.
+- *Interaction.* Hovering a tinted point shows which stations cover it, its slopes in each detector and (physical mode) the expected counts per steradian; clicking jumps to the matching projection pixel. This is the reverse of the existing pixel → ray link, so 3D view and projection image can be read together.
+- *Multi-station.* Each station keeps its colour for tint and outline; overlaps show blended colours, with an optional "number of covering stations" mode.
+
 ---
 
 ## Open questions
@@ -437,6 +446,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-12: ADR-026 clarified: per-point coverage test, highlighted surfaces, visual encoding and interaction.
 - 2026-10-12: ADR-026 coverage highlight; OQ-11.
 - 2026-10-12: ADR-025 accepted; OQ-10 resolved (placement before scanning).
 - 2026-10-12: Term "anomaly" adopted instead of "deficiency" (owner); OQ-10 now covers placement only.
