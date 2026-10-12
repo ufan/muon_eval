@@ -175,6 +175,8 @@ Requirements derived from this decision are FR-D1…D9.
 | DD4hep assembly | Compact XML + constructor | Detector, readout, sensitive layers, conditions, DDG4 assembly |
 | BIM/GIS exchange | IFC, CityJSON, GeoPackage, … | Exchange with engineering and GIS tools; never the calculation truth |
 
+**Compiler tooling (2026-10-12).** The current dam compiler (`dam_v07.compiler`, Python) builds meshes with Manifold (booleans, guaranteed watertight output) and trimesh. OpenCascade (OCCT) is a B-rep CAD kernel: exact solids, sweeps, fillets and, above all, STEP/IGES import (and IFC through IfcOpenShell, which is built on OCCT). It is the right tool for **CAD-sourced subjects** (furnace or tunnel design models, BIM) and for the user-geometry converter (FR-L5), as an offline front end: CAD import or B-rep construction → tessellation → Manifold for material-priority booleans and face lineage → package validation (closure, winding, conformance). It is not a replacement for the mesh pipeline: B-rep booleans are slower and need healing to guarantee closed meshes, and DEM terrain is mesh-native. Offline use goes through native OCCT (pythonOCC, CadQuery/build123d); the WebAssembly port opencascade.js only matters if geometry is built in the browser (in-app authoring, ADR-019 stage 4).
+
 DD4hep XML does not replace the strict JSON contract: Compact XML has no fixed schema and its semantics depend on the detector constructor. It suits simulation assembly, not storing dam provenance, unknowns and engineering assertions. The browser does not reimplement the full CSG of `compile_spec.py`; the short-term parametric interpreter is a migration compatibility layer only.
 
 ## ADR-010 Hybrid geometry/ray kernel
@@ -351,6 +353,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 **Decision.**
 - Pipeline: plan → per-station simulated measurements (expected counts from the shared core; optional Poisson noise for the chosen exposure) → per-pixel column-density estimates → 3D reconstruction on a voxel grid in the model frame → comparison with the dataset's true density.
 - **No inverse crime:** the reconstruction's forward model (ray–voxel path lengths on its own grid) is independent of the geometry used to simulate the measurements. Reconstructing with the same exact model that generated the data would overstate quality.
+- Display: slices, isosurfaces and volume rendering in the same Three.js scene as the subject, anomaly hypotheses and coverage, so they share camera and depth (3D textures and a ray-marching shader in WebGL2; marching-cubes isosurfaces). VTK.js is a fallback for a separate analysis view if advanced volume rendering is required (ADR-027).
 - Algorithms are pure, versioned modules registered explicitly (start with SIRT/ART and MLEM with non-negativity and density bounds; priors and regularisation later). Every result records algorithm, version, settings, voxel grid, noise seed and input snapshot keys.
 - Cheaper coverage metrics come first and need no inversion: per voxel, number of rays, number of stations, path length and angular diversity of crossing rays.
 - Outputs are always labelled **simulated**. The same pipeline can later take measured data (FR-V10), at which point it becomes a real reconstruction with its own validation.
@@ -463,10 +466,10 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 | Babylon.js | Display | Capable full engine but larger and more opinionated; no feature we need that Three.js lacks |
 | Raw WebGL / WebGPU | Display | Far more code for the same result; WebGPU can be adopted later through Three.js |
 | CesiumJS | Display of georeferenced, kilometre-scale terrain | Globe/ECEF-oriented and heavy; worth re-evaluating if large georeferenced terrain becomes central (tunnels, FR-K7) |
-| VTK.js | Scientific visualisation, volume rendering | Strong for volumes; a candidate for reconstruction display (FR-M9) alongside Three.js, not as the main app renderer |
+| VTK.js | Scientific visualisation, volume rendering | Strong for volumes (ray-cast volume rendering, transfer functions, slices, isosurfaces) and can also draw meshes. But a second WebGL stack in the same view has its own canvas and depth buffer, so it cannot correctly interleave a volume with the Three.js subject, anomaly and coverage layers; and it is a large second API. Reconstruction display starts in Three.js; VTK.js is the fallback for a separate analysis view if advanced volume rendering is needed (FR-M9) |
 | Unity / Unreal (WebGL export) | Display | Heavy runtime and toolchain, not a geometry truth source (ADR-010) |
 | three-mesh-bvh | Ray queries | Tied to Three.js geometry objects; we need renderer-independent buffers, closure checks, interval semantics and Node tests |
-| opencascade.js (OCCT), Manifold in the browser | CAD/CSG at runtime | Large WebAssembly payloads; CSG belongs to the offline compiler (ADR-009) |
+| opencascade.js (OCCT), Manifold in the browser | CAD/CSG at runtime | Large WebAssembly payloads; CSG belongs to the offline compiler (ADR-009). OCCT itself is useful offline, see ADR-009 |
 
 **Revisit when.** A display need that Three.js serves poorly appears (large georeferenced terrain, heavy volume rendering), or WebGPU compute becomes worthwhile for batch rays (ADR-005, ADR-010).
 
@@ -493,6 +496,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-12: VTK.js and OpenCascade assessed: reconstruction display in Three.js first (VTK.js fallback); OCCT as offline CAD front end of compilers and the converter (ADR-009, ADR-021, ADR-027).
 - 2026-10-12: ADR-001 rationale for "static" recorded; ADR-027 Three.js for display only (retrospective); README wording corrected.
 - 2026-10-12: ADR-026 GPU cost estimate for integrated graphics and safeguards.
 - 2026-10-12: OQ-11 resolved (per steradian); ADR-026 transparency handling: tint mixed into surface materials, front-facing shell plus internal features, minimum opacity, dashed hidden edges.

@@ -131,7 +131,7 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | FR-M6 | Coverage metrics in 3D. | Per voxel: ray count, station count, path length and angular diversity of crossing rays; displayed as slices/volume on the subject and summarised per plan. | Needed |
 | FR-M7 | Simulated multi-projection reconstruction. | From a plan: simulated counts (optional Poisson noise for the exposure) → column density per pixel → 3D density on a voxel grid; SIRT/ART and MLEM first; forward model independent of the simulation geometry (ADR-021); results labelled simulated and fully versioned. | Needed (later) |
 | FR-M8 | Reconstruction quality metrics. | Against the dataset's true density: density error, contrast recovery and resolution for chosen targets (e.g. a cavity), detectability; comparable across plans. | Needed (later) |
-| FR-M9 | 3D display of reconstruction results. | Slices, isosurfaces and volume rendering; difference from truth; same model frame as the subject view. | Needed (later) |
+| FR-M9 | 3D display of reconstruction results. | Slices, isosurfaces and volume rendering overlaid on the subject, anomaly hypotheses and coverage in the same scene (shared camera and depth); difference from truth; same model frame. Three.js first; VTK.js only for a separate analysis view if needed (ADR-021, ADR-027). | Needed (later) |
 | FR-M2 | Result data and plan reports. | Report schema; generated from stored results, including limitations and model versions; multi-station overview and reconstruction figures included when available. | Needed |
 | FR-M3 | Source-entity ROI significance on the compiled backend. | Requires FR-GE4 entity attribution. | Needed (later) |
 
@@ -196,7 +196,7 @@ Not urgent; staged after bundled datasets.
 | FR-L2 | Unverified labelling. | Packages without conformance baselines are marked unverified in the UI, results and exports. | Needed (later) |
 | FR-L3 | Untrusted-input limits. | File size, triangle count and JSON size/depth limits; no code execution; fail closed with a clear message. | Needed (later) |
 | FR-L4 | Local persistence and plan references. | Loaded datasets kept locally (IndexedDB); plans reference them by release ID plus content hash and refuse to run against a different file. | Needed (later) |
-| FR-L5 | Offline converter. | CLI turns glTF/OBJ/STL (later IFC/STEP) plus a material map and frame declaration into a package, reusing compiler checks. | Needed (later) |
+| FR-L5 | Offline converter. | CLI turns glTF/OBJ/STL (later STEP/IGES via OpenCascade, IFC via IfcOpenShell) plus a material map and frame declaration into a package; CAD input is tessellated, then passed through Manifold booleans and the compiler checks (ADR-009). | Needed (later) |
 | FR-L6 | In-app light authoring. | Assign materials/densities to imported meshes, set frames/origin, declare variables. | Needed (later) |
 
 ## W. Distribution (ADR-024)
@@ -216,6 +216,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-12: FR-M9 overlay in one scene (Three.js first); FR-L5 CAD import via OpenCascade/IfcOpenShell.
 - 2026-10-12: FR-N5 integrated-GPU budget for the coverage highlight.
 - 2026-10-12: FR-M10 transparency behaviour; physical brightness per steradian (OQ-11).
 - 2026-10-12: FR-M10 defaults: full field of view, subject surfaces.
