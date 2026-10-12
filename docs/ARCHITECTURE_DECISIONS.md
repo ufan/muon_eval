@@ -34,7 +34,7 @@ Last updated: 2026-10-10
 | 022 | A living domain model separate from the glossary | Accepted |
 | 023 | Layered, lightweight test-driven development | Accepted |
 | 024 | Desktop distribution as a thin wrapper over the unchanged web app | Proposed |
-| 025 | Anomaly hypotheses in the physical scene; perturbative sensitivity evaluation | Proposed |
+| 025 | Anomaly hypotheses in the physical scene; perturbative sensitivity evaluation | Accepted |
 
 ---
 
@@ -383,7 +383,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## ADR-025 Anomaly hypotheses in the physical scene; perturbative sensitivity evaluation
 
-**Status:** Proposed (owner requirement 2026-10-12)
+**Status:** Accepted (owner requirement 2026-10-12; term "anomaly" and placement before scanning decided, OQ-10). Details may be refined during implementation.
 
 **Context.** Detectors are deployed to investigate a structural anomaly of the subject. Without an explicit anomaly the tool can only say what a station sees, not whether a plan would detect the problem. Owner examples: voids, loosened or densified zones without clear structural features; a blast furnace's cohesive-zone shape and hearth wall thickness changes; development of a seepage (saturated) zone. Today the only related mechanism is the legacy counterfactual significance, a dam-specific heuristic on predefined targets that does not exist on the compiled default (FR-B1). Both backends already keep per-ray segments (material, entry and exit distance), so an anomaly can be applied to a stored trace without retracing the subject.
 
@@ -403,7 +403,6 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 ## Open questions
 
 - **OQ-2 UI framework choice** (Preact vs Svelte), decided when ADR-004 starts.
-- **OQ-10 Anomaly priority.** Where do anomaly hypotheses go in the order? Recommended: right after the plan format and before scan performance, since scans rank by sensitivity.
 - **OQ-9 Desktop distribution need.** Is an installable offline web app (ADR-024 stage 1) enough, or is a downloadable installer required? For which operating systems, and must it work fully offline?
 
 ## Resolved questions
@@ -417,10 +416,11 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 | OQ-6 Dataset directory move | Move now | ADR-018 |
 | OQ-7 Multi-station overview priority | Ahead of scan performance | ADR-020 |
 | OQ-8 Continuous integration | Keep tests local for now | ADR-023, TEST_STRATEGY |
-| OQ-10 (term) Name for the structural problem under investigation | "Anomaly" (not "deficiency" or "defect"); 2026-10-12 | ADR-025, glossary |
+| OQ-10 Anomaly term and placement | "Anomaly"; placed after the plan format and multi-station overview, before scan performance (2026-10-12) | ADR-025, ROADMAP Phase 3 |
 
 ## Change log
 
+- 2026-10-12: ADR-025 accepted; OQ-10 resolved (placement before scanning).
 - 2026-10-12: Term "anomaly" adopted instead of "deficiency" (owner); OQ-10 now covers placement only.
 - 2026-10-12: ADR-025 anomaly hypotheses and perturbative sensitivity; OQ-10.
 - 2026-10-12: ADR-016 extended with "limits of current evidence" (one RCC dam); ADR-017 marked provisional.

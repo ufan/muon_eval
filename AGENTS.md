@@ -85,6 +85,6 @@ Raise something to a higher-level generic interface only after a second real dat
 
 ## Recommended order of evolution
 
-The authoritative order is `docs/ROADMAP.md` and `docs/IMPLEMENTATION_PRIORITY.md`. In short: trustworthy results and tests first, then versioned plans, then the multi-station overview, scanning, new screens, multi-station evaluation, simulated reconstruction and physics validation.
+The authoritative order is `docs/ROADMAP.md` and `docs/IMPLEMENTATION_PRIORITY.md`. In short: trustworthy results and tests first, then versioned plans, the multi-station overview, anomaly hypotheses and sensitivity, scanning, new screens, multi-station evaluation, simulated reconstruction and physics validation.
 
 Avoid introducing large frameworks or complex plugin systems for hypothetical futures; a second real dataset, a second subject kind and real scan needs are the test of whether an abstraction is worth it.

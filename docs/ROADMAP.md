@@ -52,34 +52,36 @@ data contract + coordinate adapters → pure geometry query interfaces
 **Depends on:** plan schema with selected deployment, async cancellable assessment port (Phase 1). Built in the current page; does not wait for the new UI stack (ADR-004) or scan workers.
 **Exit:** overview and detail modes over one plan; per-station results cached; demonstration layout with camera presets and screenshot export.
 
-## Proposed: anomaly hypotheses and sensitivity (ADR-025, placement pending OQ-10)
+## Phase 3 — Anomaly hypotheses and sensitivity
 
-**Goal:** evaluate whether a plan would detect a specified structural anomaly, with quantified sensitivity and systematics.
-**Covers:** FR-H1…H9, later H10. Recommended placement: right after Phase 1 (with or just after Phase 2), before scanning, because scan ranking and reconstruction quality are defined by sensitivity to anomalies. Prerequisite: FR-C1.
+**Goal:** evaluate whether a plan would detect a specified anomaly, with quantified sensitivity and systematics (ADR-025). Placed before scanning because scan ranking and reconstruction quality are defined by sensitivity to anomalies (OQ-10, 2026-10-12).
+**Covers:** FR-H1…H9, later H10. The anomaly format (FR-H1) is designed together with the plan format in Phase 1.
+**Depends on:** FR-C1 (history-independent flux, priority #1); plan format (Phase 1).
+**Exit:** generic regions and density models with host clipping; perturbative evaluation matching full retracing on analytic fixtures; sensitivity outputs, sweeps and systematics; anomalies shown in 3D and as projection footprints.
 
-## Phase 3 — Workstation-scale scanning
+## Phase 4 — Workstation-scale scanning
 
 **Goal:** large station/pose scans with constraints, ranking and robustness on one workstation.
 **Covers:** FR-S1…S5; ADR-005 steps 1–3.
 **Exit:** headless batch runner; reference scan in minutes; feasibility, observability and safety reported as separate dimensions.
 
-## Phase 4 — New planning and scan screens
+## Phase 5 — New planning and scan screens
 
 **Goal:** usable UI for plans, scans and comparisons.
 **Covers:** ADR-004 (Vite + small framework introduced here, old page migrated gradually); FR-N1…N4.
-**Exit:** plan and scan screens built on the Phase 1 and Phase 3 formats; hosting/Docker/docs updated for the build step.
+**Exit:** plan and scan screens built on the Phase 1 and Phase 4 formats; hosting/Docker/docs updated for the build step.
 
-## Phase 5 — Multi-station evaluation, coverage and reports
+## Phase 6 — Multi-station evaluation, coverage and reports
 
 **Goal:** evaluate the deployment as a whole: joint metrics, 3D coverage, shareable reports.
-**Covers:** FR-M1, FR-M2, FR-M6; ADR-020. Uses Phase 3 workers for many stations.
+**Covers:** FR-M1, FR-M2, FR-M6; ADR-020. Uses Phase 4 workers for many stations.
 
-## Phase 6 — Simulated multi-projection reconstruction
+## Phase 7 — Simulated multi-projection reconstruction
 
 **Goal:** a second dimension of plan quality: what 3D density picture the deployment could recover.
-**Covers:** FR-M7…M9; ADR-021. Coverage metrics (Phase 5) come first; reconstruction algorithms are added incrementally.
+**Covers:** FR-M7…M9; ADR-021. Coverage metrics (Phase 6) come first; reconstruction algorithms are added incrementally.
 
-## Phase 7 — Physics validation
+## Phase 8 — Physics validation
 
 **Goal:** know how accurate the fast model is.
 **Covers:** FR-V2…V11, FR-G1, FR-G2 (Geant4 export package and result import), FR-X1…X3.
@@ -114,7 +116,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 | Track | Unlocked by | Content |
 |---|---|---|
 | Server backend | T1 shared plans, T2 scan scale, T3 routine Geant4, T4 access control | Small backend: storage + job queue; workers reuse the core (FR-P3, FR-S6, FR-G3) |
-| WebAssembly tracer | Phase 3 measurements still insufficient | Rust/C++ → WASM; must pass conformance rays/points (ADR-005 step 4) |
+| WebAssembly tracer | Phase 4 measurements still insufficient | Rust/C++ → WASM; must pass conformance rays/points (ADR-005 step 4) |
 | Access control | OQ-1 answer | Authenticated hosting (FR-A1) |
 | Desktop distribution | A real offline or installer need (OQ-9) | PWA first (FR-W1); thin Tauri wrapper when an installer is needed (FR-W2, W3); never a fork of the app (ADR-024) |
 
@@ -124,6 +126,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-12: Anomaly hypotheses placed as Phase 3 (OQ-10); scanning and later phases renumbered 4–8.
 - 2026-10-12: Renamed "deficiency" to "anomaly".
 - 2026-10-12: Proposed anomaly-hypothesis phase (ADR-025), placement pending OQ-10.
 - 2026-10-12: Evidence-driven generalisation noted; G2/G3 start with a kind profile.

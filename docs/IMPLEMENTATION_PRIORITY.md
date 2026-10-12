@@ -40,11 +40,12 @@ Last updated: 2026-10-10
 |---|---|---|---|---|
 | 11 | Plan / scan / result schemas with versions and migrations | FR-P1, FR-P2, ADR-006, FR-K1 | Becomes the future API contract; subject-neutral, references datasets by release ID (+ content hash) | Todo |
 | 12 | Async, cancellable assessment port | ADR-006 | Change limited to `assessment-controller.js` | Todo |
+| AN1 | Anomaly schema as part of the plan format | FR-H1, FR-H11 | Design together with #11 | Todo |
 | 13 | Headless batch runner (Node CLI) | FR-S5, ADR-006 | Plan in, results out; future server worker | Todo |
 
 ## P3 — Multi-station overview and demonstration (Phase 2)
 
-Moved ahead of scan performance by owner decision (OQ-7). Built in the current page with existing modules; stations are computed one after another through the async port (#12); workers arrive with P4.
+Moved ahead of scan performance by owner decision (OQ-7). Built in the current page with existing modules; stations are computed one after another through the async port (#12); workers arrive with P5.
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
@@ -53,17 +54,18 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | 16 | Per-station projections side by side | FR-M4 | Reuses `projection-canvas-view.js` | Todo |
 | 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | Short animation export later | Todo |
 
-## Proposed — Anomaly hypotheses (ADR-025; placement pending OQ-10)
+## P4 — Anomaly hypotheses and sensitivity (Phase 3)
+
+Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan format; #1 (FR-C1) must be done first.
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| AN1 | Anomaly schema as part of the plan format | FR-H1, FR-H11 | Design together with #11 | Proposed |
-| AN2 | Generic regions, host clipping and density models (pure modules, test first) | FR-H2…H4 | Analytic fixtures at L2 | Proposed |
-| AN3 | Perturbative evaluation over stored traces; sensitivity outputs | FR-H5, FR-H6 | Needs #1 (FR-C1) | Proposed |
-| AN4 | Anomaly in 3D view and projection footprint | FR-H9 | Same definition as physics | Proposed |
-| AN5 | Sweeps and systematics | FR-H7, FR-H8 | Feeds scans (P4) and reconstruction | Proposed |
+| AN2 | Generic regions, host clipping and density models (pure modules, test first) | FR-H2…H4 | Analytic fixtures at L2 | Todo |
+| AN3 | Perturbative evaluation over stored traces; sensitivity outputs | FR-H5, FR-H6 | Needs #1 (FR-C1) | Todo |
+| AN4 | Anomaly in 3D view and projection footprint | FR-H9 | Same definition as physics | Todo |
+| AN5 | Sweeps and systematics | FR-H7, FR-H8 | Feeds scans (P4) and reconstruction | Todo |
 
-## P4 — Scan performance and features (Phase 3)
+## P5 — Scan performance and features (Phase 4)
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
@@ -80,16 +82,16 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | Preview chunked-transfer browser regression incl. failed narrow-screen overlay check | FR-N2 | Todo |
 | Cold start, peak memory, worst-case interaction measurements | FR-N3 | Todo |
 
-## Later (Phases 4–7, parallel and conditional tracks)
+## Later (Phases 5–8, parallel and conditional tracks)
 
 | Item | Ref | Gate |
 |---|---|---|
-| Plan/scan screens with Vite + Preact/Svelte | ADR-004 | Phase 4, after P2 formats exist |
-| 3D coverage metrics per voxel | FR-M6 | Phase 5 |
-| Multi-station joint evaluation, reports | FR-M1, FR-M2 | Phase 5 |
-| Simulated reconstruction (SIRT/MLEM), quality metrics, 3D result display | FR-M7…M9, ADR-021 | Phase 6 |
-| Physics validation items | FR-V2…V11 | Phase 7 |
-| Geant4 job package export / result import | FR-G1, FR-G2, ADR-007 | Phase 7 |
+| Plan/scan screens with Vite + Preact/Svelte | ADR-004 | Phase 5, after P2 formats exist |
+| 3D coverage metrics per voxel | FR-M6 | Phase 6 |
+| Multi-station joint evaluation, reports | FR-M1, FR-M2 | Phase 6 |
+| Simulated reconstruction (SIRT/MLEM), quality metrics, 3D result display | FR-M7…M9, ADR-021 | Phase 7 |
+| Physics validation items | FR-V2…V11 | Phase 8 |
+| Geant4 job package export / result import | FR-G1, FR-G2, ADR-007 | Phase 8 |
 | Continuous-water scene resolution | FR-E1 | Geometry track |
 | Physical-domain certification, entity attribution, compiled ROI | FR-GE4, FR-M3 | Geometry track; needs data evidence |
 | Geometry debt (cavity, spillway rules, terrain, contours) | FR-GE1…GE3, GE5 | Geometry track |
@@ -99,7 +101,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | Load packaged dataset from file; converter; in-app authoring | FR-L1…L6 | User-geometry track U1–U3, not urgent |
 | Compiled default capability gaps: flux cloud, internal features, target outlines/ROI, continuous water | FR-B1, FR-E1, FR-M3 | After P3; parts depend on FR-K3 and FR-GE4 |
 | Station export/import between releases | FR-B2 | With the plan format (#11) or later |
-| WebAssembly tracer | ADR-005 step 4 | Only if P4 measurements insufficient |
+| WebAssembly tracer | ADR-005 step 4 | Only if P5 measurements insufficient |
 | Server backend | ADR-001 | Only when T1–T4 observed |
 | Access control | FR-A1 | Answer to OQ-1 |
 | Installable offline web app (PWA) | FR-W1, ADR-024 | When offline use is needed; small |
@@ -120,6 +122,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 
 ## Change log
 
+- 2026-10-12: Anomaly work placed as P4 (Phase 3) before scans (now P5); AN1 moved into P2 with the plan format; phase references renumbered.
 - 2026-10-12: Renamed "deficiency" to "anomaly"; items AN1–AN5.
 - 2026-10-12: Proposed anomaly items AN1–AN5 pending OQ-10.
 - 2026-10-10: Desktop distribution items under Later.
