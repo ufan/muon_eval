@@ -420,16 +420,24 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - *Which surfaces.* By default only the subject's own surfaces (for the dam: dam body and its structures), not terrain, water or air; a toggle adds terrain and water, since rays do continue into the hillside. Internal surfaces (galleries, cavities) are tinted when internal display is on. The dataset will declare which layers count as "subject" (FR-K3); until then the dam layer is used.
 - *What the eye sees.* Normal depth-tested rendering shows the footprint on the surfaces facing the camera, like a spotlight cast from the detector onto the subject. Turning the camera around shows the footprint on the far side too, because rays cross the subject; that is intended (through-material coverage), and the legend says so.
 - *Defaults (owner, 2026-10-12):* full field of view only, on subject surfaces only. The core field of view and terrain/water are optional toggles.
-- *Visual encoding.* (1) a tint over the full field of view; (2) optionally, a stronger tint over the core field of view (half the maximum slope per axis, the existing `coreFov` definition), off by default; (3) crisp outlines of the shown boundaries with constant screen width; (4) the detector marker and the pyramid edges in the same station colour, ending where they first enter the subject; (5) the part below the horizon shown hatched or desaturated as "no muon flux". In physical mode a log brightness ramp of counts per steradian replaces the flat tints; outlines stay.
+- *Visual encoding.* (1) a tint over the full field of view (mixed into the surface colour, see Transparency); (2) optionally, a stronger tint over the core field of view (half the maximum slope per axis, the existing `coreFov` definition), off by default; (3) crisp outlines of the shown boundaries with constant screen width; (4) the detector marker and the pyramid edges in the same station colour, ending where they first enter the subject; (5) the part below the horizon shown hatched or desaturated as "no muon flux". In physical mode a log brightness ramp of counts per steradian replaces the flat tints; outlines stay.
 - *Interaction.* Hovering a tinted point shows which stations cover it, its slopes in each detector and (physical mode) the expected counts per steradian; clicking jumps to the matching projection pixel. This is the reverse of the existing pixel → ray link, so 3D view and projection image can be read together.
 - *Multi-station.* Each station keeps its colour for tint and outline; overlaps show blended colours, with an optional "number of covering stations" mode.
+
+**Transparency (2026-10-12).** The subject can be made transparent (dam opacity slider; materials are double-sided, transparent below opacity 1 and stop writing depth below 0.72). An additive overlay pass would then stack the highlight on the front face, the back face and every internal surface, so brightness would show the number of layers rather than counts. Therefore:
+
+- *Tint inside the surface's own material, not an additive overlay.* The coverage term is injected into the subject materials' shaders (as the legacy view already does for clipping) and **mixes** the surface colour towards the highlight colour; the surface keeps its own opacity. Each surface is tinted at most once and composites exactly like the surface itself, so the existing transparency sorting applies unchanged. (This replaces the "overlay pass with additive blending" sketched above.)
+- *Which layers are tinted.* Outer shell: only its front-facing side (`gl_FrontFacing`), so a covered line of sight through a transparent dam shows one tinted shell, not two. Internal features (galleries, rooms, shafts, cavities): tinted on both sides when covered, so with a transparent shell the user sees directly which internal features lie in the field of view. This is the main payoff of transparency.
+- *Readable at low opacity.* Covered regions keep a minimum opacity (e.g. 0.35) and the outline is drawn at full opacity, so the highlight does not vanish when the shell is almost transparent. Uncovered surfaces keep the user's opacity.
+- *Physical brightness is read on one layer.* Counts per steradian map to the tint's colour value, not to added light, so overlapping translucent layers do not brighten each other. The legend states that brightness refers to each tinted surface.
+- *Pyramid edges.* Drawn solid where visible and dashed where hidden behind opaque surfaces, instead of the current always-on-top lines.
+- *Water and terrain* (when toggled on) follow the same rules; water stays visually secondary (lower tint strength) so the subject reads first.
 
 ---
 
 ## Open questions
 
 - **OQ-2 UI framework choice** (Preact vs Svelte), decided when ADR-004 starts.
-- **OQ-11 Physical-coverage brightness unit.** Expected counts per steradian (recommended) or counts per square metre perpendicular to the ray (`= counts per steradian / r²`)? Per steradian is the same for every point along a direction, matches the projection image and is binning-independent; per area falls off as 1/r² (about 25× between 50 m and 250 m) and answers a different question, the density of muons through a fixed-size patch, which anomaly sensitivity (ADR-025) evaluates properly. Recommendation: per steradian by default; per-area as an optional view later.
 - **OQ-9 Desktop distribution need.** Is an installable offline web app (ADR-024 stage 1) enough, or is a downloadable installer required? For which operating systems, and must it work fully offline?
 
 ## Resolved questions
@@ -443,10 +451,12 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 | OQ-6 Dataset directory move | Move now | ADR-018 |
 | OQ-7 Multi-station overview priority | Ahead of scan performance | ADR-020 |
 | OQ-8 Continuous integration | Keep tests local for now | ADR-023, TEST_STRATEGY |
+| OQ-11 Physical-coverage brightness unit | Expected counts per steradian (2026-10-12) | ADR-026, FR-M10 |
 | OQ-10 Anomaly term and placement | "Anomaly"; placed after the plan format and multi-station overview, before scan performance (2026-10-12) | ADR-025, ROADMAP Phase 3 |
 
 ## Change log
 
+- 2026-10-12: OQ-11 resolved (per steradian); ADR-026 transparency handling: tint mixed into surface materials, front-facing shell plus internal features, minimum opacity, dashed hidden edges.
 - 2026-10-12: ADR-026 defaults set (full field of view, subject surfaces); OQ-11 explanation added.
 - 2026-10-12: ADR-026 clarified: per-point coverage test, highlighted surfaces, visual encoding and interaction.
 - 2026-10-12: ADR-026 coverage highlight; OQ-11.
