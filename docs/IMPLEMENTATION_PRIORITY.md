@@ -15,6 +15,7 @@ Last updated: 2026-10-12
 | 1 | Make flux integration history-independent | FR-C1 | Physics-model revision `legacy-quick-response@2.0.0`; frozen baseline tests and `specs/CALCULATION_MODEL.md` §2/§9 updated | Done |
 | 2 | Record the legacy 500 m ray cutoff in exports; fix limitation text | FR-C2, FR-C5 | `legacy-pattern-adapter.js`, `legacy-geometry-adapter.js`; legacy compatibility path only since OQ-3 | Done |
 | 3 | Projected-area cos θ factor; remove the edge factor | FR-C3 | Model revision `legacy-quick-response@3.0.0`; evidence in `specs/CALCULATION_MODEL.md` §10.3 | Done |
+| 3a | Measure in-pixel ray sampling error against a converged reference; document or plan a sampling option | FR-V12 | `scripts/experiment-pixel-sampling.mjs`; owner asked for the experiment before #4 | In progress |
 | 4 | Remove dead work in `quickMetrics()` | FR-C4 | Keep only `center` and `dirDoc`; legacy path only | Todo |
 
 ## Standing rules
@@ -126,6 +127,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-12: Added #3a (FR-V12) ahead of #4.
 - 2026-10-12: #3 done (owner decision: both changes as one model revision).
 - 2026-10-12: #2 done.
 - 2026-10-12: #1 done.

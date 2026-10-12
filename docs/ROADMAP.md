@@ -85,7 +85,7 @@ data contract + coordinate adapters → pure geometry query interfaces
 ## Phase 8 — Physics validation
 
 **Goal:** know how accurate the fast model is.
-**Covers:** FR-V2…V11, FR-G1, FR-G2 (Geant4 export package and result import), FR-X1…X3.
+**Covers:** FR-V2…V11 (FR-V12 measured in Phase 0), FR-G1, FR-G2 (Geant4 export package and result import), FR-X1…X3.
 
 ## Parallel track — Geometry and scene fidelity
 

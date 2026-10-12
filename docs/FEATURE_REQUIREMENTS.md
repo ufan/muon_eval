@@ -84,6 +84,7 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | FR-V9 | Uncertainty propagation. | Geometry, density and response uncertainties propagated to results. | Needed (later) |
 | FR-V10 | Measured muon maps. | Import measured maps and calibrate the fast model against them; the reconstruction pipeline (FR-M7) can then run on measured data. | Needed (later) |
 | FR-V11 | Independent cross-validation of the fast response model. | E.g. against Geant4 (FR-G2). | Needed |
+| FR-V12 | In-pixel ray sampling accuracy. | Each projection pixel is computed from one ray from the detector centre, while the measurement integrates over every native strip-difference direction in the pixel and over entry points across the aligned detector area. The error is measured against a converged reference (all native directions × entry points, counts averaged, not columns) for representative stations and poses, in per-pixel relative error, pull against the counting error of a typical exposure and total count. Either the approximation is documented with its measured bounds in the [calculation model spec](specs/CALCULATION_MODEL.md), or multi-ray sampling becomes an explicit, versioned calculation option with the reference as an L4 test. | In progress |
 
 ## P. Plans (deployment schemes)
 
@@ -216,6 +217,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-12: Added FR-V12 in-pixel ray sampling accuracy (owner request); experiment first.
 - 2026-10-12: FR-C3 done (owner decision: add cos θ and remove the edge factor in one model revision).
 - 2026-10-12: FR-C2 done.
 - 2026-10-12: FR-C1 done (`legacy-quick-response@2.0.0`).
