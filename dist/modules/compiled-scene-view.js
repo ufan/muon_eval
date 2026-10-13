@@ -71,16 +71,12 @@ export function createCompiledSceneView({ runtime, waterLayers, root=document, o
   function displayTrace(group,trace,station,direction){clear(group);const origin=compiledPointToScene([station.x,station.y,station.z]),dir=compiledPointToScene([direction.x,direction.y,direction.z]);
     for(const segment of trace.segments){if(segment.material==='air')continue;const a=origin.clone().addScaledVector(dir,segment.t0),b=origin.clone().addScaledVector(dir,segment.t1);group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),new THREE.LineBasicMaterial({color:materialColors[segment.material]??0xffffff,depthTest:false})));}
     const arrow=new THREE.ArrowHelper(dir,origin,radius*.2,0x65fff0);arrow.line.material.depthTest=arrow.cone.material.depthTest=false;group.add(arrow);
-    return {origin,dir};
   }
-  // Numbered entry markers of the recognition items crossed by the hovered ray (FR-M12).
-  function crossingMarker(label,color){const canvas=document.createElement('canvas');canvas.width=canvas.height=64;const ctx=canvas.getContext('2d');ctx.fillStyle=color;ctx.beginPath();ctx.arc(32,32,26,0,2*Math.PI);ctx.fill();ctx.lineWidth=4;ctx.strokeStyle='#071018';ctx.stroke();ctx.fillStyle='#071018';ctx.font='bold 34px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,32,34);
-    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(canvas),depthTest:false,sizeAttenuation:false}));sprite.scale.set(.028,.028,1);sprite.renderOrder=10;return sprite;}
   return Object.freeze({
     build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();});observer.observe(container);resize();renderer.setAnimationLoop(()=>{controls.update();updateScale();renderer.render(scene,camera);});$('#loading').style.display='none';},
     resize,setView,setLayer,setDamOpacity,drawDetector,
     showRay:(trace,station,direction)=>displayTrace(rayGroup,trace,station,direction),
-    showProjectionPixel(data,x,y,crossings=[]){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x],{origin,dir}=displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);crossings.forEach((crossing,i)=>{if(!Number.isFinite(crossing.entryM))return;const marker=crossingMarker(String(i+1),crossing.color);marker.position.copy(origin).addScaledVector(dir,crossing.entryM);projectionGroup.add(marker);});},
+    showProjectionPixel(data,x,y){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);},
     clearProjection(){clear(projectionGroup);},showFlux(){},drawFluxCloud(){},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},
     dispose(){renderer?.setAnimationLoop(null);observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},

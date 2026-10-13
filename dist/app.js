@@ -14,7 +14,7 @@ async function main(){
  const dataset=await loadDataset(selection.datasetId),backend=await createApplicationBackend(dataset,selection);
  const state=createDeploymentState({stations:backend.stations,environment:backend.environment});let page;
  const sceneView=createCompiledSceneView({dataset,runtime:backend.runtime,waterLayers:backend.waterLayers,onResize:()=>page?.constrainProjectionPanel()});
- const projectionView=createProjectionCanvasView({onHover:(data,x,y,crossings)=>sceneView.showProjectionPixel(data,x,y,crossings),onLeave:()=>sceneView.clearProjection()});
+ const projectionView=createProjectionCanvasView({onHover:(data,x,y)=>sceneView.showProjectionPixel(data,x,y),onLeave:()=>sceneView.clearProjection()});
  createApplicationSelectionView({registry,selection:backend.selection,scenarios:backend.scenarios,backendLabel:selection.backend,description:backend.environmentDescription,title:dataset.identity.title,frame:dataset.geometry?.source.frames.model_frame});
  page=createMainPage({datasetId:dataset.id,datasetVersion:dataset.identity.dataset_version,features:dataset.features,recognitionItems:dataset.recognitionItems,state,sceneView,projectionView,capabilities:backend.capabilities,
   backendLabel:selection.backend,environmentDescription:backend.environmentDescription,exportFileName:backend.exportFileName,exportPlan:backend.exportPlan,createController:ports=>{
