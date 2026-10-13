@@ -1,4 +1,5 @@
 import { adaptDamSpecV07 } from './dam-spec-v07.js';
+import { buildFeatureCatalogue } from './feature-catalogue.js';
 import { validateBundle, validateTerrainHeader, verifySha256 } from './dataset-validation.js';
 
 // fetch/digest injection lets Node tests exercise the actual browser loading path.
@@ -66,6 +67,8 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
     }
     if (compiledManifest.outputs[compiled.glb] !== entry.integrity[`compiled/${compiled.glb}`]) throw new Error(`Compiled mesh ${compiled.glb} does not match registry`);
   }
+  const features = buildFeatureCatalogue({ entities: geometry.entities.values(), waterBodies: geometry.waterBodies.values(),
+    vocabulary: spec.vocabulary, components: Object.values(compiledManifest.scenarios).flatMap(scenario => scenario.components) });
   const loadCompiledScenario = async scenarioId => {
     const scenario = compiledManifest.scenarios[scenarioId];
     if (!scenario) throw new Error(`Unknown compiled scenario ${scenarioId}`);
@@ -73,7 +76,7 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
     await verifySha256(buffer, compiledManifest.outputs[scenario.glb], relative, options.digest);
     return { scenarioId, variables: scenario.variables, components: scenario.components, buffer };
   };
-  return { id, identity, base, entry, spec, geometry, candidates, detectorModels, siteConditions, compiledManifest, terrainNear, terrainFar, loadCompiledScenario };
+  return { id, identity, base, entry, spec, geometry, features, candidates, detectorModels, siteConditions, compiledManifest, terrainNear, terrainFar, loadCompiledScenario };
 }
 
 export function sampleTerrainModel(terrain, modelX, modelY) {
