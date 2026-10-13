@@ -512,7 +512,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **Identity.** Feature masks and outlines are derived from a result and bound to its snapshot key; selecting features is view state and never changes the result.
 
 **Open questions (to settle in discussion).**
-1. Catalogue source: derive from spec semantic classes in the adapter now, or add an explicit layer/target section to the dataset release first?
+1. ~~Catalogue source~~ **Decided 2026-10-13:** a generic builder in the dataset adapter derives the catalogue from the release's own declarations (`semantics.class/system/imaging_role/names` per entity and water body; `vocabulary.classes` colours and categories; `vocabulary.systems` labels): group = system, colour = class colour. No new release data; an optional override section may come later without changing consumers. Context surfaces (dam, rock, water) keep the legacy-look palette; features use the dataset's class colours.
 2. Granularity: per entity (upper vs lower gallery), per group (all galleries), or both with group toggles and entity picking?
 3. Default targets and threshold: which features are selectable/pre-selected as projection targets; keep 0.15 m or make the threshold relative to pixel size?
 4. Aggregate solids (dam body, piers, gates): wait for FR-GE4, or show the concrete material envelope (already available) as the "dam" outline meanwhile?
