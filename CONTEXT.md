@@ -71,8 +71,26 @@ How these objects relate, their identities, invariants and lifecycles are modell
 - **Environment volume**: media that change between scenes or lie outside the subject: reservoir and tail water, furnace burden, overburden, air, surrounding rock.
 - **Visual proxy**: auxiliary geometry drawn for recognition or interaction; it never takes part in material calculation implicitly.
 - **Target / ROI**: a structure or region the user wants to identify, cover or compare in projections or scans.
-- **Subject feature**: a named part of the subject declared by the dataset (a gallery, shaft, water body, …) with a display group and colour; the common reference for 3D feature layers, projection outlines, picking and targets (proposed, ADR-029).
+- **Subject feature**: a named part of the subject declared by the dataset; see §3.1.
 - **Boundary / contour**: the boundary of a material or semantic region in 3D space, ray space or the projection plane.
+
+### 3.1 Subject features and how they are referenced
+
+How the app names and finds parts of the subject (design in ADR-029). Example values are from the Zhouning dam.
+
+| Term | Meaning | Example |
+| --- | --- | --- |
+| Entity | One part of the subject as written in the dataset spec, with a stable ID. Solid, void or virtual | `gallery_upper`, `dam_standard`, `spillway_piers_and_chute_walls_C` |
+| Water body | A body of water declared by the dataset; treated like an entity for naming | `reservoir`, `tailwater` |
+| Semantic class | What kind of thing an entity is, from the dataset's vocabulary; carries a display colour | `gallery` (`#185FA5`), `elevator_shaft`, `pier` |
+| System | The dataset's grouping of classes by engineering function | gallery, monitoring, vertical transport, flood release, dam, water |
+| Imaging role | What an entity means for imaging, declared by the dataset: `target`, `reference_void` (a known void, useful to check a plan), `time_varying_mass`, `background`, `detector_site` | Galleries and rooms are `reference_void`; water is `time_varying_mass` |
+| Component | One closed mesh in a compiled scenario, with one material; what the ray tracer and the 3D view actually use | `gallery_upper` (air), `concrete` (all concrete solids merged), `rock` |
+| Direct / aggregate | A *direct* entity has its own component, so it can be drawn and measured on its own; an *aggregate* entity is merged into a shared component (e.g. every concrete solid is inside `concrete`) and cannot be singled out until FR-GE4 | 22 direct (voids, water); 23 aggregate (dam body, piers, gates, …) |
+| Subject feature | A named part of the subject that the app can show, select or measure: one entry per entity or water body, with label, class, group, colour, imaging role and direct/aggregate | "Upper gallery" |
+| Feature catalogue | The list of all subject features of one release, built once by the dataset adapter from the dataset's own declarations. Every consumer (3D layer, projection outlines, picking, coverage, metrics) reads it; none keeps its own list | 45 features for the Zhouning release |
+| Feature group | The catalogue's grouping for display, equal to the dataset's system | "Gallery" group = both galleries, the link gallery, two adits |
+| Internal feature | A subject feature inside the subject with engineering meaning (galleries, rooms, shafts, tapholes) | "Lower observation room" |
 
 ### Geometric truth
 
@@ -122,6 +140,33 @@ Keep these strictly apart:
 Flux model, attenuation model, count units, exposure time and statistical assumptions are versioned explicitly in calculation modules and output metadata.
 
 The current calculation chain, formulas, parameters and UI outputs are specified in `docs/specs/CALCULATION_MODEL.md`; their interpretation is in `docs/guides/RESULT_INTERPRETATION.md`.
+
+### 5.1 Display terms: what is drawn where
+
+The app has two pictures: the **3D view** of the subject and the **projection** (the detector's image). These terms say which picture something belongs to.
+
+| Term | Picture | Meaning |
+| --- | --- | --- |
+| Projection | 2D | The image a detector at one station and pose would record: one value per direction, laid out by local slopes `sx` (right) and `sy` (up). Not a map or plan of the subject. Shown as expected counts or transmission |
+| Pixel | 2D | One cell of the displayed projection (25 × 25 preview, 65 × 65 final); each pixel combines several native projection bins |
+| Layer (3D) | 3D | A group of things in the 3D view that one checkbox shows or hides: terrain, dam concrete, water, detector cone, a feature group. Hiding a layer never changes a result |
+| Overlay / numeric layer | 2D | Lines or shapes drawn on top of a projection from the same result: material contribution contours, response contours, feature outlines, later anomaly footprints |
+| Feature mask | 2D | For one subject feature and one result: the set of projection pixels whose ray passes through that feature by more than a threshold length |
+| Outline | 2D | The boundary of a feature mask drawn on the projection in the feature's colour, so users see *where in the image* a gallery appears |
+| Contour | 2D | A line of equal value of a numerical field on the projection (e.g. 10 m of concrete, transmission 0.1). An outline is a contour of a feature's mask |
+| Material envelope | 2D | The sampled edge where a material starts or ends along neighbouring rays (e.g. concrete vs air); a display diagnostic, not a CAD edge |
+| Picking / hover | both | Pointing at something to identify it: a feature in 3D, or a pixel in the projection, which also draws that pixel's ray in 3D |
+| Coverage highlight | 3D | Tinting the parts of the subject inside a detector's field of view (FR-M10) |
+
+### 5.2 Words with several meanings
+
+| Word | Meanings in this project | Prefer |
+| --- | --- | --- |
+| Target | (1) what a user wants to find or check (glossary "Target / ROI"); (2) a subject feature selected for outlining on the projection; (3) the dataset imaging role `target`; (4) "semantic targets": direct features verified in the preview; (5) legacy hard-coded target structures (retired) | (1) *target / ROI*; (2) *projection target* or *outlined feature*; (3) *imaging role `target`*; (4) *direct feature* |
+| Feature | (1) subject feature (§3.1); (2) a capability of the app | Say *subject feature* for (1), *capability* for (2) |
+| Layer | (1) 3D layer (checkbox); (2) numeric layer / overlay on the projection; (3) detector layer (a physical plane of the device) | *3D layer*, *overlay*, *detector layer* |
+| Projection | (1) the detector image (§5.1); (2) a map projection or coordinate projection | (1) only; for geometry say *transform* |
+| Contour / outline / envelope / boundary | All are lines; they differ in source (§5.1). *Boundary* is the general word for any of them in 3D or 2D | Use the specific term |
 
 ## 6. Evaluation semantics
 

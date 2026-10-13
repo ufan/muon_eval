@@ -513,7 +513,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 **Open questions (to settle in discussion).**
 1. ~~Catalogue source~~ **Decided 2026-10-13:** a generic builder in the dataset adapter derives the catalogue from the release's own declarations (`semantics.class/system/imaging_role/names` per entity and water body; `vocabulary.classes` colours and categories; `vocabulary.systems` labels): group = system, colour = class colour. No new release data; an optional override section may come later without changing consumers. Context surfaces (dam, rock, water) keep the legacy-look palette; features use the dataset's class colours.
-2. Granularity: per entity (upper vs lower gallery), per group (all galleries), or both with group toggles and entity picking?
+2. ~~Granularity~~ **Decided 2026-10-13:** the catalogue has one entry per entity or water body; the 3D layer panel has one checkbox per feature group, expandable to individual features; aggregate features are not listed (the dam-concrete layer covers them); projection targets are selected per feature with a group shortcut, each outline in its class colour; picking and hover are per feature; the gallery, monitoring and vertical-transport groups are visible by default.
 3. Default targets and threshold: which features are selectable/pre-selected as projection targets; keep 0.15 m or make the threshold relative to pixel size?
 4. Aggregate solids (dam body, piers, gates): wait for FR-GE4, or show the concrete material envelope (already available) as the "dam" outline meanwhile?
 5. Outline style: pixel-edge mask (legacy look) or smoothed contour of the length field (current contour layers)?
