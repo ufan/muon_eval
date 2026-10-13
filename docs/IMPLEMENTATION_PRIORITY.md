@@ -54,6 +54,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | 15 | Overview mode in 3D: all selected stations, colour per station, field-of-view cones, ray coverage on the subject; summary table; click → detail mode | FR-M4 | Reuses scene views; subject-neutral labels (FR-K1) | Todo |
 | 15a | Coverage highlight: geometric (live, single colour per station) and physical (count/sr brightness from the result) via projective texturing; slope-mapping L1 test against `detector-pose.js` | FR-M10, ADR-026 | Single-station first (no plan needed), then multi-station with #15; measure FR-N5 on an Intel i5 laptop | Todo |
 | 15b | Subject features: catalogue, 3D feature layer and projection outlines (replaces MT-5, MT-2) | FR-M11, FR-M12, FR-K3, ADR-029 | Design discussion first (ADR-029 open questions); then catalogue + L1 tests, 3D layer, outlines via the numeric-overlay pipeline | Design |
+| 15c | Statistical precision contour (1/√N at 5 % and 10 %); move existing contour layers under "Expert diagnostics", off by default | FR-M13, FR-M14 | Small; reuses the contour pipeline | Todo |
 | 16 | Per-station projections side by side | FR-M4 | Reuses `projection-canvas-view.js` | Todo |
 | 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | Short animation export later | Todo |
 
