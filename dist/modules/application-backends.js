@@ -16,7 +16,7 @@ export async function createApplicationBackend(dataset, selection) {
       ...[...dataset.geometry.entities.values()].filter(entity => entity.fill?.source_water_id === body.id).map(entity => entity.id)])]));
   return { selection: { ...selection, scenarioId }, runtime, assessment: createCompiledMainAssessment({ runtime }),
     stations: compiledDefaultStations(dataset), environment: structuredClone(runtime.variables), waterLayers,
-    capabilities: { continuousWater: false, targetSignificance: false, targetContours: false, fluxCloud: false, layers: ['dam','terrain','upwater','downwater','cone'] },
+    capabilities: { continuousWater: false, targetSignificance: false, fluxCloud: false, layers: ['dam','terrain','upwater','downwater','cone'] },
     scenarios: [...dataset.geometry.scenarios.values()].map(s => ({ id: s.id, label: s.label, variables: { ...s.variables } })),
     environmentDescription: Object.entries(runtime.variables).map(([key,value]) => `${key}=${value}`).join(' · '),
     exportFileName: 'compiled-deployment-snapshot-v1.json',

@@ -32,15 +32,20 @@ try{
  let result=(await comparison()).entries.at(-1).result;assert.equal(result.backend,'compiled-triangle-bvh@0.1.0');assert.equal(result.identity.release_id,release);assert.equal(result.scenarioId,'low');assert.equal(result.frame,'model_frame');assert.deepEqual(result.config.origin,[12.5,122,57]);
  const initial=structuredClone(result);
  // Features not yet migrated from the retired legacy backend stay visible but gated.
- for(const selector of ['#upLevel','[data-projection="significance"]','[data-target="dam"]','[data-layer="gallery"]','[data-layer="flux"]'])assert.ok(await page.locator(selector).isDisabled(),selector);
- await setInput('#upLevel','299');await setInput('[data-target="dam"]','dam','change');await click('[data-projection="significance"]');
+ for(const selector of ['#upLevel','[data-projection="significance"]','[data-layer="gallery"]','[data-layer="flux"]'])assert.ok(await page.locator(selector).isDisabled(),selector);
+ await setInput('#upLevel','299');await click('[data-projection="significance"]');
+ // Recognition items come from the release's display profile, all off by default (FR-M12); outlines never change results.
+ assert.equal(await page.locator('[data-recognition]').count(),4);assert.equal(await page.locator('[data-recognition]:checked').count(),0);assert.equal(await page.locator('#projectionOutlines path').count(),0);
+ const inView=page.locator('#recognitionItems label:not(.out) [data-recognition]');assert.ok(await inView.count()>0);const shown=await inView.first().getAttribute('data-recognition');await inView.first().check();
+ assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);assert.match(await page.locator('#projectionReadout').innerText(),/识别轮廓：/);
+ await setInput('#recognitionThreshold','0.5','change');assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);
  for(const selector of ['[data-layer="dam"]','[data-layer="terrain"]','[data-layer="upwater"]','[data-layer="downwater"]'])await page.locator(selector).evaluate(element=>{element.checked=false;element.dispatchEvent(new Event('change',{bubbles:true}));});
  for(const mode of ['front','cross','top','perspective'])await setInput('#viewSelect',mode,'change');
  result=(await comparison()).entries.at(-1).result;assert.deepEqual(result,initial);
  for(const selector of ['[data-layer="dam"]','[data-layer="terrain"]','[data-layer="upwater"]','[data-layer="downwater"]'])await page.locator(selector).evaluate(element=>{element.checked=true;element.dispatchEvent(new Event('change',{bubbles:true}));});
  // Use the shared numeric display layer without any compiled target heuristic.
  await page.locator('#mainMaterialContours').check();await page.locator('#mainResponseContours').check();assert.ok(await page.locator('#mainPatternOverlay path').count()>0);
- const canvas=await page.locator('#projectionCanvas').boundingBox();await page.mouse.move(canvas.x+canvas.width/2,canvas.y+canvas.height/2);assert.match(await page.locator('#projectionReadout').innerText(),/柱密度/);await page.mouse.move(0,0);
+ const canvas=await page.locator('#projectionCanvas').boundingBox();await page.mouse.move(canvas.x+canvas.width/2,canvas.y+canvas.height/2);assert.match(await page.locator('#projectionReadout').innerText(),/柱密度/);assert.ok(await page.locator('#projectionReadout .crossing').count()>0);await page.mouse.move(0,0);
  await setInput('#azNumber','10');await setInput('#azNumber','25');await setInput('#elNumber','35');await ready();result=(await comparison()).entries.at(-1).result;assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);assert.deepEqual(result.variables,initial.variables);
  const planPending=page.waitForEvent('download');await click('#export');const download=await planPending,plan=JSON.parse(await readFile(await download.path(),'utf8'));assert.equal(plan.kind,'compiled-deployment-snapshot');assert.equal(plan.scenarioId,'low');assert.equal(plan.identity.release_id,release);assert.deepEqual(plan.variables,result.variables);assert.equal(plan.activeRay.station.az,25);assert.ok(Number.isFinite(plan.activeRay.mwe));
  // Device form recomputes from one snapshot; results are history-independent (FR-C1), so doubling exposure doubles counts exactly.
@@ -54,7 +59,8 @@ try{
  await page.setViewportSize({width:390,height:844});for(const selector of ['#toggleLeft','#toggleRight'])await click(selector);await page.waitForFunction(()=>{const canvas=document.querySelector('#webgl canvas'),rect=canvas?.getBoundingClientRect();return rect?.width>0&&rect.height>0&&Math.abs(canvas.width/canvas.height-rect.width/rect.height)<.01;},null,{timeout:10000});await page.screenshot({path:join(artifacts,'narrow.png'),fullPage:true});
  // Device settings and edited stations persist across a reload.
  await page.reload();await ready();await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');assert.equal(await page.locator('#azNumber').inputValue(),'25');
+ assert.equal(await page.locator('#recognitionThreshold').inputValue(),'0.5');assert.ok(await page.locator(`[data-recognition="${shown}"]`).isChecked());
  assert.deepEqual(errors,[]);
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
- console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
+ console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

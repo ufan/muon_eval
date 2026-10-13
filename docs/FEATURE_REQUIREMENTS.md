@@ -152,7 +152,7 @@ Features the legacy backend had and the compiled backend does not provide yet. T
 | FR-M11 | Subject features in the 3D view. | Features from the feature catalogue (ADR-029) drawn from the same compiled components the tracer uses (never proxies), in their dataset class colours; one layer checkbox per feature group, expandable to features; gallery, monitoring and vertical-transport groups visible by default; hover/pick identifies the feature, class and imaging role; linked with projection outlines both ways; emphasised (full opacity) when in view of a selected station; hiding never changes physics. Replaces legacy MT-5. | Needed (design accepted, ADR-029) |
 | FR-M13 | Statistical precision contour. | On the projection, contours of the relative counting error 1/√N for the current exposure at fixed levels 5 % and 10 % (stated in the legend), showing in which directions the exposure gives usable statistics; drawn with the contour pipeline from the result's own counts; display only. | Needed |
 | FR-M14 | Expert diagnostics placement. | The material-contribution and response contour layers are grouped under an "Expert diagnostics" section, off by default; kept and tested, no new features (ADR-029 Q5). | Needed |
-| FR-M12 | Feature outlines in projections. | Recognition items from the display profile (or derived defaults), listed only when visible in the current projection; mask = central-ray length inside the item > T (display setting, default 0.1 m); outline = contour of that length at T via the contour pipeline, item colour, line pattern and label for same-colour items, optional fill and sampled-pixel view; hover lists crossed items in ray order with numbered 3D markers; material items for merged solids ("Dam concrete", "Gates") until FR-GE4; material envelope overlay available in the main app. Replaces legacy MT-2; the same mechanism later draws anomaly footprints (FR-H9). | Needed (design accepted, ADR-029) |
+| FR-M12 | Feature outlines in projections. | Recognition items from the display profile (or derived defaults), listed only when visible in the current projection; mask = central-ray length inside the item > T (display setting, default 0.1 m); outline = contour of that length at T via the contour pipeline, item colour, line pattern and label for same-colour items, optional fill and sampled-pixel view; hover lists crossed items in ray order with numbered 3D markers; material items for merged solids ("Dam concrete", "Gates") until FR-GE4; material envelope overlay available in the main app. Replaces legacy MT-2; the same mechanism later draws anomaly footprints (FR-H9). | Partly done: profile items, masks, outlines, threshold, hover crossing list with 3D markers (15b-3, 15b-5); material envelope overlay, fill, sampled-pixel view and 3D linking open |
 
 ## G. Geant4 integration
 
@@ -235,6 +235,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-13: FR-M12 partly done (15b-3, 15b-5).
 - 2026-10-13: FR-M10, FR-M11, FR-M12 updated to the accepted ADR-029 design.
 - 2026-10-13: FR-M13 statistical precision contour, FR-M14 expert diagnostics placement (contour policy, ADR-029 Q5).
 - 2026-10-13: FR-M12 uses recognition items from a display profile (ADR-029 Q3).

@@ -355,6 +355,15 @@ Interpretation:
 - The detector's finite size (entry position) is negligible for these stations, including in galleries; it does not need to be modelled.
 - Remedy, when per-pixel accuracy is needed: refine only pixels whose neighbours' columns differ strongly (a few percent of pixels) with all native directions, as an explicit, versioned calculation option. Its accuracy target is this reference, kept as an L4 test.
 
+### 11.7 Recognition masks and outlines (FR-M12)
+
+Display only; computed from a finished result by `recognition-layers.js` and never fed back into counts.
+
+- Item length `L` per pixel: for a feature item, the sum of the central ray's `entityLengths` over the member entities; for a material item, the ray's material total (`totals[material]`).
+- Mask: `L > T`, with `T` a display setting (default 0.1 m). Image coverage = mask pixels / all pixels; "in view" = coverage > 0.
+- Outline: boundary of the mask, from d3-contour on the mask padded with one empty pixel per side at level 0.5, so it matches the mask and closes along the image border. Like every per-pixel quantity it inherits the one-ray-per-pixel aliasing of §11.6 (about half a pixel at edges).
+- Hover crossings: items with `L > T` on the hovered ray, ordered by the start of the first segment inside the item (entry distance from the detector), with `L`.
+
 ## 12. Legacy target structures, outlines and significance
 
 Retired with the legacy backend (ADR-028). This section is kept as the description of migration targets MT-2 (target layers) and MT-3 (structural significance, superseded by anomaly hypotheses, FR-H); a compiled re-implementation uses dataset-declared semantic targets, not these dam-specific heuristics.

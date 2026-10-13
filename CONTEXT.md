@@ -154,7 +154,7 @@ The app has two pictures: the **3D view** of the subject and the **projection** 
 | Layer (3D) | 3D | A group of things in the 3D view that one checkbox shows or hides: terrain, dam concrete, water, detector cone, a feature group. Hiding a layer never changes a result |
 | Overlay / numeric layer | 2D | Lines or shapes drawn on top of a projection from the same result: material contribution contours, response contours, feature outlines, later anomaly footprints |
 | Feature mask | 2D | For one recognition item (or subject feature) and one result: the set of projection pixels whose central ray passes through it by more than the threshold length T (default 0.1 m, display setting) |
-| Outline | 2D | The boundary of a feature mask drawn on the projection in the feature's colour, so users see *where in the image* a gallery appears |
+| Outline | 2D | The boundary of a feature mask drawn on the projection in the feature's colour, so users see *where in the image* a gallery appears; it follows the mask pixels (about half a pixel accuracy) and closes along the image border |
 | Contour | 2D | A line of equal value of a numerical field on the projection, like a height contour on a map (e.g. 10 m of concrete, transmission 0.1, 10 % counting error). Levels are *physical* (explicit, comparable between stations) or *adaptive* (chosen per image, not comparable). An outline is the contour of a recognition item's length field at level T |
 | Material envelope | 2D | The sampled edge where a material starts or ends along neighbouring rays (e.g. concrete vs air); a display diagnostic, not a CAD edge |
 | Picking / hover | both | Pointing at something to identify it: a feature in 3D, or a pixel in the projection, which also draws that pixel's ray in 3D |

@@ -55,9 +55,9 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | 15a | Coverage highlight: geometric (live, single colour per station) and physical (count/sr brightness from the result) via projective texturing; slope-mapping L1 test against `detector-pose.js` | FR-M10, ADR-026 | Single-station first (no plan needed), then multi-station with #15; measure FR-N5 on an Intel i5 laptop | Todo |
 | 15b-1 | Feature catalogue builder in the dataset adapter (from `semantics` and `vocabulary`; direct/aggregate from compiled components) | ADR-029, FR-K3 | Test first: L1 on a synthetic spec; L3 on Zhouning (44 features, 22 direct; virtual placeholders excluded) | Done |
 | 15b-2 | Display profile: schema, optional loading and validation; Zhouning profile with ~5 recognition items | ADR-029 | Schema in `datasets/schemas/`; resolver `display-profile.js` (L1); Zhouning profile (7 items) with its own registry hash outside the authored package integrity (L3, release check); added to the existing release (owner: option a) | Done |
-| 15b-3 | Recognition masks per result: item length field, mask at T, image coverage, in-view flag (pure) | FR-M12 | L1 tests incl. overlaps, merged items, material items | Todo |
-| 15b-4 | 3D feature layer (after 15b-5): replaces the single "galleries, rooms, shaft" checkbox with catalogue groups; feature meshes in class colours, group panel expandable to features, per-feature hover/pick | FR-M11 | L5 check; layer toggles never change results | Todo |
-| 15b-5 | Projection outlines and the profile-driven item list (next, with 15b-3): replaces the hard-coded "target structure layers" panel with the recognition items from the display profile (defaults on, visible-item filter, all-features search), contour of the item length at T, legend with T, hover list with 3D markers, two-way linking | FR-M12 | Reuses contour pipeline; L4 consistency against masks; L5 | Todo |
+| 15b-3 | Recognition masks per result: item length field, mask at T, image coverage, in-view flag (pure) | FR-M12 | `recognition-layers.js`; L1 tests incl. strict threshold, material items, border-closed rings, crossing order | Done |
+| 15b-4 | 3D feature layer (after 15b-5): replaces the single "galleries, rooms, shaft" checkbox with catalogue groups; feature meshes in class colours, group panel expandable to features, per-feature hover/pick | FR-M11 | L5 check; layer toggles never change results; takes over the two-way outline ↔ 3D link from 15b-5 | Todo |
+| 15b-5 | Projection outlines and the profile-driven item list (next, with 15b-3): replaces the hard-coded "target structure layers" panel with the recognition items from the display profile (defaults on, visible-item filter, all-features search), contour of the item length at T, legend with T, hover list with 3D markers, two-way linking | FR-M12 | Outline = d3-contour of the padded mask (ADR-029, as implemented); fixed-order list with out-of-view items greyed; selection and T persist per release; L5 in `check-main-compiled-app.mjs`. Linking moved to 15b-4 | Done |
 | 15b-6 | Material items (concrete, steel) and the material envelope overlay in the main app | FR-M12 | Reuses preview envelope code | Todo |
 | 15c | Statistical precision contour (1/√N at 5 % and 10 %); move existing contour layers under "Expert diagnostics", off by default | FR-M13, FR-M14 | Small; reuses the contour pipeline | Todo |
 | 16 | Per-station projections side by side | FR-M4 | Reuses `projection-canvas-view.js` | Todo |
@@ -136,6 +136,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-13: 15b-3 and 15b-5 done (recognition layers, profile-driven outline panel); two-way linking moved to 15b-4.
 - 2026-10-13: Zhouning profile defaults changed (owner); order: 15b-3 + 15b-5 (profile-driven GUI) next, then 15b-4.
 - 2026-10-13: 15b-2 done (display profile).
 - 2026-10-13: 15b-1 done (feature catalogue); 15b-2 release decision: profile added to the existing release (option a).

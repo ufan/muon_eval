@@ -71,7 +71,7 @@ Detailed rules are in `AGENTS.md`.
 
 Browser acceptance needs Playwright and Chromium (development only). Point to existing installs with `PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs` and `CHROMIUM_PATH=/path/to/chromium`, or pass `--playwright`/`--chromium` to the scripts directly.
 
-- `scripts/check-main-compiled-app.mjs`: main app; all four frozen scenarios, capability gates of the migration targets, model coordinates, same-result updates, device settings, stations, persistence, exports, desktop and narrow screens. Screenshots go to a temporary directory.
+- `scripts/check-main-compiled-app.mjs`: main app; all four frozen scenarios, capability gates of the migration targets, recognition outlines (profile items, threshold, hover crossings, persistence), model coordinates, same-result updates, device settings, stations, persistence, exports, desktop and narrow screens. Screenshots go to a temporary directory.
 - `npm run test:browser:preview` (`scripts/check-compiled-preview.mjs`): standalone preview. Its finite-model reference step needs the derived assets in `dist/data/derived-interfaces/`, generated with the `manifold3d` Python package (see [geometry references](docs/specs/GEOMETRY_REFERENCES.md#offline-interface-construction)).
 
 ## Selecting a release, backend and scenario

@@ -12,6 +12,7 @@ app.js: release/scenario selection and dependency assembly
   ├─ compiled-main-assessment → shared detector-projection / muon-response
   ├─ assessment-controller: snapshots, cancellation, progress and result publication
   └─ main-page → compiled-scene-view / projection-canvas-view / main-pattern-view
+      └─ recognition-panel-view → recognition-layers (pure; dataset feature catalogue + display profile)
 ```
 
 The application is served from `dist/`; dataset releases are served from the top-level `datasets/` directory at `/datasets/` (ADR-018). At runtime nothing contacts a CDN or backend API.
@@ -33,6 +34,8 @@ stations / device / environment → immutable deployment-state
 Dependency-direction rules are in the [module boundaries spec](MODULE_BOUNDARIES.md).
 
 Inputs are owned by deployment-state and published read-only; views own selection, colour, camera and layer state. Each assessment session copies the station, device, response and environment and binds one geometry context; the preview and final passes consume the same session. When inputs change, the controller cancels pending batches and invalidates the old generation, so stale results cannot be published. Native slope bins are cached per device; the flux integral has no cache (FR-C1).
+
+Recognition outlines (FR-M12, ADR-029) are view state over a finished result: `recognition-panel-view` lists the release's recognition items, keeps selection and threshold per release, and recomputes masks with the pure `recognition-layers` for each preview and final result; `projection-canvas-view` draws them in an SVG overlay and lists the items crossed by the hovered ray, whose entry points compiled-scene-view marks in 3D.
 
 The compiled main-app view reuses the computation-owned buffers of compiled-geometry-view and applies the display style of the former legacy scene (owner preference, 2026-10-12): dark background with fog and ground grid, translucent dam with edges, translucent rock and dark water, legacy lighting and perspective preset. The style replaces only the GLB display colours in the view; geometry-preview is standalone and not a main-app dependency.
 
