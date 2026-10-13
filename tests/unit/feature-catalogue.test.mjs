@@ -47,6 +47,10 @@ test('the catalogue lists the labels and colours of the classes it uses', () => 
   });
 });
 
+test('the catalogue lists the imaging-role labels of the vocabulary', () => {
+  assert.deepEqual(build().imagingRoles, { target: '成像目标', reference_void: '参考空腔', time_varying_mass: '时变质量', background: '背景' });
+});
+
 test('direct features have their own physical component; others are aggregate', () => {
   const catalogue = build();
   assert.equal(catalogue.get('tunnel_b').kind, 'direct');

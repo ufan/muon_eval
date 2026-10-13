@@ -30,3 +30,10 @@ test('labels, groups and colours come from the dataset declarations', () => {
   assert.deepEqual(catalogue.groups.map(g => g.id), ['dam', 'flood_release', 'gallery', 'vertical_transport', 'water', 'monitoring']);
   assert.deepEqual(catalogue.groups.find(g => g.id === 'gallery').featureIds, ['adit_N', 'adit_S', 'gallery_link', 'gallery_lower', 'gallery_upper']);
 });
+
+test('3D feature layers: void systems of the release, galleries, shaft and rooms shown by default', async () => {
+  const { featureLayerGroups } = await import('../../dist/modules/feature-layers.js');
+  assert.deepEqual(featureLayerGroups(catalogue).map(g => [g.id, g.featureIds.length, g.defaultVisible]), [
+    ['flood_release', 12, false], ['gallery', 5, true], ['vertical_transport', 1, true], ['monitoring', 2, true]
+  ]);
+});

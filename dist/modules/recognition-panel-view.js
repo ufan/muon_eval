@@ -1,8 +1,9 @@
 import { computeRecognitionLayers, DEFAULT_MASK_THRESHOLD_M } from './recognition-layers.js';
+import { recognitionItemForFeature } from './feature-layers.js';
 // Recognition-item list of the projection panel (ADR-029, FR-M12): the release's
 // display-profile items plus any direct feature the user adds, the mask threshold,
 // and the layers of the current result. Selection and threshold persist per release.
-export function createRecognitionPanel({ root = document, features, items, storage, storageKey, onChange = () => {} }) {
+export function createRecognitionPanel({ root = document, features, items, storage, storageKey, onChange = () => {}, onHoverItem = () => {} }) {
   const $ = s => root.querySelector(s), list = $('#recognitionItems'), extra = $('#recognitionExtra'), thresholdInput = $('#recognitionThreshold');
   const featureItem = feature => Object.freeze({ id: `feature:${feature.id}`, label: feature.label, kind: 'features',
     featureIds: Object.freeze([feature.id]), material: null, color: feature.color, default: false });
@@ -29,6 +30,7 @@ export function createRecognitionPanel({ root = document, features, items, stora
       label.classList.toggle('out', !!layer && !layer.inView); label.title = item.label.en;
       label.append(input, swatch, document.createTextNode(item.label.zh), coverage);
       input.addEventListener('change', () => { input.checked ? selected.add(item.id) : selected.delete(item.id); persist(); onChange(); });
+      label.addEventListener('mouseenter', () => onHoverItem(item)); label.addEventListener('mouseleave', () => onHoverItem(null));
       return label;
     }));
     const inView = [...layers.values()].filter(layer => layer.inView).length;
@@ -52,6 +54,15 @@ export function createRecognitionPanel({ root = document, features, items, stora
   fillExtra(); render();
   return Object.freeze({
     update(result) { data = result; compute(); render(); },
+    // A feature picked in 3D toggles the outline of its item; a feature in no item becomes one.
+    toggleFeature(featureId) {
+      const feature = features.get(featureId); if (!feature || feature.kind !== 'direct') return;
+      const item = recognitionItemForFeature(allItems(), featureId);
+      if (!item) { extras.add(featureId); selected.add(`feature:${featureId}`); fillExtra(); compute(); }
+      else if (selected.has(item.id)) selected.delete(item.id); else selected.add(item.id);
+      persist(); render(); onChange();
+    },
+    itemForFeature: featureId => recognitionItemForFeature(allItems(), featureId),
     state: () => ({ items: allItems(), layers, selected: new Set(selected), threshold })
   });
 }

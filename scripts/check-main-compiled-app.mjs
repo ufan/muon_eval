@@ -32,13 +32,18 @@ try{
  let result=(await comparison()).entries.at(-1).result;assert.equal(result.backend,'compiled-triangle-bvh@0.1.0');assert.equal(result.identity.release_id,release);assert.equal(result.scenarioId,'low');assert.equal(result.frame,'model_frame');assert.deepEqual(result.config.origin,[12.5,122,57]);
  const initial=structuredClone(result);
  // Features not yet migrated from the retired legacy backend stay visible but gated.
- for(const selector of ['#upLevel','[data-projection="significance"]','[data-layer="gallery"]','[data-layer="flux"]'])assert.ok(await page.locator(selector).isDisabled(),selector);
+ for(const selector of ['#upLevel','[data-projection="significance"]','[data-layer="flux"]'])assert.ok(await page.locator(selector).isDisabled(),selector);
  await setInput('#upLevel','299');await click('[data-projection="significance"]');
  // Recognition items come from the release's display profile, all off by default (FR-M12); outlines never change results.
  assert.equal(await page.locator('[data-recognition]').count(),4);assert.equal(await page.locator('[data-recognition]:checked').count(),0);assert.equal(await page.locator('#projectionOutlines path').count(),0);
  const inView=page.locator('#recognitionItems label:not(.out) [data-recognition]');assert.ok(await inView.count()>0);const shown=await inView.first().getAttribute('data-recognition');await inView.first().check();
  assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);assert.match(await page.locator('#projectionReadout').innerText(),/识别轮廓：/);
  await setInput('#recognitionThreshold','0.5','change');assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);
+ // 3D feature layers come from the catalogue: void systems only, defaults from imaging roles (FR-M11).
+ assert.deepEqual(await page.locator('[data-feature-group]').evaluateAll(inputs=>inputs.map(input=>[input.dataset.featureGroup,input.checked])),[['flood_release',false],['gallery',true],['vertical_transport',true],['monitoring',true]]);
+ assert.equal(await page.locator('[data-feature]').count(),20);
+ for(const selector of ['[data-feature-group="flood_release"]','[data-feature-group="gallery"]'])await page.locator(selector).evaluate(element=>{element.checked=!element.checked;element.dispatchEvent(new Event('change',{bubbles:true}));});
+ assert.equal(await page.locator('[data-feature="gallery_upper"]').isChecked(),false);
  for(const selector of ['[data-layer="dam"]','[data-layer="terrain"]','[data-layer="upwater"]','[data-layer="downwater"]'])await page.locator(selector).evaluate(element=>{element.checked=false;element.dispatchEvent(new Event('change',{bubbles:true}));});
  for(const mode of ['front','cross','top','perspective'])await setInput('#viewSelect',mode,'change');
  result=(await comparison()).entries.at(-1).result;assert.deepEqual(result,initial);
@@ -60,7 +65,8 @@ try{
  // Device settings and edited stations persist across a reload.
  await page.reload();await ready();await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');assert.equal(await page.locator('#azNumber').inputValue(),'25');
  assert.equal(await page.locator('#recognitionThreshold').inputValue(),'0.5');assert.ok(await page.locator(`[data-recognition="${shown}"]`).isChecked());
+ assert.ok(await page.locator('[data-feature-group="flood_release"]').isChecked());assert.equal(await page.locator('[data-feature-group="gallery"]').isChecked(),false);
  assert.deepEqual(errors,[]);
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
- console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
+ console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

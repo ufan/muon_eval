@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createCompiledGeometryView } from './compiled-geometry-view.js';
 import { detectorBasis } from './detector-pose.js';
+import { featureLayerGroups, featuresAlongRay } from './feature-layers.js';
 
 // View-only model Z-up → scene Y-up transform. Never classify or trace a mesh here.
 export const compiledPointToScene = ([x,y,z]) => new THREE.Vector3(x,z,-y);
@@ -16,7 +17,7 @@ function clear(group) {
   group.clear();
 }
 
-export function createCompiledSceneView({ runtime, waterLayers, root=document, onResize=()=>{} }) {
+export function createCompiledSceneView({ runtime, waterLayers, features=null, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{} }) {
   const $=selector=>root.querySelector(selector),container=$('#webgl');
   const geometryView=createCompiledGeometryView(runtime),detectorGroup=new THREE.Group(),rayGroup=new THREE.Group(),projectionGroup=new THREE.Group();
   const scene=new THREE.Scene();scene.background=new THREE.Color(LOOK.background);scene.fog=new THREE.FogExp2(LOOK.background,LOOK.fogDensity);
@@ -30,6 +31,10 @@ export function createCompiledSceneView({ runtime, waterLayers, root=document, o
     if(['concrete','steel'].includes(component.metadata.material_id))box.union(bounds);
   }
   if(box.isEmpty())box.copy(wholeBox);
+  // Subject-feature layer (FR-M11): the compiled components of direct features, drawn in their class colours.
+  const featureIds=features?featureLayerGroups(features).flatMap(group=>group.featureIds):[],featureMeshes=new Map(featureIds.map(id=>[id,[]])),featureOfComponent=new Map();
+  for(const component of runtime.components){const id=component.metadata.source_entity_id;if(component.metadata.flags.physics&&featureMeshes.has(id)){featureMeshes.get(id).push(geometryView.meshes.get(component.componentId));featureOfComponent.set(component.componentId,id);}}
+  const featureVisible=new Map(featureIds.map(id=>[id,false]));let emphasised=new Set();
   applyLook();
   // Ground grid at the base of the structure, sized from its footprint (former legacy view: 520 m, 20 m cells).
   const footprint=box.getSize(new THREE.Vector3()),gridSize=Math.max(100,Math.ceil(2.25*Math.max(footprint.x,footprint.z)/20)*20);
@@ -39,6 +44,7 @@ export function createCompiledSceneView({ runtime, waterLayers, root=document, o
   let renderer,controls,observer,currentStation=null,currentDevice=null;
   const layerState=new Map();
   function applyLook(){for(const component of runtime.components){const mesh=geometryView.meshes.get(component.componentId),layer=materialLayer(component);let material=null;
+    if(featureOfComponent.has(component.componentId)){mesh.material.dispose();mesh.material=lookMaterial(features.get(featureOfComponent.get(component.componentId)).color,{flatShading:true,side:THREE.DoubleSide});mesh.visible=false;continue;}
     if(component.metadata.material_id==='concrete')material=lookMaterial(LOOK.dam,{transparent:true,opacity:.78,flatShading:true,side:THREE.DoubleSide});
     else if(component.metadata.material_id==='steel')material=lookMaterial(LOOK.steel,{flatShading:true,side:THREE.DoubleSide});
     else if(layer==='terrain')material=lookMaterial(LOOK.rock,{transparent:true,opacity:.38,side:THREE.DoubleSide,depthWrite:false,flatShading:true});
@@ -52,6 +58,7 @@ export function createCompiledSceneView({ runtime, waterLayers, root=document, o
   function updateScale(){const height=Math.max(1,container.clientHeight),distance=camera.position.distanceTo(controls.target),mpp=2*distance*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/height;
     const power=10**Math.floor(Math.log10(mpp*90)),length=power*([1,2,5,10].find(value=>value>=mpp*90/power)||10);$('#scaleBar').style.width=(length/mpp).toFixed(0)+'px';$('#scaleLabel').textContent=length.toPrecision(2)+' m';}
   function materialLayer(component){const material=component.metadata.material_id;
+    if(featureOfComponent.has(component.componentId))return null;
     if(material==='concrete'||material==='steel')return'dam';if(material==='rock')return'terrain';
     if(material==='water')for(const [layer,ids] of Object.entries(waterLayers))if(component.sourceEntityIds.some(id=>ids.includes(id)))return layer;
     return null;
@@ -68,17 +75,30 @@ export function createCompiledSceneView({ runtime, waterLayers, root=document, o
     const positions=[];for(let i=0;i<4;i++)for(const point of [origin,corners[i],corners[i],corners[(i+1)%4]])positions.push(point.x,point.y,point.z);
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));detectorGroup.add(new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:0xff65bd,transparent:true,opacity:.7})),new THREE.ArrowHelper(forward,origin,length,0xff65bd));
   }
+  function showFeature(id){const visible=featureVisible.get(id)||emphasised.has(id);for(const mesh of featureMeshes.get(id)){mesh.visible=visible;mesh.material.emissive.set(emphasised.has(id)?mesh.material.color:0x000000);mesh.material.emissiveIntensity=emphasised.has(id)?1.4:1;}}
+  function setFeatureVisible(id,visible){if(!featureMeshes.has(id))return;featureVisible.set(id,visible);showFeature(id);}
+  // Temporary emphasis (linked selection, ADR-029): shown and lit even when the feature's layer is off.
+  function emphasiseFeatures(ids=[]){const next=new Set(ids.filter(id=>featureMeshes.has(id))),changed=new Set([...emphasised,...next]);emphasised=next;for(const id of changed)showFeature(id);}
+  // Hover and pick per feature; a click is a press and release without orbiting.
+  const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),tip=document.createElement('div');tip.className='feature-tip';tip.hidden=true;container.after(tip);let hovered=null,pressed=null,pending=false;
+  function featureAt(event){const bounds=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-bounds.left)/bounds.width*2-1,-(event.clientY-bounds.top)/bounds.height*2+1);raycaster.setFromCamera(pointer,camera);
+    const visible=[...featureMeshes.values()].flat().filter(mesh=>mesh.visible);return featureOfComponent.get(raycaster.intersectObjects(visible,false)[0]?.object.name)??null;}
+  function hoverFeature(event){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;const id=featureAt(event);if(id!==hovered){hovered=id;onFeatureHover(id);}
+    if(!id){tip.hidden=true;return;}const feature=features.get(id),bounds=container.getBoundingClientRect();tip.textContent=`${feature.label.zh} · ${features.classes[feature.class].label.zh} · ${features.imagingRoles[feature.imagingRole]}`;tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;tip.hidden=false;});}
+  function leaveFeature(){tip.hidden=true;if(hovered){hovered=null;onFeatureHover(null);}}
+  function pressFeature(event){pressed=[event.clientX,event.clientY];}
+  function releaseFeature(event){if(!pressed||Math.hypot(event.clientX-pressed[0],event.clientY-pressed[1])>4){pressed=null;return;}pressed=null;const id=featureAt(event);if(id)onFeaturePick(id);}
   function displayTrace(group,trace,station,direction){clear(group);const origin=compiledPointToScene([station.x,station.y,station.z]),dir=compiledPointToScene([direction.x,direction.y,direction.z]);
     for(const segment of trace.segments){if(segment.material==='air')continue;const a=origin.clone().addScaledVector(dir,segment.t0),b=origin.clone().addScaledVector(dir,segment.t1);group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),new THREE.LineBasicMaterial({color:materialColors[segment.material]??0xffffff,depthTest:false})));}
     const arrow=new THREE.ArrowHelper(dir,origin,radius*.2,0x65fff0);arrow.line.material.depthTest=arrow.cone.material.depthTest=false;group.add(arrow);
   }
   return Object.freeze({
-    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();});observer.observe(container);resize();renderer.setAnimationLoop(()=>{controls.update();updateScale();renderer.render(scene,camera);});$('#loading').style.display='none';},
-    resize,setView,setLayer,setDamOpacity,drawDetector,
+    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();});observer.observe(container);resize();renderer.setAnimationLoop(()=>{controls.update();updateScale();renderer.render(scene,camera);});if(featureIds.length){renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);}$('#loading').style.display='none';},
+    resize,setView,setLayer,setDamOpacity,drawDetector,setFeatureVisible,emphasiseFeatures,
     showRay:(trace,station,direction)=>displayTrace(rayGroup,trace,station,direction),
-    showProjectionPixel(data,x,y){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);},
-    clearProjection(){clear(projectionGroup);},showFlux(){},drawFluxCloud(){},
+    showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
+    clearProjection(){clear(projectionGroup);emphasiseFeatures([]);},showFlux(){},drawFluxCloud(){},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},
-    dispose(){renderer?.setAnimationLoop(null);observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
+    dispose(){renderer?.setAnimationLoop(null);tip.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
   });
 }
