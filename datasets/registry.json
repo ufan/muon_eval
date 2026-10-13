@@ -48,6 +48,11 @@
         "schema/compiled-artifacts.schema.json": "93bc55a9a4e5bcc317e3105282859f41f37028f76fe3ebf9f7c1d78670a12175",
         "schema/dam-dataset.schema.json": "4f9166252fb5f9d51801218518279243bede0f848966fd3d5a714fc126cf5dce",
         "schema/zhouning.profile.schema.json": "8d243489c78e67593aaad6678421961837e27499a215acdad447ef72b435dfbe"
+      },
+      "display_profile": {
+        "path": "display_profile.json",
+        "sha256": "a46f8107618b1f3be0fcdfc5fd09b6d349247584728b1ca3523b5b5a865935cb",
+        "schema": "../../schemas/display-profile.schema.json"
       }
     }
   }

@@ -39,6 +39,14 @@ test('one feature per non-virtual entity and water body, from the dataset declar
   assert.equal(catalogue.get('marker'), null);
 });
 
+test('the catalogue lists the labels and colours of the classes it uses', () => {
+  assert.deepEqual(build().classes, {
+    tunnel: { label: { zh: '隧洞', en: 'Tunnel' }, category: 'void', color: '#185FA5' },
+    wall: { label: { zh: '墙', en: 'Wall' }, category: 'structure', color: '#BDB9AE' },
+    pool: { label: { zh: '水池', en: 'Pool' }, category: 'water', color: '#8EC5F2' }
+  });
+});
+
 test('direct features have their own physical component; others are aggregate', () => {
   const catalogue = build();
   assert.equal(catalogue.get('tunnel_b').kind, 'direct');

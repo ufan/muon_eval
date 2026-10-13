@@ -38,7 +38,7 @@ Last updated: 2026-10-10
 | 026 | Coverage highlight by GPU projective texturing of acceptance and count maps | Proposed |
 | 027 | Three.js for display only; geometry and physics in own framework-free modules | Accepted (retrospective) |
 | 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
-| 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; catalogue implemented (15b-1) |
+| 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; catalogue and display profile implemented (15b-1, 15b-2) |
 
 ---
 
@@ -496,7 +496,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## ADR-029 One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI
 
-**Status:** Accepted (design settled with the owner in seven steps, 2026-10-13); catalogue implemented in `feature-catalogue.js` (15b-1), consumers pending. Display profile is added to the existing release without changing its ID (owner, option a).
+**Status:** Accepted (design settled with the owner in seven steps, 2026-10-13); catalogue (`feature-catalogue.js`, 15b-1) and display profile with recognition items (`display-profile.js`, `datasets/schemas/display-profile.schema.json`, 15b-2) implemented; the profile has its own registry hash outside the authored package integrity; consumers pending. Display profile is added to the existing release without changing its ID (owner, option a).
 
 **Context.** Two legacy features are needed on the compiled backend: coloured internal features in 3D (MT-5) and target outlines on projections (MT-2). Several existing requirements need the same underlying idea, a named part of the subject: dataset-declared layers and targets (FR-K3), the coverage highlight on subject surfaces and internal features (FR-M10, ADR-026), cross-view of targets across stations (FR-M1), anomaly footprints in 3D and projections (FR-H9), source-entity ROI significance (FR-M3) and reconstruction targets (FR-M8). What exists today:
 - The v0.7 spec gives every entity a semantic class (solids: dam body, piers, gates, platforms, …; voids: galleries, adits, observation rooms, elevator shaft, spillway bays/chutes, outlet conduits/tunnels/channels, gate chambers) and water bodies.

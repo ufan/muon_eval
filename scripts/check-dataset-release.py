@@ -87,7 +87,17 @@ def check(release_id, archive=None):
             for relative in entry['integrity']:
                 if package.read(prefix + relative) != (base / relative).read_bytes():
                     raise ValueError(f'Import differs from archive: {relative}')
-    print(f'{release_id}: hashes, source/profile schemas, and artifact contracts PASS')
+    profile_entry = entry.get('display_profile')
+    if profile_entry:
+        # Presentation-only sidecar added by the platform (ADR-029): own hash, never part of the authored package.
+        if profile_entry['path'] in entry['integrity']:
+            raise ValueError('Display profile must not be part of the authored package integrity')
+        data = (base / profile_entry['path']).read_bytes()
+        if hashlib.sha256(data).hexdigest() != profile_entry['sha256']:
+            raise ValueError('Checksum mismatch: display profile')
+        profile_schema = load((base / profile_entry['schema']).resolve())
+        jsonschema.Draft202012Validator(profile_schema).validate(json.loads(data))
+    print(f'{release_id}: hashes, source/profile schemas, display profile and artifact contracts PASS')
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 import { adaptDamSpecV07 } from './dam-spec-v07.js';
 import { buildFeatureCatalogue } from './feature-catalogue.js';
+import { resolveRecognitionItems } from './display-profile.js';
 import { validateBundle, validateTerrainHeader, verifySha256 } from './dataset-validation.js';
 
 // fetch/digest injection lets Node tests exercise the actual browser loading path.
@@ -69,6 +70,14 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
   }
   const features = buildFeatureCatalogue({ entities: geometry.entities.values(), waterBodies: geometry.waterBodies.values(),
     vocabulary: spec.vocabulary, components: Object.values(compiledManifest.scenarios).flatMap(scenario => scenario.components) });
+  // Optional display profile: presentation only, with its own hash outside the authored package integrity (ADR-029).
+  let profile = null;
+  if (entry.display_profile) {
+    const buffer = await fetchBytes(new URL(entry.display_profile.path, base));
+    await verifySha256(buffer, entry.display_profile.sha256, entry.display_profile.path, options.digest);
+    profile = json(buffer);
+  }
+  const recognitionItems = resolveRecognitionItems(profile, features, [...geometry.materials.keys()]);
   const loadCompiledScenario = async scenarioId => {
     const scenario = compiledManifest.scenarios[scenarioId];
     if (!scenario) throw new Error(`Unknown compiled scenario ${scenarioId}`);
@@ -76,7 +85,7 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
     await verifySha256(buffer, compiledManifest.outputs[scenario.glb], relative, options.digest);
     return { scenarioId, variables: scenario.variables, components: scenario.components, buffer };
   };
-  return { id, identity, base, entry, spec, geometry, features, candidates, detectorModels, siteConditions, compiledManifest, terrainNear, terrainFar, loadCompiledScenario };
+  return { id, identity, base, entry, spec, geometry, features, recognitionItems, candidates, detectorModels, siteConditions, compiledManifest, terrainNear, terrainFar, loadCompiledScenario };
 }
 
 export function sampleTerrainModel(terrain, modelX, modelY) {

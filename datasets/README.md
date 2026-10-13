@@ -5,10 +5,14 @@ Versioned dataset releases, kept outside the application source (ADR-018). Each 
 ```text
 datasets/
 ├─ registry.json                  registry of releases; base_url is relative to this file
+├─ schemas/                       platform formats shared by all datasets (display-profile.schema.json)
 └─ <dataset-id>/
    ├─ README.md                   dataset spec: frames, transforms, geometry rules
-   └─ <release>/                  spec JSON, schemas, compiled GLB/terrain, conformance baselines
+   └─ <release>/                  spec JSON, schemas, compiled GLB/terrain, conformance baselines,
+                                  optional display_profile.json
 ```
+
+**Display profile** (optional, ADR-029): `display_profile.json` in a release lists the recognition items offered for projection outlines. It is presentation only: registered under `display_profile` in the registry with its own SHA-256, outside the release's `integrity` map (which mirrors the authored package), outside the geometry spec and outside result identity, so adding or editing it never changes the release ID or any result. Format: `schemas/display-profile.schema.json`; references are checked against the release's feature catalogue at load. Without a profile the app derives one item per class of directly compiled reference voids and targets.
 
 Serving: the application fetches `./datasets/registry.json`.
 

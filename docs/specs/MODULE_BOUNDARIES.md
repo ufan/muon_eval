@@ -13,7 +13,7 @@ Native ES modules without a build step; files live directly in `dist/modules` wi
 | Module | Owns | Must not depend on |
 | --- | --- | --- |
 | application-selection / application-backends | Release/backend/scenario resolution and bounded dependency assembly | View implementations, formula copies |
-| dataset-loader / feature-catalogue / compiled-mesh-runtime | Release assets, coordinates, environment binding, material/ray truth | DOM, Three.js, projection, application controller |
+| dataset-loader / feature-catalogue / display-profile / compiled-mesh-runtime | Release assets, coordinates, environment binding, material/ray truth | DOM, Three.js, projection, application controller |
 | detector-defaults / device-configuration / detector-pose | Device defaults, device-form constraints, pure directions | Datasets, DOM, scene |
 | deployment-state | Stations, device, response, environment; immutable inputs and commands | Views, geometry backends |
 | muon-response / detector-projection | Shared physics approximations, device grid and pixel response | DOM, scene, concrete geometry backends |

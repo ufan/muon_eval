@@ -34,7 +34,10 @@ export function buildFeatureCatalogue({ entities, waterBodies, vocabulary, compo
   features.sort((a, b) => systemOrder.indexOf(a.group) - systemOrder.indexOf(b.group) || a.id.localeCompare(b.id));
   const groups = systemOrder.filter(id => features.some(f => f.group === id))
     .map(id => ({ id, label: systems[id], featureIds: features.filter(f => f.group === id).map(f => f.id) }));
-  deepFreeze(features); deepFreeze(groups);
+  // Labels and colours of the classes in use (e.g. for derived recognition items).
+  const usedClasses = Object.fromEntries([...new Set(features.map(f => f.class))].map(id => [id,
+    { label: { zh: classes[id].zh, en: classes[id].en }, category: classes[id].category, color: classes[id].color.toUpperCase() }]));
+  deepFreeze(features); deepFreeze(groups); deepFreeze(usedClasses);
   const byId = new Map(features.map(f => [f.id, f]));
-  return Object.freeze({ version: '1.0.0', features, groups, get: id => byId.get(id) ?? null });
+  return Object.freeze({ version: '1.0.0', features, groups, classes: usedClasses, get: id => byId.get(id) ?? null });
 }

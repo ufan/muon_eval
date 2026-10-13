@@ -25,9 +25,9 @@ Measured 2026-10-10 (single file, sequential). The full Node suite takes about 3
 | Layer | Files |
 |---|---|
 | L0 | `node --check` on every entry point; `git diff --check` |
-| L1 | `muon-response`, `detector-projection`, `main-architecture`, `feature-catalogue`, `contribution-contours`, `contribution-view`, `demand-render`, `numeric-pattern-client`, `pattern-capture-store`, `pattern-input-chunks`, `pattern-timing`, `projection-color-scale`, `projection-pattern-contract`, `structural-reference-projection`, `structural-reference-qualification` (each ≈ 0.1–0.3 s) |
+| L1 | `muon-response`, `detector-projection`, `main-architecture`, `feature-catalogue`, `display-profile`, `contribution-contours`, `contribution-view`, `demand-render`, `numeric-pattern-client`, `pattern-capture-store`, `pattern-input-chunks`, `pattern-timing`, `projection-color-scale`, `projection-pattern-contract`, `structural-reference-projection`, `structural-reference-qualification` (each ≈ 0.1–0.3 s) |
 | L2 | `calculation-core` (frozen formulas), `projection-pattern-fixtures` (analytic oracle, ≈ 4 s), `contour-benchmark`, `derived-interface-artifact`, `interface-csg`, `structural-reference-benchmark`, `structural-reference-candidates` (recorded native evidence) |
-| L3 | `scripts/check-dataset-release.py`, `scripts/check-geometry-conformance.mjs`, `scripts/check-semantic-mapping.mjs`, `scripts/check-interface-artifacts.mjs` (needs `manifold3d`); tests `dataset-v07`, `feature-catalogue`, `compiled-mesh`, `semantic-mapping`, `structural-reference-domain` |
+| L3 | `scripts/check-dataset-release.py`, `scripts/check-geometry-conformance.mjs`, `scripts/check-semantic-mapping.mjs`, `scripts/check-interface-artifacts.mjs` (needs `manifold3d`); tests `dataset-v07`, `feature-catalogue`, `display-profile`, `compiled-mesh`, `semantic-mapping`, `structural-reference-domain` |
 | L4 | `main-compiled-backend`, `compiled-assessment`, `projection-pattern-fields`, `material-projection`, `material-envelopes`, `material-contributions`, `contribution-export`, `pattern-interpretation` |
 | L5 | `scripts/check-main-compiled-app.mjs`, `scripts/check-compiled-preview.mjs` (finite-model step needs derived assets) |
 | L6 | `scripts/benchmark-*.mjs` |

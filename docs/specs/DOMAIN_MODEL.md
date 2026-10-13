@@ -85,6 +85,7 @@ classDiagram
 | Scenario | Entity | Scenario ID within a release (`low`, `mid`, …) | A frozen environment variant: complete variable values plus its compiled geometry. Not the subject | Current |
 | Component | Entity | Component ID within a scenario | Closed mesh with one material and flags; maps to a source entity only with evidence, otherwise "aggregate" | Current |
 | SubjectFeature | Value (catalogue entry per release) | Source entity or water body ID | Named part of the subject with label, semantic class, group, colour and kind (`direct`: own component; `aggregate`: inside a merged component, unavailable until FR-GE4). One catalogue serves the 3D feature layer, projection outlines, picking, coverage tinting and ROI metrics; selections of features are view state (ADR-029) | Current: catalogue built by `feature-catalogue.js` at load (`dataset.features`); consumers pending (ADR-029, #15b) |
+| RecognitionItem | Value (per release, from the display profile) | Item ID within the profile | One feature, several direct features (by members or semantic selection) or a material, with label, colour and default; only direct features may be members; presentation only, never in result identity | Current: `display-profile.js` → `dataset.recognitionItems`; derived defaults without a profile |
 | Candidate | Value | Candidate ID | Dataset-supplied suggested station position in the source frame, with host entity and rationale; not a recommendation of pose | Current |
 | Site conditions, detector models | Value | Per release | Sidecars; detector model sidecar is not used as calibration | Current (unused for physics) |
 
@@ -207,6 +208,7 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-13: Added RecognitionItem (display profile).
 - 2026-10-13: SubjectFeature catalogue implemented (`feature-catalogue.js`); virtual entities excluded.
 - 2026-10-13: Added SubjectFeature (proposed catalogue, ADR-029).
 - 2026-10-12: Legacy backend retired (ADR-028): module lists, ProjectionResult kinds, exports and environment gap updated.
