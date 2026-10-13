@@ -38,7 +38,7 @@ Last updated: 2026-10-10
 | 026 | Coverage highlight by GPU projective texturing of acceptance and count maps | Proposed |
 | 027 | Three.js for display only; geometry and physics in own framework-free modules | Accepted (retrospective) |
 | 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
-| 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Proposed (for discussion) |
+| 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted (not implemented) |
 
 ---
 
@@ -444,7 +444,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 **Transparency (2026-10-12).** The subject can be made transparent (dam opacity slider; materials are double-sided, transparent below opacity 1 and stop writing depth below 0.72). An additive overlay pass would then stack the highlight on the front face, the back face and every internal surface, so brightness would show the number of layers rather than counts. Therefore:
 
 - *Tint inside the surface's own material, not an additive overlay.* The coverage term is injected into the subject materials' shaders (as the retired legacy view did for clipping) and **mixes** the surface colour towards the highlight colour; the surface keeps its own opacity. Each surface is tinted at most once and composites exactly like the surface itself, so the existing transparency sorting applies unchanged. (This replaces the "overlay pass with additive blending" sketched above.)
-- *Which layers are tinted.* Outer shell: only its front-facing side (`gl_FrontFacing`), so a covered line of sight through a transparent dam shows one tinted shell, not two. Internal features (galleries, rooms, shafts, cavities): tinted on both sides when covered, so with a transparent shell the user sees directly which internal features lie in the field of view. This is the main payoff of transparency.
+- *Which layers are tinted.* Outer shell: only its front-facing side (`gl_FrontFacing`), so a covered line of sight through a transparent dam shows one tinted shell, not two. Internal features (galleries, rooms, shafts, cavities): *revised by ADR-029 (2026-10-13)* — not tinted; they keep their class colour and are drawn full-opacity when in view of a selected station and faded otherwise, so with a transparent shell the user still sees directly which internal features lie in the field of view, without a second colour code on them.
 - *Readable at low opacity.* Covered regions keep a minimum opacity (e.g. 0.35) and the outline is drawn at full opacity, so the highlight does not vanish when the shell is almost transparent. Uncovered surfaces keep the user's opacity.
 - *Physical brightness is read on one layer.* Counts per steradian map to the tint's colour value, not to added light, so overlapping translucent layers do not brighten each other. The legend states that brightness refers to each tinted surface.
 - *Pyramid edges.* Drawn solid where visible and dashed where hidden behind opaque surfaces, instead of the current always-on-top lines.
@@ -496,7 +496,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## ADR-029 One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI
 
-**Status:** Proposed, for discussion before implementation (owner, 2026-10-13)
+**Status:** Accepted (design settled with the owner in seven steps, 2026-10-13); not implemented
 
 **Context.** Two legacy features are needed on the compiled backend: coloured internal features in 3D (MT-5) and target outlines on projections (MT-2). Several existing requirements need the same underlying idea, a named part of the subject: dataset-declared layers and targets (FR-K3), the coverage highlight on subject surfaces and internal features (FR-M10, ADR-026), cross-view of targets across stations (FR-M1), anomaly footprints in 3D and projections (FR-H9), source-entity ROI significance (FR-M3) and reconstruction targets (FR-M8). What exists today:
 - The v0.7 spec gives every entity a semantic class (solids: dam body, piers, gates, platforms, …; voids: galleries, adits, observation rooms, elevator shaft, spillway bays/chutes, outlet conduits/tunnels/channels, gate chambers) and water bodies.
@@ -504,26 +504,36 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - Every compiled ray already records its length per source entity (`entityLengths`, exported as `targetLengths`); the preview shows direct-target projection outlines; the main app shows none and hides void components.
 - The legacy implementation used hard-coded dam IDs (elevator, spillway, platform, water, dam, gallery), DDA-cell masks and edge heuristics; it is not reused (ADR-028).
 
-**Proposal.**
-- **Catalogue.** A subject-feature catalogue built once per release from the dataset: feature ID (the source entity or water body ID), label, semantic class, group (display layer), colour, kind (`direct` = own compiled component; `aggregate` = inside a merged component, unavailable until FR-GE4), and flags: shown in 3D, selectable as projection target, pickable. Groups and colours are dataset declarations (FR-K3); until the declaration format is designed from a second example, the dam adapter maps its semantic classes to groups (bounded adapter, never in generic views).
-- **One definition, several consumers.** The 3D layer (FR-M11), projection outlines (FR-M12), picking/hover, coverage tinting (FR-M10), multi-station cross-view (FR-M1), ROI metrics (FR-M3) and reconstruction targets (FR-M8) all read the catalogue and the same result data; none keeps its own list of IDs.
-- **3D layer (FR-M11).** Feature components are drawn from the compiled buffers with group colours and per-group toggles in the existing layer panel; view state only.
-- **Projection outlines (FR-M12).** A feature's mask in a projection is the set of pixels whose ray length through it exceeds a declared threshold; the outline is extracted from that per-pixel field with the existing numeric-overlay pipeline (`projection-pattern-fields`, contour mapping, SVG layers), so outlines, material contours and later anomaly footprints share one mechanism and one export path. Hover places markers where the hovered ray enters each selected feature.
-- **Identity.** Feature masks and outlines are derived from a result and bound to its snapshot key; selecting features is view state and never changes the result.
+**Decision.**
 
-**Open questions (to settle in discussion).**
-1. ~~Catalogue source~~ **Decided 2026-10-13:** a generic builder in the dataset adapter derives the catalogue from the release's own declarations (`semantics.class/system/imaging_role/names` per entity and water body; `vocabulary.classes` colours and categories; `vocabulary.systems` labels): group = system, colour = class colour. No new release data; an optional override section may come later without changing consumers. Context surfaces (dam, rock, water) keep the legacy-look palette; features use the dataset's class colours.
-2. ~~Granularity~~ **Decided 2026-10-13:** the catalogue has one entry per entity or water body; the 3D layer panel has one checkbox per feature group, expandable to individual features; aggregate features are not listed (the dam-concrete layer covers them); projection targets are selected per feature with a group shortcut, each outline in its class colour; picking and hover are per feature; the gallery, monitoring and vertical-transport groups are visible by default.
-3. ~~Targets, threshold, overlaps~~ **Decided 2026-10-13:**
-   - *Recognition items.* Outlines are a recognition aid, so users choose from a short list of recognition items, not the catalogue. Each item is one feature or several merged into one outline (by member IDs or by semantic selection, e.g. system + category). The list comes from an optional **display profile** sidecar in the release (`display_profile.json`: `profile_version`, `recognition_items` with id, bilingual label, members or select, default on/off), registered, schema-validated and hashed like the other sidecars, but outside the geometry spec and outside result identity. Without a profile the app derives one item per class among features with imaging role `reference_void` or `target`.
-   - *Per result.* Only items whose mask is non-empty in the current projection are listed, sorted by image coverage; default-on items are outlined immediately; an "all features…" search reaches the full catalogue (direct features only). User choices are view state, remembered per release and later saved with the plan (FR-P1).
-   - *Mask.* Per item (union of its members): a pixel is in the mask when its central ray's length inside the item exceeds the threshold T. T is an explicit display setting, default 0.1 m (the dataset's stated geometric accuracy for concrete, `conformance_length_m.concrete`), named in the legend and adjustable; it never changes results and does not depend on pixel size. The legend states that outline edges are accurate to about half a pixel (one central ray per pixel, FR-V12).
-   - *Overlaps.* Masks are independent and may overlap; there is no exclusive assignment. Default display is outlines only, in the item's colour; items of the same colour are told apart by line pattern and labels; nearer items are drawn on top; an optional translucent fill shows overlap areas. Hover lists the recognition items the pixel's ray crosses, in order along the ray with entry distance and length, expandable to all features; numbered markers show the crossings in 3D. Depth edges are a later option.
-4. ~~Aggregate solids~~ **Decided 2026-10-13:** (a) recognition items may also select by material component (e.g. `{"material": "concrete"}` → "Dam concrete", `{"material": "steel"}` → "Gates"), using the same mask rule; the legend labels them as material outlines in which individual solids are not distinguished; (b) the existing material envelope overlay (concrete/rock–air transitions) is brought from the preview into the main app as its own overlay toggle, for stations inside the subject where a material mask covers the whole image; (c) per-entity outlines of solids (dam body, individual piers, gates) come with FR-GE4 when the compiler emits per-entity solid components, without changing this design; (d) aggregate features stay out of the "all features…" search until then.
-5. ~~Outline style~~ **Decided 2026-10-13:** an outline is the contour of the item's length field `L` (sum of member lengths per pixel) at level `T`, extracted with the existing contour pipeline (d3-contour on the result's native grid, display mapping, constant-width SVG, contour export v1); closed along the image border; an optional "show sampled pixels" toggle draws the pixel staircase underneath.
-   - *Contour policy (owner, 2026-10-13).* The contour mechanism is kept because outlines, anomaly footprints (FR-H9) and significance lines (FR-H6) need it. The existing material-contribution and response contour layers move to an "Expert diagnostics" section, off by default, and get no new features. Decision-oriented lines take priority: recognition outlines (FR-M12), a statistical precision contour (FR-M13), anomaly significance (FR-H6) and the coverage highlight (FR-M10).
-6. ~~Several stations~~ **Decided 2026-10-13:** one shared selection of recognition items for all stations (view state); each station's projection draws its own outlines of that selection (side-by-side view, priority #16); an overview summary table lists item × station with in-view flag, image coverage, expected counts inside the mask and median counting error (same 1/√N as FR-M13), plus "seen by *n* stations" (FR-M1 cross-view); in 3D, the coverage highlight shows each station's field of view and items seen by ≥ 2 stations get a marker. Outlines from different stations are never merged into one projection (projections are in different station frames).
-7. Relation to the coverage highlight: tint features inside the field of view in 3D, outline them in projections, or both?
+*Catalogue (data).*
+- A **feature catalogue** is built once per release by a generic builder in the dataset adapter from the release's own declarations: per entity and water body `semantics.class/system/imaging_role/names`; `vocabulary.classes` (colour, category); `vocabulary.systems` (group labels). One entry per entity or water body: ID, bilingual label, class, group (= system), colour (= class colour), imaging role, `direct` (own compiled component) or `aggregate` (merged; unavailable until FR-GE4). No new geometry data; generic code reads only these v0.7 fields, never dam IDs.
+- An optional **display profile** sidecar (`display_profile.json`, registered, schema-validated and hashed like other sidecars, outside the geometry spec and outside result identity) declares **recognition items**: id, bilingual label, members (IDs) or a semantic/material selection (e.g. system + category; `material: concrete`), default on/off. Without a profile, one item per class among features with imaging role `reference_void` or `target` is derived.
+- All consumers (3D feature layer, outlines, picking/hover, coverage emphasis, overview table, later ROI metrics FR-M3 and reconstruction targets FR-M8) read the catalogue; none keeps its own ID list.
+
+*3D view (FR-M11).*
+- Feature components are drawn from the compiled buffers in their class colours; the layer panel has one checkbox per feature group, expandable to individual features; aggregate features are not listed (the dam-concrete layer covers them); gallery, monitoring and vertical-transport groups visible by default. Context surfaces (dam, rock, water) keep the legacy-look palette.
+- Picking and hover are per feature ("Upper gallery · gallery · reference void").
+
+*Projection outlines (FR-M12).*
+- Users choose **recognition items**, not catalogue entries. Only items with a non-empty mask in the current projection are listed, sorted by image coverage; default-on items are outlined at once; an "all features…" search reaches direct features. Choices are view state, remembered per release, later saved with the plan (FR-P1).
+- **Mask** of an item: pixels whose central ray's length inside the item (sum over members, `L`) exceeds **T**, a display setting with default 0.1 m (`conformance_length_m.concrete`), named in the legend, adjustable, independent of pixel size, never changing results.
+- **Outline** = contour of `L` at level `T`, extracted with the existing contour pipeline (d3-contour on the native grid, display mapping, constant-width SVG, contour export v1), closed at the image border; optional "show sampled pixels" staircase; legend states edges are accurate to about half a pixel (FR-V12).
+- **Overlaps**: masks are independent and may overlap; outlines only by default, in item colour; same-colour items distinguished by line pattern and labels; nearer items drawn on top; optional translucent fill. Hover lists recognition items crossed by the pixel's ray in order with entry distance and length (expandable to all features), with numbered markers in 3D.
+- **Merged solids**: material items (`concrete` → "Dam concrete", `steel` → "Gates") use the same rule and are labelled as material outlines; the existing material envelope overlay is brought into the main app as its own toggle (useful from inside the subject); per-solid outlines arrive with FR-GE4 without design change.
+
+*Contours (policy).* The contour mechanism is kept (outlines, anomaly footprints FR-H9, significance FR-H6). Existing material-contribution and response contour layers move to "Expert diagnostics", off by default, no new features (FR-M14). Decision-oriented lines take priority: outlines (FR-M12), statistical precision contour 1/√N at 5 %/10 % (FR-M13), anomaly significance (FR-H6).
+
+*Several stations (FR-M1, FR-M4).* One shared selection for all stations; each station's projection draws its own outlines; an overview table lists item × station (in view, image coverage, counts in mask, median counting error, "seen by *n* stations"); outlines from different stations are never merged into one projection.
+
+*Coverage and linking (FR-M10).*
+- Linked selection both ways: hovering an outline or hover-list entry emphasises the same features in 3D; clicking a feature in 3D toggles its item's outline.
+- With coverage on, the coverage tint applies to context surfaces only; feature meshes keep their class colour and are full-opacity when in view of a selected station, faded otherwise; items seen by ≥ 2 stations get a marker.
+- **"In view"** has one definition: the item's mask in that station's result is non-empty; before a result exists, a geometric bounding-box test inside the field of view, labelled approximate. The projection list, the overview table and the 3D emphasis all use it.
+
+*Identity.* Masks, outlines and table values are derived from a result and bound to its snapshot key; selections, threshold and styles are view state.
+
+**Consequences.** One mechanism replaces legacy MT-2/MT-5 and serves later anomaly footprints and multi-station evaluation; a small display-profile schema is added; FR-GE4 later upgrades merged solids without redesign.
 
 ---
 
@@ -548,6 +558,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-13: ADR-029 accepted after seven-step discussion; consolidated decision text replaces the question list.
 - 2026-10-13: ADR-029 proposed (subject-feature catalogue for MT-2/MT-5 and related requirements), open for discussion.
 - 2026-10-12: ADR-028 legacy backend retired (owner); ADR-010, ADR-011, ADR-017, ADR-027 and ADR-006 item 4 updated.
 - 2026-10-12: VTK.js and OpenCascade assessed: reconstruction display in Three.js first (VTK.js fallback); OCCT as offline CAD front end of compilers and the converter (ADR-009, ADR-021, ADR-027).

@@ -53,7 +53,12 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | 14 | Plan state: candidates vs selected deployment; per-station result cache keyed by snapshot | ADR-020, FR-P1 | Needs #11, #12; no recompute for unchanged stations; stale results never shown | Todo |
 | 15 | Overview mode in 3D: all selected stations, colour per station, field-of-view cones, ray coverage on the subject; summary table; click → detail mode | FR-M4 | Reuses scene views; subject-neutral labels (FR-K1) | Todo |
 | 15a | Coverage highlight: geometric (live, single colour per station) and physical (count/sr brightness from the result) via projective texturing; slope-mapping L1 test against `detector-pose.js` | FR-M10, ADR-026 | Single-station first (no plan needed), then multi-station with #15; measure FR-N5 on an Intel i5 laptop | Todo |
-| 15b | Subject features: catalogue, 3D feature layer and projection outlines (replaces MT-5, MT-2) | FR-M11, FR-M12, FR-K3, ADR-029 | Design discussion first (ADR-029 open questions); then catalogue + L1 tests, 3D layer, outlines via the numeric-overlay pipeline | Design |
+| 15b-1 | Feature catalogue builder in the dataset adapter (from `semantics` and `vocabulary`; direct/aggregate from compiled components) | ADR-029, FR-K3 | Test first: L1 on a synthetic spec; L3 on Zhouning (45 features, 22 direct) | Todo (awaiting go) |
+| 15b-2 | Display profile: schema, optional loading and validation; Zhouning profile with ~5 recognition items | ADR-029 | L2 schema round-trip/rejection tests; release-file decision needed (see note) | Todo (awaiting go) |
+| 15b-3 | Recognition masks per result: item length field, mask at T, image coverage, in-view flag (pure) | FR-M12 | L1 tests incl. overlaps, merged items, material items | Todo (awaiting go) |
+| 15b-4 | 3D feature layer: feature meshes in class colours, group panel expandable to features, per-feature hover/pick | FR-M11 | L5 check; layer toggles never change results | Todo (awaiting go) |
+| 15b-5 | Projection outlines: contour of the item length at T, legend, visible-item list, hover list with 3D markers, two-way linking | FR-M12 | Reuses contour pipeline; L4 consistency against masks; L5 | Todo (awaiting go) |
+| 15b-6 | Material items (concrete, steel) and the material envelope overlay in the main app | FR-M12 | Reuses preview envelope code | Todo (awaiting go) |
 | 15c | Statistical precision contour (1/√N at 5 % and 10 %); move existing contour layers under "Expert diagnostics", off by default | FR-M13, FR-M14 | Small; reuses the contour pipeline | Todo |
 | 16 | Per-station projections side by side | FR-M4 | Reuses `projection-canvas-view.js` | Todo |
 | 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | Short animation export later | Todo |
@@ -131,6 +136,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-13: #15b split into 15b-1…15b-6 after ADR-029 was accepted; overview table and coverage emphasis follow with #15/#15a/#16.
 - 2026-10-13: #15b subject features (MT-2, MT-5) in P3, design discussion first.
 - 2026-10-12: #4 replaced by legacy retirement (owner): done; migration targets added under Later.
 - 2026-10-12: #3a done; edge-adaptive sampling attached to AN3.
