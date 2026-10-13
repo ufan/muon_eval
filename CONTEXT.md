@@ -91,6 +91,8 @@ How the app names and finds parts of the subject (design in ADR-029). Example va
 | Feature catalogue | The list of all subject features of one release, built once by the dataset adapter from the dataset's own declarations. Every consumer (3D layer, projection outlines, picking, coverage, metrics) reads it; none keeps its own list | 45 features for the Zhouning release |
 | Feature group | The catalogue's grouping for display, equal to the dataset's system | "Gallery" group = both galleries, the link gallery, two adits |
 | Internal feature | A subject feature inside the subject with engineering meaning (galleries, rooms, shafts, tapholes) | "Lower observation room" |
+| Display profile | An optional sidecar file of a release with presentation choices, separate from the geometry spec and never part of result identity (proposed, ADR-029) | `display_profile.json` |
+| Recognition item | One entry of the short list offered for outlining on projections: one subject feature or several merged into one outline, declared in the display profile | "Galleries" = upper, lower and link gallery |
 
 ### Geometric truth
 
@@ -151,7 +153,7 @@ The app has two pictures: the **3D view** of the subject and the **projection** 
 | Pixel | 2D | One cell of the displayed projection (25 × 25 preview, 65 × 65 final); each pixel combines several native projection bins |
 | Layer (3D) | 3D | A group of things in the 3D view that one checkbox shows or hides: terrain, dam concrete, water, detector cone, a feature group. Hiding a layer never changes a result |
 | Overlay / numeric layer | 2D | Lines or shapes drawn on top of a projection from the same result: material contribution contours, response contours, feature outlines, later anomaly footprints |
-| Feature mask | 2D | For one subject feature and one result: the set of projection pixels whose ray passes through that feature by more than a threshold length |
+| Feature mask | 2D | For one recognition item (or subject feature) and one result: the set of projection pixels whose central ray passes through it by more than the threshold length T (default 0.1 m, display setting) |
 | Outline | 2D | The boundary of a feature mask drawn on the projection in the feature's colour, so users see *where in the image* a gallery appears |
 | Contour | 2D | A line of equal value of a numerical field on the projection (e.g. 10 m of concrete, transmission 0.1). An outline is a contour of a feature's mask |
 | Material envelope | 2D | The sampled edge where a material starts or ends along neighbouring rays (e.g. concrete vs air); a display diagnostic, not a CAD edge |

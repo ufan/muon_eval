@@ -150,7 +150,7 @@ Features the legacy backend had and the compiled backend does not provide yet. T
 | FR-M2 | Result data and plan reports. | Report schema; generated from stored results, including limitations and model versions; multi-station overview and reconstruction figures included when available. | Needed |
 | FR-M3 | Source-entity ROI significance on the compiled backend. | Requires FR-GE4 entity attribution. | Needed (later) |
 | FR-M11 | Subject features in the 3D view. | Features from the subject-feature catalogue (ADR-029) shown as toggleable groups with dataset-declared colours (e.g. galleries, rooms, shafts, outlet works); drawn from the same compiled components that the tracer uses, never proxies; hover/pick identifies the feature and its source entity; hiding never changes physics. Replaces legacy MT-5. | Needed (design under discussion) |
-| FR-M12 | Feature outlines in projections. | For selected catalogue features, each projection shows the outline of the directions whose rays cross the feature (from per-ray entity lengths of the same result), drawn with the overlay machinery used for contours and labelled with the feature's colour; hover marks where the hovered ray crosses each selected feature in 3D. Aggregate solids (dam body, piers) only after FR-GE4. Replaces legacy MT-2; the same mechanism later draws anomaly footprints (FR-H9) and supports cross-view of targets (FR-M1). | Needed (design under discussion) |
+| FR-M12 | Feature outlines in projections. | For selected recognition items (short dataset-declared list from the display profile, filtered to items visible in the current projection; ADR-029 Q3), each projection shows the outline of the directions whose rays cross the feature (from per-ray entity lengths of the same result), drawn with the overlay machinery used for contours and labelled with the feature's colour; hover marks where the hovered ray crosses each selected feature in 3D. Aggregate solids (dam body, piers) only after FR-GE4. Replaces legacy MT-2; the same mechanism later draws anomaly footprints (FR-H9) and supports cross-view of targets (FR-M1). | Needed (design under discussion) |
 
 ## G. Geant4 integration
 
@@ -233,6 +233,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-13: FR-M12 uses recognition items from a display profile (ADR-029 Q3).
 - 2026-10-13: MT-2 and MT-5 needed (owner); merged into FR-M12 and FR-M11 on the subject-feature catalogue (ADR-029, proposed); FR-K3 linked.
 - 2026-10-13: Model identifier renamed `legacy-quick-response@3.0.0` → `quick-response@3.0.0` (same physics; owner).
 - 2026-10-12: MT-1 deferred; MT-4 superseded by the coverage highlight (owner).
