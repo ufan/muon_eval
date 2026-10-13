@@ -38,6 +38,7 @@ Last updated: 2026-10-10
 | 026 | Coverage highlight by GPU projective texturing of acceptance and count maps | Proposed |
 | 027 | Three.js for display only; geometry and physics in own framework-free modules | Accepted (retrospective) |
 | 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
+| 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Proposed (for discussion) |
 
 ---
 
@@ -493,6 +494,34 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ---
 
+## ADR-029 One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI
+
+**Status:** Proposed, for discussion before implementation (owner, 2026-10-13)
+
+**Context.** Two legacy features are needed on the compiled backend: coloured internal features in 3D (MT-5) and target outlines on projections (MT-2). Several existing requirements need the same underlying idea, a named part of the subject: dataset-declared layers and targets (FR-K3), the coverage highlight on subject surfaces and internal features (FR-M10, ADR-026), cross-view of targets across stations (FR-M1), anomaly footprints in 3D and projections (FR-H9), source-entity ROI significance (FR-M3) and reconstruction targets (FR-M8). What exists today:
+- The v0.7 spec gives every entity a semantic class (solids: dam body, piers, gates, platforms, …; voids: galleries, adits, observation rooms, elevator shaft, spillway bays/chutes, outlet conduits/tunnels/channels, gate chambers) and water bodies.
+- Compiled components carry `sourceEntityIds`; voids and water bodies are separate components (22 direct targets verified by `semantic-mapping.js`), while all concrete solids are merged into one aggregate component, so individual solids cannot be told apart yet (FR-GE4).
+- Every compiled ray already records its length per source entity (`entityLengths`, exported as `targetLengths`); the preview shows direct-target projection outlines; the main app shows none and hides void components.
+- The legacy implementation used hard-coded dam IDs (elevator, spillway, platform, water, dam, gallery), DDA-cell masks and edge heuristics; it is not reused (ADR-028).
+
+**Proposal.**
+- **Catalogue.** A subject-feature catalogue built once per release from the dataset: feature ID (the source entity or water body ID), label, semantic class, group (display layer), colour, kind (`direct` = own compiled component; `aggregate` = inside a merged component, unavailable until FR-GE4), and flags: shown in 3D, selectable as projection target, pickable. Groups and colours are dataset declarations (FR-K3); until the declaration format is designed from a second example, the dam adapter maps its semantic classes to groups (bounded adapter, never in generic views).
+- **One definition, several consumers.** The 3D layer (FR-M11), projection outlines (FR-M12), picking/hover, coverage tinting (FR-M10), multi-station cross-view (FR-M1), ROI metrics (FR-M3) and reconstruction targets (FR-M8) all read the catalogue and the same result data; none keeps its own list of IDs.
+- **3D layer (FR-M11).** Feature components are drawn from the compiled buffers with group colours and per-group toggles in the existing layer panel; view state only.
+- **Projection outlines (FR-M12).** A feature's mask in a projection is the set of pixels whose ray length through it exceeds a declared threshold; the outline is extracted from that per-pixel field with the existing numeric-overlay pipeline (`projection-pattern-fields`, contour mapping, SVG layers), so outlines, material contours and later anomaly footprints share one mechanism and one export path. Hover places markers where the hovered ray enters each selected feature.
+- **Identity.** Feature masks and outlines are derived from a result and bound to its snapshot key; selecting features is view state and never changes the result.
+
+**Open questions (to settle in discussion).**
+1. Catalogue source: derive from spec semantic classes in the adapter now, or add an explicit layer/target section to the dataset release first?
+2. Granularity: per entity (upper vs lower gallery), per group (all galleries), or both with group toggles and entity picking?
+3. Default targets and threshold: which features are selectable/pre-selected as projection targets; keep 0.15 m or make the threshold relative to pixel size?
+4. Aggregate solids (dam body, piers, gates): wait for FR-GE4, or show the concrete material envelope (already available) as the "dam" outline meanwhile?
+5. Outline style: pixel-edge mask (legacy look) or smoothed contour of the length field (current contour layers)?
+6. Multi-station overview: per-station outlines, or only the union/overlap of targets (FR-M1)?
+7. Relation to the coverage highlight: tint features inside the field of view in 3D, outline them in projections, or both?
+
+---
+
 ## Open questions
 
 - **OQ-2 UI framework choice** (Preact vs Svelte), decided when ADR-004 starts.
@@ -514,6 +543,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-13: ADR-029 proposed (subject-feature catalogue for MT-2/MT-5 and related requirements), open for discussion.
 - 2026-10-12: ADR-028 legacy backend retired (owner); ADR-010, ADR-011, ADR-017, ADR-027 and ADR-006 item 4 updated.
 - 2026-10-12: VTK.js and OpenCascade assessed: reconstruction display in Three.js first (VTK.js fallback); OCCT as offline CAD front end of compilers and the converter (ADR-009, ADR-021, ADR-027).
 - 2026-10-12: ADR-001 rationale for "static" recorded; ADR-027 Three.js for display only (retrospective); README wording corrected.

@@ -52,10 +52,10 @@ Features the legacy backend had and the compiled backend does not provide yet. T
 | # | Feature (UI) | Legacy behaviour | Compiled path | Required? |
 |---|---|---|---|---|
 | MT-1 | Continuous upstream water level (slider in the environment layers) | Any level 260–305 m re-classified the parametric geometry | Frozen scenarios only; needs FR-E1 (one scene model for continuous variables and frozen variants) and FR-K2 (dataset-declared variables) | Deferred (owner, 2026-10-12): not needed at this stage |
-| MT-2 | Target structure layers (elevator, spillway, platform, water, dam, gallery outlines on the projection) | Hard-coded dam target IDs with DDA-cell masks and edge heuristics | Semantic targets from the dataset (22 direct targets already verified in the preview, FR-GE4 for aggregates); dataset-declared, not dam IDs (FR-K1) | Likely |
+| MT-2 | Target structure layers (elevator, spillway, platform, water, dam, gallery outlines on the projection) | Hard-coded dam target IDs with DDA-cell masks and edge heuristics | Merged into FR-M12 (feature outlines in projections) on the subject-feature catalogue (ADR-029) | Needed (owner); design under discussion |
 | MT-3 | Structural significance projection mode | Counterfactual column (fill/empty a target) with single-pixel Gaussian significance | Replaced by anomaly hypotheses and sensitivity (FR-H1…H11, ADR-025); entity ROI significance needs FR-M3 | Superseded by FR-H |
 | MT-4 | 3D muon flux cloud (volumetric heat cloud, combined contribution / transmission modes) | 17 × 17 sampled rays drawn as particles | Replaced by the physical coverage highlight (FR-M10, ADR-026); no separate cloud | Superseded (owner, 2026-10-12) |
-| MT-5 | Gallery, observation room and elevator shaft layer (coloured internal features) | Legacy proxy meshes | Compiled internal features exist (preview shows cavities); needs dataset-declared display layers (FR-K3) | Likely |
+| MT-5 | Gallery, observation room and elevator shaft layer (coloured internal features) | Legacy proxy meshes | Merged into FR-M11 (subject features in the 3D view) on the subject-feature catalogue (ADR-029) | Needed (owner); design under discussion |
 | MT-6 | Legacy deployment plan JSON (water level, device, candidates, active ray) | `legacy-deployment-adapter.js` | Superseded by the compiled snapshot export now and the versioned plan format (FR-P1) later | Superseded |
 | — | DDA main grid size control; coarse 9 × 9 quick metrics | DDA-specific; quick metrics traced 81 unused rays (FR-C4) | Not applicable: no DDA; the 25² preview replaces quick metrics | Dropped |
 
@@ -149,6 +149,8 @@ Features the legacy backend had and the compiled backend does not provide yet. T
 | FR-M9 | 3D display of reconstruction results. | Slices, isosurfaces and volume rendering overlaid on the subject, anomaly hypotheses and coverage in the same scene (shared camera and depth); difference from truth; same model frame. Three.js first; VTK.js only for a separate analysis view if needed (ADR-021, ADR-027). | Needed (later) |
 | FR-M2 | Result data and plan reports. | Report schema; generated from stored results, including limitations and model versions; multi-station overview and reconstruction figures included when available. | Needed |
 | FR-M3 | Source-entity ROI significance on the compiled backend. | Requires FR-GE4 entity attribution. | Needed (later) |
+| FR-M11 | Subject features in the 3D view. | Features from the subject-feature catalogue (ADR-029) shown as toggleable groups with dataset-declared colours (e.g. galleries, rooms, shafts, outlet works); drawn from the same compiled components that the tracer uses, never proxies; hover/pick identifies the feature and its source entity; hiding never changes physics. Replaces legacy MT-5. | Needed (design under discussion) |
+| FR-M12 | Feature outlines in projections. | For selected catalogue features, each projection shows the outline of the directions whose rays cross the feature (from per-ray entity lengths of the same result), drawn with the overlay machinery used for contours and labelled with the feature's colour; hover marks where the hovered ray crosses each selected feature in 3D. Aggregate solids (dam body, piers) only after FR-GE4. Replaces legacy MT-2; the same mechanism later draws anomaly footprints (FR-H9) and supports cross-view of targets (FR-M1). | Needed (design under discussion) |
 
 ## G. Geant4 integration
 
@@ -193,7 +195,7 @@ The platform evaluates any imaging subject (dams, blast furnaces, tunnels, …).
 | FR-K1 | No subject-specific logic in generic modules. | Core, plan, scan and export code never branch on a subject kind or name; new code adds no dam terms to generic modules. Existing leaks (17 modules today) are removed as each is touched. | Standing |
 | FR-K10 | Kind profile before support. | Before supporting a new subject kind or dam type, write its profile: needs on each axis of the kind variation register (display/interaction, geometry definition/semantics, regions of interest, materials, environment variables, detector placement, physics) and which parts the existing core covers. Generic code changes only where a second real example shows a shared pattern. | Standing |
 | FR-K2 | Dataset-declared kind and variables. | Each dataset declares `kind` and its environment variables (name, label, unit, range, frozen variants). UI controls are generated from them; the legacy `upstream`/`downstream` pair becomes one such declaration. | Needed |
-| FR-K3 | Dataset-declared layers, targets and capabilities. | Display layers, semantic targets and capability flags come from the dataset/backend declaration, not hard-coded lists such as `['dam','upwater','downwater']`. The declaration format is designed from at least two real examples (ADR-016); until then only the dam's existing lists move out of generic code. | Needed |
+| FR-K3 | Dataset-declared layers, targets and capabilities. | Display layers, semantic targets and capability flags come from the dataset/backend declaration, not hard-coded lists such as `['dam','upwater','downwater']`; the subject-feature catalogue (ADR-029) is its first consumer (FR-M11, FR-M12). The declaration format is designed from at least two real examples (ADR-016); until then only the dam's existing lists move out of generic code. | Needed |
 | FR-K4 | Material-dependent energy loss. | Energy-loss parameters (or range tables) per material instead of one rock-like `a, b` for all matter; required before high-Z subjects such as blast furnaces (iron, slag). Physics-model revision. | Needed (before non-rock subjects) |
 | FR-K5 | Deep overburden and site conditions. | Flux integration valid for large columns (current `10⁵ GeV` upper limit and `Emin` range); altitude/geomagnetic corrections from site conditions. Required before tunnels/underground sites. | Needed (before tunnels) |
 | FR-K6 | Detector placement inside or below material. | Stations inside solids or underground and the pose ranges they need (e.g. near-horizontal, zenith) are supported and tested on the compiled path. | Needed (later) |
@@ -231,6 +233,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-13: MT-2 and MT-5 needed (owner); merged into FR-M12 and FR-M11 on the subject-feature catalogue (ADR-029, proposed); FR-K3 linked.
 - 2026-10-13: Model identifier renamed `legacy-quick-response@3.0.0` → `quick-response@3.0.0` (same physics; owner).
 - 2026-10-12: MT-1 deferred; MT-4 superseded by the coverage highlight (owner).
 - 2026-10-12: FR-B3 legacy backend retired (owner); migration targets MT-1…MT-6 listed under B; FR-B1 reworded; FR-C4 done; FR-V6 dropped.

@@ -53,6 +53,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | 14 | Plan state: candidates vs selected deployment; per-station result cache keyed by snapshot | ADR-020, FR-P1 | Needs #11, #12; no recompute for unchanged stations; stale results never shown | Todo |
 | 15 | Overview mode in 3D: all selected stations, colour per station, field-of-view cones, ray coverage on the subject; summary table; click → detail mode | FR-M4 | Reuses scene views; subject-neutral labels (FR-K1) | Todo |
 | 15a | Coverage highlight: geometric (live, single colour per station) and physical (count/sr brightness from the result) via projective texturing; slope-mapping L1 test against `detector-pose.js` | FR-M10, ADR-026 | Single-station first (no plan needed), then multi-station with #15; measure FR-N5 on an Intel i5 laptop | Todo |
+| 15b | Subject features: catalogue, 3D feature layer and projection outlines (replaces MT-5, MT-2) | FR-M11, FR-M12, FR-K3, ADR-029 | Design discussion first (ADR-029 open questions); then catalogue + L1 tests, 3D layer, outlines via the numeric-overlay pipeline | Design |
 | 16 | Per-station projections side by side | FR-M4 | Reuses `projection-canvas-view.js` | Todo |
 | 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | Short animation export later | Todo |
 
@@ -101,7 +102,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 | Dataset-declared kind/variables/layers/targets; compiled package as generic contract | FR-K2, K3, ADR-017 | Generalisation G1, after P2 |
 | Material-dependent energy loss, deep-overburden flux, in-material stations, large terrain | FR-K4…K7 | Before the first non-dam subject (G3) |
 | Load packaged dataset from file; converter; in-app authoring | FR-L1…L6 | User-geometry track U1–U3, not urgent |
-| Compiled backend migration targets MT-1…MT-6 (continuous water, target layers, flux cloud, internal-feature layer; significance superseded by anomalies; legacy plan JSON superseded) | FR-B1, FR-E1, FR-M3, FR-K3 | After P3; parts depend on FR-K3 and FR-GE4; MT-1 deferred, MT-4 replaced by #15a coverage highlight (owner) |
+| Compiled backend migration targets MT-1…MT-6 | FR-B1 | MT-2/MT-5 → #15b; MT-1 deferred; MT-4 replaced by #15a; MT-3 → anomalies (P4); MT-6 → plan format (#11) |
 | Station export/import between releases | FR-B2 | With the plan format (#11) or later |
 | WebAssembly tracer | ADR-005 step 4 | Only if P5 measurements insufficient |
 | Server backend | ADR-001 | Only when T1–T4 observed |
@@ -129,6 +130,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-13: #15b subject features (MT-2, MT-5) in P3, design discussion first.
 - 2026-10-12: #4 replaced by legacy retirement (owner): done; migration targets added under Later.
 - 2026-10-12: #3a done; edge-adaptive sampling attached to AN3.
 - 2026-10-12: Added #3a (FR-V12) ahead of #4.

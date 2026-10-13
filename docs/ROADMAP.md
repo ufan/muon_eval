@@ -49,7 +49,7 @@ data contract + coordinate adapters → pure geometry query interfaces
 ## Phase 2 — Multi-station overview and demonstration
 
 **Goal:** show the selected deployment as a whole: all selected stations at once for overview and customer demonstration, with each detector's field-of-view coverage highlighted on the subject. Prioritised ahead of scanning by the owner (2026-10-10).
-**Covers:** FR-M4, FR-M5, FR-M10 (coverage highlight), FR-N5 (integrated-GPU budget); ADR-020, ADR-026. The single-station coverage highlight needs no plan format and can land before the rest of this phase.
+**Covers:** FR-M4, FR-M5, FR-M10 (coverage highlight), FR-M11/FR-M12 (subject features in 3D and projection outlines, replacing legacy MT-5/MT-2), FR-N5 (integrated-GPU budget); ADR-020, ADR-026, ADR-029. The single-station coverage highlight needs no plan format and can land before the rest of this phase.
 **Depends on:** plan schema with selected deployment, async cancellable assessment port (Phase 1). Built in the current page; does not wait for the new UI stack (ADR-004) or scan workers.
 **Exit:** overview and detail modes over one plan; per-station results cached; coverage highlight (geometric and physical, per steradian) in single- and multi-station views, correct under transparency and measured on an Intel Core i5 laptop; demonstration layout with camera presets and screenshot export.
 
@@ -127,6 +127,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-13: Phase 2 includes subject features (FR-M11, FR-M12; ADR-029).
 - 2026-10-12: Legacy backend retired (FR-B3); gaps tracked as migration targets MT-1…MT-6.
 - 2026-10-12: Phase 2 now covers the coverage highlight (FR-M10) and its GPU budget (FR-N5); FR-H11, FR-B2, FR-W4 and standing rules referenced.
 - 2026-10-12: Anomaly hypotheses placed as Phase 3 (OQ-10); scanning and later phases renumbered 4–8.

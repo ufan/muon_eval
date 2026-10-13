@@ -71,6 +71,7 @@ How these objects relate, their identities, invariants and lifecycles are modell
 - **Environment volume**: media that change between scenes or lie outside the subject: reservoir and tail water, furnace burden, overburden, air, surrounding rock.
 - **Visual proxy**: auxiliary geometry drawn for recognition or interaction; it never takes part in material calculation implicitly.
 - **Target / ROI**: a structure or region the user wants to identify, cover or compare in projections or scans.
+- **Subject feature**: a named part of the subject declared by the dataset (a gallery, shaft, water body, …) with a display group and colour; the common reference for 3D feature layers, projection outlines, picking and targets (proposed, ADR-029).
 - **Boundary / contour**: the boundary of a material or semantic region in 3D space, ray space or the projection plane.
 
 ### Geometric truth

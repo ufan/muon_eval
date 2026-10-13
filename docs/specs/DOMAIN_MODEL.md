@@ -84,6 +84,7 @@ classDiagram
 | Water body / environment volume | Entity | ID | Kind-specific environment volumes (water for dams; burden, overburden for other kinds) | Current for dams |
 | Scenario | Entity | Scenario ID within a release (`low`, `mid`, …) | A frozen environment variant: complete variable values plus its compiled geometry. Not the subject | Current |
 | Component | Entity | Component ID within a scenario | Closed mesh with one material and flags; maps to a source entity only with evidence, otherwise "aggregate" | Current |
+| SubjectFeature | Value (catalogue entry per release) | Source entity or water body ID | Named part of the subject with label, semantic class, group, colour and kind (`direct`: own component; `aggregate`: inside a merged component, unavailable until FR-GE4). One catalogue serves the 3D feature layer, projection outlines, picking, coverage tinting and ROI metrics; selections of features are view state (ADR-029) | Partial: direct-target index in `semantic-mapping.js`; catalogue proposed |
 | Candidate | Value | Candidate ID | Dataset-supplied suggested station position in the source frame, with host entity and rationale; not a recommendation of pose | Current |
 | Site conditions, detector models | Value | Per release | Sidecars; detector model sidecar is not used as calibration | Current (unused for physics) |
 
@@ -206,6 +207,7 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-13: Added SubjectFeature (proposed catalogue, ADR-029).
 - 2026-10-12: Legacy backend retired (ADR-028): module lists, ProjectionResult kinds, exports and environment gap updated.
 - 2026-10-12: Legacy ray length recorded (FR-C2); gap row removed.
 - 2026-10-12: Invariant 8 now holds and is tested (FR-C1); gap row removed.
