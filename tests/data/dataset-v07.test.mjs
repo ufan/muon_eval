@@ -154,7 +154,7 @@ test('actual HTTP loader verifies native assets and lazy scenario meshes', async
         const registry = JSON.parse(bytes.toString()); delete registry.datasets[release].adapter;
         bytes = Buffer.from(JSON.stringify(registry));
       }
-      if (tamperedProfile && url.pathname.endsWith('/display_profile.json')) bytes = Buffer.from(bytes.toString().replace('"default": true', '"default": false'));
+      if (tamperedProfile && url.pathname.endsWith('/display_profile.json')) bytes = Buffer.from(bytes.toString().replace('"default": false', '"default": true'));
       if (corrupt && url.pathname.endsWith('/dam_spec_v070.json')) bytes = Buffer.from(bytes.toString().replace('0.6.2', '0.6.3'));
       response.end(bytes);
     } catch { response.writeHead(404).end(); }
@@ -175,7 +175,7 @@ test('actual HTTP loader verifies native assets and lazy scenario meshes', async
   await assert.rejects(loadDataset(release, address, { digest: sha256 }), /Unsupported dataset adapter/);
   legacyEntry = false;
   // The display profile is verified by its own hash (ADR-029).
-  assert.equal(loaded.recognitionItems.length, 7);
+  assert.equal(loaded.recognitionItems.length, 4);
   tamperedProfile = true;
   await assert.rejects(loadDataset(release, address, { digest: sha256 }), /display_profile.json: SHA-256 mismatch/);
   tamperedProfile = false;

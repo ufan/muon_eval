@@ -2,12 +2,9 @@
   "profile_version": "1.0",
   "note": "Presentation-only recognition items for projection outlines (ADR-029). Added by the platform on 2026-10-13; not part of the authored release package; geometry unchanged.",
   "recognition_items": [
-    { "id": "galleries", "label": { "zh": "廊道", "en": "Galleries" }, "select": { "system": "gallery" }, "default": true },
+    { "id": "galleries", "label": { "zh": "廊道", "en": "Galleries" }, "select": { "system": "gallery" }, "default": false },
     { "id": "observation_rooms", "label": { "zh": "观测室", "en": "Observation rooms" }, "select": { "class": "observation_room" }, "default": false },
-    { "id": "elevator_shaft", "label": { "zh": "电梯井", "en": "Elevator shaft" }, "members": ["elevator_shaft"], "default": true },
-    { "id": "flood_release_openings", "label": { "zh": "泄洪与放空通道", "en": "Flood-release openings" }, "select": { "system": "flood_release", "category": "void" }, "default": false },
-    { "id": "water", "label": { "zh": "库水与尾水", "en": "Reservoir and tailwater" }, "select": { "system": "water" }, "default": false },
-    { "id": "dam_concrete", "label": { "zh": "坝体混凝土", "en": "Dam concrete" }, "material": "concrete", "color": "#AAA79C", "default": true },
-    { "id": "gates", "label": { "zh": "闸门（钢）", "en": "Gates (steel)" }, "material": "steel", "color": "#C0392B", "default": false }
+    { "id": "elevator_shaft", "label": { "zh": "电梯井", "en": "Elevator shaft" }, "members": ["elevator_shaft"], "default": false },
+    { "id": "dam_concrete", "label": { "zh": "坝体混凝土", "en": "Dam concrete" }, "material": "concrete", "color": "#AAA79C", "default": false }
   ]
 }
