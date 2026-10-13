@@ -13,7 +13,7 @@ Last updated: 2026-10-10
 | Domain | [DOMAIN_MODEL.md](DOMAIN_MODEL.md) | Bounded contexts, entities, identities, invariants, lifecycles; current vs target and gaps |
 | Architecture | [ARCHITECTURE.md](ARCHITECTURE.md) | Current module layout, data flow, geometry backends and integration boundaries |
 | Architecture | [MODULE_BOUNDARIES.md](MODULE_BOUNDARIES.md) | Module ownership and forbidden dependencies; enforced by `tests/integration/main-architecture.test.mjs` |
-| Calculation | [CALCULATION_MODEL.md](CALCULATION_MODEL.md) | Calculation chain, formulas and parameters of `legacy-quick-response@3.0.0` and its compiled adapter |
+| Calculation | [CALCULATION_MODEL.md](CALCULATION_MODEL.md) | Calculation chain, formulas and parameters of `quick-response@3.0.0` and its compiled adapter |
 | Geometry | [GEOMETRY_REFERENCE_CONTRACT.md](GEOMETRY_REFERENCE_CONTRACT.md) | Reference-line meanings, qualification, projection clipping, material–air boundary construction, derived artifact v1.0.0, shared-ray gate |
 | Geometry | [GEOMETRY_REFERENCES.md](GEOMETRY_REFERENCES.md) | Supporting record for the contract: decision, library comparison, evidence, real-release audit, reproduction |
 | Projection | [PROJECTION_DATA.md](PROJECTION_DATA.md) | Calculation identity, numerical fields, overlays, material contributions, contour extraction, graph mapping, contour export v1.0.0 |

@@ -18,7 +18,7 @@ export function responseFieldFromProjection(result, quantity = 'transmission', r
       ? p[representation === 'raw' ? 'transmission' : 'displayTransmission']
       : p[representation === 'raw' ? 'count' : 'displayCount'];
     if (!Number.isFinite(value) || value < 0) throw new Error('Invalid response sample');
-    // T>1 (possible from legacy-quick-response@1.0.0 results) keeps its raw
+    // T>1 (possible from quick-response@1.0.0 results) keeps its raw
     // value but is never clamped into a fabricated valid attenuation field.
     return quantity === 'transmission' && value > 1 ? null : value;
   });

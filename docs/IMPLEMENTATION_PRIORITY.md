@@ -12,9 +12,9 @@ Last updated: 2026-10-12
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| 1 | Make flux integration history-independent | FR-C1 | Physics-model revision `legacy-quick-response@2.0.0`; frozen baseline tests and `specs/CALCULATION_MODEL.md` §2/§9 updated | Done |
+| 1 | Make flux integration history-independent | FR-C1 | Physics-model revision `quick-response@2.0.0`; frozen baseline tests and `specs/CALCULATION_MODEL.md` §2/§9 updated | Done |
 | 2 | Record the legacy 500 m ray cutoff in exports; fix limitation text | FR-C2, FR-C5 | `legacy-pattern-adapter.js`, `legacy-geometry-adapter.js`; legacy compatibility path only since OQ-3 | Done |
-| 3 | Projected-area cos θ factor; remove the edge factor | FR-C3 | Model revision `legacy-quick-response@3.0.0`; evidence in `specs/CALCULATION_MODEL.md` §10.3 | Done |
+| 3 | Projected-area cos θ factor; remove the edge factor | FR-C3 | Model revision `quick-response@3.0.0`; evidence in `specs/CALCULATION_MODEL.md` §10.3 | Done |
 | 3a | Measure in-pixel ray sampling error against a converged reference; document or plan a sampling option | FR-V12 | `scripts/experiment-pixel-sampling.mjs`; results in `specs/CALCULATION_MODEL.md` §11.6 | Done |
 | 4 | Retire the legacy backend (owner decision; covers FR-C4: `quickMetrics()` removed with it) | FR-B3, FR-C4 | Remove old geometry (releases 0.6.1/0.6.2, analytic kernel, DDA, legacy adapters/scene view); keep the UI with legacy-only features gated; list migration targets MT-1…MT-6 | Done |
 
@@ -116,9 +116,9 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 |---|---|---|
 | Legacy backend retired; old geometry releases removed (#4) | FR-B3, FR-C4 | `6a13fb0`, `2026c9c` |
 | In-pixel ray sampling error measured (#3a) | FR-V12 | `d887d4d` |
-| Projected-area factor added, edge factor removed (#3), model `legacy-quick-response@3.0.0` | FR-C3 | `3aa22b4` |
+| Projected-area factor added, edge factor removed (#3), model `quick-response@3.0.0` | FR-C3 | `3aa22b4` |
 | Legacy 500 m ray cutoff recorded in exports (#2) | FR-C2 | `cbbc1b0` |
-| History-independent flux integral (#1), model `legacy-quick-response@2.0.0` | FR-C1 | `5de4693` |
+| History-independent flux integral (#1), model `quick-response@2.0.0` | FR-C1 | `5de4693` |
 | Datasets moved to top-level `datasets/` with sync script | ADR-018 | `dc48ed3` |
 | Compiled backend made the default | OQ-3, ADR-011 | `eba2f6f` |
 | Stale v0.1.0 `dam_spec` files removed | FR-Q6 | `03436ee` |

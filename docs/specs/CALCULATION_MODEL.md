@@ -1,8 +1,9 @@
 # Calculation model
 
-This spec defines the calculation chain, formulas and parameters by which the current fast-evaluation model (`legacy-quick-response@3.0.0` and its compiled adapter) turns subject data, detector position and pose into rays, projections and numerical metrics. It is a normative description the code must match, not a promise of full muon transport or detector calibration.
+This spec defines the calculation chain, formulas and parameters by which the current fast-evaluation model (`quick-response@3.0.0` and its compiled adapter) turns subject data, detector position and pose into rays, projections and numerical metrics. It is a normative description the code must match, not a promise of full muon transport or detector calibration.
 
 - Any change to formulas, default parameters or numerical behaviour is a model revision: increase the model version, update the frozen baseline tests and label it in the commit message.
+- The model identifier is `quick-response@<version>`. Versions 1.0.0–3.0.0 were first published as `legacy-quick-response@<version>`; the physics of each version is the same under both names, so a stored result with the old name is not a different model, but its snapshot key differs and a comparison reports the name difference.
 - The meaning of results, their limits, parameter sensitivity and usage advice are in the [result interpretation guide](../guides/RESULT_INTERPRETATION.md).
 - Resolved corrections are recorded as FR-C1…C3 in the [feature requirements](../FEATURE_REQUIREMENTS.md).
 - Section numbers follow the former `CALCULATION_MODELS.md` so existing references (§2–§13) stay valid.
@@ -38,7 +39,7 @@ projections, structure outlines, significance, flux cloud and side-panel metrics
 
 The calculation entry is `compiled-main-assessment.js` over `compiled-assessment.js`, which takes station, device, response and environment snapshots and the compiled runtime. Direction arithmetic is in `detector-pose.js` and rays come from the compiled runtime. `dist/app.js` only assembles dependencies. The legacy DDA backend was retired (ADR-028); §5, §6, §12 and §13 record what it did.
 
-`dist/modules/muon-response.js` holds the spectrum, integral, energy-loss and significance formulas; `detector-projection.js` holds native strip-difference binning, pixel response, batched projection and Gaussian display smoothing. `assessment-controller.js` manages cancellation and publication without reading the DOM or importing a geometry backend. The quick preview and final result share one input/environment snapshot; `main-page.js` only receives results to update the DOM. The model identifier is `legacy-quick-response@3.0.0` (2.0.0 removed the quantised flux cache of 1.0.0, FR-C1; 3.0.0 added the projected-area factor and removed the edge factor, FR-C3); module boundaries do not change the physics model.
+`dist/modules/muon-response.js` holds the spectrum, integral, energy-loss and significance formulas; `detector-projection.js` holds native strip-difference binning, pixel response, batched projection and Gaussian display smoothing. `assessment-controller.js` manages cancellation and publication without reading the DOM or importing a geometry backend. The quick preview and final result share one input/environment snapshot; `main-page.js` only receives results to update the DOM. The model identifier is `quick-response@3.0.0` (2.0.0 removed the quantised flux cache of 1.0.0, FR-C1; 3.0.0 added the projected-area factor and removed the edge factor, FR-C3); module boundaries do not change the physics model.
 
 Existing approximations are kept: counts use a fixed three-layer efficiency `ε³`; both axes are binned with `stripsX` (the current UI has symmetric readout); and the integrated flux is evaluated exactly for every input, so results never depend on evaluation history (FR-C1; 1.0.0 returned the first value of a quantised cache bucket, up to ~5% per pixel near the horizon). The fixed `10⁵ GeV` integration upper limit and the old behaviour at extreme energies are unchanged and need a separate model revision rather than a silent change during refactoring. Tests with frozen old formulas verify exact numerical agreement for both angular models, 25/65 grids, per-pixel counts/transmission and display smoothing.
 
@@ -242,7 +243,7 @@ The base response factor is:
 response = layerEfficiency³ × deadLiveFraction
 ```
 
-Expected counts per pixel (`legacy-quick-response@3.0.0`, FR-C3):
+Expected counts per pixel (`quick-response@3.0.0`, FR-C3):
 
 ```text
 Npixel = Φthrough × activeArea × cos θ × exposureSeconds × dΩ × response
@@ -326,7 +327,7 @@ The conversion approximates angle by the local slope step, which is not a strict
 
 ### 11.6 One ray per pixel (measured, FR-V12)
 
-Each pixel's count is evaluated on one ray: the pixel's weighted-mean direction, traced from the detector centre. A real detector integrates over every native strip-difference direction in the pixel (8 × 8 for a 65² final grid with the default 256 strips) and over entry points across the area that is aligned on both outer planes for that direction. Measured on 2026-10-12 with `scripts/experiment-pixel-sampling.mjs` (model `legacy-quick-response@3.0.0`, release `zhouning-lower-reservoir-dam@0.6.2+schema0.7.0`, scenario `low`, default device, 30-day exposure, 65² grid). The reference averages counts, not columns, over all native directions × 4 × 4 entry points (converged: 6 × 6 entry points gave identical statistics). It was run on six candidate stations (three in galleries, two on platforms, one on the bank) × four poses (azimuth 90°, 270° and 0° at 30° elevation; azimuth 90° at 60°), 101,400 pixels in all, with 29–2,900 mean counts per pixel:
+Each pixel's count is evaluated on one ray: the pixel's weighted-mean direction, traced from the detector centre. A real detector integrates over every native strip-difference direction in the pixel (8 × 8 for a 65² final grid with the default 256 strips) and over entry points across the area that is aligned on both outer planes for that direction. Measured on 2026-10-12 with `scripts/experiment-pixel-sampling.mjs` (model `quick-response@3.0.0`, release `zhouning-lower-reservoir-dam@0.6.2+schema0.7.0`, scenario `low`, default device, 30-day exposure, 65² grid). The reference averages counts, not columns, over all native directions × 4 × 4 entry points (converged: 6 × 6 entry points gave identical statistics). It was run on six candidate stations (three in galleries, two on platforms, one on the bank) × four poses (azimuth 90°, 270° and 0° at 30° elevation; azimuth 90° at 60°), 101,400 pixels in all, with 29–2,900 mean counts per pixel:
 
 | Quantity | Result |
 | --- | --- |

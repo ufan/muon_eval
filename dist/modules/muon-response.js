@@ -3,7 +3,9 @@
 // 2.0.0 evaluates the flux integral exactly for every input (FR-C1); 1.0.0
 // returned the first value computed in a quantised (cosZ, log10 Emin) bucket.
 // Flux units: cm^-2 s^-1 sr^-1 (integrated); energy: GeV; column: m.w.e.
-export const RESPONSE_MODEL_VERSION = 'legacy-quick-response@3.0.0';
+// Model identifier; versions 1.0.0-3.0.0 were first published as
+// 'legacy-quick-response@<version>' (same physics per version).
+export const RESPONSE_MODEL_VERSION = 'quick-response@3.0.0';
 
 export function cosThetaStar(c) {
   c = Math.max(0, Math.min(1, c));

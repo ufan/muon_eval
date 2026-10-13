@@ -153,7 +153,7 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 5. A device configuration means the same thing for every dataset; datasets never supply uncalibrated device parameters implicitly.
 6. A result always carries the identity of everything it was computed from (release, backend, scenario/variables, model version, device, response, sampling, ray length) and its limitations. (FR-C5; legacy ray length recorded since FR-C2)
 7. A stale result is never published over a newer input. (`assessment-controller.js`, tests)
-8. Results are history-independent: the same input gives the same output. (`muon-response.js` has no cache since `legacy-quick-response@2.0.0`; `tests/unit/muon-response.test.mjs`)
+8. Results are history-independent: the same input gives the same output. (`muon-response.js` has no cache since `quick-response@2.0.0`; `tests/unit/muon-response.test.mjs`)
 9. Generic code never branches on a dataset's kind or name. (FR-K1; existing leaks being removed)
 10. Aggregate components never acquire source-entity ownership by name or proximity.
 11. Unknown or approximate dimensions stay explicit metadata; they are never replaced by unexplained constants.

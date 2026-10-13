@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
-import { legacyCalculationBaseline } from '../fixtures/legacy-calculation-baseline.mjs';
+import { frozenCalculationBaseline } from '../fixtures/frozen-calculation-baseline.mjs';
 import { cosThetaStar, gaisserFlux, integratedSurfaceFlux, minimumMuonEnergy, countSignificance } from '../../dist/modules/muon-response.js';
 import { nativeAxisBins, applyProjectionResolution, createProjectionPass } from '../../dist/modules/detector-projection.js';
 
@@ -14,9 +14,9 @@ const sampleRay = (sx, sy) => ({ dir: { x: sx, y: sy, z: .55 / Math.sqrt(1 + sx 
   q: { mwe: 100 + 50 * (sx + 1.4) + 300 * (sy + 1.4), totals: { concrete: 20 } } });
 
 // Frozen orchestration formula (app.js before extraction, revised by
-// legacy-quick-response@3.0.0: projected area, no edge factor). Test-only.
+// quick-response@3.0.0: projected area, no edge factor). Test-only.
 function referencePass(n, device, response, sampleRay) {
-  const baseline = legacyCalculationBaseline(device, response), bins = baseline.nativeAxisBins(n);
+  const baseline = frozenCalculationBaseline(device, response), bins = baseline.nativeAxisBins(n);
   const areaCm2 = device.width * device.height * 1e4, seconds = response.exposureDays * 86400;
   const response0 = response.layerEfficiency ** 3 * response.deadLiveFraction, values = [];
   let total = 0, openTotal = 0;
@@ -37,7 +37,7 @@ function referencePass(n, device, response, sampleRay) {
 
 test('spectrum, energy loss and integrated flux exactly match the frozen formulas', () => {
   for (const angularModel of ['gaisser', 'cos2']) {
-    const baseline = legacyCalculationBaseline(device, { ...response, angularModel });
+    const baseline = frozenCalculationBaseline(device, { ...response, angularModel });
     for (const cosZ of [0, .01, .101, .102, .5, .99, 1]) {
       assert.equal(cosThetaStar(cosZ), baseline.cosThetaStar(cosZ));
       for (const energy of [1, 10, 100, 10000]) assert.equal(gaisserFlux(energy, cosZ), baseline.gaisserFlux(energy, cosZ));
@@ -52,20 +52,20 @@ test('spectrum, energy loss and integrated flux exactly match the frozen formula
 
 test('native strip bins and Gaussian smoothing exactly match the baseline', () => {
   for (const n of [25, 65]) {
-    const baseline = legacyCalculationBaseline(device, response);
+    const baseline = frozenCalculationBaseline(device, response);
     assert.deepEqual(nativeAxisBins(n, device), baseline.nativeAxisBins(n));
     for (const angularResolutionDeg of [.01, .3, 3, 20]) {
       const settings = { ...response, angularResolutionDeg };
       const values = Array.from({ length: n * n }, (_, i) => ({ count: i % 13, transmission: (i % 5) / 5 }));
       const expected = structuredClone(values);
-      legacyCalculationBaseline(device, settings).applyProjectionResolution(expected, n);
+      frozenCalculationBaseline(device, settings).applyProjectionResolution(expected, n);
       applyProjectionResolution(values, n, device, settings);
       assert.deepEqual(values, expected);
     }
   }
 });
 
-test('complete 25/65-bin count projections exactly match legacy results with both flux models', () => {
+test('complete 25/65-bin count projections exactly match the frozen formulas with both flux models', () => {
   for (const n of [25, 65]) for (const angularModel of ['gaisser', 'cos2']) {
     const settings = { ...response, angularModel };
     const expected = referencePass(n, device, settings, sampleRay);
@@ -73,7 +73,7 @@ test('complete 25/65-bin count projections exactly match legacy results with bot
     let state;
     do { state = pass.advance(3); } while (!state.done);
     const { modelVersion, ...actual } = state.result;
-    assert.equal(modelVersion, 'legacy-quick-response@3.0.0');
+    assert.equal(modelVersion, 'quick-response@3.0.0');
     assert.deepEqual(actual, expected);
     assert.strictEqual(pass.advance(3).result, state.result);
   }

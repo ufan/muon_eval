@@ -1,7 +1,7 @@
 // Frozen numerical baseline: the pre-extraction formulas, with the flux integral
-// evaluated exactly per input since legacy-quick-response@2.0.0 (FR-C1).
+// evaluated exactly per input since quick-response@2.0.0 (FR-C1).
 // Test-only; do not use in runtime.
-export function legacyCalculationBaseline(DEVICE, RESPONSE) {
+export function frozenCalculationBaseline(DEVICE, RESPONSE) {
 const THREE = { MathUtils: { clamp: (v, a, b) => Math.max(a, Math.min(b, v)), degToRad: v => v * (Math.PI / 180) } };
 const nativeBinCache = new Map();
 function cosThetaStar(c){c=THREE.MathUtils.clamp(c,0,1);const p1=.102573,p2=-.068287,p3=.958633,p4=.0407253,p5=.817285;return Math.sqrt((c*c+p1*p1+p2*c**p3+p4*c**p5)/(1+p1*p1+p2+p4))}

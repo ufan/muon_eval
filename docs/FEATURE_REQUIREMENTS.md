@@ -14,9 +14,9 @@ Last updated: 2026-10-10
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
-| FR-C1 | Calculation results must not depend on evaluation history. | The same input gives identical results regardless of what was computed before, in any session or worker. The former flux cache (`muon-response.js`) returned the first value in a quantised bucket (up to ~5% per-pixel error near the horizon); since `legacy-quick-response@2.0.0` the integral is evaluated exactly per input. | Done |
+| FR-C1 | Calculation results must not depend on evaluation history. | The same input gives identical results regardless of what was computed before, in any session or worker. The former flux cache (`muon-response.js`) returned the first value in a quantised bucket (up to ~5% per-pixel error near the horizon); since `quick-response@2.0.0` the integral is evaluated exactly per input. | Done |
 | FR-C2 | Exports must record the actual ray length used. | Legacy results record the 500 m radial cutoff (`legacy-geometry-adapter.js`) as `config.length`/`rayLengthM` with a `radialCutoffBinds` diagnostic; the limitation text is corrected. Cross-backend comparisons disclose the differing `sampling`. The legacy backend was later retired (FR-B3). | Done |
-| FR-C3 | Detector acceptance formula is physically justified and documented. | Per-pixel counts use the two-plane geometric factor: projected area × slope-cell solid angle (cos⁴θ), verified by derivation, an independent Monte Carlo and the flux normalisation ([calculation model spec](specs/CALCULATION_MODEL.md) §10.3). The undeclared edge factor (≈ 0.85, grid-dependent) is removed. Model `legacy-quick-response@3.0.0`. | Done |
+| FR-C3 | Detector acceptance formula is physically justified and documented. | Per-pixel counts use the two-plane geometric factor: projected area × slope-cell solid angle (cos⁴θ), verified by derivation, an independent Monte Carlo and the flux normalisation ([calculation model spec](specs/CALCULATION_MODEL.md) §10.3). The undeclared edge factor (≈ 0.85, grid-dependent) is removed. Model `quick-response@3.0.0`. | Done |
 | FR-C4 | No dead or misleading computation in the update path. | `quickMetrics()` no longer traces 81 unused rays per update or computes the unused `12000 × sin(el)^1.7` count. Resolved by retiring the legacy backend (FR-B3), which removed `quickMetrics()`. | Done |
 | FR-C5 | Every result is reproducible and traceable. | Records at least the items in `CONTEXT.md` §7: app and model versions; dataset release ID and file hashes where available; coordinate convention; device; environment/scenario; stations and poses; sampling, exposure, thresholds, ray length; units; generation time; approximations and warnings. | Needed (legacy backend gaps) |
 | FR-C6 | Stale results never overwrite newer state. | Holds under cancellation, caching, workers and late completion (ADR-011). | Standing |
@@ -231,6 +231,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-13: Model identifier renamed `legacy-quick-response@3.0.0` → `quick-response@3.0.0` (same physics; owner).
 - 2026-10-12: MT-1 deferred; MT-4 superseded by the coverage highlight (owner).
 - 2026-10-12: FR-B3 legacy backend retired (owner); migration targets MT-1…MT-6 listed under B; FR-B1 reworded; FR-C4 done; FR-V6 dropped.
 - 2026-10-12: FR-V12 measured and documented; edge-adaptive sampling tied to AN3.
