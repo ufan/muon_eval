@@ -1,6 +1,6 @@
 # Zhouning lower-reservoir dam: coordinates and geometry rules
 
-Dataset `zhouning-lower-reservoir-dam`, kind `dam`. Release: `0.6.2+schema0.7.0` (native v0.7 format with compiled GLB/BVH scenarios). The earlier legacy parametric releases `0.6.1` and `0.6.2` were retired with the legacy backend (ADR-028); they remain in git history. Import notes for the v0.7 release are in [0.6.2+schema0.7.0/IMPORT.md](0.6.2+schema0.7.0/IMPORT.md). A display profile (`display_profile.json`, seven recognition items: galleries, observation rooms and elevator shaft on by default; flood-release openings, water, dam concrete and steel gates off) was added by the platform on 2026-10-13; it is not part of the authored package and changes no geometry or result.
+Dataset `zhouning-lower-reservoir-dam`, kind `dam`. Release: `0.6.2+schema0.7.0` (native v0.7 format with compiled GLB/BVH scenarios). The earlier legacy parametric releases `0.6.1` and `0.6.2` were retired with the legacy backend (ADR-028); they remain in git history. Import notes for the v0.7 release are in [0.6.2+schema0.7.0/IMPORT.md](0.6.2+schema0.7.0/IMPORT.md). A display profile (`display_profile.json`, seven recognition items: galleries, elevator shaft and dam concrete on by default; observation rooms, flood-release openings, water and steel gates off (owner, 2026-10-13)) was added by the platform on 2026-10-13; it is not part of the authored package and changes no geometry or result.
 
 ## 1. Three coordinate frames
 

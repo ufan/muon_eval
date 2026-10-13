@@ -51,7 +51,7 @@
       },
       "display_profile": {
         "path": "display_profile.json",
-        "sha256": "a46f8107618b1f3be0fcdfc5fd09b6d349247584728b1ca3523b5b5a865935cb",
+        "sha256": "503d8e18f1f7177fdb69b81971af821fd84f094011ea67240f7eb3a15267914c",
         "schema": "../../schemas/display-profile.schema.json"
       }
     }

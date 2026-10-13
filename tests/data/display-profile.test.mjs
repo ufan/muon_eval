@@ -19,7 +19,7 @@ test('the profile is registered with its own hash, outside the authored package 
 test('recognition items resolve against the release catalogue', () => {
   const items = dataset.recognitionItems;
   assert.deepEqual(items.map(i => i.id), ['galleries', 'observation_rooms', 'elevator_shaft', 'flood_release_openings', 'water', 'dam_concrete', 'gates']);
-  assert.deepEqual(items.filter(i => i.default).map(i => i.id), ['galleries', 'observation_rooms', 'elevator_shaft']);
+  assert.deepEqual(items.filter(i => i.default).map(i => i.id), ['galleries', 'elevator_shaft', 'dam_concrete']);
   assert.deepEqual(items[0].featureIds, ['adit_N', 'adit_S', 'gallery_link', 'gallery_lower', 'gallery_upper']);
   for (const item of items.filter(i => i.kind === 'features'))
     for (const id of item.featureIds) assert.equal(dataset.features.get(id).kind, 'direct', `${item.id}: ${id}`);
