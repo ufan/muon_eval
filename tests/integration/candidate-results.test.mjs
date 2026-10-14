@@ -40,6 +40,7 @@ test('the compact form keeps the per-pixel values, indicators and differences at
     return { label: s.name, entry };
   });
   const comparison = compareEntries(entries);
-  // Same detector, response and scenario; the ray length (sampling) follows the station position.
-  assert.deepEqual(comparison.differences.map(d => d.fields), [[], ['sampling']]);
+  // Same detector, response and scenario; the ray length follows the station position and is no difference.
+  assert.deepEqual(comparison.differences.map(d => d.fields), [[], []]);
+  assert.equal(comparison.comparable, true);
 });

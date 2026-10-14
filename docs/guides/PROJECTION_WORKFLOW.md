@@ -74,7 +74,7 @@ Method policy: retain numerical D3 isolines; do not adopt Canny/OpenCV/WASM. No 
 
 ### Reproducible deployment comparison
 
-Definitions are in pure `pattern-comparison.js`; single-site and array/batch consumers call the same function. No scan optimizer or automatic rank is claimed. An ROI is explicitly `{kind: material|semantic, id, minimumPathM}`. Preview/main UI currently expose material ROIs (main defaults concrete, .15 m); only directly mapped semantic targets are accepted by the pure API. An accumulated material ROI is not canonical source-entity ownership.
+Definitions are in pure `pattern-comparison.js`; single-site and array/batch consumers call the same function. No scan optimizer or automatic rank is claimed. An ROI is explicitly `{kind: material|semantic, id, minimumPathM}`. Parameter differences list the settings that differ from the first row; the compiled ray length is not one of them, because it always encloses the finite model and so follows the station position (a fixed cutoff, as in replayed legacy exports, is still disclosed). Preview/main UI currently expose material ROIs (main defaults concrete, .15 m); only directly mapped semantic targets are accepted by the pure API. An accumulated material ROI is not canonical source-entity ownership.
 
 | Indicator | Definition / units / mask |
 | --- | --- |

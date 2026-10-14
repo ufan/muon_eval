@@ -63,10 +63,14 @@ export function createImmutablePatternComparisonEvaluator() {
   };
 }
 // Which shared settings of each row differ from the first row (snapshot inputs of prepareProjectionPattern).
+// The compiled backend's ray length always encloses the finite model, so it follows the station
+// position and is not a setting; a fixed cutoff (the retired legacy backend) is.
+const derivedRayLength = row => typeof row.backendVersion === 'string' && row.backendVersion.startsWith('compiled-');
+const setting = (row, key) => key === 'sampling' && derivedRayLength(row) ? { ...row.sampling, rayLengthM: 'derived-from-position' } : row[key];
 export function snapshotDifferences(inputs) {
   const base = inputs[0];
   const shared = ['datasetRelease', 'geometryVersion', 'backendVersion', 'modelVersion', 'detector', 'environment', 'sampling', 'response'];
-  return inputs.map((row, index) => ({ index, fields: shared.filter(k => encoded(base[k]) !== encoded(row[k])) }));
+  return inputs.map((row, index) => ({ index, fields: shared.filter(k => encoded(setting(base, k)) !== encoded(setting(row, k))) }));
 }
 function comparePreparedRows(results, rows, selection, levels) {
   const differences = snapshotDifferences(rows.map(row => row.snapshot.inputs));

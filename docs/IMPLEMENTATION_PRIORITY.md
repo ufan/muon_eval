@@ -145,6 +145,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: After 14b (owner): 候选部署点 open by default; the position-dependent compiled ray length is no longer reported as a sampling difference.
 - 2026-10-14: 14b done (working station, fixed candidates, per-candidate cache, comparison from the list).
 - 2026-10-14: 14a done (plan 1.1.0, several studies per release).
 - 2026-10-14: #14 replaced by 14a–14d after the study-workflow review (owner): fixed candidates, named deployments, several studies per release, recompute with a compact session cache.
