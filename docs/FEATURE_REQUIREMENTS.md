@@ -106,8 +106,8 @@ Features the legacy backend had and the compiled backend does not provide yet. T
 
 | ID | Requirement | Acceptance criteria | Status |
 |---|---|---|---|
-| FR-P1 | Save/load a complete plan. | Versioned, subject-neutral JSON schema with migrations; distinguishes candidate stations from the selected deployment (ADR-020): full dataset release ID (plus content hash for user-loaded datasets), stations, poses, device, response, environment/scenario, sampling, model version. Round-trip test: load → save gives an identical file. Current exports (including `compiled-deployment-snapshot` v0.1) are not full round-trip plans. | Needed |
-| FR-P2 | Plans shareable without a server. | Plan files are diff-friendly and usable from git or a shared folder. | Needed |
+| FR-P1 | Save/load a complete plan. | Versioned, subject-neutral JSON schema with migrations; distinguishes candidate stations from the selected deployment (ADR-020): full dataset release ID (plus content hash for user-loaded datasets), stations, poses, device, response, environment/scenario, sampling, model version. Round-trip test: load → save gives an identical file. Current exports (including `compiled-deployment-snapshot` v0.1) are not full round-trip plans. | Done (`muography-plan` 1.0.0, PLAN_FORMAT.md; storage, export and import in the app; byte-identical round trip tested); selection UI with #14 |
+| FR-P2 | Plans shareable without a server. | Plan files are diff-friendly and usable from git or a shared folder. | Done (canonical text, 2-space indent, fixed member order) |
 | FR-P3 | Team plan sharing with concurrent editing, permissions and audit trail. | Only when server trigger T1 is met (ADR-001). | Deferred |
 | FR-P4 | One export menu. | The main app offers one "导出" menu on the versioned plan/result format (#11): plan; full result of the current station (result plus pattern layers); comparison of saved stations or poses. Replaces the preview's separate export buttons (ADR-030). | Needed (after #11) |
 
@@ -242,6 +242,7 @@ Not urgent; staged after bundled datasets.
 - 2026-10-14: FR-M14 done for the contour layers ("专家诊断" drawer; comparison in its own "方案比较" section).
 - 2026-10-14: FR-M13 done (precision lines).
 - 2026-10-14: FR-D10 (dataset workbench) and FR-P4 (one export menu) added; FR-M14 extended (ADR-030).
+- 2026-10-14: FR-P1, FR-P2 done (plan format, storage, export/import).
 - 2026-10-14: FR-K11 added (material roles; generality of the envelope/air-interface concept, owner question).
 - 2026-10-14: FR-C7 added and done (back-side muons; model `quick-response@4.0.0`).
 - 2026-10-14: FR-M12 done except optional fill and sampled-pixel view (15b-6: material envelope overlay).

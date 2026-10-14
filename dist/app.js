@@ -17,9 +17,9 @@ async function main(){
  const projectionView=createProjectionCanvasView({onHover:(data,x,y,options)=>sceneView.showProjectionPixel(data,x,y,options),onLeave:()=>sceneView.clearProjection()});
  createApplicationSelectionView({registry,selection:backend.selection,scenarios:backend.scenarios,backendLabel:selection.backend,description:backend.environmentDescription,title:dataset.identity.title,frame:dataset.geometry?.source.frames.model_frame});
  page=createMainPage({workbenchHref:selectionHref(APP_PAGES.workbench,backend.selection),datasetId:dataset.id,datasetVersion:dataset.identity.dataset_version,features:dataset.features,recognitionItems:dataset.recognitionItems,state,sceneView,projectionView,capabilities:backend.capabilities,
-  backendLabel:selection.backend,environmentDescription:backend.environmentDescription,exportFileName:backend.exportFileName,exportPlan:backend.exportPlan,createController:ports=>{
+  backendLabel:selection.backend,environmentDescription:backend.environmentDescription,scenarioId:backend.selection.scenarioId,releases:Object.keys(registry.datasets),candidateIds:dataset.candidates.candidates.map(c=>c.id),createController:ports=>{
    const controller=createAssessmentController({assessment:backend.assessment,...ports});
-   return {...controller,clearCaches:()=>backend.assessment.clearCaches(),centralRay:input=>backend.assessment.createSession(input).centralRay()};
+   return {...controller,clearCaches:()=>backend.assessment.clearCaches()};
   }});
  page.start();
 }

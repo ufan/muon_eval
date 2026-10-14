@@ -60,7 +60,7 @@ The root path must serve `index.html`. The application needs no server API and c
 - Fix a version before external release and keep the corresponding dataset release.
 - Set a CSP, access logs, backups and an update/rollback plan.
 
-Application data (stations, device settings) is stored in each browser's `localStorage` and is not synchronized to the server or other devices. Export JSON to exchange plans between devices.
+Application data is stored in each browser's `localStorage` and is not synchronized to the server or other devices: one plan per dataset release (stations, poses, detector settings, active station; `muography-plan` 1.0.0, see [plan format](../specs/PLAN_FORMAT.md)) and view preferences. "导出部署方案" downloads the plan as a file and "导入方案" loads one, so plans are shared as files (for example in git or a shared folder).
 
 ## 5. Contents and versions
 

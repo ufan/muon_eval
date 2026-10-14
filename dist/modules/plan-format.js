@@ -13,7 +13,7 @@ const RESPONSE = { layerEfficiency: [.01, 1], deadLiveFraction: [.01, 1], angula
 const fail = message => { throw new Error(`Invalid plan: ${message}`); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 function members(value, path, required, optional = []) {
-  if (!isObject(value)) fail(`${path || 'document'} must be an object`);
+  if (!isObject(value)) fail(`${path || 'plan'} must be an object`);
   for (const key of Object.keys(value)) if (![...required, ...optional].includes(key)) fail(`Unknown member ${path ? path + '.' : ''}${key}`);
   for (const key of required) if (!Object.hasOwn(value, key)) fail(`Missing member ${path ? path + '.' : ''}${key}`);
 }

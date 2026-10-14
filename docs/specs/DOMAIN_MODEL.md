@@ -120,9 +120,9 @@ Scene composition (Target): **scene = release + environment state + active anoma
 
 | Concept | Kind | Notes | Status |
 |---|---|---|---|
-| Station | Entity within a plan | Name and position in the model frame; currently also carries the pose (`az`, `el`) | Partial: station and pose not separated |
+| Station | Entity within a plan | Unique ID within the plan, name, position in the model frame, one pose, detector reference, optional `candidateId` (the dataset candidate it started from) | Current in the plan format; the app state still keeps pose fields on the station (`az`, `el`) |
 | Pose | Value | Azimuth from model `X+` towards `Y+`, elevation above horizontal; detector-local basis follows | Current |
-| DeploymentPlan | Aggregate root | Scene (release reference + content hash for user-loaded datasets, environment/scenario), candidate stations, **selected deployment** (subset with pose and device each), calculation settings, schema version | Target (FR-P1, ADR-020); today `deployment-state` holds candidates + one `active` index and is stored per release ID in `localStorage` |
+| DeploymentPlan | Aggregate root | Scene (release reference + content hash for user-loaded datasets, scenario), named detector configurations (`default` required), stations, **selected deployment** (station IDs) and active station, reserved anomalies, schema version; `muography-plan` 1.0.0 ([PLAN_FORMAT](PLAN_FORMAT.md)) | Current: one plan per release in browser storage, export/import as files; the selection UI comes with #14 |
 | Selection | Value | Which stations are deployed; drives the multi-station overview | Target (FR-M4) |
 
 ### 2.4 Assessment and results
@@ -135,11 +135,12 @@ Scene composition (Target): **scene = release + environment state + active anoma
 | ProjectionResult | Value, versioned | `kind` ∈ {`compiled-detector-assessment`, `material-column-projection`} (`legacy-detector-assessment` is accepted only for replaying old exports), `schemaVersion`, identity (release, backend, scenario, variables, asset hashes), config, device, response, `modelVersion`, pixels, limitations | Current |
 | Per-station result cache | Keyed by snapshot key | Lets the overview and detail modes share results | Target (ADR-020) |
 | Coverage (view) | Derived view of a station | Geometric coverage = device acceptance × pose (no physics); physical coverage = expected counts per steradian from a result. A view of results, never an input; bound to the result's snapshot key | Target (ADR-026) |
-| Exports | Value, versioned | `compiled-deployment-snapshot` 0.1.0, contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison` | Current; not yet a round-trip plan format |
+| Exports | Value, versioned | `muography-plan` 1.0.0 (round trip), contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison`; the export-only `compiled-deployment-snapshot` 0.1.0 is retired | Current |
 
 ## 3. Identities
 
-- **Release ID** is the only key for data references: caches, stored stations, plans and results use the full string, never the dataset ID alone.
+- **Release ID** is the only key for data references: caches, stored plans, plan files and results use the full string, never the dataset ID alone.
+- **Plan hash**: `sha256:` of a plan's canonical text ([PLAN_FORMAT](PLAN_FORMAT.md)); identical plans have identical hashes. Station IDs are unique within a plan.
 - **Snapshot key**: a deterministic, sorted-key JSON of all effective inputs (`createPatternSnapshot`); identical inputs give identical keys. Not a hash or signature.
 - **Asset identity**: SHA-256 of the source spec and scenario GLB from the verified manifest; synthetic buffers are labelled `unverified-buffer`.
 - **User-loaded datasets** (Target, ADR-019): release ID plus content hash; a plan refuses to run against a different file.
@@ -177,7 +178,7 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 |---|---|---|
 | No `kind` in registry/specs; dam terms in generic modules | Dataset.kind | FR-K1, FR-K2, FR-K3 |
 | Only frozen scenario variables; no continuous environment variables (the retired legacy backend had a continuous upstream level) | Scenario, environment | FR-K2, FR-E1, MT-1 |
-| Station carries pose; no plan aggregate; single active station | Station, Pose, DeploymentPlan | FR-P1, ADR-020 |
+| Single active station in the app; no selection UI (the plan already stores `deployment.selected`) | DeploymentPlan, Selection | ADR-020, #14 |
 | Stations stored per release are invisible under another release (e.g. the retired legacy releases) | DeploymentPlan | FR-B2 |
 | One rock-like energy loss for all materials | Material | FR-K4 |
 | Generic modules name material IDs (`air`, `concrete`, `rock`, `steel`) instead of dataset-declared material roles | Material | FR-K11 |
@@ -186,8 +187,6 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 
 ## 7. Open modelling questions
 
-- Does a DeploymentPlan carry one detector configuration or one per station? (Recommended: per station, defaulting to a plan-level configuration.)
-- Is "candidate" (dataset-supplied) distinct from "station" (plan-owned) in the saved plan, or does a plan copy candidates into stations? (Recommended: plans own stations and keep a reference to the originating candidate ID.)
 - How are continuous environment variables (e.g. water level, burden level) modelled per kind: declared ranges with kind-specific resolvers, or only frozen scenarios?
 - What are the identity and versioning of a ScanDefinition and a Reconstruction run?
 
@@ -210,6 +209,7 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-14: DeploymentPlan and Station current (`muography-plan` 1.0.0); plan hash identity; two open questions answered (per-plan named detector configurations; plans own stations with a candidate reference).
 - 2026-10-14: Invariant 15: pixels are lines evaluated at their sky end (FR-C7).
 - 2026-10-13: Added RecognitionItem (display profile).
 - 2026-10-13: SubjectFeature catalogue implemented (`feature-catalogue.js`); virtual entities excluded.

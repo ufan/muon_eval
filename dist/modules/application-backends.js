@@ -3,7 +3,7 @@
 // gate the UI features it does not provide yet (migration targets, ROADMAP).
 import { loadCompiledMeshRuntime } from './compiled-mesh-runtime.js';
 import { createCompiledMainAssessment } from './compiled-main-assessment.js';
-import { compiledDefaultStations, compiledDeploymentExport } from './compiled-deployment-adapter.js';
+import { compiledDefaultStations } from './compiled-deployment-adapter.js';
 
 export async function createApplicationBackend(dataset, selection) {
   if (selection.datasetId !== dataset.id) throw new Error('Loaded dataset differs from application selection');
@@ -18,7 +18,5 @@ export async function createApplicationBackend(dataset, selection) {
     stations: compiledDefaultStations(dataset), environment: structuredClone(runtime.variables), waterLayers,
     capabilities: { continuousWater: false, targetSignificance: false, fluxCloud: false, layers: ['dam','terrain','upwater','downwater','cone'] },
     scenarios: [...dataset.geometry.scenarios.values()].map(s => ({ id: s.id, label: s.label, variables: { ...s.variables } })),
-    environmentDescription: Object.entries(runtime.variables).map(([key,value]) => `${key}=${value}`).join(' · '),
-    exportFileName: 'compiled-deployment-snapshot-v1.json',
-    exportPlan: (input, ray, candidates) => compiledDeploymentExport({ dataset, runtime, input, ray, candidates }) };
+    environmentDescription: Object.entries(runtime.variables).map(([key,value]) => `${key}=${value}`).join(' · ') };
 }

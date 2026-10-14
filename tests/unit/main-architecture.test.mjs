@@ -18,6 +18,10 @@ test('deployment owns immutable inputs independently of view state and saved cal
  assert.equal(state.snapshot().station.az,25);assert.equal(state.response.exposureDays,60);state.removeStation();assert.equal(state.candidates.length,1);
  assert.throws(()=>state.updateStation('x',NaN));assert.throws(()=>state.select(10));assert.throws(()=>state.replaceStations([]));
  assert.equal(configuration.response.exposureDays,30);
+ // Plans need unique station ids (PLAN_FORMAT.md): an added station gets a fresh id and no candidate link.
+ const plan=createDeploymentState({stations:[{...station,id:'a',candidateId:'a'},{...station,id:'station-2'}],environment,configuration});
+ plan.addStation();assert.equal(plan.candidates.at(-1).id,'station-3');assert.equal(plan.candidates.at(-1).candidateId,null);assert.equal(plan.active,2);
+ plan.select(0);plan.addStation();assert.equal(plan.candidates.at(-1).id,'station-4');
  // Device form clamping/fallbacks are deliberately preserved, not silently redefined.
  const adjusted=applyDeviceConfiguration(configuration,{width:10,strips:1,spacing:.2,systematicFraction:0,angularModel:'cos2'});
  assert.equal(adjusted.device.width,5);assert.equal(adjusted.device.stripsX,2);assert.equal(adjusted.device.baseline,.4);assert.equal(adjusted.response.systematicFraction,.03);
@@ -59,7 +63,7 @@ test('major module import graph is acyclic and core/controller/state cannot impo
  const root=new URL('../../dist/',import.meta.url),seen=new Set(),active=new Set();
  async function visit(url){assert.ok(!active.has(url.href),'Import cycle: '+url.href);if(seen.has(url.href))return;active.add(url.href);const source=await readFile(url,'utf8');for(const m of source.matchAll(/(?:from\s*|import\s*)['"]([^'"]+)['"]/g))if(m[1].startsWith('.'))await visit(new URL(m[1],url));active.delete(url.href);seen.add(url.href);}
  await visit(new URL('app.js',root));
- for(const name of ['compiled-main-assessment','assessment-controller','deployment-state','device-configuration','detector-pose','recognition-layers','feature-layers']){
+ for(const name of ['compiled-main-assessment','assessment-controller','deployment-state','device-configuration','detector-pose','recognition-layers','feature-layers','plan-format','plan-store']){
   const source=await readFile(new URL('modules/'+name+'.js',root),'utf8');assert.doesNotMatch(source,/\bdocument\b|\bwindow\b|localStorage|THREE|from\s*['"][^'"]*(?:view|main-page|three|compiled-mesh-runtime)/);
  }
  const entry=await readFile(new URL('app.js',root),'utf8');assert.ok(entry.split('\n').length<40);assert.doesNotMatch(entry,/new THREE|traceRayModel|createProjectionPass|addEventListener|localStorage/);

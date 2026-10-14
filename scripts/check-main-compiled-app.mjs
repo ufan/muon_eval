@@ -2,12 +2,13 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { resolveStaticPath } from './static-paths.mjs';
-import { readFile, mkdtemp } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp } from 'node:fs/promises';
 import { once } from 'node:events';
 import { extname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { replayPatternComparison } from '../dist/modules/pattern-comparison.js';
+import { parsePlan, serializePlan } from '../dist/modules/plan-format.js';
 
 const options=new Map();for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i],value=process.argv[i+1];if(!['--playwright','--chromium'].includes(key)||!value)throw Error('Usage: node scripts/check-main-compiled-app.mjs [--playwright /path/index.mjs] [--chromium /path/browser]');options.set(key,value);}
 // Environment fallback lets `npm run test:browser` locate an existing Playwright/Chromium.
@@ -62,7 +63,10 @@ try{
  await page.locator('#mainMaterialContours').check();await page.locator('#mainResponseContours').check();assert.ok(await page.locator('#mainPatternOverlay path').count()>0);
  await page.locator('#projectionCanvas').scrollIntoViewIfNeeded();const canvas=await page.locator('#projectionCanvas').boundingBox();await page.mouse.move(canvas.x+canvas.width/2,canvas.y+canvas.height/2);assert.match(await page.locator('#projectionReadout').innerText(),/柱密度/);assert.ok(await page.locator('#projectionReadout .crossing').count()>0);await page.mouse.move(0,0);
  await setInput('#azNumber','10');await setInput('#azNumber','25');await setInput('#elNumber','35');await ready();result=(await comparison()).entries.at(-1).result;assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);assert.deepEqual(result.variables,initial.variables);
- const planPending=page.waitForEvent('download');await click('#export');const download=await planPending,plan=JSON.parse(await readFile(await download.path(),'utf8'));assert.equal(plan.kind,'compiled-deployment-snapshot');assert.equal(plan.scenarioId,'low');assert.equal(plan.identity.release_id,release);assert.deepEqual(plan.variables,result.variables);assert.equal(plan.activeRay.station.az,25);assert.ok(Number.isFinite(plan.activeRay.mwe));
+ // "导出部署方案" writes a muography-plan 1.0.0 file that loads back byte-identically (PLAN_FORMAT.md).
+ const planPending=page.waitForEvent('download');await click('#export');const download=await planPending,planText=await readFile(await download.path(),'utf8'),plan=parsePlan(planText);
+ assert.equal(serializePlan(plan),planText);assert.equal(plan.scene.release,release);assert.equal(plan.scene.scenario,'low');assert.ok(plan.stations.every(s=>s.candidateId===s.id));
+ assert.deepEqual(plan.stations.find(s=>s.id===plan.deployment.active).pose,{azimuthDeg:25,elevationDeg:35});
  // Device form recomputes from one snapshot; results are history-independent (FR-C1), so doubling exposure doubles counts exactly.
  await click('#deviceSettings');await page.locator('#cfgExposure').fill('60');await page.locator('#deviceForm').evaluate(element=>element.requestSubmit());await ready();
  const doubled=(await comparison()).entries.at(-1).result;assert.equal(doubled.response.exposureDays,60);assert.equal(doubled.totalCount,result.totalCount*2);assert.equal(doubled.weightedTransmission,result.weightedTransmission);
@@ -76,7 +80,18 @@ try{
  await page.reload();await ready();await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');assert.equal(await page.locator('#azNumber').inputValue(),'25');
  assert.equal(await page.locator('#recognitionThreshold').inputValue(),'0.5');assert.ok(await page.locator('#precisionContours').isChecked());assert.ok(await page.locator(`[data-recognition="${shown}"]`).isChecked());
  assert.ok(await page.locator('[data-feature-group="flood_release"]').isChecked());assert.equal(await page.locator('[data-feature-group="gallery"]').isChecked(),false);
+ // Importing a plan of the current release and scenario applies it in place; another scenario opens that scenario.
+ const importPlan=async(mutate,expectNavigation)=>{const doc=JSON.parse(planText);mutate(doc);const file=join(artifacts,'imported-plan.json');await writeFile(file,JSON.stringify(doc));
+  const navigation=expectNavigation?page.waitForEvent('load'):null;await page.locator('#importPlanFile').setInputFiles(file);if(navigation){await navigation;}await ready();};
+ await importPlan(doc=>{doc.scene.scenario='extreme';doc.stations.find(s=>s.id===doc.deployment.active).pose.elevationDeg=40;},false);
+ assert.equal(await page.locator('#elNumber').inputValue(),'40');assert.equal(await page.locator('#scenarioSelect').inputValue(),'extreme');
+ await importPlan(doc=>{doc.scene.scenario='mid';doc.stations.find(s=>s.id===doc.deployment.active).pose.elevationDeg=41;},true);
+ assert.equal(await page.locator('#scenarioSelect').inputValue(),'mid');assert.equal(await page.locator('#elNumber').inputValue(),'41');
  assert.deepEqual(errors,[]);
+ // A plan for an unregistered release is refused with a message; nothing changes.
+ const refusal=page.waitForEvent('dialog');const bad=join(artifacts,'bad-plan.json');await writeFile(bad,planText.replace(release,'unknown@0'));
+ await page.locator('#importPlanFile').setInputFiles(bad);const dialog=await refusal;assert.match(dialog.message(),/未登记/);await dialog.dismiss();
+ assert.equal(await page.locator('#elNumber').inputValue(),'41');
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
- console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
+ console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

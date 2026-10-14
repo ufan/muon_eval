@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { loadRegisteredDataset, readJson, registryUrl } from '../../scripts/dataset-fixture.mjs';
 import { resolveApplicationSelection, applicationSelectionSearch } from '../../dist/modules/application-selection.js';
+import { planFromState, stateFromPlan, parsePlan, serializePlan } from '../../dist/modules/plan-format.js';
+import { deviceSettingsData } from '../../dist/modules/device-configuration.js';
 import { createApplicationBackend } from '../../dist/modules/application-backends.js';
 import { createDeploymentState } from '../../dist/modules/deployment-state.js';
 import { createCompiledMainAssessment, enclosingCompiledRayLength } from '../../dist/modules/compiled-main-assessment.js';
@@ -37,9 +39,10 @@ test('main backend binds all published frozen scenarios to the existing exact as
    assert.ok(actual.values[0].dir.z!==undefined);assert.ok(actual.values[0].q.segments);assert.ok(actual.values.every(pixel=>!pixel.q.counterfactualMwe));
    assert.throws(()=>session.ensureTargetSignificance(actual,'dam'),/unavailable/);
   }
-  const ray=session.centralRay(),plan=backend.exportPlan(state.snapshot(),ray,state.candidates);
-  assert.equal(plan.schemaVersion,'0.1.0');assert.equal(plan.scenarioId,scenarioId);assert.equal(plan.activeRay.mwe,ray.mwe);assert.deepEqual(plan.variables,backend.runtime.variables);
-  assert.deepEqual(plan.activeRay.station,state.snapshot().station);assert.equal(plan.trace.maximumDistanceM,length);
+  // The release's candidates become a valid plan that round-trips (PLAN_FORMAT.md).
+  const plan=planFromState({release,scenario:scenarioId,model:state.device.model,stations:state.candidates,activeIndex:state.active,settings:deviceSettingsData(state.configuration)});
+  assert.ok(plan.stations.every(s=>s.candidateId===s.id));assert.equal(serializePlan(parsePlan(serializePlan(plan))),serializePlan(plan));
+  assert.deepEqual(stateFromPlan(plan).stations.map(s=>[s.x,s.y,s.z]),state.candidates.map(s=>[s.x,s.y,s.z]));
   const changed=state.snapshot();changed.environment.water_up_level+=1;assert.throws(()=>backend.assessment.createSession(changed),/frozen/);
   changed.environment={...state.environment,upstream:295};assert.throws(()=>backend.assessment.createSession(changed),/frozen/);
   assert.equal(session.cloud(),null);assert.equal(session.quickMetrics(),null);
