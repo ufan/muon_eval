@@ -83,7 +83,7 @@ Each release keeps several studies (FR-P8). Keys (all values UTF-8 text in `loca
 |---|---|
 | `muon-studies:<release>` | `{ "version": 1, "active": "<study id>", "studies": ["study-1", …] }` |
 | `muon-plan:<release>:<study id>` | The study's plan, canonical text |
-| `muon-session:<release>:<study id>` | Session state next to the plan: `{ "activeStation": "<station id>" }` (later: working station, active deployment) |
+| `muon-session:<release>:<study id>` | Session state next to the plan: `{ "activeStation", "working", "compare" }`: the working station's source candidate, the working station itself (name, position, pose, model, device settings) and the candidates ticked for comparison (later: active deployment). Invalid parts are ignored on load |
 
 - Study IDs are local (`study-N`, never reused while the old one exists); they are not part of the plan, so the same file can be imported twice as two studies.
 - Importing a plan always creates a new study of its release and makes it active; nothing is overwritten.

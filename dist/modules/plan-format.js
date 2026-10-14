@@ -166,9 +166,7 @@ export function planFromState({ title = '', release, scenario = null, contentHas
     format: PLAN_FORMAT, schemaVersion: PLAN_SCHEMA_VERSION, title,
     scene: { release, contentHash, scenario },
     units: { length: 'm', angle: 'deg', frame: 'model_frame' },
-    detectors: { default: {
-      device: { model, layers: 3, ...Object.fromEntries(SETTINGS_DEVICE.map(key => [key, settings[key]])) },
-      response: Object.fromEntries(SETTINGS_RESPONSE.map(key => [key, settings[key]])) } },
+    detectors: { default: detectorFromSettings(model, settings) },
     stations: stations.map(s => ({ id: s.id, name: s.name, position: [s.x, s.y, s.z], pose: { azimuthDeg: s.az, elevationDeg: s.el },
       candidateId: s.candidateId ?? null, detector: 'default', note: s.note ?? '' })),
     deployments: deployments.map(d => ({ id: d.id, name: d.name, stations: d.stations.filter(id => ids.has(id)) })),
@@ -177,6 +175,13 @@ export function planFromState({ title = '', release, scenario = null, contentHas
   return validatePlan(plan);
 }
 
+// A plan detector from the device settings form values (deviceSettingsData), and back.
+export const detectorFromSettings = (model, settings) => ({
+  device: { model, layers: 3, ...Object.fromEntries(SETTINGS_DEVICE.map(key => [key, settings[key]])) },
+  response: Object.fromEntries(SETTINGS_RESPONSE.map(key => [key, settings[key]])) });
+export const settingsFromDetector = detector => ({ ...Object.fromEntries(SETTINGS_DEVICE.map(key => [key, detector.device[key]])),
+  ...Object.fromEntries(SETTINGS_RESPONSE.map(key => [key, detector.response[key]])) });
+
 export function stateFromPlan(plan) {
   plan = migratePlan(plan);
   const detector = plan.detectors.default;
@@ -184,7 +189,7 @@ export function stateFromPlan(plan) {
     stations: plan.stations.map(s => ({ id: s.id, name: s.name, note: s.note, x: s.position[0], y: s.position[1], z: s.position[2],
       az: s.pose.azimuthDeg, el: s.pose.elevationDeg, candidateId: s.candidateId })),
     deployments: plan.deployments.map(d => ({ id: d.id, name: d.name, stations: [...d.stations] })),
-    settings: { ...Object.fromEntries(SETTINGS_DEVICE.map(key => [key, detector.device[key]])), ...detector.response },
+    settings: settingsFromDetector(detector),
     model: detector.device.model
   };
 }

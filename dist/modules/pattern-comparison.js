@@ -62,10 +62,14 @@ export function createImmutablePatternComparisonEvaluator() {
     return comparePreparedRows(results, rows, selection, levels);
   };
 }
-function comparePreparedRows(results, rows, selection, levels) {
-  const base = rows[0].snapshot.inputs;
+// Which shared settings of each row differ from the first row (snapshot inputs of prepareProjectionPattern).
+export function snapshotDifferences(inputs) {
+  const base = inputs[0];
   const shared = ['datasetRelease', 'geometryVersion', 'backendVersion', 'modelVersion', 'detector', 'environment', 'sampling', 'response'];
-  const differences = rows.map((row, index) => ({ index, fields: shared.filter(k => encoded(base[k]) !== encoded(row.snapshot.inputs[k])) }));
+  return inputs.map((row, index) => ({ index, fields: shared.filter(k => encoded(base[k]) !== encoded(row[k])) }));
+}
+function comparePreparedRows(results, rows, selection, levels) {
+  const differences = snapshotDifferences(rows.map(row => row.snapshot.inputs));
   const sensitivity = rows.slice(1).map((row, offset) => {
     const other = results[offset + 1], same = differences[offset + 1].fields.length === 0;
     if (!same) return { baseline: 0, index: offset + 1, state: 'incomparable', meanAbsoluteTransmissionChange: null, coverageChange: null };

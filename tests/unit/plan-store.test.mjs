@@ -34,6 +34,9 @@ test('a saved study is reopened with its session and follows the scenario chosen
   assert.deepEqual(again.plan.deployments, plan.deployments); assert.deepEqual(again.session, { activeStation: 'b' });
   assert.deepEqual(JSON.parse(storage.getItem(studyIndexKey(release))), { version: 1, active: 'study-1', studies: ['study-1'] });
   assert.doesNotThrow(() => parsePlan(storage.getItem(studyPlanKey(release, 'study-1'))));
+  // The working station and compare flags are kept next to the plan.
+  saveSession(storage, release, 'study-1', { activeStation: 'a', working: { name: 'w', x: 1 }, compare: ['b'] });
+  assert.deepEqual(openStudies(context(storage)).session, { activeStation: 'a', working: { name: 'w', x: 1 }, compare: ['b'] });
   // A session naming a station that no longer exists falls back to the first station.
   saveSession(storage, release, 'study-1', { activeStation: 'ghost' });
   assert.deepEqual(openStudies(context(storage)).session, { activeStation: 'a' });

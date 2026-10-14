@@ -2,7 +2,7 @@
 // Storage is passed in; reads and writes never throw (private windows, blocked storage).
 //   muon-studies:<release>          { version: 1, active, studies: [id, …] }
 //   muon-plan:<release>:<study>     the study's plan (canonical text)
-//   muon-session:<release>:<study>  session state next to the plan: { activeStation }
+//   muon-session:<release>:<study>  session state next to the plan: { activeStation, working?, compare? }
 import { parsePlan, serializePlan, planFromState, planFromLegacyStorage, migratePlan } from './plan-format.js';
 import { defaultDeviceConfiguration, applyDeviceConfiguration, deviceSettingsData } from './device-configuration.js';
 
@@ -32,8 +32,11 @@ function readPlan(storage, release, id) {
   if (plan.scene.release !== release) throw new Error('Invalid plan: stored under another release');
   return plan;
 }
-// The active station must name a station of the plan; otherwise the first one.
-const session = (plan, stored) => ({ activeStation: plan.stations.some(s => s.id === stored?.activeStation) ? stored.activeStation : plan.stations[0].id });
+// The active station must name a station of the plan; otherwise the first one. The working
+// station and compare flags pass through; study-state.js validates them.
+const session = (plan, stored) => ({ activeStation: plan.stations.some(s => s.id === stored?.activeStation) ? stored.activeStation : plan.stations[0].id,
+  ...(stored?.working && typeof stored.working === 'object' ? { working: stored.working } : {}),
+  ...(Array.isArray(stored?.compare) ? { compare: stored.compare } : {}) });
 const withScenario = (plan, scenario) => ({ ...plan, scene: { ...plan.scene, scenario } });
 
 export function saveStudy(storage, release, id, plan, sessionState) {
@@ -44,7 +47,8 @@ export function saveStudy(storage, release, id, plan, sessionState) {
   if (sessionState) ok = saveSession(storage, release, id, sessionState) && ok;
   return ok;
 }
-export const saveSession = (storage, release, id, sessionState) => write(storage, studySessionKey(release, id), JSON.stringify({ activeStation: sessionState.activeStation ?? null }));
+export const saveSession = (storage, release, id, { activeStation = null, working, compare } = {}) =>
+  write(storage, studySessionKey(release, id), JSON.stringify({ activeStation, ...(working ? { working } : {}), ...(compare ? { compare } : {}) }));
 
 export function listStudies(storage, release) {
   return (readIndex(storage, release)?.studies ?? []).map(id => {

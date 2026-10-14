@@ -25,10 +25,13 @@ try{
  // Count WebGL draw calls to check on-demand rendering (FR-N5).
  await page.addInitScript(()=>{globalThis.drawCalls=0;for(const Type of [WebGLRenderingContext,WebGL2RenderingContext])for(const method of ['drawElements','drawArrays']){const original=Type.prototype[method];Type.prototype[method]=function(...args){globalThis.drawCalls++;return original.apply(this,args);};}});
  const drawCalls=()=>page.evaluate(()=>globalThis.drawCalls);
- const ready=async()=>{try{await page.waitForFunction(()=>!document.querySelector('#mainCaptureComparison')?.disabled&&document.querySelector('#mainPatternLegend')?.textContent.includes('65²'),null,{timeout:60000});}catch(error){console.error(await page.locator('#loading').textContent(),await page.locator('#projectionReadout').textContent());throw error;}};
+ const ready=async()=>{try{await page.waitForFunction(()=>!document.querySelector('#exportResult')?.disabled&&document.querySelector('#mainPatternLegend')?.textContent.includes('65²'),null,{timeout:60000});}catch(error){console.error(await page.locator('#loading').textContent(),await page.locator('#projectionReadout').textContent());throw error;}};
  const click=selector=>page.locator(selector).evaluate(element=>element.click());
  const setInput=(selector,value,event='input')=>page.locator(selector).evaluate((element,{value,event})=>{element.value=value;element.dispatchEvent(new Event(event,{bubbles:true}));},{value,event});
- async function comparison(){await page.locator('#mainPatternControls').evaluate(element=>element.open=true);await click('#mainCaptureComparison');const pending=page.waitForEvent('download');await click('#mainExportComparison');const download=await pending;return replayPatternComparison(JSON.parse(await readFile(await download.path(),'utf8')));}
+ // The working station's full result, through "导出当前结果".
+ async function currentResult(){await page.locator('#mainPatternControls').evaluate(element=>element.open=true);const pending=page.waitForEvent('download');await click('#exportResult');const download=await pending;return JSON.parse(await readFile(await download.path(),'utf8'));}
+ const accept=()=>page.once('dialog',dialog=>dialog.accept());
+ const openCandidates=async()=>{if(await page.locator('#candidateSection').evaluate(e=>e.classList.contains('collapsed')))await click('#candidateSection .section-toggle');};
  async function loadSelected(){const navigation=page.waitForEvent('load');await click('#loadSelection');await navigation;await ready();}
  await page.goto(base);await ready();
  // An idle scene draws nothing; a view change draws again.
@@ -38,7 +41,7 @@ try{
  assert.equal(await page.locator('#datasetSelect').inputValue(),release);assert.equal(await page.locator('#scenarioSelect').inputValue(),'low');
  // ADR-030: the dataset workbench opens on the same release and scenario.
  for(const link of ['#workbenchLink','#workbenchLinkDiagnostics'])assert.equal(await page.locator(link).getAttribute('href'),'./geometry-preview.html?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=low');
- let result=(await comparison()).entries.at(-1).result;assert.equal(result.backend,'compiled-triangle-bvh@0.1.0');assert.equal(result.identity.release_id,release);assert.equal(result.scenarioId,'low');assert.equal(result.frame,'model_frame');assert.deepEqual(result.config.origin,[12.5,122,57]);
+ let result=await currentResult();assert.equal(result.backend,'compiled-triangle-bvh@0.1.0');assert.equal(result.identity.release_id,release);assert.equal(result.scenarioId,'low');assert.equal(result.frame,'model_frame');assert.deepEqual(result.config.origin,[12.5,122,57]);
  const initial=structuredClone(result);
  // Features not yet migrated from the retired legacy backend stay visible but gated.
  for(const selector of ['#upLevel','[data-projection="significance"]','[data-layer="flux"]'])assert.ok(await page.locator(selector).isDisabled(),selector);
@@ -63,7 +66,7 @@ try{
  assert.equal(await page.locator('#coverageMode').inputValue(),'off');assert.ok(await page.locator('#coverageOptions').isHidden());
  for(const mode of ['geometric','physical'])await page.locator('#coverageMode').selectOption(mode);await page.locator('#coverageContext').check();
  for(const mode of ['front','cross','top','perspective'])await setInput('#viewSelect',mode,'change');
- result=(await comparison()).entries.at(-1).result;assert.deepEqual(result,initial);
+ result=await currentResult();assert.deepEqual(result,initial);
  for(const selector of ['[data-layer="dam"]','[data-layer="terrain"]','[data-layer="upwater"]','[data-layer="downwater"]'])await page.locator(selector).evaluate(element=>{element.checked=true;element.dispatchEvent(new Event('change',{bubbles:true}));});
  // Use the shared numeric display layer without any compiled target heuristic.
  // Numeric contour layers live in the expert diagnostics drawer, closed and off by default (FR-M14).
@@ -71,7 +74,10 @@ try{
  await page.locator('#expertDiagnostics').evaluate(e=>e.open=true);
  await page.locator('#mainMaterialContours').check();await page.locator('#mainResponseContours').check();assert.ok(await page.locator('#mainPatternOverlay path').count()>0);
  await page.locator('#projectionCanvas').scrollIntoViewIfNeeded();const canvas=await page.locator('#projectionCanvas').boundingBox();await page.mouse.move(canvas.x+canvas.width/2,canvas.y+canvas.height/2);assert.match(await page.locator('#projectionReadout').innerText(),/柱密度/);assert.ok(await page.locator('#projectionReadout .crossing').count()>0);await page.mouse.move(0,0);
- await setInput('#azNumber','10');await setInput('#azNumber','25');await setInput('#elNumber','35');await ready();result=(await comparison()).entries.at(-1).result;assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);assert.deepEqual(result.variables,initial.variables);
+ await setInput('#azNumber','10');await setInput('#azNumber','25');await setInput('#elNumber','35');await ready();result=await currentResult();assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);assert.deepEqual(result.variables,initial.variables);
+ // Edits change the working station only (FR-P6); "更新候选" writes them back to the source candidate.
+ assert.match(await page.locator('#workingStatus').innerText(),/已修改/);assert.equal(await page.locator('#updateCandidate').isDisabled(),false);
+ await click('#updateCandidate');await ready();assert.match(await page.locator('#workingStatus').innerText(),/一致/);assert.ok(await page.locator('#updateCandidate').isDisabled());result=await currentResult();
  // "导出部署方案" writes a muography-plan 1.1.0 file that loads back byte-identically (PLAN_FORMAT.md).
  const planPending=page.waitForEvent('download');await click('#export');const download=await planPending,planText=await readFile(await download.path(),'utf8'),plan=parsePlan(planText);
  assert.equal(serializePlan(plan),planText);assert.equal(plan.scene.release,release);assert.equal(plan.scene.scenario,'low');assert.ok(plan.stations.every(s=>s.candidateId===s.id));
@@ -81,13 +87,26 @@ try{
  // The result records the plan it came from: same hash as the exported plan, and the active station.
  assert.deepEqual(result.plan,{hash:planHash(plan),stationId:plan.stations[0].id});
  // Device form recomputes from one snapshot; results are history-independent (FR-C1), so doubling exposure doubles counts exactly.
- await click('#deviceSettings');await page.locator('#cfgExposure').fill('60');await page.locator('#deviceForm').evaluate(element=>element.requestSubmit());await ready();
- const doubled=(await comparison()).entries.at(-1).result;assert.equal(doubled.response.exposureDays,60);assert.equal(doubled.totalCount,result.totalCount*2);assert.equal(doubled.weightedTransmission,result.weightedTransmission);
- const count=await page.locator('#candidateList .candidate').count();await click('#add');await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count+1);await click('#remove');await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count);
- await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());await ready();assert.notDeepEqual((await comparison()).entries.at(-1).result.config.origin,result.config.origin);
- await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();
+ // "应用到全部候选" sets the detector on every candidate, so the working station still equals its candidate.
+ await click('#deviceSettings');await page.locator('#cfgExposure').fill('60');await click('#deviceApplyAll');await ready();
+ const doubled=await currentResult();assert.equal(doubled.response.exposureDays,60);assert.equal(doubled.totalCount,result.totalCount*2);assert.equal(doubled.weightedTransmission,result.weightedTransmission);assert.equal(doubled.plan.stationId,result.plan.stationId);
+ // Save as new adds a candidate and makes it the source; deleting it leaves an unsaved working station.
+ const count=await page.locator('#candidateList .candidate').count();await setInput('#elNumber','36');await click('#saveCandidate');await ready();
+ assert.equal(await page.locator('#candidateList .candidate').count(),count+1);assert.equal(await page.locator('#candidateList .candidate.active').getAttribute('data-candidate'),'station-'+(count+1));
+ accept();await click('#remove');await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count);assert.match(await page.locator('#workingStatus').innerText(),/未保存/);
+ // Leaving unsaved edits asks first.
+ accept();await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());await ready();assert.notDeepEqual((await currentResult()).config.origin,result.config.origin);
+ await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');
+ // Every candidate gets a cached result in the background (FR-P10); ticked candidates are compared from the cache,
+ // and the exported comparison holds their full, recomputed results.
+ await page.waitForFunction(n=>document.querySelectorAll('#candidateList .result-status[data-state="ready"]').length===n,count,{timeout:120000});
+ await openCandidates();for(const i of [0,1])await page.locator('#candidateList [data-compare]').nth(i).check();
+ await page.waitForFunction(()=>document.querySelectorAll('#mainComparisonSummary p').length===2&&!document.querySelector('#mainExportComparison').disabled);
+ assert.match(await page.locator('#mainComparisonSummary').innerText(),/混凝土覆盖/);
+ const comparisonPending=page.waitForEvent('download');await click('#mainExportComparison');const exported=replayPatternComparison(JSON.parse(await readFile(await (await comparisonPending).path(),'utf8')));
+ assert.equal(exported.entries.length,2);assert.equal(exported.entries[0].result.config.elevationDeg,35);assert.equal(exported.entries[0].result.plan.stationId,result.plan.stationId);
  const artifacts=await mkdtemp(join(tmpdir(),'muon-main-compiled-'));await page.screenshot({path:join(artifacts,'desktop.png')});
- for(const [scenarioId,waterLevel] of [['mid',293],['high',298],['extreme',305]]){await page.locator('#scenarioSelect').selectOption(scenarioId);await loadSelected();result=(await comparison()).entries.at(-1).result;assert.equal(result.scenarioId,scenarioId);assert.equal(result.variables.water_up_level,waterLevel);assert.equal(result.variables.gate_state,'closed');assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);}
+ for(const [scenarioId,waterLevel] of [['mid',293],['high',298],['extreme',305]]){await page.locator('#scenarioSelect').selectOption(scenarioId);await loadSelected();result=await currentResult();assert.equal(result.scenarioId,scenarioId);assert.equal(result.variables.water_up_level,waterLevel);assert.equal(result.variables.gate_state,'closed');assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);}
  await page.setViewportSize({width:390,height:844});for(const selector of ['#toggleLeft','#toggleRight'])await click(selector);await page.waitForFunction(()=>{const canvas=document.querySelector('#webgl canvas'),rect=canvas?.getBoundingClientRect();return rect?.width>0&&rect.height>0&&Math.abs(canvas.width/canvas.height-rect.width/rect.height)<.01;},null,{timeout:10000});await page.screenshot({path:join(artifacts,'narrow.png'),fullPage:true});
  // Device settings and edited stations persist across a reload.
  await page.reload();await ready();await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');assert.equal(await page.locator('#azNumber').inputValue(),'25');
@@ -108,12 +127,11 @@ try{
  await page.locator('#importPlanFile').setInputFiles(bad);const dialog=await refusal;assert.match(dialog.message(),/未登记/);await dialog.dismiss();
  assert.equal(await page.locator('#elNumber').inputValue(),'41');assert.equal((await studies()).length,3);
  // Switching studies restores each one's stations and device; a new study starts from the dataset candidates; the choice survives a reload.
- const openCandidates=async()=>{if(await page.locator('#candidateSection').evaluate(e=>e.classList.contains('collapsed')))await click('#candidateSection .section-toggle');};
  await openCandidates();await page.locator('#studySelect').selectOption('study-1');await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');
  await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');
  await click('#newStudy');await ready();assert.deepEqual((await studies()).map(([id,on])=>[id,on]).at(-1),['study-4',true]);assert.equal(await page.locator('#candidateList .candidate').count(),count);
  await page.reload();await ready();assert.equal((await studies()).find(([,on])=>on)[0],'study-4');
  await openCandidates();await page.locator('#studySelect').selectOption('study-3');await ready();assert.equal(await page.locator('#elNumber').inputValue(),'41');
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
- console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, studies, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
+ console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, studies, working station and candidates, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

@@ -53,7 +53,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
 | 14a | Plan format 1.1.0 (named deployments, candidate notes; active station moves out of the plan) and several studies per release in browser storage, with migration from 1.0 and from one plan per release | FR-P1, FR-P7, FR-P8, ADR-020 | Data format; test first (L1 format and store, L3 schema). Minimal study picker (switch, new) in 候选部署点; import creates a study; runner takes `--deployment <id>` | Done |
-| 14b | Working station vs fixed candidates (update / save as new); per-candidate compact result cache with status; comparison of candidates replaces the separate "方案比较" rows | FR-P6, FR-P10, ADR-020 | Needs 14a, #12; no recompute for unchanged candidates; stale results never shown. Results of a batch run (#13) with the same snapshot key can fill the cache | Todo |
+| 14b | Working station vs fixed candidates (update / save as new); per-candidate compact result cache with status; comparison of candidates replaces the separate "方案比较" rows | FR-P6, FR-P10, ADR-020 | `study-state.js` (working station, save as new, update, delete, apply detector to all; detectors shared by value), `candidate-results.js` (input key, compact entry ≈ 90 KB at 65², cache, background queue that yields to the working station). List shows each candidate's status and totals; ticking 比较 compares cached candidates; the comparison export recomputes full results; "导出当前结果" exports the working result. Open: filling the cache from a batch run (#13), path segments in the compact form (with #16) | Done |
 | 14c | Named deployments UI (new, copy, rename, delete, membership); study picker complete (rename, delete, import); export of a study or of deployments | FR-P7, FR-P8, FR-P9 | Needs 14a, 14b | Todo |
 | 14d | Sketching: place the working station by clicking the model; geometric coverage of several candidates at once | FR-P5, FR-M10 | Needs 14b; multi-station part of 15a | Todo |
 | 15 | Overview mode in 3D: all selected stations, colour per station, field-of-view cones, ray coverage on the subject; summary table; click → detail mode | FR-M4 | Reuses scene views; subject-neutral labels (FR-K1) | Todo |
@@ -145,6 +145,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: 14b done (working station, fixed candidates, per-candidate cache, comparison from the list).
 - 2026-10-14: 14a done (plan 1.1.0, several studies per release).
 - 2026-10-14: #14 replaced by 14a–14d after the study-workflow review (owner): fixed candidates, named deployments, several studies per release, recompute with a compact session cache.
 - 2026-10-14: #13 done (headless batch runner); its known limits recorded as 13a and on #14, FR-L4, FR-K11 and the browser regressions.
