@@ -62,3 +62,28 @@ export function coverageReadout(point, station, device, result) {
   const bins = nativeAxisBins(result.n, device);
   return { ...readout, ix, iy, countsPerSr: result.values[iy * result.n + ix].count / pixelSolidAngle(bins[ix], bins[iy], device) };
 }
+
+// Sketching (14d, FR-P5). A picked surface point (model frame) becomes a station point
+// `offsetM` off the surface on the viewer's side; `rayDirection` points from the viewer.
+export function placementPoint(point, normal, rayDirection, offsetM = 0.5) {
+  if (![...point, ...normal, ...rayDirection, offsetM].every(Number.isFinite)) throw new Error('Placement needs finite values');
+  const length = Math.hypot(...normal);
+  if (!(length > 0)) throw new Error('Placement needs a surface normal');
+  const sign = dot(normal, rayDirection) > 0 ? -1 : 1;
+  return point.map((v, i) => v + sign * offsetM * normal[i] / length);
+}
+
+// Ids of the stations ({ id, x, y, z, az, el, device }) that probe a surface point.
+export function coveringStations(point, stations) {
+  return stations.filter(s => classifyCoverage(point, [s.x, s.y, s.z], detectorBasis(s.az, s.el), s.device) === 'probed').map(s => s.id);
+}
+
+// Candidates shown next to the working station: 'none' | 'compared' | 'deployment' | 'all', in
+// pool order, without the working station's own unchanged candidate, at most MAX_EXTRA_COVERAGE.
+export const MAX_EXTRA_COVERAGE = 8;
+export function coverageStationSet(mode, { pool, compared = [], deployment = [], exclude = null }) {
+  const source = { none: [], compared, deployment, all: pool }[mode];
+  if (!source) throw new Error(`Unknown coverage station set ${mode}`);
+  const chosen = new Set(source);
+  return pool.filter(id => chosen.has(id) && id !== exclude).slice(0, MAX_EXTRA_COVERAGE);
+}

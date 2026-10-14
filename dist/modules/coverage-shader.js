@@ -2,9 +2,17 @@ import * as THREE from 'three';
 // Coverage tint injected into the subject materials' own shader (ADR-026): each surface is
 // tinted at most once (front-facing side), mixed into its colour, with a minimum opacity,
 // so transparency sorting is unchanged and stacked layers do not add up. GLSL mirror of
-// coverage-map.js (lineSlopes, classifyCoverage, slopeBin); scene frame has Y up.
+// coverage-map.js (lineSlopes, classifyCoverage, slopeBin, coveringStations); scene frame has Y up.
+// With extra stations (14d sketching), surfaces are shaded by how many stations probe them and
+// each station's field-of-view edge is drawn in its own colour.
+export const COVERAGE_EXTRA_SLOTS = 8;
+const slots = make => Array.from({ length: COVERAGE_EXTRA_SLOTS }, make);
 export function createCoverageUniforms() {
   return {
+    covExtraCount: { value: 0 },
+    covExtraOrigin: { value: slots(() => new THREE.Vector3()) }, covExtraForward: { value: slots(() => new THREE.Vector3(1, 0, 0)) },
+    covExtraRight: { value: slots(() => new THREE.Vector3(0, 0, 1)) }, covExtraUp: { value: slots(() => new THREE.Vector3(0, 1, 0)) },
+    covExtraMax: { value: slots(() => new THREE.Vector2(1, 1)) }, covExtraColor: { value: slots(() => new THREE.Color(0xffffff)) },
     covMode: { value: 0 },               // 0 off, 1 geometric, 2 physical
     covHasMap: { value: 0 },             // physical map of the current result available
     covCore: { value: 0 },               // emphasise the core field of view (half the slopes)
@@ -22,12 +30,30 @@ uniform int covMode; uniform int covHasMap; uniform int covCore; uniform float c
 uniform vec3 covOrigin; uniform vec3 covForward; uniform vec3 covRight; uniform vec3 covUp;
 uniform vec2 covMax; uniform float covStep; uniform float covStrips; uniform float covBins;
 uniform sampler2D covMap; uniform vec3 covColor; uniform float covMinOpacity;
+#define COV_EXTRA 8
+uniform int covExtraCount; uniform vec3 covExtraOrigin[COV_EXTRA]; uniform vec3 covExtraForward[COV_EXTRA];
+uniform vec3 covExtraRight[COV_EXTRA]; uniform vec3 covExtraUp[COV_EXTRA]; uniform vec2 covExtraMax[COV_EXTRA]; uniform vec3 covExtraColor[COV_EXTRA];
+// Field-of-view edge measure of one station at a point (<= 1 inside); 99 on the detector plane.
+float covEdgeOf(vec3 d, vec3 f, vec3 r, vec3 u, vec2 m) { float F = dot(d, f); return abs(F) < 1e-6 ? 99.0 : max(abs(dot(d, r) / F) / m.x, abs(dot(d, u) / F) / m.y); }
+vec3 covCountColor(int k) { return k == 1 ? vec3(0.16, 0.36, 0.85) : k == 2 ? vec3(0.02, 0.60, 0.50) : k == 3 ? vec3(0.88, 0.60, 0.02) : vec3(0.85, 0.18, 0.10); }
 float covBin(float s) { // exact inverse of nativeAxisBins (coverage-map.js slopeBin)
   float count = 2.0 * covStrips - 1.0, j = floor(s / covStep + 0.5) + covStrips - 1.0;
   return (ceil((j + 1.0) * covBins / count) - 1.0 + 0.5) / covBins;
 }`;
 const FRAGMENT_BODY = `
-if (covMode > 0 && covLayer > 0.5 && gl_FrontFacing) {
+if (covMode > 0 && covLayer > 0.5 && gl_FrontFacing && covExtraCount > 0) {
+  // Several stations: count those probing this point (inside the field of view, point above the station).
+  vec3 covD = vCovWorld - covOrigin; float covE = covEdgeOf(covD, covForward, covRight, covUp, covMax), covW = fwidth(covE);
+  int covK = covE <= 1.0 && covD.y > 0.0 ? 1 : 0; vec3 covLine = covColor; bool covOnLine = abs(covE - 1.0) < covW * 1.5 && (covD.y > 0.0 || dot(covD, covForward) > 0.0);
+  for (int i = 0; i < COV_EXTRA; i++) {
+    if (i >= covExtraCount) break;
+    vec3 e = vCovWorld - covExtraOrigin[i]; float edge = covEdgeOf(e, covExtraForward[i], covExtraRight[i], covExtraUp[i], covExtraMax[i]), w = fwidth(edge);
+    if (edge <= 1.0 && e.y > 0.0) covK++;
+    if (!covOnLine && abs(edge - 1.0) < w * 1.5 && (e.y > 0.0 || dot(e, covExtraForward[i]) > 0.0)) { covOnLine = true; covLine = covExtraColor[i]; }
+  }
+  if (covK > 0) { diffuseColor.rgb = mix(diffuseColor.rgb, covCountColor(covK), 0.7); diffuseColor.a = max(diffuseColor.a, covMinOpacity); }
+  if (covOnLine) { diffuseColor.rgb = covLine; diffuseColor.a = 1.0; }
+} else if (covMode > 0 && covLayer > 0.5 && gl_FrontFacing) {
   vec3 covD = vCovWorld - covOrigin; float covF = dot(covD, covForward);
   if (abs(covF) > 1e-6) {
     float covSx = dot(covD, covRight) / covF, covSy = dot(covD, covUp) / covF;
@@ -62,6 +88,6 @@ export function attachCoverage(material, uniforms, layer) {
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${FRAGMENT_HEAD}`)
       .replace('#include <color_fragment>', `#include <color_fragment>\n${FRAGMENT_BODY}`);
   };
-  material.customProgramCacheKey = () => 'coverage-v1';
+  material.customProgramCacheKey = () => 'coverage-v2';
   return material;
 }
