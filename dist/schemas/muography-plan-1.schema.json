@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "muography-plan-1.schema.json",
+  "title": "muography-plan 1.x",
+  "description": "Saved deployment plan (docs/specs/PLAN_FORMAT.md). Cross-member rules (unique station IDs, references to stations and detectors) are checked by plan-format.js.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "schemaVersion", "title", "scene", "units", "detectors", "stations", "deployment", "anomalies"],
+  "properties": {
+    "format": { "const": "muography-plan" },
+    "schemaVersion": { "type": "string", "pattern": "^1\\.0\\.[0-9]+$" },
+    "title": { "type": "string", "maxLength": 200 },
+    "scene": {
+      "type": "object", "additionalProperties": false, "required": ["release", "contentHash", "scenario"],
+      "properties": {
+        "release": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "contentHash": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }] },
+        "scenario": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "maxLength": 100 }] }
+      }
+    },
+    "units": {
+      "type": "object", "additionalProperties": false, "required": ["length", "angle", "frame"],
+      "properties": { "length": { "const": "m" }, "angle": { "const": "deg" }, "frame": { "const": "model_frame" } }
+    },
+    "detectors": {
+      "type": "object", "required": ["default"], "minProperties": 1,
+      "propertyNames": { "pattern": "^[A-Za-z0-9_.-]{1,64}$" },
+      "additionalProperties": { "$ref": "#/$defs/detector" }
+    },
+    "stations": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/station" } },
+    "deployment": {
+      "type": "object", "additionalProperties": false, "required": ["selected", "active"],
+      "properties": {
+        "selected": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+        "active": { "$ref": "#/$defs/id" }
+      }
+    },
+    "anomalies": { "type": "array", "maxItems": 0 }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9_.-]{1,64}$" },
+    "station": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "position", "pose", "candidateId", "detector"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "maxLength": 200 },
+        "position": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "number" } },
+        "pose": {
+          "type": "object", "additionalProperties": false, "required": ["azimuthDeg", "elevationDeg"],
+          "properties": { "azimuthDeg": { "type": "number", "minimum": 0, "maximum": 359 }, "elevationDeg": { "type": "number", "minimum": 0, "maximum": 90 } }
+        },
+        "candidateId": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "maxLength": 200 }] },
+        "detector": { "$ref": "#/$defs/id" }
+      }
+    },
+    "detector": {
+      "type": "object", "additionalProperties": false, "required": ["device", "response"],
+      "properties": {
+        "device": {
+          "type": "object", "additionalProperties": false, "required": ["model", "layers", "width", "height", "stripPitch", "strips", "spacing"],
+          "properties": {
+            "model": { "type": "string", "maxLength": 100 },
+            "layers": { "const": 3 },
+            "width": { "type": "number", "minimum": 0.01, "maximum": 5 },
+            "height": { "type": "number", "minimum": 0.01, "maximum": 5 },
+            "stripPitch": { "type": "number", "minimum": 0.00005, "maximum": 0.1 },
+            "strips": { "type": "integer", "minimum": 2, "maximum": 4096 },
+            "spacing": { "type": "number", "minimum": 0.01, "maximum": 5 }
+          }
+        },
+        "response": {
+          "type": "object", "additionalProperties": false,
+          "required": ["layerEfficiency", "deadLiveFraction", "angularResolutionDeg", "systematicFraction", "exposureDays", "angularModel"],
+          "properties": {
+            "layerEfficiency": { "type": "number", "minimum": 0.01, "maximum": 1 },
+            "deadLiveFraction": { "type": "number", "minimum": 0.01, "maximum": 1 },
+            "angularResolutionDeg": { "type": "number", "minimum": 0.01, "maximum": 20 },
+            "systematicFraction": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+            "exposureDays": { "type": "integer", "minimum": 1, "maximum": 3650 },
+            "angularModel": { "enum": ["gaisser", "cos2"] }
+          }
+        }
+      }
+    }
+  }
+}
