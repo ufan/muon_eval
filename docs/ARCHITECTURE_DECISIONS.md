@@ -619,7 +619,7 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 
 ## ADR-031 Evaluation aims are user input; the app supplies metrics, regions and optimisation
 
-**Status.** Proposed (owner principle, 2026-10-14; details to confirm).
+**Status.** Principle accepted (owner, 2026-10-14); the exact specification (storage, metric list, combination of terms, resolution parameter) is deferred by the owner. Open points: aims in the plan format (1.2), the first metric list, side-by-side terms vs weights/constraints, resolution in metres at the point vs native pixels.
 
 **Context.** Deployments serve different aims: recording one target from several angles (for reconstruction), covering as much as possible of the whole subject or a part of it (e.g. the upper dam body from the upper gallery), detecting a hypothesised anomaly, or anything else a project needs. The first versions built aims into the app: the 15d summary class (good = ≥ 3 usable views and ≥ 30°) and a proposed "extent coverage" requirement each fixed one aim and its thresholds. Measurements on the Zhouning layouts showed the ranking of poses changes with the region, the resolution the question needs and the exposure (e.g. two upper stations: vertical best at native pixels, outward 60° best when 4×4 pixels are merged). Which of these matters is the user's decision, not the app's.
 
@@ -658,6 +658,7 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 
 ## Change log
 
+- 2026-10-14: ADR-031 principle accepted, specification deferred (owner).
 - 2026-10-14: ADR-031 proposed: evaluation aims are user input; the app supplies regions, per-point metrics, aggregations and optimisation on the same definition (owner principle).
 - 2026-10-14: ADR-026 accepted for single station; back-side coverage under quick-response@4.0.0; implementation notes.
 - 2026-10-14: ADR-006 item 1: plan format implemented; scan format deferred to P5.
