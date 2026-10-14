@@ -12,6 +12,13 @@ export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave
  const recognition=()=>projection.recognition??{items:[],layers:new Map(),selected:new Set(),threshold:0};
  const selectedItems=()=>{const r=recognition();return r.items.filter(item=>r.selected.has(item.id)&&r.layers.get(item.id)?.inView);};
  function drawOutlines(){const svg=$('#projectionOutlines'),d=projection.data;svg.replaceChildren();if(!d)return;const n=d.n,r=recognition(),used=new Map(),placed=[],size=n*.05;svg.setAttribute('viewBox',`0 0 ${n} ${n}`);
+  // Horizon of the detector lines (quick-response@4.0.0): below it, counts come from the sky behind the detector.
+  const back=new Uint8Array(n*n);for(let iy=0;iy<n;iy++)for(let ix=0;ix<n;ix++)back[(n-1-iy)*n+ix]=d.values[iy*n+ix].side==='back'?1:0;
+  if(back.some(Boolean)){const onBorder=(a,b)=>(a[0]===b[0]&&(a[0]===0||a[0]===n))||(a[1]===b[1]&&(a[1]===0||a[1]===n));let line='';
+   for(const ring of outlineRings(back,n))for(let i=1;i<ring.length;i++){if(onBorder(ring[i-1],ring[i]))continue;line+=`M${ring[i-1].join(',')}L${ring[i].join(',')}`;}
+   const horizon=document.createElementNS(SVG,'path');horizon.setAttribute('d',line);horizon.classList.add('horizon');svg.append(horizon);
+   const first=[...Array(n).keys()].find(r=>back[r*n]),labels=[['前方来向 ↑',first-.5],['后方来向 ↓',first+size*1.1]];
+   for(const [label,y] of labels){if(!Number.isFinite(y)||y<size||y>n-.3)continue;const text=document.createElementNS(SVG,'text');text.setAttribute('x',.6);text.setAttribute('y',y);text.setAttribute('font-size',size*.85);text.classList.add('horizon-label');text.textContent=label;svg.append(text);}}
   // Material envelopes below the outlines: thin, unlabelled sampled edges.
   for(const envelope of r.envelopes??[]){if(!envelope.edges.length)continue;const path=document.createElementNS(SVG,'path');path.setAttribute('d',envelope.edges.map(e=>`M${e.x0},${e.y0}L${e.x1},${e.y1}`).join(''));path.setAttribute('stroke',envelope.color);path.classList.add('envelope');path.dataset.envelope=envelope.material;svg.append(path);}
   for(const item of selectedItems()){const layer=r.layers.get(item.id),rings=outlineRings(layer.mask,n),dash=DASHES[(used.get(item.color)??0)%DASHES.length];used.set(item.color,(used.get(item.color)??0)+1);
@@ -25,7 +32,7 @@ export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave
  function hover(ev){const d=projection.data;if(!d)return;const r=ev.currentTarget.getBoundingClientRect(),ix=Math.max(0,Math.min(d.n-1,Math.floor((ev.clientX-r.left)/r.width*d.n))),iy=Math.max(0,Math.min(d.n-1,d.n-1-Math.floor((ev.clientY-r.top)/r.height*d.n))),q=d.values[iy*d.n+ix],rec=recognition(),byId=new Map(rec.items.map(item=>[item.id,item]));
   const crossings=crossingsAlongRay(q,rec.items,{threshold:rec.threshold}).map(c=>({...c,color:byId.get(c.id).color,label:byId.get(c.id).label.zh}));onHover(d,ix,iy,{threshold:rec.threshold});
   const list=crossings.length?crossings.map(c=>`<span class="crossing"><i style="--c:${c.color}"></i>${escapeHtml(c.label)} · 穿行 ${c.lengthM.toFixed(1)} m · 距探测器 ${c.entryM.toFixed(1)} m 处进入</span>`).join(''):'<span class="crossing none">未穿过识别图层</span>';
-  $('#projectionReadout').innerHTML=`像素 (${ix+1},${iy+1}) · sx ${q.sx.toFixed(2)} · sy ${q.sy.toFixed(2)}<br>${Math.round(q.count)} 事件/${RESPONSE.exposureDays}天 · 透射 ${(q.transmission*100).toFixed(3)}%<br>柱密度 ${q.q.mwe.toFixed(0)} m.w.e.${list}`;}
+  $('#projectionReadout').innerHTML=`像素 (${ix+1},${iy+1}) · sx ${q.sx.toFixed(2)} · sy ${q.sy.toFixed(2)}${q.side==='back'?' · 后方来向':''}<br>${Math.round(q.count)} 事件/${RESPONSE.exposureDays}天 · 透射 ${(q.transmission*100).toFixed(3)}%<br>柱密度 ${q.q.mwe.toFixed(0)} m.w.e.${list}`;}
  const canvas=$('#projectionCanvas'),leave=()=>{onLeave();drawProjection();};canvas.addEventListener('mousemove',hover);canvas.addEventListener('mouseleave',leave);
  return Object.freeze({draw(state,response){projection=state;RESPONSE={...response};drawProjection();},emphasiseItem(id){for(const path of root.querySelectorAll('#projectionOutlines path'))path.classList.toggle('emphasised',path.dataset.item===id);},dispose(){canvas.removeEventListener('mousemove',hover);canvas.removeEventListener('mouseleave',leave);}});
 }

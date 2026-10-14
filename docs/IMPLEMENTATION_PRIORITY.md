@@ -121,6 +121,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 | Item | Ref | Commit |
 |---|---|---|
+| Back-side muons counted: pixels are lines, evaluated at their sky end (#4a), model `quick-response@4.0.0` | FR-C7 | this commit |
 | Legacy backend retired; old geometry releases removed (#4) | FR-B3, FR-C4 | `6a13fb0`, `2026c9c` |
 | In-pixel ray sampling error measured (#3a) | FR-V12 | `d887d4d` |
 | Projected-area factor added, edge factor removed (#3), model `quick-response@3.0.0` | FR-C3 | `3aa22b4` |
@@ -136,6 +137,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: #4a done (FR-C7, back-side muons, `quick-response@4.0.0`); next: detector's own space excluded from outlines, envelope removed from the main app (owner order).
 - 2026-10-14: 15b-6 done (material envelope overlay in the main app); #15b complete.
 - 2026-10-13: 15b-4 done (3D feature layer, hover/pick, two-way linking).
 - 2026-10-13: Numbered 3D entry markers dropped (owner); hover list leads with length inside each item.

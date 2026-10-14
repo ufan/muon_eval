@@ -47,3 +47,24 @@ test('total open-sky count of an isotropic field sums the native geometric facto
   expected *= I * seconds * efficiency * (p * 100) ** 2;
   assert.ok(Math.abs(pass.advance(2 * N).result.total / expected - 1) < 1e-12);
 });
+
+// quick-response@4.0.0: a pixel is a line through the detector; without timing the
+// detector cannot tell which end a muon came from, so counts come from its sky end.
+test('the sky end of a detector line is the direction itself or its reverse', async () => {
+  const { skySideDirection } = await import('../../dist/modules/detector-pose.js');
+  assert.deepEqual(skySideDirection([.6, 0, .8]), { direction: [.6, 0, .8], side: 'front' });
+  assert.deepEqual(skySideDirection([.6, 0, -.8]), { direction: [-.6, -0, .8], side: 'back' });
+  // Exactly horizontal lines keep the front direction (no flux either way).
+  assert.equal(skySideDirection([1, 0, 0]).side, 'front');
+});
+
+test('the projection core rejects rays below the horizon and keeps the side of each pixel', () => {
+  const run = sample => createProjectionPass({ n: 3, device, response, flux, sampleRay: sample }).advance(3).result;
+  assert.throws(() => run(() => ({ dir: { x: 0, y: 0, z: -.1 }, q: { mwe: 0 } })), /sky side/);
+  const values = run((sx, sy) => ({ dir: { x: 0, y: 0, z: 1 }, side: sy < 0 ? 'back' : 'front', q: { mwe: 0 } })).values;
+  assert.deepEqual(values.map(v => v.side), values.map(v => v.sy < 0 ? 'back' : 'front'));
+  assert.deepEqual([values[0].side, values[8].side], ['back', 'front']);
+  // A back pixel counts exactly like the same pixel with the same sky direction and column marked front.
+  const front = run(() => ({ dir: { x: 0, y: 0, z: 1 }, side: 'front', q: { mwe: 0 } })).values;
+  assert.deepEqual(values.map(v => v.count), front.map(v => v.count));
+});

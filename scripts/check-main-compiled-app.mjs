@@ -35,7 +35,9 @@ try{
  for(const selector of ['#upLevel','[data-projection="significance"]','[data-layer="flux"]'])assert.ok(await page.locator(selector).isDisabled(),selector);
  await setInput('#upLevel','299');await click('[data-projection="significance"]');
  // Recognition items come from the release's display profile, all off by default (FR-M12); outlines never change results.
- assert.equal(await page.locator('[data-recognition]').count(),4);assert.equal(await page.locator('[data-recognition]:checked').count(),0);assert.equal(await page.locator('#projectionOutlines path').count(),0);
+ assert.equal(await page.locator('[data-recognition]').count(),4);assert.equal(await page.locator('[data-recognition]:checked').count(),0);assert.equal(await page.locator('#projectionOutlines path[data-item]').count(),0);
+ // Lines below the horizon count muons from behind the detector (quick-response@4.0.0).
+ assert.equal(await page.locator('#projectionOutlines path.horizon').count(),1);
  const inView=page.locator('#recognitionItems label:not(.out) [data-recognition]');assert.ok(await inView.count()>0);const shown=await inView.first().getAttribute('data-recognition');await inView.first().check();
  assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);assert.match(await page.locator('#projectionReadout').innerText(),/识别轮廓：/);
  await page.locator('#materialEnvelope').check();assert.ok(await page.locator('#projectionOutlines path.envelope[data-envelope="concrete"]').count()===1);

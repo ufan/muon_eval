@@ -150,7 +150,8 @@ The app has two pictures: the **3D view** of the subject and the **projection** 
 | Term | Picture | Meaning |
 | --- | --- | --- |
 | Projection | 2D | The image a detector at one station and pose would record: one value per direction, laid out by local slopes `sx` (right) and `sy` (up). Not a map or plan of the subject. Shown as expected counts or transmission |
-| Pixel | 2D | One cell of the displayed projection (25 × 25 preview, 65 × 65 final); each pixel combines several native projection bins |
+| Pixel | 2D | One cell of the displayed projection (25 × 25 preview, 65 × 65 final); each pixel combines several native projection bins. A pixel is a *line* through the detector: its counts come from the end of the line that points to the sky, in front of or behind the detector (`quick-response@4.0.0`) |
+| Front / back side | 2D | Whether a pixel's sky end lies in front of the detector plane ("前方来向") or behind it ("后方来向"); the boundary is the horizon line on the projection |
 | Layer (3D) | 3D | A group of things in the 3D view that one checkbox shows or hides: terrain, dam concrete, water, detector cone, a feature group. Hiding a layer never changes a result |
 | Overlay / numeric layer | 2D | Lines or shapes drawn on top of a projection from the same result: material contribution contours, response contours, feature outlines, later anomaly footprints |
 | Feature mask | 2D | For one recognition item (or subject feature) and one result: the set of projection pixels whose central ray passes through it by more than the threshold length T (default 0.1 m, display setting) |

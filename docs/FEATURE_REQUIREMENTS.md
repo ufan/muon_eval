@@ -20,6 +20,7 @@ Last updated: 2026-10-10
 | FR-C4 | No dead or misleading computation in the update path. | `quickMetrics()` no longer traces 81 unused rays per update or computes the unused `12000 × sin(el)^1.7` count. Resolved by retiring the legacy backend (FR-B3), which removed `quickMetrics()`. | Done |
 | FR-C5 | Every result is reproducible and traceable. | Records at least the items in `CONTEXT.md` §7: app and model versions; dataset release ID and file hashes where available; coordinate convention; device; environment/scenario; stations and poses; sampling, exposure, thresholds, ray length; units; generation time; approximations and warnings. | Needed (legacy backend gaps) |
 | FR-C6 | Stale results never overwrite newer state. | Holds under cancellation, caching, workers and late completion (ADR-011). | Standing |
+| FR-C7 | Counts follow the detector's direction ambiguity. | A pixel is a line through the detector; without time-of-flight its counts come from the sky end of the line, so lines below the horizon in front count muons arriving from behind (`quick-response@4.0.0`, `CALCULATION_MODEL.md` §11.2a). The projection core rejects rays below the horizon, so no adapter can drop the back side. A direction-resolving device option is added only for a real device. | Done |
 
 ## D. Dataset and geometry contracts
 
@@ -235,6 +236,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-14: FR-C7 added and done (back-side muons; model `quick-response@4.0.0`).
 - 2026-10-14: FR-M12 done except optional fill and sampled-pixel view (15b-6: material envelope overlay).
 - 2026-10-13: FR-M11 done (15b-4) except in-view emphasis; MT-2 and MT-5 migrated.
 - 2026-10-13: FR-M12: no 3D entry markers (owner).

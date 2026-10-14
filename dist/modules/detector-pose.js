@@ -14,3 +14,12 @@ export function slopeDirection(basis, sx, sy) {
   const norm = Math.hypot(...direction);
   return direction.map(value => value / norm);
 }
+
+// A projection pixel is a line through the detector. Without timing the detector
+// cannot tell which end a muon entered from, and muons come from the sky, so the
+// line is evaluated along its upper end (quick-response@4.0.0). 'back' marks lines
+// whose sky end lies behind the detector plane.
+export function skySideDirection(direction) {
+  if (!Array.isArray(direction) || direction.length !== 3 || !direction.every(Number.isFinite)) throw new Error('Invalid line direction');
+  return direction[2] < 0 ? { direction: direction.map(value => -value), side: 'back' } : { direction: [...direction], side: 'front' };
+}

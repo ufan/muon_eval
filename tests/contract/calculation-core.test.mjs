@@ -14,7 +14,8 @@ const sampleRay = (sx, sy) => ({ dir: { x: sx, y: sy, z: .55 / Math.sqrt(1 + sx 
   q: { mwe: 100 + 50 * (sx + 1.4) + 300 * (sy + 1.4), totals: { concrete: 20 } } });
 
 // Frozen orchestration formula (app.js before extraction, revised by
-// quick-response@3.0.0: projected area, no edge factor). Test-only.
+// quick-response@3.0.0: projected area, no edge factor; 4.0.0: adapters pass the
+// sky end of each line, so this sky-only sampler is unchanged). Test-only.
 function referencePass(n, device, response, sampleRay) {
   const baseline = frozenCalculationBaseline(device, response), bins = baseline.nativeAxisBins(n);
   const areaCm2 = device.width * device.height * 1e4, seconds = response.exposureDays * 86400;
@@ -28,7 +29,7 @@ function referencePass(n, device, response, sampleRay) {
     const factor = areaCm2 * cosTheta * seconds * dOmega * response0;
     const count = through * factor, openCount = open * factor, transmission = open > 0 ? through / open : 0;
     total += count; openTotal += openCount;
-    values.push({ sx, sy, dir, q, count, transmission, factor, sigByTarget: {},
+    values.push({ sx, sy, dir, side: 'front', q, count, transmission, factor, sigByTarget: {},
       nativeRangeX: [bx.first, bx.last], nativeRangeY: [by.first, by.last] });
   }
   baseline.applyProjectionResolution(values, n);
@@ -73,13 +74,13 @@ test('complete 25/65-bin count projections exactly match the frozen formulas wit
     let state;
     do { state = pass.advance(3); } while (!state.done);
     const { modelVersion, ...actual } = state.result;
-    assert.equal(modelVersion, 'quick-response@3.0.0');
+    assert.equal(modelVersion, 'quick-response@4.0.0');
     assert.deepEqual(actual, expected);
     assert.strictEqual(pass.advance(3).result, state.result);
   }
 });
 
-test('exposure/area/efficiency scaling, open sky, horizon and significance retain existing behavior', () => {
+test('exposure/area/efficiency scaling, open sky, horizon and significance', () => {
   const evaluate = (d = device, r = response, z = 1) => createProjectionPass({ n: 25, device: d, response: r,
     sampleRay: () => ({ dir: { z }, q: { mwe: 0 } }) }).advance(25).result;
   const base = evaluate();
@@ -88,7 +89,8 @@ test('exposure/area/efficiency scaling, open sky, horizon and significance retai
   assert.equal(evaluate({ ...device, width: device.width * 2 }).total, base.total * 2);
   assert.equal(evaluate(device, { ...response, layerEfficiency: 0 }).total, 0);
   assert.equal(evaluate(device, response, 0).total, 0);
-  assert.equal(evaluate(device, response, -1).weightedTransmission, 0);
+  // Since quick-response@4.0.0 adapters pass the sky end of each line; a ray below the horizon is an adapter error.
+  assert.throws(() => evaluate(device, response, -1), /sky side/);
   assert.equal(countSignificance(100, 80, .03), 20 / Math.sqrt(100 + 3 ** 2));
 });
 

@@ -1,11 +1,14 @@
-// Quick-assessment formulas. 3.0.0: pixel counts use the projected detector
+// Quick-assessment formulas. 4.0.0: each pixel is a line through the detector,
+// evaluated along its sky end, so lines pointing below the horizon in front
+// count muons arriving from behind (no time-of-flight; upward-going muons from
+// neutrinos, ~1e-5 of the flux, are neglected). 3.0.0: pixel counts use the projected detector
 // area (cos^4 per slope cell) and drop the undeclared 'edge' factor (FR-C3).
 // 2.0.0 evaluates the flux integral exactly for every input (FR-C1); 1.0.0
 // returned the first value computed in a quantised (cosZ, log10 Emin) bucket.
 // Flux units: cm^-2 s^-1 sr^-1 (integrated); energy: GeV; column: m.w.e.
 // Model identifier; versions 1.0.0-3.0.0 were first published as
 // 'legacy-quick-response@<version>' (same physics per version).
-export const RESPONSE_MODEL_VERSION = 'quick-response@3.0.0';
+export const RESPONSE_MODEL_VERSION = 'quick-response@4.0.0';
 
 export function cosThetaStar(c) {
   c = Math.max(0, Math.min(1, c));

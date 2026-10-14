@@ -83,7 +83,9 @@ test('finite reference stale source/pose identity fails and absence differs from
 
 test('response contours distinguish acceptance from attenuation, raw from smoothing, and zero/invalid support at 25/65', async () => {
   for (const bins of [25, 65]) {
-    const f = fixture('slab'), result = await evaluateCompiledAssessment(f.runtime, { ...config, bins, origin: [10, 0, 0] }, device, { ...response, angularResolutionDeg: 5 });
+    // Station above the slab (top z = 4): neither end of any line reaches it, so the view is open sky
+    // (since quick-response@4.0.0 lines below the horizon are traced from behind the detector).
+    const f = fixture('slab'), result = await evaluateCompiledAssessment(f.runtime, { ...config, bins, origin: [10, 0, 10] }, device, { ...response, angularResolutionDeg: 5 });
     const before = structuredClone(result), open = responsePattern(result, { quantity: 'expected-count', context: 'open-sky', levels: [1, 10, 100] });
     const attenuation = responsePattern(result);
     assert.ok(result.pixels.filter(p => p.openCount > 0).every(p => p.count === p.openCount && p.transmission === 1));

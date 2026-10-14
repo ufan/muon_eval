@@ -1,6 +1,6 @@
 # Calculation model
 
-This spec defines the calculation chain, formulas and parameters by which the current fast-evaluation model (`quick-response@3.0.0` and its compiled adapter) turns subject data, detector position and pose into rays, projections and numerical metrics. It is a normative description the code must match, not a promise of full muon transport or detector calibration.
+This spec defines the calculation chain, formulas and parameters by which the current fast-evaluation model (`quick-response@4.0.0` and its compiled adapter) turns subject data, detector position and pose into rays, projections and numerical metrics. It is a normative description the code must match, not a promise of full muon transport or detector calibration.
 
 - Any change to formulas, default parameters or numerical behaviour is a model revision: increase the model version, update the frozen baseline tests and label it in the commit message.
 - The model identifier is `quick-response@<version>`. Versions 1.0.0–3.0.0 were first published as `legacy-quick-response@<version>`; the physics of each version is the same under both names, so a stored result with the old name is not a different model, but its snapshot key differs and a comparison reports the name difference.
@@ -243,7 +243,7 @@ The base response factor is:
 response = layerEfficiency³ × deadLiveFraction
 ```
 
-Expected counts per pixel (`quick-response@3.0.0`, FR-C3):
+Expected counts per pixel (`quick-response@3.0.0`, FR-C3; evaluated along the sky end of each pixel's line since 4.0.0, §11.2a):
 
 ```text
 Npixel = Φthrough × activeArea × cos θ × exposureSeconds × dΩ × response
@@ -298,6 +298,24 @@ Both stages use the same BVH meshes and intersection tolerance; only the device-
 - vertical axis `sy`: positive towards the detector's local up;
 - the centre pixel corresponds to the set azimuth and elevation;
 - the image is not an orthographic plan of the subject but a **detector direction/slope-space map**.
+
+### 11.2a Pixels are lines; counts come from the sky end (`quick-response@4.0.0`, FR-C7)
+
+A track measured by the planes is a straight line through the detector. Without time-of-flight (the default three-plane Micromegas: 0.3 m baseline, about 1 ns of flight against several ns of timing resolution) the detector cannot tell which end the muon entered from, so a pixel at slopes `(sx, sy)` stands for the whole line, not one direction. Muons come from the sky, so its counts come from the end of the line that points above the horizon:
+
+```text
+d = slopeDirection(sx, sy)
+sky end = d       if d.z ≥ 0   (side "front")
+        = −d      if d.z < 0   (side "back": muons arriving from behind the detector plane)
+```
+
+The pixel's ray, column density, transmission, counts, hover crossings, 3D ray and recognition masks all use the sky end. The geometric factor is unchanged (it depends only on the slopes). The two ends are never both above the horizon, so nothing is counted twice; exactly horizontal lines have no flux at either end. Upward-going muons (from neutrinos, about 10⁻⁵ of the downward flux) are neglected.
+
+In slope space the horizon is the line `sy = −tan(elevation)` for a detector without roll; the main app draws it dashed and labels the two regions "前方来向" and "后方来向".
+
+Impact, measured on the six Zhouning stations (azimuth 0, low scenario, 33² pixels): before 4.0.0 the back side was missing. At elevation 25° it adds 0.1–1.8 % of the total counts but fills the lower third of the image, which was empty; at elevation 0° it adds 27–58 %; at 60° nothing (the whole field of view is above the horizon).
+
+A detector that resolves direction (time-of-flight) would reject the back side; that becomes a device option when a real device needs it.
 
 ### 11.3 Expected-count map
 

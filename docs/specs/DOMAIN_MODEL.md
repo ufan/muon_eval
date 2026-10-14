@@ -162,6 +162,7 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 12. (Target) An active anomaly is part of the physical scene whether or not the view shows it; it never modifies the dataset release.
 13. (Target) An anomaly changes only its declared host materials inside its region, after material precedence.
 14. (Target) Baseline and perturbed results of a sensitivity evaluation come from the same snapshot and traces; the anomaly definition is part of the snapshot identity.
+15. A projection pixel is a line through the detector; its ray, column and counts are those of the line's sky end, and the pixel records whether that end is in front of or behind the detector (`side`). Since `quick-response@4.0.0` the projection core rejects a ray below the horizon. (`detector-pose.js` `skySideDirection`, `detector-projection.js`, tests)
 
 ## 5. Lifecycles
 
@@ -208,6 +209,7 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-14: Invariant 15: pixels are lines evaluated at their sky end (FR-C7).
 - 2026-10-13: Added RecognitionItem (display profile).
 - 2026-10-13: SubjectFeature catalogue implemented (`feature-catalogue.js`); virtual entities excluded.
 - 2026-10-13: Added SubjectFeature (proposed catalogue, ADR-029).

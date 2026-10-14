@@ -1,5 +1,5 @@
 import { createProjectionPass } from './detector-projection.js';
-import { detectorBasis, slopeDirection } from './detector-pose.js';
+import { detectorBasis, slopeDirection, skySideDirection } from './detector-pose.js';
 import { materialBoundaryProfile } from './material-envelopes.js';
 
 // Adapter only: all acceptance, transport and count formulas live in the shared
@@ -30,9 +30,10 @@ export function createCompiledAssessmentPass(runtime, config, device, response) 
   const basis = detectorBasis(azimuthDeg, elevationDeg);
   const pass = createProjectionPass({ n: bins, device: deviceSnapshot, response: responseSnapshot, includeContext: true,
     sampleRay: (sx, sy) => {
-      const direction = slopeDirection(basis, sx, sy);
+      // Each pixel is a line; trace its sky end (front or behind the detector).
+      const { direction, side } = skySideDirection(slopeDirection(basis, sx, sy));
       const trace = runtime.traceRayModel(snapshot.origin, direction, length);
-      return { dir: { x: direction[0], y: direction[1], z: direction[2] }, q: trace };
+      return { dir: { x: direction[0], y: direction[1], z: direction[2] }, side, q: trace };
     } });
   function complete(result) {
   if (result.values.some(v => ![v.count, v.transmission, v.displayCount, v.displayTransmission].every(value => Number.isFinite(value) && value >= 0))) {
@@ -43,7 +44,7 @@ export function createCompiledAssessmentPass(runtime, config, device, response) 
   const pixels = [];
   for (let row = bins - 1; row >= 0; row--) for (let column = 0; column < bins; column++) {
     const value = result.values[row * bins + column];
-    pixels.push({ sx: value.sx, sy: value.sy, direction: [value.dir.x, value.dir.y, value.dir.z],
+    pixels.push({ sx: value.sx, sy: value.sy, direction: [value.dir.x, value.dir.y, value.dir.z], side: value.side,
       totals: { ...value.q.totals }, mwe: value.q.mwe, count: value.count, openCount: value.openCount, transmission: value.transmission,
       materialColumns: value.q.materialColumns ? { ...value.q.materialColumns } : null,
       displayCount: value.displayCount, displayTransmission: value.displayTransmission,
