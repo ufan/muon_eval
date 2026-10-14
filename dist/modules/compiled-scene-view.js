@@ -62,9 +62,11 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     if(!material)continue;attachCoverage(material,coverage,layer==='dam'?subjectCoverage:contextCoverage);coverageMaterials.push(material);mesh.material.dispose();mesh.material=material;
     if(layer==='dam')mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry,25),new THREE.LineBasicMaterial({color:LOOK.edge,transparent:true,opacity:.5})));}}
   function resize(){if(!renderer)return;const bounds=container.getBoundingClientRect();if(!bounds.width||!bounds.height)return;camera.aspect=bounds.width/bounds.height;camera.updateProjectionMatrix();renderer.setSize(bounds.width,bounds.height,false);for(const material of lineMaterials)material.resolution.set(bounds.width,bounds.height);}
-  function setView(mode){if(!controls)return;const axes={perspective:[.74,-.61,.27],front:[-1,0,.1],cross:[0,-1,.1],top:[0,0,1]};if(!axes[mode])throw new Error('Unknown scene view');
+  // Camera of a preset view (scene frame), without moving the camera.
+  function presetCamera(mode){const axes={perspective:[.74,-.61,.27],front:[-1,0,.1],cross:[0,-1,.1],top:[0,0,1]};if(!axes[mode])throw new Error('Unknown scene view');
     const halfVertical=THREE.MathUtils.degToRad(camera.fov/2),halfHorizontal=Math.atan(Math.tan(halfVertical)*camera.aspect),distance=radius/Math.sin(Math.min(halfVertical,halfHorizontal))*(mode==='perspective'?.7:1.1);
-    const offset=compiledPointToScene(axes[mode]).normalize().multiplyScalar(distance);camera.position.copy(target).add(offset);controls.target.copy(target);controls.update();$('#viewSelect').value=mode;}
+    return{position:target.clone().add(compiledPointToScene(axes[mode]).normalize().multiplyScalar(distance)),target:target.clone()};}
+  function setView(mode){if(!controls)return;const view=presetCamera(mode);camera.position.copy(view.position);controls.target.copy(view.target);controls.update();$('#viewSelect').value=mode;}
   function updateScale(){const height=Math.max(1,container.clientHeight),distance=camera.position.distanceTo(controls.target),mpp=2*distance*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/height;
     const power=10**Math.floor(Math.log10(mpp*90)),length=power*([1,2,5,10].find(value=>value>=mpp*90/power)||10);$('#scaleBar').style.width=(length/mpp).toFixed(0)+'px';$('#scaleLabel').textContent=length.toPrecision(2)+' m';}
   function materialLayer(component){const material=component.metadata.material_id;
@@ -155,6 +157,9 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   const workingLabel=document.createElement('span');workingLabel.className='working-label';workingLabel.hidden=true;labels.append(workingLabel);
   function screenOf(origin,canvas){const v=origin.clone().project(camera);return{x:canvas.left+(v.x+1)/2*canvas.width,y:canvas.top+(1-v.y)/2*canvas.height,visible:v.z<1&&Math.abs(v.x)<=1&&Math.abs(v.y)<=1};}
   function markerScreen(){if(!renderer)return[];const canvas=renderer.domElement.getBoundingClientRect();return extraStations.map(s=>({id:s.id,...screenOf(s.origin,canvas)}));}
+  // Every shown station's label at its marker (CSS pixels within the canvas), for screenshots and animation frames.
+  function frameLabels(){const box=renderer.domElement.getBoundingClientRect(),at=p=>({x:p.x-box.left,y:p.y-box.top}),screen=markerScreen(),working=workingScreen();
+    return[...(working?.visible?[{text:currentStation.name||'工作点位',color:'#ff4fb3',...at(working)}]:[]),...extraStations.map((s,i)=>screen[i].visible?{text:s.name,color:s.color,...at(screen[i])}:null).filter(Boolean)];}
   function workingScreen(){if(!renderer||!currentStation)return null;return screenOf(compiledPointToScene([currentStation.x,currentStation.y,currentStation.z]),renderer.domElement.getBoundingClientRect());}
   function updateLabels(){const box=container.getBoundingClientRect(),screen=markerScreen(),place=(label,p)=>{label.hidden=!p?.visible;if(p?.visible){label.style.left=`${p.x-box.left}px`;label.style.top=`${p.y-box.top}px`;}};
     [...labels.querySelectorAll('[data-station]')].forEach((label,i)=>place(label,screen[i]));workingLabel.textContent=currentStation?.name||'工作点位';place(workingLabel,demo?workingScreen():null);}
@@ -226,7 +231,8 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   // into this view); an idle scene costs no GPU time.
   let frame=null;
   function requestRender(){if(!renderer||frame!==null)return;frame=requestAnimationFrame(renderFrame);}
-  function renderFrame(){frame=null;const moving=controls.update();updateScale();renderer.render(scene,camera);updateLabels();if(moving)requestRender();}
+  function renderFrame(){frame=null;if(recording)return;const moving=controls.update();updateScale();renderer.render(scene,camera);updateLabels();if(moving)requestRender();}
+  let recording=false;
   const api={
     build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
     resize,setView,setLayer,setDamOpacity,drawDetector,setSlice,setSliceMask,subjectExtent,setFovEdges,setFovSolid,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
@@ -238,9 +244,13 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     setCameraView({position,target}){if(!controls||![...position,...target].every(Number.isFinite))return;camera.position.copy(compiledPointToScene(position));controls.target.copy(compiledPointToScene(target));controls.update();requestRender();},
     capture(){if(!renderer)return null;controls.update();renderer.render(scene,camera);const box=renderer.domElement.getBoundingClientRect(),image=document.createElement('canvas');
       image.width=renderer.domElement.width;image.height=renderer.domElement.height;image.getContext('2d').drawImage(renderer.domElement,0,0);
-      const at=p=>({x:p.x-box.left,y:p.y-box.top}),screen=markerScreen(),working=workingScreen();
-      const labelled=[...(working?.visible?[{text:currentStation.name||'工作点位',color:'#ff4fb3',...at(working)}]:[]),...extraStations.map((s,i)=>screen[i].visible?{text:s.name,color:s.color,...at(screen[i])}:null).filter(Boolean)];
-      requestRender();return{image,width:box.width,height:box.height,labels:labelled};},
+      requestRender();return{image,width:box.width,height:box.height,labels:frameLabels()};},
+    // Animation export (FR-M5): preset views in the model frame, and one frame drawn from a given view into a 2D context
+    // (CSS pixels of the view) while recording; on-demand rendering pauses meanwhile.
+    presetView(mode){const model=v=>[v.x,-v.z,v.y],view=presetCamera(mode);return{position:model(view.position),target:model(view.target)};},
+    setRecording(on){recording=Boolean(on);if(!recording)requestRender();},
+    drawFrame(view,ctx,width,height){if(!renderer)return null;camera.position.copy(compiledPointToScene(view.position));controls.target.copy(compiledPointToScene(view.target));camera.lookAt(controls.target);updateScale();
+      renderer.render(scene,camera);ctx.drawImage(renderer.domElement,0,0,width,height);return frameLabels();},
     showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
     clearProjection(){clear(projectionGroup);emphasiseFeatures([]);},showFlux(){},drawFluxCloud(){},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},

@@ -27,8 +27,8 @@ export function demoFootnote({ release, scenario, exposureDays, detector, date }
     `数据集 ${release} · 工况 ${scenario} · 曝光 ${exposureDays} 天 · 探测器 ${detector} · ${day(date)}`];
 }
 
-export const demoFileName = (datasetId, date) =>
-  `muography-demo-${datasetId.replace(/[^A-Za-z0-9.-]+/g, '_')}-${day(date).replaceAll('-', '')}-${pad(date.getHours())}${pad(date.getMinutes())}.png`;
+export const demoFileName = (datasetId, date, extension = 'png') =>
+  `muography-demo-${datasetId.replace(/[^A-Za-z0-9.-]+/g, '_')}-${day(date).replaceAll('-', '')}-${pad(date.getHours())}${pad(date.getMinutes())}.${extension}`;
 
 // The next view of a guided sequence (wraps around); an unknown current view starts at the first.
 export function cycleView(views, current, step) {
@@ -79,4 +79,50 @@ export function snapshotLayout({ width, height, caption, legend = [], footnote =
     ops.push({ type: 'text', text: label.text, x: x + labelSize / 2, y: top + labelSize * 1.1, size: labelSize, weight: 600, fill: '#e9f2f5' });
   }
   return ops;
+}
+
+// Short animations (FR-M5): camera paths as views ({ position, target }, model frame, z up), one per frame.
+const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+const ease = t => t * t * (3 - 2 * t);
+const norm = v => { const l = Math.hypot(...v); return v.map(x => x / l); };
+// Turn direction u towards w by fraction t; opposite directions turn about the vertical.
+function slerp(u, w, t) {
+  const cos = Math.max(-1, Math.min(1, u[0] * w[0] + u[1] * w[1] + u[2] * w[2])), angle = Math.acos(cos);
+  if (angle < 1e-9) return u;
+  if (Math.PI - angle < 1e-6) {
+    // Any perpendicular works; the horizontal one keeps the camera level.
+    const side = norm(Math.hypot(u[0], u[1]) > 1e-9 ? [-u[1], u[0], 0] : [1, 0, 0]);
+    return u.map((v, i) => Math.cos(Math.PI * t) * v + Math.sin(Math.PI * t) * side[i]);
+  }
+  const s = Math.sin(angle), a = Math.sin((1 - t) * angle) / s, b = Math.sin(t * angle) / s;
+  return u.map((v, i) => a * v + b * w[i]);
+}
+
+// The view a fraction t (eased) of the way from a to b: the target moves straight, the camera turns around it
+// and its distance changes geometrically, so a move never cuts through the target.
+export function interpolateView(a, b, t) {
+  const e = ease(Math.min(1, Math.max(0, t))), target = lerp(a.target, b.target, e);
+  const oa = a.position.map((v, i) => v - a.target[i]), ob = b.position.map((v, i) => v - b.target[i]);
+  const da = Math.hypot(...oa), db = Math.hypot(...ob), d = da * (db / da) ** e, dir = slerp(norm(oa), norm(ob), e);
+  return { position: target.map((v, i) => v + dir[i] * d), target };
+}
+
+// A guided tour: hold each view, move to the next.
+export function tourFrames(views, { fps = 30, moveSeconds = 2, holdSeconds = 1 } = {}) {
+  const frames = [], hold = Math.round(fps * holdSeconds), move = Math.round(fps * moveSeconds);
+  views.forEach((view, i) => {
+    if (i) for (let k = 1; k <= move; k++) frames.push(interpolateView(views[i - 1], view, k / move));
+    for (let k = 0; k < hold; k++) frames.push({ position: [...view.position], target: [...view.target] });
+  });
+  return frames;
+}
+
+// One turn around the vertical through the target, at constant height and distance; the last frame is one
+// step before the first, so the video loops.
+export function orbitFrames(view, { fps = 30, seconds = 12 } = {}) {
+  const count = Math.round(fps * seconds), [tx, ty] = view.target, ox = view.position[0] - tx, oy = view.position[1] - ty;
+  return Array.from({ length: count }, (_, k) => {
+    const angle = 2 * Math.PI * k / count, c = Math.cos(angle), s = Math.sin(angle);
+    return { position: [tx + c * ox - s * oy, ty + s * ox + c * oy, view.position[2]], target: [...view.target] };
+  });
 }

@@ -43,3 +43,35 @@ test('file names and guided views', () => {
   assert.equal(cycleView(views, 'front', 1), 'saved-1'); assert.equal(cycleView(views, 'saved-1', 1), 'perspective');
   assert.equal(cycleView(views, 'perspective', -1), 'saved-1'); assert.equal(cycleView(views, 'unknown', 1), 'perspective');
 });
+
+// Short animations (#17 follow-up, FR-M5): camera paths in the model frame (z up), drawn frame by frame.
+import { interpolateView, tourFrames, orbitFrames } from '../../dist/modules/demo-snapshot.js';
+const close = (a, b, e = 1e-9) => a.every((v, i) => Math.abs(v - b[i]) < e);
+const dist = v => Math.hypot(...v.position.map((p, i) => p - v.target[i]));
+
+test('a move between two views turns around the target and changes distance smoothly', () => {
+  const a = { position: [100, 0, 0], target: [0, 0, 0] }, b = { position: [0, 50, 10], target: [0, 0, 10] };
+  assert.ok(close(interpolateView(a, b, 0).position, a.position) && close(interpolateView(a, b, 1).position, b.position));
+  const mid = interpolateView(a, b, .5);
+  assert.ok(close(mid.target, [0, 0, 5]));
+  // Eased: half way in time is half way in the move; the offset turns (not a straight cut through the target).
+  const offset = mid.position.map((v, i) => v - mid.target[i]);
+  assert.ok(Math.abs(Math.atan2(offset[1], offset[0]) - Math.PI / 4) < 1e-6, String(offset));
+  assert.ok(dist(mid) > 50 && dist(mid) < 100);
+  // Opposite directions still turn (about the vertical), never through the target.
+  const c = { position: [-100, 0, 0], target: [0, 0, 0] }, half = interpolateView(a, c, .5);
+  assert.ok(Math.abs(dist(half) - 100) < 1e-6);
+});
+
+test('a tour holds each view and moves between them; an orbit closes on itself at constant height and distance', () => {
+  const views = [{ position: [100, 0, 0], target: [0, 0, 0] }, { position: [0, 100, 20], target: [0, 0, 0] }, { position: [0, 0, 100], target: [0, 0, 0] }];
+  const frames = tourFrames(views, { fps: 10, moveSeconds: 2, holdSeconds: 1 });
+  assert.equal(frames.length, 10 * (3 * 1 + 2 * 2));
+  assert.ok(close(frames[0].position, views[0].position) && close(frames[9].position, views[0].position));
+  assert.ok(close(frames.at(-1).position, views[2].position));
+  const orbit = orbitFrames(views[1], { fps: 10, seconds: 4 });
+  assert.equal(orbit.length, 40);
+  assert.ok(orbit.every(v => Math.abs(v.position[2] - 20) < 1e-9 && Math.abs(dist(v) - dist(views[1])) < 1e-9));
+  assert.ok(close(orbit[10].position, [-100, 0, 20], 1e-6), String(orbit[10].position));
+  assert.equal(demoFileName('d', new Date(2026, 9, 14, 8, 5), 'webm'), 'muography-demo-d-20261014-0805.webm');
+});
