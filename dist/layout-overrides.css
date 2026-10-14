@@ -249,3 +249,7 @@
 .application-selection select{width:100%;min-width:0;font:inherit;padding:6px;background:#08131b;color:#e9f2f5;border:1px solid #294250;border-radius:5px}
 .application-selection [hidden]{display:none}
 .application-selection .hint{overflow-wrap:anywhere}
+/* Link to the dataset workbench styled like the header buttons (ADR-030). */
+.header-link { display:inline-flex; align-items:center; border:1px solid #31505e; border-radius:7px; color:inherit; text-decoration:none; font-size:inherit; }
+.header-link:hover { border-color:#4b7384; }
+@media(max-width:720px){.header-link{display:none}}

@@ -60,7 +60,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | 15b-4 | 3D feature layer (after 15b-5): replaces the single "galleries, rooms, shaft" checkbox with catalogue groups; feature meshes in class colours, group panel expandable to features, per-feature hover/pick | FR-M11 | L5 check; layer toggles never change results; takes over the two-way outline ↔ 3D link from 15b-5, incl. emphasising the features crossed by the hovered ray. `feature-layers.js` (L1, L3); groups shown by default when all their features are reference voids or targets; in-view emphasis moves to 15a | Done |
 | 15b-5 | Projection outlines and the profile-driven item list (next, with 15b-3): replaces the hard-coded "target structure layers" panel with the recognition items from the display profile (defaults on, visible-item filter, all-features search), contour of the item length at T, legend with T, hover list of crossed items, two-way linking | FR-M12 | Outline = d3-contour of the padded mask (ADR-029, as implemented); fixed-order list with out-of-view items greyed; selection and T persist per release; L5 in `check-main-compiled-app.mjs`. Linking moved to 15b-4; numbered 3D markers built then dropped (owner) | Done |
 | 15b-6 | Material items (concrete, steel) and the material envelope overlay in the main app | FR-M12 | Material items already work (15b-3; steel item left out by owner). Envelope toggle built, then removed after review (owner): it stays in the geometry preview | Done |
-| 15c | Statistical precision contour (1/√N at 5 % and 10 %); move existing contour layers under "专家诊断", off by default; two-way links between main app and preview with the shared `dataset`/`scenario` parameters | FR-M13, FR-M14, ADR-030 | Small; reuses the contour pipeline | Todo |
+| 15c | Statistical precision contour (1/√N at 5 % and 10 %); move existing contour layers under "专家诊断", off by default; two-way links between main app and preview with the shared `dataset`/`scenario` parameters | FR-M13, FR-M14, ADR-030 | `precision-contours.js` (L1); "专家诊断" and "方案比较" sections; `selectionHref` (L1); L5 in both browser checks | Done |
 | 16 | Per-station projections side by side | FR-M4 | Reuses `projection-canvas-view.js` | Todo |
 | 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | Short animation export later | Todo |
 
@@ -139,6 +139,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: 15c done (precision lines, expert diagnostics drawer, two-way links). Next: P2 #11/#12.
 - 2026-10-14: ADR-030: 15c extended (links), 11b export menu, W1 dataset workbench; after 15c, P2 #11/#12 come next because #15/#16 depend on them.
 - 2026-10-14: Material envelope overlay removed from the main app (owner); FR-K11 recorded.
 - 2026-10-14: Detector's own space excluded from outlines, crossings and 3D emphasis (owner, ADR-029).

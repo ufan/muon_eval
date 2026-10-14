@@ -50,6 +50,17 @@ try {
   assert.equal(await page.evaluate(() => Boolean(globalThis.crypto?.subtle)), false, 'LAN HTTP smoke must exercise portable SHA-256');
   await page.waitForFunction(() => document.getElementById('status').textContent.includes('upstream 288 m'), null, { timeout: 30000 });
   await page.waitForFunction(() => document.querySelectorAll('#paths tr').length === 5);
+  // ADR-030: same selection contract as the main app; the URL and the link back follow the selection.
+  const release = await page.locator('#release').inputValue(), expectedSearch = `?dataset=${encodeURIComponent(release)}&backend=compiled&scenario=low`;
+  assert.equal(new URL(page.url()).search, expectedSearch);
+  assert.equal(await page.locator('#mainAppLink').getAttribute('href'), './' + expectedSearch);
+  const linked = await browser.newPage();
+  await linked.goto(`${address}/geometry-preview.html?dataset=${encodeURIComponent(release)}&scenario=high`);
+  await linked.waitForFunction(() => document.getElementById('status').textContent.includes('upstream 298 m'), null, { timeout: 30000 });
+  assert.equal(await linked.locator('#scenario').inputValue(), 'high');
+  await linked.goto(`${address}/geometry-preview.html?dataset=${encodeURIComponent(release)}&scenario=missing`);
+  await linked.waitForFunction(() => document.getElementById('status').textContent.includes('Unknown compiled scenario missing'), null, { timeout: 30000 });
+  await linked.close();
   await page.waitForFunction(() => document.getElementById('projectionStatus').textContent.includes('complete · low'));
   await page.locator('#materialProjection').scrollIntoViewIfNeeded();
   const projection = await page.locator('#materialProjection').boundingBox();

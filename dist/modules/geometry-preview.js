@@ -14,6 +14,7 @@ import { createContributionExport } from './contribution-export.js';
 import { createPatternPreview } from './pattern-preview.js';
 import { createDemandRender } from './demand-render.js';
 import { timePatternWork } from './pattern-timing.js';
+import { resolveApplicationSelection, selectionHref, APP_PAGES } from './application-selection.js';
 
 const $ = id => document.getElementById(id), viewport = $('viewport');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -277,7 +278,13 @@ async function update() {
     busy = false; $('trace').disabled = false; trace();
   } catch (error) { if (token === sequence) { $('status').textContent = error.message; busy = true; } }
 }
-async function selectRelease() {
+// Shared selection contract with the main app (ADR-030): same URL parameters, links both ways.
+function syncSelection() {
+  const selection = { datasetId: $('release').value, scenarioId: $('scenario').value || null };
+  $('mainAppLink').href = selectionHref(APP_PAGES.main, selection);
+  history.replaceState(null, '', selectionHref(APP_PAGES.workbench, selection));
+}
+async function selectRelease(preferredScenario = null) {
   invalidateProjection(); clearRay(); $('paths').replaceChildren(); $('column').textContent = '';
   $('semanticTarget').disabled = true; $('semanticSummary').textContent = 'Loading semantic mapping…';
   ++sequence; busy = true; $('trace').disabled = true; $('scenario').disabled = true;
@@ -288,11 +295,16 @@ async function selectRelease() {
     dataset = next;
     configureContributionMaterials();
     $('scenario').replaceChildren(...[...dataset.geometry.scenarios.values()].map(s => new Option(`${s.label} (${s.variables.water_up_level} m)`, s.id)));
+    if (preferredScenario !== null) {
+      if (!dataset.geometry.scenarios.has(preferredScenario)) throw new Error(`Unknown compiled scenario ${preferredScenario}`);
+      $('scenario').value = preferredScenario;
+    }
+    syncSelection();
     $('station').replaceChildren(...dataset.candidates.candidates.map(c => new Option(c.names?.en || c.names?.zh || c.id, c.id)));
     $('scenario').disabled = false; await update();
   } catch (error) { if (token === sequence) $('status').textContent = error.message; }
 }
-$('release').addEventListener('change', selectRelease); $('scenario').addEventListener('change', update);
+$('release').addEventListener('change', () => selectRelease()); $('scenario').addEventListener('change', () => { syncSelection(); update(); });
 $('air').addEventListener('change', overlays); $('virtual').addEventListener('change', overlays); $('focus').addEventListener('click', focus);
 $('trace').addEventListener('click', trace); $('station').addEventListener('change', trace);
 $('projectionScale').addEventListener('change', drawMaterialProjection);
@@ -368,5 +380,7 @@ try {
   const registry = await response.json();
   $('release').replaceChildren(...Object.entries(registry.datasets).filter(([, entry]) => entry.adapter === 'dam-spec-v07').map(([id]) => new Option(id, id)));
   if (!$('release').options.length) throw new Error('No native compiled releases are registered');
-  await selectRelease();
+  const selection = resolveApplicationSelection(registry, location.search);
+  $('release').value = selection.datasetId;
+  await selectRelease(selection.scenarioId);
 } catch (error) { $('status').textContent = error.message; }

@@ -39,7 +39,7 @@ Last updated: 2026-10-10
 | 027 | Three.js for display only; geometry and physics in own framework-free modules | Accepted (retrospective) |
 | 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
 | 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; implemented (15b-1…15b-6; envelope overlay kept in the preview only); optional fill and sampled-pixel view open |
-| 030 | Two entry points: planning app and dataset workbench, one selection contract | Accepted (owner, 2026-10-14); steps in IMPLEMENTATION_PRIORITY (15c, 11b, W1) |
+| 030 | Two entry points: planning app and dataset workbench, one selection contract | Accepted (owner, 2026-10-14); links and drawer done (15c); 11b, W1 open |
 
 ---
 

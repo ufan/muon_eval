@@ -19,3 +19,10 @@ export function applicationSelectionSearch({ datasetId, scenarioId }) {
   if (scenarioId !== null && scenarioId !== undefined) params.set('scenario', scenarioId);
   return `?${params}`;
 }
+
+// The two entry points (ADR-030) link to each other with the same selection.
+export const APP_PAGES = Object.freeze({ main: './', workbench: './geometry-preview.html' });
+export function selectionHref(page, selection) {
+  if (!Object.values(APP_PAGES).includes(page)) throw new Error(`Unknown application page ${page}`);
+  return page + applicationSelectionSearch(selection);
+}
