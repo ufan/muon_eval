@@ -36,7 +36,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   // Subject-feature layer (FR-M11): the compiled components of direct features, drawn in their class colours.
   const featureIds=features?featureLayerGroups(features).flatMap(group=>group.featureIds):[],featureMeshes=new Map(featureIds.map(id=>[id,[]])),featureOfComponent=new Map();
   for(const component of runtime.components){const id=component.metadata.source_entity_id;if(component.metadata.flags.physics&&featureMeshes.has(id)){featureMeshes.get(id).push(geometryView.meshes.get(component.componentId));featureOfComponent.set(component.componentId,id);}}
-  const featureVisible=new Map(featureIds.map(id=>[id,false]));let emphasised=new Set();
+  const featureVisible=new Map(featureIds.map(id=>[id,false]));let emphasised=new Set(),featuresSeen=null;
   // Coverage highlight (FR-M10, ADR-026): subject surfaces by default, terrain and water on request.
   const coverage=createCoverageUniforms(),subjectCoverage={value:1},contextCoverage={value:0};let coverageResult=null;
   applyLook();
@@ -71,7 +71,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   function setLayer(name,visible){layerState.set(name,visible);if(name==='cone'){detectorGroup.visible=rayGroup.visible=projectionGroup.visible=visible;return;}
     for(const component of runtime.components)if(materialLayer(component)===name){const mesh=geometryView.meshes.get(component.componentId);mesh.visible=visible&&component.metadata.flags.display&&component.metadata.realization!=='virtual';}}
   function setDamOpacity(opacity){for(const component of runtime.components)if(materialLayer(component)==='dam'){const material=geometryView.meshes.get(component.componentId).material;material.transparent=opacity<1;material.opacity=opacity;material.depthWrite=opacity>.72;material.needsUpdate=true;}}
-  function setCoverage({mode='off',core=false,context=false}={}){coverage.covMode.value={off:0,geometric:1,physical:2}[mode]??0;coverage.covCore.value=core?1:0;contextCoverage.value=context?1:0;}
+  function setCoverage({mode='off',core=false,context=false}={}){coverage.covMode.value={off:0,geometric:1,physical:2}[mode]??0;coverage.covCore.value=core?1:0;contextCoverage.value=context?1:0;for(const id of featureIds)showFeature(id);}
   // Physical brightness from a result's own counts per steradian; null while a newer pose is computing (geometric view shown instead).
   function setCoverageResult(data,device){coverage.covMap.value?.dispose();coverage.covMap.value=null;coverage.covHasMap.value=0;coverageResult=data&&device?{n:data.n,values:data.values}:null;if(!data||!device)return;
     const perSr=countsPerSteradian(data.values,data.n,device),bytes=new Uint8Array(data.n*data.n*4);perSr.forEach((v,i)=>{bytes[4*i]=Math.round(255*coverageBrightness(v));bytes[4*i+3]=255;});
@@ -95,7 +95,11 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
       detectorGroup.add(new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:0xff65bd,transparent:true,opacity})),hidden);};
     edges(corners,.75);edges(corners.map(direction=>direction.clone().negate()),.3);detectorGroup.add(new THREE.ArrowHelper(forward,origin,length,0xff65bd));
   }
-  function showFeature(id){const visible=featureVisible.get(id)||emphasised.has(id);for(const mesh of featureMeshes.get(id)){mesh.visible=visible;mesh.material.emissive.set(emphasised.has(id)?mesh.material.color:0x000000);mesh.material.emissiveIntensity=emphasised.has(id)?1.4:1;}}
+  // With coverage on, features the station sees (ADR-029 "in view") are drawn at full strength and the others faded.
+  function showFeature(id){const visible=featureVisible.get(id)||emphasised.has(id),faded=coverage.covMode.value>0&&featuresSeen!==null&&!featuresSeen.has(id)&&!emphasised.has(id);
+    for(const mesh of featureMeshes.get(id)){mesh.visible=visible;mesh.material.emissive.set(emphasised.has(id)?mesh.material.color:0x000000);mesh.material.emissiveIntensity=emphasised.has(id)?1.4:1;
+      if(mesh.material.transparent!==faded){mesh.material.transparent=faded;mesh.material.depthWrite=!faded;mesh.material.needsUpdate=true;}mesh.material.opacity=faded?.2:1;}}
+  function setFeaturesInView(ids){featuresSeen=ids?new Set(ids):null;for(const id of featureIds)showFeature(id);}
   function setFeatureVisible(id,visible){if(!featureMeshes.has(id))return;featureVisible.set(id,visible);showFeature(id);}
   // Temporary emphasis (linked selection, ADR-029): shown and lit even when the feature's layer is off.
   function emphasiseFeatures(ids=[]){const next=new Set(ids.filter(id=>featureMeshes.has(id))),changed=new Set([...emphasised,...next]);emphasised=next;for(const id of changed)showFeature(id);}
@@ -126,7 +130,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   function renderFrame(){frame=null;const moving=controls.update();updateScale();renderer.render(scene,camera);if(moving)requestRender();}
   const api={
     build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);}$('#loading').style.display='none';},
-    resize,setView,setLayer,setDamOpacity,drawDetector,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,
+    resize,setView,setLayer,setDamOpacity,drawDetector,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,
     showRay:(trace,station,direction)=>displayTrace(rayGroup,trace,station,direction),
     showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
     clearProjection(){clear(projectionGroup);emphasiseFeatures([]);},showFlux(){},drawFluxCloud(){},

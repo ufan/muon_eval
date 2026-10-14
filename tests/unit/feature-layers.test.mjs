@@ -61,3 +61,17 @@ test('features along a ray are the listed features it runs through by more than 
   const inside = { q: { entityLengths: { room: 2 }, segments: [{ t0: 0, t1: 2, entityIds: ['room'] }] } };
   assert.deepEqual(featuresAlongRay(inside, ['room']), []);
 });
+
+test('a feature is in view when its mask in the result is non-empty (the detector space excluded)', async () => {
+  const { featuresInView } = await import('../../dist/modules/feature-layers.js');
+  const pixel = (lengths, segments) => ({ q: { entityLengths: lengths, totals: {}, segments } });
+  const data = { n: 2, values: [
+    pixel({ room: 2, tunnel_a: 1 }, [{ t0: 0, t1: 2, entityIds: ['room'] }, { t0: 5, t1: 6, entityIds: ['tunnel_a'] }]),
+    pixel({ room: 2 }, [{ t0: 0, t1: 2, entityIds: ['room'] }]),
+    pixel({ room: 2, duct: 0.05 }, [{ t0: 0, t1: 2, entityIds: ['room'] }, { t0: 3, t1: 3.05, entityIds: ['duct'] }]),
+    pixel({ room: 2 }, [{ t0: 0, t1: 2, entityIds: ['room'] }])
+  ] };
+  // The room holds the detector; the duct is crossed by less than the threshold.
+  assert.deepEqual([...featuresInView(data, ['room', 'tunnel_a', 'duct'], { threshold: 0.1 })], ['tunnel_a']);
+  assert.deepEqual([...featuresInView(data, ['room', 'tunnel_a', 'duct'], { threshold: 0 })], ['tunnel_a', 'duct']);
+});
