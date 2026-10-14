@@ -126,6 +126,13 @@ try{
  const xyz=async()=>Promise.all(['#x','#y','#z'].map(id=>page.locator(id).inputValue())),start=await xyz();await click('#placeStation');
  const view=await page.locator('#webgl canvas').boundingBox();await page.mouse.move(view.x+view.width/2,view.y+view.height/2);await page.mouse.down();await page.mouse.up();await ready();
  assert.notDeepEqual(await xyz(),start);assert.equal(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')),false);assert.match(await page.locator('#workingStatus').innerText(),/已修改/);
+ assert.match(await page.locator('#placeNote').innerText(),/0\.5 m|已放入/);
+ // A cavity seen through the semi-transparent concrete takes the click: the station goes inside it, 1 m above its floor.
+ await setInput('#viewSelect','top','change');let cavityNote=null;
+ for(const fy of [.35,.42,.5,.58,.65])for(const fx of [.2,.3,.4,.5,.6,.7,.8]){if(cavityNote)break;await click('#placeStation');await page.mouse.move(view.x+view.width*fx,view.y+view.height*fy);await page.mouse.down();await page.mouse.up();
+  const note=await page.locator('#placeNote').innerText();if(note.startsWith('已放入'))cavityNote=note;else if(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')))await page.keyboard.press('Escape');}
+ assert.ok(cavityNote,'no cavity found under the top-view grid');const [,floor]=/底板 Z ([\d.]+) m，离底板 1\.00 m/.exec(cavityNote);assert.ok(Math.abs(+await page.locator('#z').inputValue()-(+floor+1))<.011,cavityNote);
+ await ready();await setInput('#viewSelect','perspective','change');
  accept();await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();
  const artifacts=await mkdtemp(join(tmpdir(),'muon-main-compiled-'));await page.screenshot({path:join(artifacts,'desktop.png')});
  for(const [scenarioId,waterLevel] of [['mid',293],['high',298],['extreme',305]]){await page.locator('#scenarioSelect').selectOption(scenarioId);await loadSelected();result=await currentResult();assert.equal(result.scenarioId,scenarioId);assert.equal(result.variables.water_up_level,waterLevel);assert.equal(result.variables.gate_state,'closed');assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);}

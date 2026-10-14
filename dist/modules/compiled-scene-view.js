@@ -124,8 +124,11 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   // Placing the working station (14d): one click on a visible surface; Esc cancels.
   let placing=false;
   function setPlacing(on){placing=Boolean(on);if(renderer)renderer.domElement.style.cursor=placing?'crosshair':'';if(!placing)tip.hidden=true;}
-  function surfaceAt(event){featureAt(event);const meshes=[...geometryView.meshes.values()].filter(mesh=>mesh.visible),hit=raycaster.intersectObjects(meshes,false).find(h=>h.face);if(!hit)return null;
-    const normal=hit.face.normal.clone().transformDirection(hit.object.matrixWorld),model=v=>[v.x,-v.z,v.y];return{point:model(hit.point),normal:model(normal),direction:model(raycaster.ray.direction)};}
+  // A cavity feature (category void) seen through transparent surfaces (semi-transparent concrete, terrain, water) wins the click.
+  function surfaceAt(event){featureAt(event);const meshes=[...geometryView.meshes.values()].filter(mesh=>mesh.visible),hits=raycaster.intersectObjects(meshes,false).filter(h=>h.face);
+    const cavity=hits.findIndex(h=>features?.get(featureOfComponent.get(h.object.name))?.category==='void'),hit=cavity>=0&&hits.slice(0,cavity).every(h=>h.object.material.transparent)?hits[cavity]:hits[0];if(!hit)return null;
+    const normal=hit.face.normal.clone().transformDirection(hit.object.matrixWorld),model=v=>[v.x,-v.z,v.y],featureId=featureOfComponent.get(hit.object.name)??null;
+    return{point:model(hit.point),normal:model(normal),direction:model(raycaster.ray.direction),featureId:features?.get(featureId)?.category==='void'?featureId:null};}
   function cancelPlacing(event){if(event.key==='Escape'&&placing){setPlacing(false);onPlaceCancel();requestRender();}}
   function hoverFeature(event){if(placing){const bounds=container.getBoundingClientRect();tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;tip.textContent='点击模型表面放置当前点位 · Esc 取消';tip.hidden=false;return;}
     if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;const id=featureAt(event);if(id!==hovered){hovered=id;onFeatureHover(id);}
