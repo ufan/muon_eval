@@ -13,10 +13,33 @@ function checkThreshold(threshold) {
   return threshold;
 }
 
+// End of the connected stretch of ray that starts at the detector inside the item
+// (0 when the detector is outside it): the space the detector sits in is not a
+// target in its own image, only a re-entry further out is.
+function detectorRunEnd(q, item) {
+  let end = 0;
+  for (const segment of q.segments ?? []) {
+    if (segment.t0 > end + 1e-9 || !segment.entityIds.some(id => item.featureIds.includes(id))) break;
+    end = segment.t1;
+  }
+  return end;
+}
+
 function itemLength(q, item) {
   if (item.kind === 'material') return q.totals?.[item.material] ?? 0;
-  if (item.kind === 'features') return item.featureIds.reduce((sum, id) => sum + (q.entityLengths?.[id] ?? 0), 0);
-  throw new Error(`Unknown recognition item kind ${item.kind}`);
+  if (item.kind !== 'features') throw new Error(`Unknown recognition item kind ${item.kind}`);
+  let length = item.featureIds.reduce((sum, id) => sum + (q.entityLengths?.[id] ?? 0), 0);
+  const runEnd = detectorRunEnd(q, item);
+  if (runEnd > 0) for (const segment of q.segments) {
+    if (segment.t1 > runEnd) break;
+    length -= (segment.t1 - segment.t0) * segment.entityIds.filter(id => item.featureIds.includes(id)).length;
+  }
+  return Math.max(0, length);
+}
+
+// Feature items that contain the detector (their stretch from the detector is excluded).
+export function detectorSpaceItems(pixel, items) {
+  return items.filter(item => item.kind === 'features' && detectorRunEnd(pixel.q, item) > 0).map(item => item.id);
 }
 
 export function computeRecognitionLayers({ n, values }, items, { threshold = DEFAULT_MASK_THRESHOLD_M } = {}) {
@@ -56,8 +79,9 @@ export function crossingsAlongRay(pixel, items, { threshold = 0 } = {}) {
   return items.flatMap(item => {
     const lengthM = itemLength(q, item);
     if (!(lengthM > threshold)) return [];
-    const entry = q.segments.find(segment => item.kind === 'material' ? segment.material === item.material
-      : segment.entityIds.some(id => item.featureIds.includes(id)));
+    const after = item.kind === 'features' ? detectorRunEnd(q, item) : 0;
+    const entry = q.segments.find(segment => segment.t0 >= after && (item.kind === 'material' ? segment.material === item.material
+      : segment.entityIds.some(id => item.featureIds.includes(id))));
     return [{ id: item.id, entryM: entry ? entry.t0 : NaN, lengthM }];
   }).sort((a, b) => a.entryM - b.entryM);
 }

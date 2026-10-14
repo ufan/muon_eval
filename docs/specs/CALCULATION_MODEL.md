@@ -377,7 +377,7 @@ Interpretation:
 
 Display only; computed from a finished result by `recognition-layers.js` and never fed back into counts.
 
-- Item length `L` per pixel: for a feature item, the sum of the central ray's `entityLengths` over the member entities; for a material item, the ray's material total (`totals[material]`).
+- Item length `L` per pixel: for a feature item, the sum of the central ray's `entityLengths` over the member entities, less the connected stretch that starts at the detector inside the item (the detector's own space; only a re-entry counts); for a material item, the ray's material total (`totals[material]`).
 - Mask: `L > T`, with `T` a display setting (default 0.1 m). Image coverage = mask pixels / all pixels; "in view" = coverage > 0.
 - Outline: boundary of the mask, from d3-contour on the mask padded with one empty pixel per side at level 0.5, so it matches the mask and closes along the image border. Like every per-pixel quantity it inherits the one-ray-per-pixel aliasing of §11.6 (about half a pixel at edges).
 - Material envelopes (optional): the preview's sampled envelope rule (`material-envelopes.js`) applied to the same projection, with presence tolerance `T`; edges between neighbouring pixels where a material appears or ends, or where its air interfaces appear, change in number, or jump in depth by ≥ max(4 m, 25 %).

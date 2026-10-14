@@ -137,6 +137,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: Detector's own space excluded from outlines, crossings and 3D emphasis (owner, ADR-029).
 - 2026-10-14: #4a done (FR-C7, back-side muons, `quick-response@4.0.0`); next: detector's own space excluded from outlines, envelope removed from the main app (owner order).
 - 2026-10-14: 15b-6 done (material envelope overlay in the main app); #15b complete.
 - 2026-10-13: 15b-4 done (3D feature layer, hover/pick, two-way linking).

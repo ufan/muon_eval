@@ -548,7 +548,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **Material items** use the 15b-3 mechanism unchanged. The Zhouning profile keeps only "Dam concrete"; a steel ("Gates") item was left out by the owner, as gates are not observation targets.
 - **Material envelope overlay** in the main app: one toggle under the recognition list, off by default, remembered per release. It reuses the preview's rule (`materialEnvelopeEdges`: material silhouettes, air-interface presence, topology and depth jumps of ≥ 4 m or 25 %) on the main-app projection, drawn as thin unlabelled lines below the outlines (white concrete, orange rock). A material counts as present where its length exceeds the outline threshold `T`, so envelopes and material outlines agree. Only materials the shared rule supports (concrete, rock) are drawn.
 
-A station inside a feature (e.g. a detector in a gallery) sees that feature with entry distance 0 m in every upward pixel, so its mask covers most of the image. This is correct and is shown as such; hiding the feature that contains the station is a possible later display option, not a mask rule.
+**The detector's own space (owner, 2026-10-14).** For a feature item, the connected stretch of a ray that starts at the detector inside the item is not counted: a detector in a gallery would otherwise see that gallery in every upward pixel (68–100 % of the image), which is correct but carries no information. Only a re-entry further out counts, for the mask, the hover crossings (entry distance measured to the re-entry) and the 3D emphasis. The readout names the items containing the detector instead. Material items are unaffected; counts are unaffected.
 
 **Consequences.** One mechanism replaces legacy MT-2/MT-5 and serves later anomaly footprints and multi-station evaluation; a small display-profile schema is added; FR-GE4 later upgrades merged solids without redesign.
 
@@ -575,6 +575,7 @@ A station inside a feature (e.g. a detector in a gallery) sees that feature with
 
 ## Change log
 
+- 2026-10-14: ADR-029: the detector's own space is excluded from feature masks and crossings (owner).
 - 2026-10-14: ADR-029 implementation notes for 15b-6 (material envelope overlay in the main app).
 - 2026-10-13: ADR-029 implementation notes for 15b-4 (feature-layer rule, default visibility, linking).
 - 2026-10-13: ADR-029: numbered 3D entry markers dropped (owner); hover list leads with length.

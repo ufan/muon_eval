@@ -113,3 +113,25 @@ test('material envelopes include air-interface depth jumps inside the material',
   assert.equal(materialEnvelopes(field, ['concrete'])[0].edges.length, 2);
   assert.equal(materialEnvelopes(field, ['concrete'], { depthEdges: false })[0].edges.length, 0);
 });
+
+// The space the detector sits in is not a target in its own image: the connected
+// stretch of a ray that starts inside an item does not count; a re-entry does.
+test('the stretch of ray starting inside an item is excluded from its length and entry', async () => {
+  const { detectorSpaceItems } = await import('../../dist/modules/recognition-layers.js');
+  const roomItems = [{ id: 'rooms', kind: 'features', featureIds: ['room', 'hall'], material: null }];
+  const ray = segments => ({ q: { entityLengths: segments.reduce((acc, s) => {
+    for (const id of s.entityIds) acc[id] = (acc[id] ?? 0) + s.t1 - s.t0; return acc; }, {}), totals: { concrete: 0 }, segments } });
+  // Starts in the room, continues into the adjoining hall (same item), then concrete, then the hall again.
+  const pixel = ray([
+    { t0: 0, t1: 2, material: 'air', entityIds: ['room'] }, { t0: 2, t1: 3, material: 'air', entityIds: ['hall'] },
+    { t0: 3, t1: 9, material: 'concrete', entityIds: [] }, { t0: 9, t1: 11.5, material: 'air', entityIds: ['hall'] }]);
+  const [layer] = computeRecognitionLayers({ n: 1, values: [pixel] }, roomItems);
+  assert.equal(layer.lengths[0], 2.5);
+  assert.deepEqual(crossingsAlongRay(pixel, roomItems), [{ id: 'rooms', entryM: 9, lengthM: 2.5 }]);
+  // Without a re-entry the item is not crossed at all.
+  const inside = ray([{ t0: 0, t1: 2, material: 'air', entityIds: ['room'] }, { t0: 2, t1: 9, material: 'concrete', entityIds: [] }]);
+  assert.equal(computeRecognitionLayers({ n: 1, values: [inside] }, roomItems)[0].maskPixels, 0);
+  assert.deepEqual(crossingsAlongRay(inside, roomItems), []);
+  assert.deepEqual(detectorSpaceItems(inside, roomItems), ['rooms']);
+  assert.deepEqual(detectorSpaceItems(ray([{ t0: 0, t1: 2, material: 'air', entityIds: [] }]), roomItems), []);
+});

@@ -2,6 +2,8 @@
 // on their own, grouped as the dataset declares them. Pure; reads the catalogue only.
 // Water bodies stay context surfaces with their own layers; aggregate features have
 // no component of their own (until FR-GE4).
+import { crossingsAlongRay } from './recognition-layers.js';
+
 const DEFAULT_ROLES = new Set(['reference_void', 'target']);
 
 export function featureLayerGroups(catalogue) {
@@ -17,8 +19,8 @@ export function recognitionItemForFeature(items, featureId) {
   return items.find(item => item.kind === 'features' && item.featureIds.includes(featureId)) ?? null;
 }
 
-// Listed features the ray runs through by more than the threshold, in ray order.
+// Listed features the ray runs through by more than the threshold, in ray order;
+// same rule as the recognition crossings (the detector's own space is excluded).
 export function featuresAlongRay(pixel, featureIds, { threshold = 0 } = {}) {
-  const { q } = pixel, entry = id => q.segments.find(segment => segment.entityIds.includes(id))?.t0 ?? Infinity;
-  return featureIds.filter(id => (q.entityLengths?.[id] ?? 0) > threshold).sort((a, b) => entry(a) - entry(b));
+  return crossingsAlongRay(pixel, featureIds.map(id => ({ id, kind: 'features', featureIds: [id] })), { threshold }).map(c => c.id);
 }

@@ -54,7 +54,10 @@ test('the recognition item of a feature is the first feature item listing it', (
 
 test('features along a ray are the listed features it runs through by more than the threshold, in ray order', () => {
   const pixel = { q: { entityLengths: { room: 2, tunnel_a: 0.05, duct: 1, wall: 9 }, segments: [
-    { t0: 0, t1: 1, entityIds: ['duct'] }, { t0: 3, t1: 5, entityIds: ['room'] }, { t0: 6, t1: 6.05, entityIds: ['tunnel_a'] }] } };
+    { t0: .5, t1: 1.5, entityIds: ['duct'] }, { t0: 3, t1: 5, entityIds: ['room'] }, { t0: 6, t1: 6.05, entityIds: ['tunnel_a'] }] } };
   assert.deepEqual(featuresAlongRay(pixel, ['room', 'tunnel_a', 'duct'], { threshold: 0.1 }), ['duct', 'room']);
   assert.deepEqual(featuresAlongRay(pixel, ['room', 'tunnel_a'], { threshold: 0 }), ['room', 'tunnel_a']);
+  // The feature the detector sits in is not lit by its own rays.
+  const inside = { q: { entityLengths: { room: 2 }, segments: [{ t0: 0, t1: 2, entityIds: ['room'] }] } };
+  assert.deepEqual(featuresAlongRay(inside, ['room']), []);
 });
