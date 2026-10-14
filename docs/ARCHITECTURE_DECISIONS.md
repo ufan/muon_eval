@@ -39,6 +39,7 @@ Last updated: 2026-10-10
 | 027 | Three.js for display only; geometry and physics in own framework-free modules | Accepted (retrospective) |
 | 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
 | 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; implemented (15b-1…15b-6; envelope overlay kept in the preview only); optional fill and sampled-pixel view open |
+| 030 | Two entry points: planning app and dataset workbench, one selection contract | Accepted (owner, 2026-10-14); steps in IMPLEMENTATION_PRIORITY (15c, 11b, W1) |
 
 ---
 
@@ -553,6 +554,23 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 **Consequences.** One mechanism replaces legacy MT-2/MT-5 and serves later anomaly footprints and multi-station evaluation; a small display-profile schema is added; FR-GE4 later upgrades merged solids without redesign.
 
+## ADR-030 Two entry points: planning app and dataset workbench, one selection contract
+
+**Status.** Accepted (owner, 2026-10-14).
+
+**Context.** `geometry-preview.html` grew as a developer page next to the main app. It is reachable only by URL, has its own release picker, uses only the dataset's built-in candidates and the default device, is in English, and shares code but no state with the main app. It mixes four jobs: dataset checks (scenario switch, component picking, cavity/virtual display, reference-ray material lengths, semantic audit), detector-independent and detector calculations, expert overlays (finite-model reference outlines, sampled envelope, contribution and response contours), and seven export buttons plus a comparison table. The main app already duplicates part of the overlays and the comparison ("数值图案与方案比较").
+
+**Decision.**
+- **Two pages, two jobs.** The main app (`index.html`) plans deployments on a trusted release. The **dataset workbench** (today `geometry-preview.html`, later named "数据集检查") checks a release before anyone trusts it: the `AGENTS.md` dataset checklist (control points, material points, reference rays, display = classification = ray paths) as a pass/fail screen, plus picking, scenario switch and semantic audit (FR-D10). They stay separate pages: different audience and moment, the workbench's heavy diagnostics stay out of the planning app, and a static site needs no router. Merging is reconsidered only if the UI framework (OQ-2) brings routing anyway.
+- **One selection contract.** Both pages read the same URL parameters (`dataset`, `scenario`) through `application-selection.js`, and link to each other with the current selection ("数据集检查" / "打开主应用").
+- **No hidden shared state.** The workbench never reads the main app's stations, device or view state from browser storage. When the versioned plan/result format exists (#11) it can open an exported plan or result file as an explicit input.
+- **Each feature in one place.**
+  - Expert overlays for the current station and result move into a "专家诊断" section of the main app, off by default (FR-M14): contribution and response contours now; finite-model reference outlines and a detector-independent column view when they can be served for the main app; the sampled envelope only after FR-K11, in a neutral colour.
+  - Exports become one "导出" menu in the main app on the versioned result format (FR-P4): plan, full result of the current station (result plus pattern layers), comparison of saved stations or poses.
+  - After both, the workbench loses its own station, comparison and export paths and keeps only the dataset-check job, in the main app's style and language.
+
+**Consequences.** Users get one planning tool and one dataset-acceptance tool that open the same release from each other; no feature or calculation path exists twice; the dataset checklist for a second subject kind becomes a screen rather than a document.
+
 ---
 
 ## Open questions
@@ -576,6 +594,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-14: ADR-030 accepted: planning app and dataset workbench as two entry points with one selection contract (owner).
 - 2026-10-14: ADR-029: material envelope overlay removed from the main app (owner); colour rule: hues only for named features.
 - 2026-10-14: ADR-029: the detector's own space is excluded from feature masks and crossings (owner).
 - 2026-10-14: ADR-029 implementation notes for 15b-6 (material envelope overlay in the main app).

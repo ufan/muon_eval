@@ -127,6 +127,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-14: Planning app and dataset workbench as two linked entry points (ADR-030): expert diagnostics with 15c (Phase 2), one export menu after the plan format (Phase 1), workbench slimming later.
 - 2026-10-13: Phase 2 includes subject features (FR-M11, FR-M12; ADR-029).
 - 2026-10-12: Legacy backend retired (FR-B3); gaps tracked as migration targets MT-1…MT-6.
 - 2026-10-12: Phase 2 now covers the coverage highlight (FR-M10) and its GPU budget (FR-N5); FR-H11, FR-B2, FR-W4 and standing rules referenced.

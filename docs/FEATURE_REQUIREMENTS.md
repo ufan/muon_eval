@@ -37,6 +37,7 @@ Derived from ADR-008/009. Apply to every new dataset and data-format change (`AG
 | FR-D7 | Manifest binds everything. | Source digest, IR/backend versions, compile options, LOD, scenario, coordinate transform and asset checksums; declares authority between authoring source and canonical release. Dataset manifest and directory convention documented. | Standing (directory spec Needed) |
 | FR-D8 | Conformance tolerances live in the dataset baseline. | Not chosen by each implementation; water connectivity, open channels, thin layers, coplanar contacts and compiled topology checked independently. | Standing |
 | FR-D9 | Second real dam dataset. | Loaded through the common interface with its own adapter; abstractions revised only from evidence of a shared pattern. | Needed |
+| FR-D10 | Dataset workbench. | A second page checks a release before use (ADR-030): the dataset's control points, material points and reference rays with pass/fail, agreement of 3D display, point classification and ray paths, component picking, scenario switch and semantic audit; same style and language as the main app; opened from the main app with the same `dataset`/`scenario` selection and linking back; reads no hidden state of the main app. | Needed |
 
 ## B. Default backend (compiled)
 
@@ -108,6 +109,7 @@ Features the legacy backend had and the compiled backend does not provide yet. T
 | FR-P1 | Save/load a complete plan. | Versioned, subject-neutral JSON schema with migrations; distinguishes candidate stations from the selected deployment (ADR-020): full dataset release ID (plus content hash for user-loaded datasets), stations, poses, device, response, environment/scenario, sampling, model version. Round-trip test: load → save gives an identical file. Current exports (including `compiled-deployment-snapshot` v0.1) are not full round-trip plans. | Needed |
 | FR-P2 | Plans shareable without a server. | Plan files are diff-friendly and usable from git or a shared folder. | Needed |
 | FR-P3 | Team plan sharing with concurrent editing, permissions and audit trail. | Only when server trigger T1 is met (ADR-001). | Deferred |
+| FR-P4 | One export menu. | The main app offers one "导出" menu on the versioned plan/result format (#11): plan; full result of the current station (result plus pattern layers); comparison of saved stations or poses. Replaces the preview's separate export buttons (ADR-030). | Needed (after #11) |
 
 ## S. Scans and ranking
 
@@ -152,7 +154,7 @@ Features the legacy backend had and the compiled backend does not provide yet. T
 | FR-M3 | Source-entity ROI significance on the compiled backend. | Requires FR-GE4 entity attribution. | Needed (later) |
 | FR-M11 | Subject features in the 3D view. | Features from the feature catalogue (ADR-029) drawn from the same compiled components the tracer uses (never proxies), in their dataset class colours; one layer checkbox per feature group, expandable to features; gallery, monitoring and vertical-transport groups visible by default; hover/pick identifies the feature, class and imaging role; linked with projection outlines both ways; emphasised (full opacity) when in view of a selected station; hiding never changes physics. Replaces legacy MT-5. | Done except the in-view emphasis, which comes with coverage (FR-M10, 15a) |
 | FR-M13 | Statistical precision contour. | On the projection, contours of the relative counting error 1/√N for the current exposure at fixed levels 5 % and 10 % (stated in the legend), showing in which directions the exposure gives usable statistics; drawn with the contour pipeline from the result's own counts; display only. | Needed |
-| FR-M14 | Expert diagnostics placement. | The material-contribution and response contour layers are grouped under an "Expert diagnostics" section, off by default; kept and tested, no new features (ADR-029 Q5). | Needed |
+| FR-M14 | Expert diagnostics placement. | The material-contribution and response contour layers are grouped under an "Expert diagnostics" ("专家诊断") section, off by default; kept and tested, no new features (ADR-029 Q5). Later members per ADR-030: finite-model reference outlines, a detector-independent column view, the sampled envelope after FR-K11. | Needed |
 | FR-M12 | Feature outlines in projections. | Recognition items from the display profile (or derived defaults), listed only when visible in the current projection; mask = central-ray length inside the item > T (display setting, default 0.1 m); outline = contour of that length at T via the contour pipeline, item colour, line pattern and label for same-colour items, optional fill and sampled-pixel view; hover lists crossed items in ray order with length inside and entry distance (no 3D markers; crossed features are emphasised in 3D with FR-M11); material items for merged solids ("Dam concrete", "Gates") until FR-GE4; the detector's own space is left out of masks; the material envelope overlay stays in the geometry preview. Replaces legacy MT-2; the same mechanism later draws anomaly footprints (FR-H9). | Done (15b-3…15b-6) except the optional fill and sampled-pixel view; the material envelope overlay stays in the geometry preview (owner, ADR-029) |
 
 ## G. Geant4 integration
@@ -237,6 +239,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-14: FR-D10 (dataset workbench) and FR-P4 (one export menu) added; FR-M14 extended (ADR-030).
 - 2026-10-14: FR-K11 added (material roles; generality of the envelope/air-interface concept, owner question).
 - 2026-10-14: FR-C7 added and done (back-side muons; model `quick-response@4.0.0`).
 - 2026-10-14: FR-M12 done except optional fill and sampled-pixel view (15b-6: material envelope overlay).
