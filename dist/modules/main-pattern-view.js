@@ -9,10 +9,14 @@ export function createMainPatternView({ canvas, host, backendLabel = 'compiled' 
   canvas.before(wrapper); wrapper.append(canvas); canvas.style.width = '100%'; canvas.style.display = 'block';
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.id = 'mainPatternOverlay';
   svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:hidden'; wrapper.append(svg);
+  // Expert diagnostics (FR-M14, ADR-030): numeric contour layers, off by default.
+  const diagnostics = document.createElement('details'); diagnostics.id = 'expertDiagnostics'; diagnostics.className = 'target-layers';
+  diagnostics.innerHTML = '<summary>专家诊断 <span>默认关闭</span></summary><div style="padding:6px;font-size:11px"><label><input id="mainMaterialContours" type="checkbox">材料贡献（自适应检查，不可跨图比较）</label><label><input id="mainResponseContours" type="checkbox">原始透射率等值线 .01/.1/.5/.9</label><p id="mainPatternLegend"></p><p>有限模型参考线与采样包络仅在<a id="workbenchLinkDiagnostics" href="./geometry-preview.html">数据集检查</a>中提供，不授予真实物理界面资格。接受度/开天通量影响计数，采样加密不等于物理分辨率。无安全、可达性或实测标定结论。</p></div>';
+  // Comparison of saved stations and poses.
   const controls = document.createElement('details'); controls.id = 'mainPatternControls'; controls.className = 'target-layers';
-  controls.innerHTML = '<summary>数值图案与方案比较</summary><div style="padding:6px;font-size:11px"><label><input id="mainMaterialContours" type="checkbox">材料贡献（自适应检查，不可跨图比较）</label><label><input id="mainResponseContours" type="checkbox">原始透射率等值线 .01/.1/.5/.9</label><button id="mainCaptureComparison" type="button" disabled>保存本站姿态</button><button id="mainExportComparison" type="button" disabled>导出比较 v1</button><button id="mainClearComparison" type="button">清空</button><label>重放比较<input id="mainImportComparison" type="file" accept=".json,application/json"></label><p id="mainPatternLegend"></p><div id="mainComparisonSummary"></div><p>后端身份见当前计算记录；有限模型参考线仅在<a href="./geometry-preview.html">几何预览</a>中提供，不授予真实物理界面资格。接受度/开天通量影响计数，采样加密不等于物理分辨率。无安全、可达性或实测标定结论。</p></div>';
-  host.append(controls);
-  const $ = id => controls.querySelector(`#${id}`); let current = null, entries = [], lastMode = 'counts', lastObject, lastSettings;
+  controls.innerHTML = '<summary>方案比较</summary><div style="padding:6px;font-size:11px"><button id="mainCaptureComparison" type="button" disabled>保存本站姿态</button><button id="mainExportComparison" type="button" disabled>导出比较 v1</button><button id="mainClearComparison" type="button">清空</button><label>重放比较<input id="mainImportComparison" type="file" accept=".json,application/json"></label><div id="mainComparisonSummary"></div><p>后端身份见当前计算记录。</p></div>';
+  host.append(controls, diagnostics);
+  const $ = id => controls.querySelector(`#${id}`) ?? diagnostics.querySelector(`#${id}`); let current = null, entries = [], lastMode = 'counts', lastObject, lastSettings;
   const selection = { kind: 'material', id: 'concrete', minimumPathM: .15 };
   function showRows() {
     const summary = $('mainComparisonSummary'); summary.replaceChildren(); $('mainExportComparison').disabled = !entries.length;
