@@ -52,6 +52,7 @@ data contract + coordinate adapters → pure geometry query interfaces
 **Covers:** FR-M4, FR-M5, FR-M10 (coverage highlight), FR-M11/FR-M12 (subject features in 3D and projection outlines, replacing legacy MT-5/MT-2), FR-N5 (integrated-GPU budget); ADR-020, ADR-026, ADR-029. The single-station coverage highlight needs no plan format and can land before the rest of this phase.
 **Depends on:** plan schema with selected deployment, async cancellable assessment port (Phase 1). Built in the current page; does not wait for the new UI stack (ADR-004) or scan workers.
 **Exit:** overview and detail modes over one plan; per-station results cached; coverage highlight (geometric and physical, per steradian) in single- and multi-station views, correct under transparency and measured on an Intel Core i5 laptop; demonstration layout with camera presets and screenshot export.
+**Status (2026-10-14):** overview and detail modes, the per-station cache, coverage in single- and multi-station views (geometric, physical, multi-view, slice plane), the overview table and projections side by side are done (#14–#16). Open: the Intel Core i5 measurement and quality fallback (FR-N5) and the demonstration layout (#17, FR-M5).
 
 ## Phase 3 — Anomaly hypotheses and sensitivity
 

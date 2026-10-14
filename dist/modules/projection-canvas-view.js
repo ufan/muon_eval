@@ -1,6 +1,6 @@
-import * as THREE from 'three';
 import { outlineRings, crossingsAlongRay, detectorSpaceItems } from './recognition-layers.js';
 import { precisionContours } from './precision-contours.js';
+import { colorLevel, heatRgb } from './projection-tiles.js';
 // Projection panel view: heat map on the canvas, recognition outlines (FR-M12) in
 // an SVG overlay in pixel units, and the hover readout with the crossed items.
 const SVG='http://www.w3.org/2000/svg',DASHES=['','5 3','2 2','8 3 2 3'];
@@ -8,8 +8,8 @@ const escapeHtml=text=>String(text).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};
 export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave=()=>{}}){
  const $=s=>root.querySelector(s);
  let projection={data:null,mode:'counts',recognition:null,precision:false},RESPONSE={},precisionCache={data:null,contours:[]},selected=null;
- function heatColor(t){const stops=[[.0,0x397cff],[.38,0x24d5c1],[.72,0xffd166],[1,0xff5f55]],out=new THREE.Color(stops[0][1]);for(let i=0;i<stops.length-1;i++){const [a,ca]=stops[i],[b,cb]=stops[i+1];if(t>=a&&t<=b)return out.set(ca).lerp(new THREE.Color(cb),(t-a)/(b-a))}return out.set(stops.at(-1)[1])}
- function colorCss(t){const c=heatColor(THREE.MathUtils.clamp(t,0,1));return`rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`}
+ // One fixed colour scale for every station (projection-tiles.js), shared with the side-by-side view (#16).
+ function colorCss(t){const [r,g,b]=heatRgb(Math.min(1,Math.max(0,t)));return`rgb(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)})`}
  const recognition=()=>projection.recognition??{items:[],layers:new Map(),selected:new Set(),threshold:0};
  const selectedItems=()=>{const r=recognition();return r.items.filter(item=>r.selected.has(item.id)&&r.layers.get(item.id)?.inView);};
  function drawOutlines(){const svg=$('#projectionOutlines'),d=projection.data;svg.replaceChildren();if(!d)return;const n=d.n,r=recognition(),used=new Map(),placed=[],size=n*.05;svg.setAttribute('viewBox',`0 0 ${n} ${n}`);
@@ -35,7 +35,7 @@ export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave
  // Items that contain the detector: their stretch from the detector is left out of masks and crossings.
  function detectorSpace(d){const r=recognition(),ids=detectorSpaceItems(d.values[Math.floor(d.values.length/2)],r.items);if(!ids.length)return'';const byId=new Map(r.items.map(item=>[item.id,item]));return`<br><span class="detector-space">探测器位于：${ids.map(id=>escapeHtml(byId.get(id).label.zh)).join('、')}（自身空间不计入轮廓）</span>`;}
  function summary(){const items=selectedItems();return items.length?`识别轮廓：${items.map(item=>escapeHtml(item.label.zh)).join('、')} · 长度 > ${recognition().threshold} m`:'识别轮廓未选择';}
- function drawProjection(){const d=projection.data;if(!d){drawOutlines();return;}const canvas=$('#projectionCanvas'),ctx=canvas.getContext('2d'),n=d.n,w=canvas.width/n,h=canvas.height/n,mode=projection.mode;ctx.clearRect(0,0,canvas.width,canvas.height);for(let iy=0;iy<n;iy++)for(let ix=0;ix<n;ix++){const q=d.values[iy*n+ix],v=mode==='counts'?q.displayCount:mode==='transmission'?q.displayTransmission:0,t=mode==='counts'?THREE.MathUtils.clamp((Math.log10(Math.max(.1,v))+1)/6,0,1):mode==='transmission'?THREE.MathUtils.clamp((Math.log10(Math.max(1e-6,v))+6)/6,0,1):0;ctx.fillStyle=mode==='significance'?'#10202a':colorCss(t);ctx.fillRect(ix*w,canvas.height-(iy+1)*h,w+.5,h+.5)}drawOutlines();const title=mode==='counts'?`${RESPONSE.exposureDays}天预计计数`:mode==='transmission'?'坝体透射率':'结构对比显著度';$('#projectionReadout').innerHTML=`${title} · 总计数 ${Math.round(d.total).toLocaleString()}<br>加权透射 ${(d.weightedTransmission*100).toFixed(2)}%<br>${summary()}${detectorSpace(d)}`}
+ function drawProjection(){const d=projection.data;if(!d){drawOutlines();return;}const canvas=$('#projectionCanvas'),ctx=canvas.getContext('2d'),n=d.n,w=canvas.width/n,h=canvas.height/n,mode=projection.mode;ctx.clearRect(0,0,canvas.width,canvas.height);for(let iy=0;iy<n;iy++)for(let ix=0;ix<n;ix++){const q=d.values[iy*n+ix],t=mode==='counts'?colorLevel(mode,q.displayCount):mode==='transmission'?colorLevel(mode,q.displayTransmission):0;ctx.fillStyle=mode==='significance'?'#10202a':colorCss(t);ctx.fillRect(ix*w,canvas.height-(iy+1)*h,w+.5,h+.5)}drawOutlines();const title=mode==='counts'?`${RESPONSE.exposureDays}天预计计数`:mode==='transmission'?'坝体透射率':'结构对比显著度';$('#projectionReadout').innerHTML=`${title} · 总计数 ${Math.round(d.total).toLocaleString()}<br>加权透射 ${(d.weightedTransmission*100).toFixed(2)}%<br>${summary()}${detectorSpace(d)}`}
  function hover(ev){const d=projection.data;if(!d)return;const r=ev.currentTarget.getBoundingClientRect();showPixel(Math.max(0,Math.min(d.n-1,Math.floor((ev.clientX-r.left)/r.width*d.n))),Math.max(0,Math.min(d.n-1,d.n-1-Math.floor((ev.clientY-r.top)/r.height*d.n))));}
  // Readout of one pixel (ix from the left, iy from the bottom), shared by hover and by a click on the 3D coverage.
  function showPixel(ix,iy){const d=projection.data;if(!d)return;const q=d.values[iy*d.n+ix],rec=recognition(),byId=new Map(rec.items.map(item=>[item.id,item]));

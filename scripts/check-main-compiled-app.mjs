@@ -141,6 +141,14 @@ try{
  await page.waitForFunction(()=>/^\d+ 个点位$/.test(document.querySelector('#overviewStatus').textContent),null,{timeout:60000});
  assert.equal(await page.locator('.overview-item').count(),await page.locator('#recognitionItems input:not([data-recognition^="feature:"])').count());assert.match(await page.locator('.overview-item summary').first().innerText(),/站[\s\S]*视角/);
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
+ // Projections side by side (#16): one tile per overview station from the cache, same colour scale; views never change results.
+ await click('#overviewTiles');assert.ok(await page.locator('#tilesDialog').evaluate(d=>d.open));
+ assert.equal(await page.locator('.tile').count(),1+await page.locator('#candidateList .cov-swatch').count());assert.equal(await page.locator('.tile canvas').count(),await page.locator('.tile').count());
+ {const box=await page.locator('.tile canvas').first().boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);assert.match(await page.locator('#tilesReadout').innerText(),/像素 \(\d+,\d+\) · \d+ 事件/);}
+ await page.locator('[data-tiles-mode="transmission"]').click();assert.match(await page.locator('#tilesLegend').innerText(),/透射率/);await page.locator('[data-tiles-mode="counts"]').click();
+ await click('#tilesClose');assert.equal(await page.locator('#tilesDialog').evaluate(d=>d.open),false);assert.deepEqual(await currentResult(),before);
+ await click('#overviewTiles');{const button=page.locator('[data-tile-station]').first(),name=await button.innerText();await button.click();await ready();
+  assert.equal(await page.locator('#tilesDialog').evaluate(d=>d.open),false);assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));}
  await page.locator('.overview-item summary').first().click();const target=page.locator('[data-overview-station]').first(),targetName=await target.innerText();await target.click();await ready();
  assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${targetName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));
  // Other stations' markers in 3D carry name labels; a click on a label or on the marker itself opens that station.
