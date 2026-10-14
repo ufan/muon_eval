@@ -20,7 +20,7 @@ const backend = await createApplicationBackend(dataset, { datasetId: release, ba
 const configuration = defaultDeviceConfiguration();
 const stations = backend.stations.slice(0, 2).map((s, i) => ({ ...s, az: s.az + 10 * i }));
 const plan = planFromState({ title: 'Runner check', release, scenario: scenarioId, model: configuration.device.model, stations,
-  activeIndex: 1, selected: [stations[0].id], settings: deviceSettingsData(configuration) });
+  deployments: [{ id: 'first', name: 'First only', stations: [stations[0].id] }], settings: deviceSettingsData(configuration) });
 const work = await mkdtemp(join(tmpdir(), 'plan-runner-')), planPath = join(work, 'plan.json');
 await writeFile(planPath, serializePlan(plan));
 test.after(() => rm(work, { recursive: true, force: true }));
@@ -58,8 +58,8 @@ test('results match the in-app evaluation and do not depend on the thread count'
   await assert.rejects(runPlan({ planPath, outDir: one, quality: 'preview', workers: 1 }), /already holds a run/);
 });
 
-test('the selected deployment can be run alone; the command line reports failures with an exit code', async () => {
-  const summary = await runPlan({ planPath, outDir: join(work, 'selected'), stations: 'selected', quality: 'preview', workers: 1 });
+test('one deployment can be run alone; the command line reports failures with an exit code', async () => {
+  const summary = await runPlan({ planPath, outDir: join(work, 'deployment'), stations: { deployment: 'first' }, quality: 'preview', workers: 1 });
   assert.deepEqual(summary.stations.map(s => s.id), [stations[0].id]);
   assert.equal(summary.comparison, null);
   const script = new URL('../../scripts/run-plan.mjs', import.meta.url).pathname;

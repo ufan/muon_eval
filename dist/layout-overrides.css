@@ -254,3 +254,4 @@
 .header-link:hover { border-color:#4b7384; }
 @media(max-width:720px){.header-link{display:none}}
 .coverage-control{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0}.coverage-control select{min-width:128px}.coverage-options{padding:0 0 4px 12px;border-left:2px solid #31505e;margin-left:4px}.coverage-options .hint{font-size:11px;line-height:1.5;color:#8ea5b2;margin:4px 0 0}
+.study-picker{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:6px;margin:0 0 10px}.study-picker label{margin:0;font-size:12px;color:var(--muted)}.study-picker select{min-width:0;background:#08131b;color:var(--text);border:1px solid #294250;border-radius:7px;padding:6px}.study-picker button{padding:6px 10px}

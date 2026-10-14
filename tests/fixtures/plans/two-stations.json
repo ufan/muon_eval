@@ -1,6 +1,6 @@
 {
   "format": "muography-plan",
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "title": "Synthetic study",
   "scene": {
     "release": "subject@1.0.0",
@@ -47,7 +47,8 @@
         "elevationDeg": 25
       },
       "candidateId": "north",
-      "detector": "default"
+      "detector": "default",
+      "note": ""
     },
     {
       "id": "station-2",
@@ -62,14 +63,26 @@
         "elevationDeg": 35
       },
       "candidateId": null,
-      "detector": "default"
+      "detector": "default",
+      "note": "Second pose of the same gallery"
     }
   ],
-  "deployment": {
-    "selected": [
-      "north"
-    ],
-    "active": "station-2"
-  },
+  "deployments": [
+    {
+      "id": "deployment-1",
+      "name": "北侧单站",
+      "stations": [
+        "north"
+      ]
+    },
+    {
+      "id": "both",
+      "name": "Both stations",
+      "stations": [
+        "station-2",
+        "north"
+      ]
+    }
+  ],
   "anomalies": []
 }

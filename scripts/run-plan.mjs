@@ -1,5 +1,5 @@
 // Headless batch runner (FR-S5, ADR-006): plan in, results out, using the browser's modules.
-//   node scripts/run-plan.mjs plan.json --out runs/study [--stations all|selected|active|id,id]
+//   node scripts/run-plan.mjs plan.json --out runs/study [--stations all|id,id | --deployment <id>]
 //        [--quality final|preview] [--workers N] [--compare material:<id>:<min path m>]
 // Writes <station>.result.json per station, summary.json and, with --compare, comparison.json
 // (projection-pattern-comparison v1, replayable in the app's 方案比较 drawer).
@@ -15,7 +15,7 @@ import { loadCompiledMeshRuntime } from '../dist/modules/compiled-mesh-runtime.j
 import { createCompiledMainAssessment } from '../dist/modules/compiled-main-assessment.js';
 import { createPatternComparisonExport } from '../dist/modules/pattern-comparison.js';
 
-const USAGE = 'Usage: node scripts/run-plan.mjs <plan.json> --out <dir> [--stations all|selected|active|<id,id>] [--quality final|preview] [--workers N] [--compare material:<id>:<min path m>]';
+const USAGE = 'Usage: node scripts/run-plan.mjs <plan.json> --out <dir> [--stations all|<id,id> | --deployment <id>] [--quality final|preview] [--workers N] [--compare material:<id>:<min path m>]';
 
 export function parseRunArguments(argv) {
   const options = { planPath: null, outDir: null, stations: 'all', quality: 'final', workers: null, compare: null };
@@ -28,7 +28,10 @@ export function parseRunArguments(argv) {
     const value = argv[++i];
     if (value === undefined || value.startsWith('--')) throw new Error(`${USAGE}\n${arg} must have a value`);
     if (arg === '--out') options.outDir = value;
-    else if (arg === '--stations') options.stations = ['all', 'selected', 'active'].includes(value) ? value : value.split(',');
+    else if (arg === '--stations' || arg === '--deployment') {
+      if (options.stations !== 'all') throw new Error(`${USAGE}\nUse --stations or --deployment once`);
+      options.stations = arg === '--deployment' ? { deployment: value } : value === 'all' ? 'all' : value.split(',');
+    }
     else if (arg === '--quality') {
       if (!['final', 'preview'].includes(value)) throw new Error('--quality must be final or preview');
       options.quality = value;

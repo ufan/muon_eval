@@ -1,22 +1,23 @@
 // Headless batch runner core (FR-S5, ADR-006): turns a plan into assessment inputs and
 // describes a finished run. Pure: no file system, workers or dataset loading, so the CLI
 // (scripts/run-plan.mjs) and a future server worker share it with the browser.
-import { validatePlan, planHash } from './plan-format.js';
+import { migratePlan, planHash } from './plan-format.js';
 import { defaultDeviceConfiguration, applyDeviceConfiguration } from './device-configuration.js';
 
 export const RUN_SUMMARY_FORMAT = 'muography-plan-run';
 export const RUN_SUMMARY_VERSION = '1.0.0';
 export const QUALITY_BINS = Object.freeze({ preview: 25, final: 65 });
 
-// `which`: 'all', 'selected' (the selected deployment), 'active', or a list of station ids.
+// `which`: 'all', { deployment: id } (its members, in the deployment's order), or a list of station ids.
 export function selectPlanStations(plan, which = 'all') {
-  plan = validatePlan(plan);
+  plan = migratePlan(plan);
   const byId = new Map(plan.stations.map(s => [s.id, s]));
   if (which === 'all') return plan.stations;
-  if (which === 'active') return [byId.get(plan.deployment.active)];
-  if (which === 'selected') {
-    if (!plan.deployment.selected.length) throw new Error('The plan has no selected deployment');
-    return plan.deployment.selected.map(id => byId.get(id));
+  if (typeof which?.deployment === 'string') {
+    const deployment = plan.deployments.find(d => d.id === which.deployment);
+    if (!deployment) throw new Error(`Deployment ${which.deployment} is not in the plan`);
+    if (!deployment.stations.length) throw new Error(`Deployment ${which.deployment} has no stations`);
+    return deployment.stations.map(id => byId.get(id));
   }
   if (!Array.isArray(which)) throw new Error(`Unknown station choice ${which}`);
   return which.map((id, i) => {
@@ -34,7 +35,7 @@ function detectorConfiguration({ device, response }) {
 
 // One input per station, in the shape the assessment port takes (deployment-state snapshot).
 export function planAssessmentInputs(plan, { environment, stations = 'all' }) {
-  plan = validatePlan(plan);
+  plan = migratePlan(plan);
   const hash = planHash(plan);
   return selectPlanStations(plan, stations).map(s => {
     const { device, response } = detectorConfiguration(plan.detectors[s.detector]);
@@ -53,7 +54,7 @@ export function resultFileName(stationId) {
 // Summary of a run. No clock or host data, so the same plan, release and code give the same bytes.
 // `stations`: [{ stationId, name, file, sha256, result }] in run order; `comparison`: file name or null.
 export function planRunSummary({ plan, quality, stations, comparison = null }) {
-  plan = validatePlan(plan);
+  plan = migratePlan(plan);
   const hash = planHash(plan), bins = QUALITY_BINS[quality];
   if (!bins) throw new Error(`Unknown quality ${quality}`);
   const results = stations.map(s => s.result), scenario = results[0]?.scenarioId ?? null;

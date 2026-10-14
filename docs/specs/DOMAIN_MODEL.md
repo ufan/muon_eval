@@ -125,9 +125,9 @@ Scene composition (Target): **scene = release + environment state + active anoma
 |---|---|---|---|
 | Station (candidate) | Entity within a plan | One entry of the study's candidate pool: unique ID within the plan, name, note, position in the model frame, one pose, detector reference, optional `candidateId` (the dataset candidate it started from). Several poses at one site are several stations. Fixed once saved: changed only by an explicit update (FR-P6) | Current in the plan format; the app state still keeps pose fields on the station (`az`, `el`); fixed candidates with 14b |
 | Working station | Session state | The station being tuned in detail; becomes a candidate only when saved; never part of the plan | Target (14b) |
-| Deployment | Entity within a plan | Named subset of the candidate pool (unique ID within the plan, name, member station IDs); a station can be in several | Plan 1.1.0 (14a); UI with 14c |
+| Deployment | Entity within a plan | Named subset of the candidate pool (unique ID within the plan, name, member station IDs); a station can be in several | Current in plan 1.1.0; UI with 14c |
 | Pose | Value | Azimuth from model `X+` towards `Y+`, elevation above horizontal; detector-local basis follows | Current |
-| DeploymentPlan (study) | Aggregate root | One observation task on one release: scene (release reference + content hash for user-loaded datasets, scenario), named detector configurations (`default` required), candidate pool (stations), named deployments, reserved anomalies, schema version; `muography-plan` 1.1.0 ([PLAN_FORMAT](PLAN_FORMAT.md)). Session state (working station, active candidate, active deployment) is stored next to it, never inside | Plan 1.1.0 and several studies per release with 14a |
+| DeploymentPlan (study) | Aggregate root | One observation task on one release: scene (release reference + content hash for user-loaded datasets, scenario), named detector configurations (`default` required), candidate pool (stations), named deployments, reserved anomalies, schema version; `muography-plan` 1.1.0 ([PLAN_FORMAT](PLAN_FORMAT.md)). Session state (working station, active candidate, active deployment) is stored next to it, never inside | Current: plan 1.1.0, several studies per release (switch, new; import creates a study) |
 | Selection | Value | The deployment shown in the multi-station overview | Target (FR-M4, 14c) |
 
 ### 2.4 Assessment and results
@@ -141,7 +141,7 @@ Scene composition (Target): **scene = release + environment state + active anoma
 | Per-candidate result cache | Keyed by snapshot key, session memory | Compact form per candidate (≈ 0.5 MB at 65²); recomputed when a study is opened; shared by detail, comparison and overview (FR-P10) | Target (14b) |
 | Coverage (view) | Derived view of a station | Geometric coverage = device acceptance × pose (no physics): points whose detector line lies inside the acceptance, in front or behind, above the detector; physical coverage = expected counts per steradian from a result. A view of results, never an input; the physical map belongs to one result and is cleared when inputs change | Current for a single station (`coverage-map.js`); multi-station Target (ADR-026, #15) |
 | PlanRun | Value, versioned | Output of the headless runner: one ProjectionResult per chosen station plus a summary (`muography-plan-run` 1.0.0: plan hash, release, scenario, quality, model version, per-station file digest and totals); no clock data, identical for any thread count ([PLAN_FORMAT](PLAN_FORMAT.md#batch-runs)) | Current |
-| Exports | Value, versioned | `muography-plan` 1.0.0 (round trip), `muography-plan-run` 1.0.0 (batch runs), contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison`; the export-only `compiled-deployment-snapshot` 0.1.0 is retired | Current |
+| Exports | Value, versioned | `muography-plan` 1.1.0 (round trip; reads 1.0), `muography-plan-run` 1.0.0 (batch runs), contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison`; the export-only `compiled-deployment-snapshot` 0.1.0 is retired | Current |
 
 ## 3. Identities
 
@@ -170,7 +170,7 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 13. (Target) An anomaly changes only its declared host materials inside its region, after material precedence.
 14. (Target) Baseline and perturbed results of a sensitivity evaluation come from the same snapshot and traces; the anomaly definition is part of the snapshot identity.
 15. A projection pixel is a line through the detector; its ray, column and counts are those of the line's sky end, and the pixel records whether that end is in front of or behind the detector (`side`). Since `quick-response@4.0.0` the projection core rejects a ray below the horizon. (`detector-pose.js` `skySideDirection`, `detector-projection.js`, tests)
-16. (14a) A deployment lists only stations of its own plan, each once; removing a station removes it from every deployment. A plan never holds session or view state (working station, active candidate, layers).
+16. A deployment lists only stations of its own plan, each once; removing a station removes it from every deployment. A plan never holds session or view state (working station, active candidate, layers).
 17. (Target, 14b) A saved candidate changes only by an explicit update; its cached result is valid exactly while its snapshot key is unchanged.
 
 ## 5. Lifecycles

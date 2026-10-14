@@ -1,10 +1,10 @@
-// Plan format muography-plan 1.0.0 (docs/specs/PLAN_FORMAT.md; FR-P1, FR-P2, ADR-006).
+// Plan format muography-plan 1.1.0 (docs/specs/PLAN_FORMAT.md; FR-P1, FR-P2, FR-P7, ADR-006).
 // Pure: validation, migration, canonical text and conversion to and from the app's
 // deployment state. No DOM, storage or dataset access.
 import { sha256Portable } from './sha256.js';
 
 export const PLAN_FORMAT = 'muography-plan';
-export const PLAN_SCHEMA_VERSION = '1.0.0';
+export const PLAN_SCHEMA_VERSION = '1.1.0';
 const ID = /^[A-Za-z0-9_.-]{1,64}$/;
 const DEVICE = { width: [.01, 5], height: [.01, 5], stripPitch: [.00005, .1], strips: [2, 4096, 'integer'], spacing: [.01, 5] };
 const RESPONSE = { layerEfficiency: [.01, 1], deadLiveFraction: [.01, 1], angularResolutionDeg: [.01, 20],
@@ -34,13 +34,18 @@ function checkVersion(version) {
   const [major, minor] = [+match[1], +match[2]], [knownMajor, knownMinor] = PLAN_SCHEMA_VERSION.split('.').map(Number);
   if (major > knownMajor || (major === knownMajor && minor > knownMinor)) fail(`schemaVersion ${version} is newer than this app understands (${PLAN_SCHEMA_VERSION}); update the app`);
   if (major < knownMajor) fail(`schemaVersion ${version} has no migration`);
+  return minor;
 }
 
 // Throws on the first problem; returns the plan in canonical member order.
+// Accepts 1.0 and 1.1 documents (each under its own rules); returns the plan in canonical
+// member order, unchanged in version. Use migratePlan to obtain the current version.
 export function validatePlan(doc) {
-  members(doc, '', ['format', 'schemaVersion', 'title', 'scene', 'units', 'detectors', 'stations', 'deployment', 'anomalies']);
+  if (!isObject(doc)) fail('plan must be an object');
+  const minor = checkVersion(doc.schemaVersion);
+  const legacy = minor === 0;
+  members(doc, '', ['format', 'schemaVersion', 'title', 'scene', 'units', 'detectors', 'stations', legacy ? 'deployment' : 'deployments', 'anomalies']);
   if (doc.format !== PLAN_FORMAT) fail(`format must be ${PLAN_FORMAT}`);
-  checkVersion(doc.schemaVersion);
   text(doc.title, 'title', 200);
   members(doc.scene, 'scene', ['release', 'contentHash', 'scenario']);
   text(doc.scene.release, 'scene.release', 200, { min: 1 });
@@ -65,7 +70,7 @@ export function validatePlan(doc) {
   const ids = new Set();
   doc.stations.forEach((station, i) => {
     const path = `stations[${i}]`;
-    members(station, path, ['id', 'name', 'position', 'pose', 'candidateId', 'detector']);
+    members(station, path, ['id', 'name', 'position', 'pose', 'candidateId', 'detector', ...(legacy ? [] : ['note'])]);
     if (typeof station.id !== 'string' || !ID.test(station.id)) fail(`${path}.id must match ${ID}`);
     if (ids.has(station.id)) fail(`Duplicate station id ${station.id}`);
     ids.add(station.id);
@@ -76,17 +81,32 @@ export function validatePlan(doc) {
     number(station.pose.elevationDeg, `${path}.pose.elevationDeg`, [0, 90]);
     text(station.candidateId, `${path}.candidateId`, 200, { nullable: true, min: 1 });
     if (typeof station.detector !== 'string' || !Object.hasOwn(doc.detectors, station.detector)) fail(`${path}.detector must name an entry of detectors`);
+    if (!legacy) text(station.note, `${path}.note`, 1000);
   });
-  members(doc.deployment, 'deployment', ['selected', 'active']);
-  if (!Array.isArray(doc.deployment.selected) || new Set(doc.deployment.selected).size !== doc.deployment.selected.length
-    || !doc.deployment.selected.every(id => ids.has(id))) fail('deployment.selected must list distinct station ids');
-  if (!ids.has(doc.deployment.active)) fail('deployment.active must name a station');
-  if (!Array.isArray(doc.anomalies) || doc.anomalies.length) fail('anomalies must be empty in 1.0');
-  return canonical(doc);
+  const distinctStations = list => Array.isArray(list) && new Set(list).size === list.length && list.every(id => ids.has(id));
+  if (legacy) {
+    members(doc.deployment, 'deployment', ['selected', 'active']);
+    if (!distinctStations(doc.deployment.selected)) fail('deployment.selected must list distinct station ids');
+    if (!ids.has(doc.deployment.active)) fail('deployment.active must name a station');
+  } else {
+    if (!Array.isArray(doc.deployments)) fail('deployments must be a list');
+    const deploymentIds = new Set();
+    doc.deployments.forEach((deployment, i) => {
+      const path = `deployments[${i}]`;
+      members(deployment, path, ['id', 'name', 'stations']);
+      if (typeof deployment.id !== 'string' || !ID.test(deployment.id)) fail(`${path}.id must match ${ID}`);
+      if (deploymentIds.has(deployment.id)) fail(`Duplicate deployment id ${deployment.id}`);
+      deploymentIds.add(deployment.id);
+      text(deployment.name, `${path}.name`, 200, { min: 1 });
+      if (!distinctStations(deployment.stations)) fail(`${path}.stations must list distinct station ids of this plan`);
+    });
+  }
+  if (!Array.isArray(doc.anomalies) || doc.anomalies.length) fail('anomalies must be empty in 1.x');
+  return canonical(doc, legacy);
 }
 
 // Canonical member order (the order of the spec) for byte-identical round trips.
-function canonical(doc) {
+function canonical(doc, legacy) {
   const pick = (value, keys) => Object.fromEntries(keys.map(key => [key, value[key]]));
   return {
     format: doc.format, schemaVersion: doc.schemaVersion, title: doc.title,
@@ -96,15 +116,25 @@ function canonical(doc) {
       device: pick(d.device, ['model', 'layers', ...Object.keys(DEVICE)]),
       response: pick(d.response, [...Object.keys(RESPONSE).slice(0, 4), 'exposureDays', 'angularModel']) }])),
     stations: doc.stations.map(s => ({ id: s.id, name: s.name, position: [...s.position],
-      pose: pick(s.pose, ['azimuthDeg', 'elevationDeg']), candidateId: s.candidateId, detector: s.detector })),
-    deployment: { selected: [...doc.deployment.selected], active: doc.deployment.active },
+      pose: pick(s.pose, ['azimuthDeg', 'elevationDeg']), candidateId: s.candidateId, detector: s.detector, ...(legacy ? {} : { note: s.note }) })),
+    ...(legacy ? { deployment: { selected: [...doc.deployment.selected], active: doc.deployment.active } }
+      : { deployments: doc.deployments.map(d => ({ id: d.id, name: d.name, stations: [...d.stations] })) }),
     anomalies: []
   };
 }
 
-// Older versions of the same major are upgraded here, step by step (none yet).
+// Older versions of the same major are upgraded here, step by step.
+// 1.0 → 1.1: the selection becomes one deployment, stations get an empty note, and the
+// active station leaves the plan (it is session state; plan-store keeps it).
 export function migratePlan(doc) {
-  return validatePlan(doc);
+  let plan = validatePlan(doc);
+  if (plan.schemaVersion.startsWith('1.0.')) {
+    const { deployment, ...rest } = plan;
+    plan = validatePlan({ ...rest, schemaVersion: PLAN_SCHEMA_VERSION,
+      stations: rest.stations.map(s => ({ ...s, note: '' })),
+      deployments: deployment.selected.length ? [{ id: 'deployment-1', name: 'deployment-1', stations: deployment.selected }] : [] });
+  }
+  return plan;
 }
 
 export function parsePlan(source) {
@@ -113,7 +143,11 @@ export function parsePlan(source) {
   return migratePlan(doc);
 }
 
-export const serializePlan = plan => `${JSON.stringify(validatePlan(plan), null, 2)}\n`;
+export function serializePlan(plan) {
+  plan = validatePlan(plan);
+  if (plan.schemaVersion !== PLAN_SCHEMA_VERSION) fail(`only ${PLAN_SCHEMA_VERSION} plans are written; migrate first`);
+  return `${JSON.stringify(plan, null, 2)}\n`;
+}
 
 // Synchronous so every assessment input can carry its plan reference.
 export function planHash(plan) {
@@ -123,9 +157,11 @@ export function planHash(plan) {
 const SETTINGS_DEVICE = ['width', 'height', 'stripPitch', 'strips', 'spacing'];
 const SETTINGS_RESPONSE = ['layerEfficiency', 'deadLiveFraction', 'angularResolutionDeg', 'systematicFraction', 'exposureDays', 'angularModel'];
 
-// App state: flat stations { id, name, x, y, z, az, el, candidateId }, the active index,
-// selected station ids and the device settings form values (deviceSettingsData).
-export function planFromState({ title = '', release, scenario = null, contentHash = null, model, stations, activeIndex = 0, selected = [], settings }) {
+// App state: flat stations { id, name, note, x, y, z, az, el, candidateId }, deployments
+// { id, name, stations } and the device settings form values (deviceSettingsData). Members of
+// removed stations are dropped from every deployment.
+export function planFromState({ title = '', release, scenario = null, contentHash = null, model, stations, deployments = [], settings }) {
+  const ids = new Set(stations.map(s => s.id));
   const plan = {
     format: PLAN_FORMAT, schemaVersion: PLAN_SCHEMA_VERSION, title,
     scene: { release, contentHash, scenario },
@@ -134,21 +170,20 @@ export function planFromState({ title = '', release, scenario = null, contentHas
       device: { model, layers: 3, ...Object.fromEntries(SETTINGS_DEVICE.map(key => [key, settings[key]])) },
       response: Object.fromEntries(SETTINGS_RESPONSE.map(key => [key, settings[key]])) } },
     stations: stations.map(s => ({ id: s.id, name: s.name, position: [s.x, s.y, s.z], pose: { azimuthDeg: s.az, elevationDeg: s.el },
-      candidateId: s.candidateId ?? null, detector: 'default' })),
-    deployment: { selected: [...selected], active: stations[activeIndex]?.id },
+      candidateId: s.candidateId ?? null, detector: 'default', note: s.note ?? '' })),
+    deployments: deployments.map(d => ({ id: d.id, name: d.name, stations: d.stations.filter(id => ids.has(id)) })),
     anomalies: []
   };
   return validatePlan(plan);
 }
 
 export function stateFromPlan(plan) {
-  plan = validatePlan(plan);
+  plan = migratePlan(plan);
   const detector = plan.detectors.default;
   return {
-    stations: plan.stations.map(s => ({ id: s.id, name: s.name, x: s.position[0], y: s.position[1], z: s.position[2],
+    stations: plan.stations.map(s => ({ id: s.id, name: s.name, note: s.note, x: s.position[0], y: s.position[1], z: s.position[2],
       az: s.pose.azimuthDeg, el: s.pose.elevationDeg, candidateId: s.candidateId })),
-    activeIndex: plan.stations.findIndex(s => s.id === plan.deployment.active),
-    selected: [...plan.deployment.selected],
+    deployments: plan.deployments.map(d => ({ id: d.id, name: d.name, stations: [...d.stations] })),
     settings: { ...Object.fromEntries(SETTINGS_DEVICE.map(key => [key, detector.device[key]])), ...detector.response },
     model: detector.device.model
   };
@@ -165,5 +200,20 @@ export function planFromLegacyStorage({ release, scenario = null, title = '', mo
     used.add(id);
     return { id, name: String(s.name ?? id), x: s.x, y: s.y, z: s.z, az: s.az, el: s.el, candidateId };
   });
-  return planFromState({ title, release, scenario, model, stations: unique, activeIndex: 0, selected: [], settings });
+  return planFromState({ title, release, scenario, model, stations: unique, settings });
+}
+
+// A plan holding only the chosen deployments, their member stations (in pool order) and the
+// detectors they use (FR-P9). `default` is always kept, as the format requires it.
+export function extractDeployments(plan, deploymentIds) {
+  plan = migratePlan(plan);
+  if (!Array.isArray(deploymentIds) || !deploymentIds.length) throw new Error('Choose at least one deployment');
+  const known = new Set(plan.deployments.map(d => d.id));
+  for (const id of deploymentIds) if (!known.has(id)) throw new Error(`Deployment ${id} is not in the plan`);
+  const chosen = plan.deployments.filter(d => deploymentIds.includes(d.id));
+  const members = new Set(chosen.flatMap(d => d.stations));
+  if (!members.size) throw new Error('The chosen deployments have no stations');
+  const stations = plan.stations.filter(s => members.has(s.id)), used = new Set(['default', ...stations.map(s => s.detector)]);
+  return validatePlan({ ...plan, detectors: Object.fromEntries(Object.entries(plan.detectors).filter(([name]) => used.has(name))),
+    stations, deployments: chosen });
 }

@@ -18,7 +18,7 @@ export function createDeploymentState({stations,environment,configuration=defaul
   select(index){if(!Number.isInteger(index)||index<0||index>=candidates.length)throw new Error('Unknown candidate');active=index;},
   replaceStations(values){const next=freeze(values.map(station));if(!next.length)throw new Error('At least one candidate station is required');candidates=next;active=Math.min(active,next.length-1);},
   updateStation(key,value){if(!['name','x','y','z','az','el'].includes(key))throw new Error('Unknown station field');const next=[...candidates];next[active]=station({...next[active],[key]:key==='name'?String(value):+value});candidates=freeze(next);},
-  addStation(){const ids=new Set(candidates.map(c=>c.id));let n=candidates.length+1;while(ids.has('station-'+n))n++;candidates=freeze([...candidates,station({...candidates[active],id:'station-'+n,candidateId:null,name:'新候选点 '+(candidates.length+1)})]);active=candidates.length-1;},
+  addStation(){const ids=new Set(candidates.map(c=>c.id));let n=candidates.length+1;while(ids.has('station-'+n))n++;candidates=freeze([...candidates,station({...candidates[active],id:'station-'+n,candidateId:null,note:'',name:'新候选点 '+(candidates.length+1)})]);active=candidates.length-1;},
   removeStation(){if(candidates.length<2)return;const next=[...candidates];next.splice(active,1);candidates=freeze(next);active=Math.max(0,active-1);},
   configure(settings){config=freeze(applyDeviceConfiguration(config,settings));},
   setEnvironment(environment){if(!Object.values(environment).every(Number.isFinite))throw new Error('Environment values must be finite');water=freeze(structuredClone(environment));},

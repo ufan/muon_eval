@@ -9,14 +9,15 @@ import { parseRunArguments } from '../../scripts/run-plan.mjs';
 const plan = parsePlan(await readFile(new URL('../fixtures/plans/two-stations.json', import.meta.url), 'utf8'));
 const environment = { water_up_level: 290 };
 
-test('stations are chosen as all, the selected deployment, the active station or by id', () => {
+test('stations are chosen as all, a deployment or by id', () => {
   assert.deepEqual(selectPlanStations(plan, 'all').map(s => s.id), ['north', 'station-2']);
-  assert.deepEqual(selectPlanStations(plan, 'selected').map(s => s.id), ['north']);
-  assert.deepEqual(selectPlanStations(plan, 'active').map(s => s.id), ['station-2']);
+  assert.deepEqual(selectPlanStations(plan, { deployment: 'deployment-1' }).map(s => s.id), ['north']);
+  assert.deepEqual(selectPlanStations(plan, { deployment: 'both' }).map(s => s.id), ['station-2', 'north']);
+  assert.throws(() => selectPlanStations(plan, { deployment: 'ghost' }), /ghost/);
   assert.deepEqual(selectPlanStations(plan, ['station-2', 'north']).map(s => s.id), ['station-2', 'north']);
   assert.throws(() => selectPlanStations(plan, ['missing']), /missing/);
   assert.throws(() => selectPlanStations(plan, ['north', 'north']), /twice/);
-  assert.throws(() => selectPlanStations({ ...plan, deployment: { ...plan.deployment, selected: [] } }, 'selected'), /no selected deployment/);
+  assert.throws(() => selectPlanStations({ ...plan, deployments: [{ id: 'empty', name: 'Empty', stations: [] }] }, { deployment: 'empty' }), /no stations/);
   assert.throws(() => selectPlanStations(plan, 'some'), /Unknown station choice/);
 });
 
@@ -78,7 +79,8 @@ test('command-line arguments are explicit and checked', () => {
     { planPath: 'plan.json', outDir: 'runs/a', stations: 'all', quality: 'final', workers: null, compare: null });
   assert.deepEqual(parseRunArguments(['plan.json', '--out', 'o', '--stations', 'north,station-2', '--quality', 'preview', '--workers', '2', '--compare', 'material:concrete:0.15']),
     { planPath: 'plan.json', outDir: 'o', stations: ['north', 'station-2'], quality: 'preview', workers: 2, compare: { kind: 'material', id: 'concrete', minimumPathM: .15 } });
-  assert.equal(parseRunArguments(['p', '--out', 'o', '--stations', 'selected']).stations, 'selected');
+  assert.deepEqual(parseRunArguments(['p', '--out', 'o', '--deployment', 'both']).stations, { deployment: 'both' });
+  assert.throws(() => parseRunArguments(['p', '--out', 'o', '--deployment', 'both', '--stations', 'north']), /once/);
   for (const argv of [[], ['p'], ['p', '--out'], ['p', '--out', 'o', '--quality', 'best'], ['p', '--out', 'o', '--workers', '0'],
     ['p', '--out', 'o', '--compare', 'concrete'], ['p', '--out', 'o', '--compare', 'material:concrete:-1'], ['p', '--out', 'o', '--bogus'], ['p', 'q', '--out', 'o']]) {
     assert.throws(() => parseRunArguments(argv), /Usage|Unknown|must/, JSON.stringify(argv));

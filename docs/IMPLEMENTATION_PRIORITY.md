@@ -42,7 +42,7 @@ Last updated: 2026-10-12
 | 11 | Plan / scan / result schemas with versions and migrations | FR-P1, FR-P2, ADR-006, FR-K1 | `muography-plan` 1.0.0 (PLAN_FORMAT.md, schema, `plan-format.js`, `plan-store.js`); storage, export and import in the app; results record their plan (hash + station). Scan format deferred to P5 (owner) | Done |
 | 11b | One "导出" menu on the versioned result format; comparison moves into it | FR-P4, ADR-030 | Right after #11; do 13a with it | Todo |
 | 12 | Async, cancellable assessment port | ADR-006 | `createLocalAssessmentPort`: `open(input).evaluate(quality, {signal, onProgress}) → Promise`, AbortError on cancel; the controller uses only the port. A worker or server port implements the same interface | Done |
-| AN1 | Anomaly schema as part of the plan format | FR-H1, FR-H11 | Field `anomalies` reserved (empty) in plan 1.0.0; schema designed with P4 as plan 1.1.0 (owner) | Todo |
+| AN1 | Anomaly schema as part of the plan format | FR-H1, FR-H11 | Field `anomalies` reserved (empty) in plans 1.0 and 1.1; schema designed with P4 as plan 1.2.0 (owner; 1.1.0 went to deployments, 14a) | Todo |
 | 13 | Headless batch runner (Node CLI) | FR-S5, ADR-006 | `scripts/run-plan.mjs` on the pure `plan-runner.js`: plan in; per-station results, run summary and optional replayable comparison out; worker threads, byte-identical for any thread count. Six stations at 65² in about 6 s on four cores. Scan input with P5. Known limits are tracked in 13a, #14, FR-L4, FR-K11 and the pending browser regressions | Done |
 | 13a | Open run outputs in the app; smaller result files | FR-S5, FR-P4 | With 11b (same versioned result format and export/import menu). (1) The app cannot open a single `<station>.result.json` or a run folder (`summary.json`); today only `comparison.json` replays. (2) Sizes: a 65² result is 3–4 MB of JSON and `comparison.json` embeds every result (22 MB for 6 stations), so about 14 stations exceed the app's 50 MB import limit, and replay stops at 20 rows. Fix: comparison references result files by SHA-256 (as `summary.json` does) instead of embedding them, and a compact result encoding; limits set from measurements | Todo |
 
@@ -52,7 +52,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| 14a | Plan format 1.1.0 (named deployments, candidate notes; active station moves out of the plan) and several studies per release in browser storage, with migration from 1.0 and from one plan per release | FR-P1, FR-P7, FR-P8, ADR-020 | Data format; test first (L1 format and store, L3 schema). Minimal study picker (switch, new); import creates a study | Todo |
+| 14a | Plan format 1.1.0 (named deployments, candidate notes; active station moves out of the plan) and several studies per release in browser storage, with migration from 1.0 and from one plan per release | FR-P1, FR-P7, FR-P8, ADR-020 | Data format; test first (L1 format and store, L3 schema). Minimal study picker (switch, new) in 候选部署点; import creates a study; runner takes `--deployment <id>` | Done |
 | 14b | Working station vs fixed candidates (update / save as new); per-candidate compact result cache with status; comparison of candidates replaces the separate "方案比较" rows | FR-P6, FR-P10, ADR-020 | Needs 14a, #12; no recompute for unchanged candidates; stale results never shown. Results of a batch run (#13) with the same snapshot key can fill the cache | Todo |
 | 14c | Named deployments UI (new, copy, rename, delete, membership); study picker complete (rename, delete, import); export of a study or of deployments | FR-P7, FR-P8, FR-P9 | Needs 14a, 14b | Todo |
 | 14d | Sketching: place the working station by clicking the model; geometric coverage of several candidates at once | FR-P5, FR-M10 | Needs 14b; multi-station part of 15a | Todo |
@@ -145,6 +145,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: 14a done (plan 1.1.0, several studies per release).
 - 2026-10-14: #14 replaced by 14a–14d after the study-workflow review (owner): fixed candidates, named deployments, several studies per release, recompute with a compact session cache.
 - 2026-10-14: #13 done (headless batch runner); its known limits recorded as 13a and on #14, FR-L4, FR-K11 and the browser regressions.
 - 2026-10-14: On-demand rendering and in-view feature emphasis done.

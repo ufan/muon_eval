@@ -72,12 +72,14 @@ try{
  await page.locator('#mainMaterialContours').check();await page.locator('#mainResponseContours').check();assert.ok(await page.locator('#mainPatternOverlay path').count()>0);
  await page.locator('#projectionCanvas').scrollIntoViewIfNeeded();const canvas=await page.locator('#projectionCanvas').boundingBox();await page.mouse.move(canvas.x+canvas.width/2,canvas.y+canvas.height/2);assert.match(await page.locator('#projectionReadout').innerText(),/柱密度/);assert.ok(await page.locator('#projectionReadout .crossing').count()>0);await page.mouse.move(0,0);
  await setInput('#azNumber','10');await setInput('#azNumber','25');await setInput('#elNumber','35');await ready();result=(await comparison()).entries.at(-1).result;assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);assert.deepEqual(result.variables,initial.variables);
- // "导出部署方案" writes a muography-plan 1.0.0 file that loads back byte-identically (PLAN_FORMAT.md).
+ // "导出部署方案" writes a muography-plan 1.1.0 file that loads back byte-identically (PLAN_FORMAT.md).
  const planPending=page.waitForEvent('download');await click('#export');const download=await planPending,planText=await readFile(await download.path(),'utf8'),plan=parsePlan(planText);
  assert.equal(serializePlan(plan),planText);assert.equal(plan.scene.release,release);assert.equal(plan.scene.scenario,'low');assert.ok(plan.stations.every(s=>s.candidateId===s.id));
- assert.deepEqual(plan.stations.find(s=>s.id===plan.deployment.active).pose,{azimuthDeg:25,elevationDeg:35});
+ assert.equal(plan.schemaVersion,'1.1.0');assert.deepEqual(plan.deployments,[]);assert.ok(plan.stations.every(s=>s.note===''));
+ // The plan holds no active station (session state); the edited station is the first, active one.
+ assert.deepEqual(plan.stations[0].pose,{azimuthDeg:25,elevationDeg:35});
  // The result records the plan it came from: same hash as the exported plan, and the active station.
- assert.deepEqual(result.plan,{hash:planHash(plan),stationId:plan.deployment.active});
+ assert.deepEqual(result.plan,{hash:planHash(plan),stationId:plan.stations[0].id});
  // Device form recomputes from one snapshot; results are history-independent (FR-C1), so doubling exposure doubles counts exactly.
  await click('#deviceSettings');await page.locator('#cfgExposure').fill('60');await page.locator('#deviceForm').evaluate(element=>element.requestSubmit());await ready();
  const doubled=(await comparison()).entries.at(-1).result;assert.equal(doubled.response.exposureDays,60);assert.equal(doubled.totalCount,result.totalCount*2);assert.equal(doubled.weightedTransmission,result.weightedTransmission);
@@ -91,18 +93,27 @@ try{
  await page.reload();await ready();await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');assert.equal(await page.locator('#azNumber').inputValue(),'25');
  assert.equal(await page.locator('#recognitionThreshold').inputValue(),'0.5');assert.ok(await page.locator('#precisionContours').isChecked());assert.equal(await page.locator('#coverageMode').inputValue(),'physical');assert.ok(await page.locator('#coverageContext').isChecked());assert.ok(await page.locator(`[data-recognition="${shown}"]`).isChecked());
  assert.ok(await page.locator('[data-feature-group="flood_release"]').isChecked());assert.equal(await page.locator('[data-feature-group="gallery"]').isChecked(),false);
- // Importing a plan of the current release and scenario applies it in place; another scenario opens that scenario.
+ // An imported plan becomes a new study (FR-P8): in place for the current release and scenario; another scenario opens that scenario.
+ const studies=async()=>page.locator('#studySelect option').evaluateAll(options=>options.map(o=>[o.value,o.selected]));
+ assert.deepEqual(await studies(),[['study-1',true]]);
  const importPlan=async(mutate,expectNavigation)=>{const doc=JSON.parse(planText);mutate(doc);const file=join(artifacts,'imported-plan.json');await writeFile(file,JSON.stringify(doc));
   const navigation=expectNavigation?page.waitForEvent('load'):null;await page.locator('#importPlanFile').setInputFiles(file);if(navigation){await navigation;}await ready();};
- await importPlan(doc=>{doc.scene.scenario='extreme';doc.stations.find(s=>s.id===doc.deployment.active).pose.elevationDeg=40;},false);
- assert.equal(await page.locator('#elNumber').inputValue(),'40');assert.equal(await page.locator('#scenarioSelect').inputValue(),'extreme');
- await importPlan(doc=>{doc.scene.scenario='mid';doc.stations.find(s=>s.id===doc.deployment.active).pose.elevationDeg=41;},true);
- assert.equal(await page.locator('#scenarioSelect').inputValue(),'mid');assert.equal(await page.locator('#elNumber').inputValue(),'41');
+ await importPlan(doc=>{doc.scene.scenario='extreme';doc.stations[0].pose.elevationDeg=40;},false);
+ assert.equal(await page.locator('#elNumber').inputValue(),'40');assert.equal(await page.locator('#scenarioSelect').inputValue(),'extreme');assert.deepEqual(await studies(),[['study-1',false],['study-2',true]]);
+ await importPlan(doc=>{doc.scene.scenario='mid';doc.stations[0].pose.elevationDeg=41;},true);
+ assert.equal(await page.locator('#scenarioSelect').inputValue(),'mid');assert.equal(await page.locator('#elNumber').inputValue(),'41');assert.deepEqual(await studies(),[['study-1',false],['study-2',false],['study-3',true]]);
  assert.deepEqual(errors,[]);
  // A plan for an unregistered release is refused with a message; nothing changes.
  const refusal=page.waitForEvent('dialog');const bad=join(artifacts,'bad-plan.json');await writeFile(bad,planText.replace(release,'unknown@0'));
  await page.locator('#importPlanFile').setInputFiles(bad);const dialog=await refusal;assert.match(dialog.message(),/未登记/);await dialog.dismiss();
- assert.equal(await page.locator('#elNumber').inputValue(),'41');
+ assert.equal(await page.locator('#elNumber').inputValue(),'41');assert.equal((await studies()).length,3);
+ // Switching studies restores each one's stations and device; a new study starts from the dataset candidates; the choice survives a reload.
+ const openCandidates=async()=>{if(await page.locator('#candidateSection').evaluate(e=>e.classList.contains('collapsed')))await click('#candidateSection .section-toggle');};
+ await openCandidates();await page.locator('#studySelect').selectOption('study-1');await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');
+ await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');
+ await click('#newStudy');await ready();assert.deepEqual((await studies()).map(([id,on])=>[id,on]).at(-1),['study-4',true]);assert.equal(await page.locator('#candidateList .candidate').count(),count);
+ await page.reload();await ready();assert.equal((await studies()).find(([,on])=>on)[0],'study-4');
+ await openCandidates();await page.locator('#studySelect').selectOption('study-3');await ready();assert.equal(await page.locator('#elNumber').inputValue(),'41');
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
- console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
+ console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, studies, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

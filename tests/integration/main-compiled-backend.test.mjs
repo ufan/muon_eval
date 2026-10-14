@@ -40,7 +40,7 @@ test('main backend binds all published frozen scenarios to the existing exact as
    assert.throws(()=>session.ensureTargetSignificance(actual,'dam'),/unavailable/);
   }
   // The release's candidates become a valid plan that round-trips (PLAN_FORMAT.md).
-  const plan=planFromState({release,scenario:scenarioId,model:state.device.model,stations:state.candidates,activeIndex:state.active,settings:deviceSettingsData(state.configuration)});
+  const plan=planFromState({release,scenario:scenarioId,model:state.device.model,stations:state.candidates,settings:deviceSettingsData(state.configuration)});
   assert.ok(plan.stations.every(s=>s.candidateId===s.id));assert.equal(serializePlan(parsePlan(serializePlan(plan))),serializePlan(plan));
   assert.deepEqual(stateFromPlan(plan).stations.map(s=>[s.x,s.y,s.z]),state.candidates.map(s=>[s.x,s.y,s.z]));
   const changed=state.snapshot();changed.environment.water_up_level+=1;assert.throws(()=>backend.assessment.createSession(changed),/frozen/);
