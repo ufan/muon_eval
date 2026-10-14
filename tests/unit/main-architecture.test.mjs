@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createDeploymentState } from '../../dist/modules/deployment-state.js';
 import { defaultDeviceConfiguration, applyDeviceConfiguration } from '../../dist/modules/device-configuration.js';
-import { createAssessmentController } from '../../dist/modules/assessment-controller.js';
+import { createAssessmentController, createLocalAssessmentPort } from '../../dist/modules/assessment-controller.js';
 
 const configuration=defaultDeviceConfiguration();
 const station={id:'s1',name:'station',x:10,y:20,z:30,az:0,el:25},environment={level:295};
@@ -23,22 +23,36 @@ test('deployment owns immutable inputs independently of view state and saved cal
  assert.equal(adjusted.device.width,5);assert.equal(adjusted.device.stripsX,2);assert.equal(adjusted.device.baseline,.4);assert.equal(adjusted.response.systematicFraction,.03);
 });
 
-function clock(){let id=0;const pending=new Map();return{scheduler:{set(fn){pending.set(++id,fn);return id;},clear(key){pending.delete(key);}},step(){const next=pending.entries().next().value;if(!next)return false;pending.delete(next[0]);next[1]();return true;},drain(){let n=0;while(this.step())if(n++>50)throw Error('Unbounded scheduling');},pending};}
-test('controller snapshots both passes, cancels superseded jobs and rejects stale callbacks',()=>{
- const time=clock(),source={value:1},seen=[],published=[],failures=[];
- const assessment={createSession(input){seen.push(input.value);return{cloud:()=>null,quickMetrics:()=>null,projection(quality){let rows=0;return{advance(){return ++rows===2?{done:true,result:{value:input.value}}:{done:false,progress:.5};},complete:r=>({...r,quality})};}};}};
- const controller=createAssessmentController({assessment,readInputs:()=>source,scheduler:time.scheduler,onResult:r=>published.push(r),onError:e=>failures.push(e)});
- controller.run();source.value=2;time.drain();assert.deepEqual(published,[{value:1,quality:'preview'},{value:1,quality:'final'}]);assert.deepEqual(seen,[1]);
- controller.run();const stale=[...time.pending.values()][0];source.value=3;controller.schedule();stale();time.drain();assert.deepEqual(published.slice(2),[{value:3,quality:'preview'},{value:3,quality:'final'}]);
- controller.schedule();controller.dispose();time.drain();assert.equal(published.length,4);assert.equal(failures.length,0);
+function clock(){let id=0;const pending=new Map();return{scheduler:{set(fn){pending.set(++id,fn);return id;},clear(key){pending.delete(key);}},step(){const next=pending.entries().next().value;if(!next)return false;pending.delete(next[0]);next[1]();return true;},
+ // Results arrive through promises (ADR-006 port): let continuations run between scheduled batches.
+ async drain(){let n=0;for(;;){await new Promise(r=>setImmediate(r));if(!this.step()){await new Promise(r=>setImmediate(r));if(!pending.size)return;continue;}if(n++>50)throw Error('Unbounded schedule');}},pending};}
+const steppedAssessment=(seen=[])=>({createSession(input){seen.push(input.value);return{cloud:()=>null,quickMetrics:()=>null,projection(quality){let rows=0;return{advance(){return ++rows===2?{done:true,result:{value:input.value}}:{done:false,progress:.5};},complete:r=>({...r,quality})};}};}});
+test('controller snapshots both passes, cancels superseded jobs and rejects stale callbacks',async()=>{
+ const time=clock(),source={value:1},seen=[],published=[],failures=[],progress=[];
+ const controller=createAssessmentController({assessment:steppedAssessment(seen),readInputs:()=>source,scheduler:time.scheduler,onResult:r=>published.push(r),onProgress:p=>progress.push(p.quality),onError:e=>failures.push(e)});
+ controller.run();source.value=2;await time.drain();assert.deepEqual(published,[{value:1,quality:'preview'},{value:1,quality:'final'}]);assert.deepEqual(seen,[1]);assert.deepEqual([...new Set(progress)],['preview','final']);
+ controller.run();const stale=[...time.pending.values()][0];source.value=3;controller.schedule();stale();await time.drain();assert.deepEqual(published.slice(2),[{value:3,quality:'preview'},{value:3,quality:'final'}]);
+ controller.schedule();controller.dispose();await time.drain();assert.equal(published.length,4);assert.equal(failures.length,0);
 });
 
-test('controller contains input/assessment failures and cannot restart after disposal',()=>{
+test('the assessment port evaluates one quality as a cancellable promise',async()=>{
+ const time=clock(),port=createLocalAssessmentPort(steppedAssessment(),{scheduler:time.scheduler}),session=port.open({value:7}),progress=[];
+ const done=session.evaluate('final',{onProgress:p=>progress.push(p)});await time.drain();assert.deepEqual(await done,{value:7,quality:'final'});assert.deepEqual(progress,[.5]);
+ const abort=new AbortController(),rejected=assert.rejects(session.evaluate('preview',{signal:abort.signal}),{name:'AbortError'});abort.abort();await rejected;
+ await time.drain();assert.equal(time.pending.size,0);
+ const aborted=new AbortController();aborted.abort();await assert.rejects(session.evaluate('preview',{signal:aborted.signal}),{name:'AbortError'});
+ assert.throws(()=>session.evaluate('draft'),/quality/);
+});
+
+test('controller contains input/assessment failures and cannot restart after disposal',async()=>{
  const time=clock(),failures=[],controller=createAssessmentController({assessment:{createSession(){throw Error('backend unavailable');}},readInputs:()=>({}),scheduler:time.scheduler,onError:e=>failures.push(e.message)});
  controller.run();assert.deepEqual(failures,['backend unavailable']);assert.equal(time.pending.size,0);
  controller.dispose();controller.run();controller.schedule();assert.equal(time.pending.size,0);assert.equal(failures.length,1);
  const broken=createAssessmentController({assessment:{},readInputs(){throw Error('invalid inputs');},scheduler:time.scheduler,onError:e=>failures.push(e.message)});
  broken.run();assert.equal(failures.at(-1),'invalid inputs');assert.equal(time.pending.size,0);
+ // A failing pass is reported once and leaves nothing scheduled.
+ const failing=createAssessmentController({assessment:{createSession:()=>({cloud:()=>null,quickMetrics:()=>null,projection:()=>({advance(){throw Error('trace failed');}})})},readInputs:()=>({}),scheduler:time.scheduler,onError:e=>failures.push(e.message)});
+ failing.run();await time.drain();assert.equal(failures.at(-1),'trace failed');assert.equal(time.pending.size,0);
 });
 
 test('major module import graph is acyclic and core/controller/state cannot import views or backends',async()=>{

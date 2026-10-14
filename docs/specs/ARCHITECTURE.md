@@ -10,7 +10,8 @@ app.js: release/scenario selection and dependency assembly
   │   └─ compiled-mesh-runtime → compiled-glb / triangle-bvh
   ├─ deployment-state → device-configuration / detector-defaults
   ├─ compiled-main-assessment → shared detector-projection / muon-response
-  ├─ assessment-controller: snapshots, cancellation, progress and result publication
+  ├─ assessment-controller: snapshots, cancellation, progress and result publication over the
+  │   assessment port (open(input).evaluate(quality, {signal}) → Promise; local adapter today, ADR-006)
   └─ main-page → compiled-scene-view / projection-canvas-view / main-pattern-view
       ├─ recognition-panel-view → recognition-layers (pure; dataset feature catalogue + display profile)
       └─ feature-layer-panel-view → feature-layers (pure; 3D feature groups)

@@ -133,7 +133,7 @@ Any replacement tracer must pass the existing `conformance_rays.json` / `conform
 
 **Decision.** Close these gaps before any server work, since each is cheap now and expensive later:
 1. Plan / scan / result schemas, versioned with migrations; they become the future API contract.
-2. Asynchronous, cancellable assessment port (Promise + AbortSignal, as `evaluateCompiledAssessment` already does); only `assessment-controller.js` changes.
+2. Asynchronous, cancellable assessment port (Promise + AbortSignal, as `evaluateCompiledAssessment` already does); only `assessment-controller.js` changes. *Done 2026-10-14:* `createLocalAssessmentPort` (`open(input)` → `evaluate(quality, { signal, onProgress })` → Promise, AbortError on cancel); the controller depends only on the port.
 3. Deterministic calculation: no result may depend on evaluation history (FR-C1).
 4. Traceable results for every backend (the legacy backend recorded its ray cutoff, FR-C2, before it was retired, ADR-028).
 5. Headless batch runner (Node CLI: plan in, results out) that later becomes the server worker unchanged.
@@ -595,6 +595,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-14: ADR-006 item 2 implemented (assessment port).
 - 2026-10-14: ADR-004: caching rule until the build step (no-cache revalidation; content hashing deferred to the build).
 - 2026-10-14: ADR-030 accepted: planning app and dataset workbench as two entry points with one selection contract (owner).
 - 2026-10-14: ADR-029: material envelope overlay removed from the main app (owner); colour rule: hues only for named features.

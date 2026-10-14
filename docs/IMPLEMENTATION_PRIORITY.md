@@ -41,7 +41,7 @@ Last updated: 2026-10-12
 |---|---|---|---|---|
 | 11 | Plan / scan / result schemas with versions and migrations | FR-P1, FR-P2, ADR-006, FR-K1 | Becomes the future API contract; subject-neutral, references datasets by release ID (+ content hash) | Todo |
 | 11b | One "导出" menu on the versioned result format; comparison moves into it | FR-P4, ADR-030 | Right after #11 | Todo |
-| 12 | Async, cancellable assessment port | ADR-006 | Change limited to `assessment-controller.js` | Todo |
+| 12 | Async, cancellable assessment port | ADR-006 | `createLocalAssessmentPort`: `open(input).evaluate(quality, {signal, onProgress}) → Promise`, AbortError on cancel; the controller uses only the port. A worker or server port implements the same interface | Done |
 | AN1 | Anomaly schema as part of the plan format | FR-H1, FR-H11 | Design together with #11 | Todo |
 | 13 | Headless batch runner (Node CLI) | FR-S5, ADR-006 | Plan in, results out; future server worker | Todo |
 
@@ -140,6 +140,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: #12 done (async, cancellable assessment port).
 - 2026-10-14: Stale-module fix: `no-cache` revalidation in `nginx.conf` and the new `npm run serve`; per-file stamps reverted, content hashing deferred to the build step (owner).
 - 2026-10-14: 15c done (precision lines, expert diagnostics drawer, two-way links). Next: P2 #11/#12.
 - 2026-10-14: ADR-030: 15c extended (links), 11b export menu, W1 dataset workbench; after 15c, P2 #11/#12 come next because #15/#16 depend on them.
