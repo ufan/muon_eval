@@ -3,6 +3,7 @@
 // port and scheduler; no DOM.
 import { prepareProjectionPattern } from './projection-pattern-fields.js';
 import { comparisonIndicators, snapshotDifferences } from './pattern-comparison.js';
+import { computeRecognitionLayers, detectorSpaceItems } from './recognition-layers.js';
 
 const stable = value => Array.isArray(value) ? value.map(stable)
   : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, stable(value[key])])) : value;
@@ -13,18 +14,39 @@ export function assessmentKey({ station, device, response, environment }, qualit
   return JSON.stringify(stable({ station: { x, y, z, az, el }, device, response, environment, quality }));
 }
 
+// Per recognition item, the length each pixel's ray runs inside it (recognition-layers.js, the space the
+// detector sits in excluded), kept sparse: pixel indices (top row first) and lengths of the pixels with any
+// length, so masks at any threshold come from the cache (#15 overview). `detectorItems`: the items the
+// detector sits in; `detectorFeatures`: the features it sits in (the first stretch of its rays).
+export function compactItemLengths(data, items) {
+  const layers = computeRecognitionLayers(data, items, { threshold: 0 }), out = {};
+  for (const layer of layers) {
+    if (!layer.maskPixels) continue;
+    const index = new Uint16Array(layer.maskPixels), length = new Float32Array(layer.maskPixels);
+    let k = 0;
+    layer.lengths.forEach((value, i) => { if (value > 0) { index[k] = i; length[k++] = value; } });
+    out[layer.id] = { index, length };
+  }
+  const mid = Math.floor(data.n / 2);
+  const centre = data.values[mid * data.n + mid], first = centre.q.segments?.[0];
+  return { items: out, detectorItems: detectorSpaceItems(centre, items), detectorFeatures: first && first.t0 <= 1e-9 ? [...first.entityIds] : [] };
+}
+
 // Compact form of a compiled result: summary, comparison indicators for `selection`, the
-// snapshot inputs (for parameter differences) and 32-bit per-pixel arrays in the result's
-// pixel order (top row first). Path segments are left out until a view needs them (#16).
-export function compactResult(result, { selection } = {}) {
+// snapshot inputs (for parameter differences), 32-bit per-pixel arrays in the result's
+// pixel order (top row first) and, with `recognition` (compactItemLengths), the item lengths.
+// Path segments are left out until a view needs them (#16).
+export function compactResult(result, { selection, recognition = null } = {}) {
   const n = result.config.bins, count = n * n, arrays = {};
   for (const key of ['count', 'displayCount', 'transmission', 'displayTransmission', 'mwe']) arrays[key] = Float32Array.from(result.pixels, p => p[key]);
   arrays.side = Uint8Array.from(result.pixels, p => p.side === 'back' ? 1 : 0);
   let indicators = null;
   if (selection) { try { indicators = comparisonIndicators(result, selection); } catch { indicators = null; } }
   const entry = { n, totalCount: result.totalCount, weightedTransmission: result.weightedTransmission, modelVersion: result.modelVersion,
-    plan: result.plan ? { ...result.plan } : null, indicators, snapshotInputs: prepareProjectionPattern(result).snapshot.inputs, pixels: arrays };
-  entry.bytes = Object.values(arrays).reduce((sum, a) => sum + a.byteLength, 0) + JSON.stringify(entry.snapshotInputs).length + (indicators ? 2000 : 0);
+    plan: result.plan ? { ...result.plan } : null, indicators, snapshotInputs: prepareProjectionPattern(result).snapshot.inputs, pixels: arrays,
+    items: recognition?.items ?? {}, detectorItems: recognition?.detectorItems ?? [], detectorFeatures: recognition?.detectorFeatures ?? [] };
+  entry.bytes = Object.values(arrays).reduce((sum, a) => sum + a.byteLength, 0) + JSON.stringify(entry.snapshotInputs).length + (indicators ? 2000 : 0)
+    + Object.values(entry.items).reduce((sum, item) => sum + item.index.byteLength + item.length.byteLength, 0);
   if (entry.pixels.count.length !== count) throw new Error('Invalid compact result shape');
   return entry;
 }

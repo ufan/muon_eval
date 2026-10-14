@@ -6,6 +6,7 @@ import { createCompiledMainAssessment } from './compiled-main-assessment.js';
 import { compiledDefaultStations } from './compiled-deployment-adapter.js';
 import { placeInCavity } from './station-placement.js';
 import { computeSliceMask } from './slice-plane.js';
+import { itemParts, itemContains, sampleTargetPoints } from './target-samples.js';
 
 export async function createApplicationBackend(dataset, selection) {
   if (selection.datasetId !== dataset.id) throw new Error('Loaded dataset differs from application selection');
@@ -22,6 +23,15 @@ export async function createApplicationBackend(dataset, selection) {
     // Slice-plane mask on the calculation geometry: matter is any material denser than 0.01 g/cm³ (gases excluded).
     sliceMask: request => computeSliceMask({ ...request, classify: point => runtime.classifyModel(point),
       isMatter: c => (runtime.projectionGeometry.materials[c.material]?.density ?? 0) > 0.01 }),
+    // Points inside each recognition item (#15 overview), from the calculation geometry: id → points.
+    targetSamples: async ({ items, signal = null, yieldTo }) => {
+      const components = runtime.components.filter(c => c.bvh).map(c => ({ ...c.bvh.bounds, entityIds: c.sourceEntityIds, material: c.metadata.material_id }));
+      const samples = new Map();
+      for (const item of items) {
+        samples.set(item.id, await sampleTargetPoints({ parts: itemParts(item, components), contains: c => itemContains(item, c), classify: point => runtime.classifyModel(point), signal, ...(yieldTo ? { yieldTo } : {}) }));
+      }
+      return samples;
+    },
     stations: compiledDefaultStations(dataset), environment: structuredClone(runtime.variables), waterLayers,
     capabilities: { continuousWater: false, targetSignificance: false, fluxCloud: false, layers: ['dam','terrain','upwater','downwater','cone'] },
     scenarios: [...dataset.geometry.scenarios.values()].map(s => ({ id: s.id, label: s.label, variables: { ...s.variables } })),

@@ -136,6 +136,15 @@ try{
  await page.locator('#sliceAxis').selectOption('y');assert.match(await page.locator('#sliceOut').innerText(),/^Y = /);
  await setInput('#slicePos','300','input');await sliceDone();await page.locator('#sliceOn').uncheck();
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
+ // Multi-station overview (#15): the same station set as 其他点位, one entry per recognition item; a station name opens it.
+ await page.locator('#overviewStations').selectOption('all');assert.equal(await page.locator('#coverageStations').inputValue(),'all');
+ await page.waitForFunction(()=>/^\d+ 个点位$/.test(document.querySelector('#overviewStatus').textContent),null,{timeout:60000});
+ assert.equal(await page.locator('.overview-item').count(),await page.locator('#recognitionItems input:not([data-recognition^="feature:"])').count());assert.match(await page.locator('.overview-item summary').first().innerText(),/站[\s\S]*视角/);
+ await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
+ await page.locator('.overview-item summary').first().click();const target=page.locator('[data-overview-station]').first(),targetName=await target.innerText();await target.click();await ready();
+ assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${targetName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));
+ await page.locator('#overviewShow3d').click();assert.equal(await page.locator('#coverageMode').inputValue(),'physical');assert.equal(await page.locator('#coverageMulti').inputValue(),'class');
+ await page.locator('#coverageMulti').selectOption('views');await page.locator('#overviewStations').selectOption('none');
  // Placing: one click on the model moves the working station there; Esc cancels.
  await click('#placeStation');assert.ok(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')));await page.keyboard.press('Escape');assert.equal(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')),false);
  const xyz=async()=>Promise.all(['#x','#y','#z'].map(id=>page.locator(id).inputValue())),start=await xyz();await click('#placeStation');
@@ -181,5 +190,5 @@ try{
  accept();await click('#deleteStudy');await ready();assert.deepEqual((await studies()).map(([id])=>id),['study-1','study-2','study-4']);assert.equal(await page.locator('#studySelect').inputValue(),'study-1');
  assert.equal(await page.locator('#deploymentSelect option').count(),1);
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
- console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, studies (rename, delete), working station and candidates, deployments and plan export menu, multi-station coverage and placement, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
+ console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, studies (rename, delete), working station and candidates, deployments and plan export menu, multi-station coverage, overview and placement, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

@@ -166,6 +166,8 @@ The app has two pictures: the **3D view** of the subject and the **projection** 
 | Material envelope | 2D | The sampled edge where a material starts or ends along neighbouring rays (e.g. concrete vs air); a display diagnostic, not a CAD edge |
 | Picking / hover | both | Pointing at something to identify it: a feature in 3D, or a pixel in the projection, which also draws that pixel's ray in 3D |
 | Coverage highlight | 3D | Tinting the parts of the subject inside a detector's field of view (FR-M10) |
+| Multi-station overview (多站总览) | both | The table of each recognition item over the shown stations: per station whether and how it images the item, and how well points inside the item are seen from several angles (FR-M1, FR-M15). Opening a station from it makes it the working station |
+| Target points | 3D | Points inside a recognition item, found with the calculation geometry, at which multi-view coverage is evaluated for the overview |
 | Slice plane (切面) | 3D | A movable plane through the subject's interior, shown only where it cuts matter, carrying the same coverage tint so interior targets can be judged (FR-M16). A view only |
 
 ### 5.2 Words with several meanings

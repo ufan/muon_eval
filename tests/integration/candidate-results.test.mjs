@@ -6,7 +6,9 @@ import { defaultDeviceConfiguration, deviceSettingsData } from '../../dist/modul
 import { planFromState } from '../../dist/modules/plan-format.js';
 import { planAssessmentInputs } from '../../dist/modules/plan-runner.js';
 import { createStudyState } from '../../dist/modules/study-state.js';
-import { assessmentKey, compactResult, compareEntries } from '../../dist/modules/candidate-results.js';
+import { assessmentKey, compactResult, compactItemLengths, compareEntries } from '../../dist/modules/candidate-results.js';
+import { computeRecognitionLayers } from '../../dist/modules/recognition-layers.js';
+import { stationItemSummary } from '../../dist/modules/overview-table.js';
 import { comparisonIndicators } from '../../dist/modules/pattern-comparison.js';
 
 // Compact per-candidate results (FR-P10) on the real compiled backend.
@@ -43,4 +45,18 @@ test('the compact form keeps the per-pixel values, indicators and differences at
   // Same detector, response and scenario; the ray length follows the station position and is no difference.
   assert.deepEqual(comparison.differences.map(d => d.fields), [[], []]);
   assert.equal(comparison.comparable, true);
+});
+
+test('item lengths in the compact form give the same masks as the full result at any threshold, at 6 bytes per pixel with any length', () => {
+  const pass = backend.assessment.createSession(study.candidateInput(plan.stations[0].id)).projection('final');
+  let step; do step = pass.advance(65); while (!step.done);
+  const data = pass.complete(step.result), items = dataset.recognitionItems;
+  const entry = compactResult(data.patternResult, { selection, recognition: compactItemLengths(data, items) });
+  for (const threshold of [.1, 1]) for (const layer of computeRecognitionLayers(data, items, { threshold })) {
+    const summary = stationItemSummary(entry, layer.id, threshold);
+    assert.equal(summary.maskPixels, layer.maskPixels, `${layer.id} at ${threshold} m`);
+  }
+  const itemBytes = Object.values(entry.items).reduce((sum, item) => sum + item.index.byteLength + item.length.byteLength, 0);
+  console.log(`item lengths: ${Object.entries(entry.items).map(([id, item]) => `${id} ${item.index.length} px`).join(', ')}; ${itemBytes} bytes; entry ${entry.bytes} bytes`);
+  assert.ok(itemBytes <= 6 * 65 * 65 * items.length);
 });
