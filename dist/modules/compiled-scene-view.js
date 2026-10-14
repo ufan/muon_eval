@@ -87,8 +87,8 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   // subject within reach, so it spans the probed stretch even from a station inside the subject, or at a fixed length when
   // it misses the subject.
   const fovGroup=new THREE.Group(),solidGroup=new THREE.Group(),lineMaterials=new Set();scene.add(fovGroup,solidGroup);let fovEdges=true,fovSolid=false;
-  function fatLines(points,{color,width,opacity,dashed=false}){const geometry=new LineSegmentsGeometry().setPositions(points),material=new LineMaterial({color,linewidth:width,transparent:true,opacity,dashed,
-      dashSize:radius*.025,gapSize:radius*.018,depthTest:!dashed,depthWrite:false});if(container.clientWidth)material.resolution.set(container.clientWidth,container.clientHeight);lineMaterials.add(material);
+  function fatLines(points,{color,width,opacity,dashed=false,depthTest=!dashed}){const geometry=new LineSegmentsGeometry().setPositions(points),material=new LineMaterial({color,linewidth:width,transparent:true,opacity,dashed,
+      dashSize:radius*.025,gapSize:radius*.018,depthTest,depthWrite:false});if(container.clientWidth)material.resolution.set(container.clientWidth,container.clientHeight);lineMaterials.add(material);
     const line=new LineSegments2(geometry,material);if(dashed){line.computeLineDistances();line.renderOrder=5;}return line;}
   function fovEdgePoints(station,device,{back=false}={}){const origin=compiledPointToScene([station.x,station.y,station.z]),basis=detectorBasis(station.az,station.el),forward=compiledPointToScene(basis.forward).normalize(),right=compiledPointToScene(basis.right),up=compiledPointToScene(basis.up);
     const length=radius*.45,reach=radius*2.2,subject=subjectMeshes.filter(mesh=>mesh.visible),points=[];
@@ -98,15 +98,23 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   function addFovEdges(station,device,color,{width=2.5,back=true}={}){const front=fovEdgePoints(station,device);
     fovGroup.add(fatLines(front,{color,width,opacity:.95}),fatLines(front,{color,width:width*.8,opacity:.55,dashed:true}));
     if(back){const behind=fovEdgePoints(station,device,{back:true});fovGroup.add(fatLines(behind,{color,width:width*.7,opacity:.4}),fatLines(behind,{color,width:width*.6,opacity:.25,dashed:true}));}}
-  // Solid field of view (option 实心视锥): the four side faces of the acceptance pyramid, translucent in the station's
-  // colour, out to the longest of its four edges (where the field of view last leaves the subject). Drawn through
-  // the structure (no depth test) so the part inside the concrete stays visible; a view only.
-  function addFovSolid(station,device,color){const points=fovEdgePoints(station,device),origin=new THREE.Vector3(points[0],points[1],points[2]),ends=[0,1,2,3].map(i=>new THREE.Vector3(points[6*i+3],points[6*i+4],points[6*i+5]));
-    const length=Math.max(...ends.map(end=>end.distanceTo(origin))),far=ends.map(end=>origin.clone().add(end.clone().sub(origin).normalize().multiplyScalar(length))),vertices=[];
-    for(let i=0;i<4;i++){const a=far[i],b=far[(i+1)%4];vertices.push(origin.x,origin.y,origin.z,a.x,a.y,a.z,b.x,b.y,b.z);}
+  // Solid field of view (option 实心视锥): the acceptance pyramid as a translucent frustum in the station's colour, with
+  // its side edges and far rectangle outlined, cut by one plane across the axis. Its axial length reaches 20 m beyond
+  // the furthest point where the field of view (corners, edge midpoints, axis) leaves the subject, and at least 72 m (the former legacy cone), so it
+  // always stands clearly out of the structure. Drawn through the structure (no depth test); a view only.
+  const SOLID_MIN_M=72,SOLID_BEYOND_M=20;
+  function addFovSolid(station,device,color){const points=fovEdgePoints(station,device),origin=new THREE.Vector3(points[0],points[1],points[2]),forward=compiledPointToScene(detectorBasis(station.az,station.el).forward).normalize();
+    const dirs=[0,1,2,3].map(i=>new THREE.Vector3(points[6*i+3],points[6*i+4],points[6*i+5]).sub(origin).normalize()),exits=[0,1,2,3].map(i=>new THREE.Vector3(points[6*i+3],points[6*i+4],points[6*i+5]).sub(origin).dot(forward));
+    // Also the axis and the edge midpoints: the corners may leave the subject long before the middle of the field does.
+    const basis=detectorBasis(station.az,station.el),right=compiledPointToScene(basis.right),up=compiledPointToScene(basis.up),subject=subjectMeshes.filter(mesh=>mesh.visible);
+    for(const [x,y] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]){const d=forward.clone().addScaledVector(right,x*device.maxSlopeX).addScaledVector(up,y*device.maxSlopeY).normalize();edgeRay.set(origin,d);edgeRay.far=radius*2.2;
+      const hits=edgeRay.intersectObjects(subject,false);if(hits.length)exits.push(hits.at(-1).distance*d.dot(forward));}
+    const axial=Math.max(SOLID_MIN_M,Math.max(...exits)+SOLID_BEYOND_M),far=dirs.map(d=>origin.clone().addScaledVector(d,axial/d.dot(forward))),vertices=[],outline=[];
+    for(let i=0;i<4;i++){const a=far[i],b=far[(i+1)%4];vertices.push(origin.x,origin.y,origin.z,a.x,a.y,a.z,b.x,b.y,b.z);outline.push(origin.x,origin.y,origin.z,a.x,a.y,a.z,a.x,a.y,a.z,b.x,b.y,b.z);}
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
-    const mesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.22,side:THREE.DoubleSide,depthTest:false,depthWrite:false}));mesh.renderOrder=4;solidGroup.add(mesh);}
-  function drawFovEdges(){for(const child of [...fovGroup.children]){lineMaterials.delete(child.material);}clear(fovGroup);clear(solidGroup);const shown=layerState.get('cone')??true;fovGroup.visible=fovEdges&&shown;solidGroup.visible=fovSolid&&shown;
+    const mesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.18,side:THREE.DoubleSide,depthTest:false,depthWrite:false}));mesh.renderOrder=4;
+    solidGroup.add(mesh,fatLines(outline,{color,width:1.5,opacity:.6,depthTest:false}));}
+  function drawFovEdges(){for(const child of [...fovGroup.children,...solidGroup.children]){lineMaterials.delete(child.material);}clear(fovGroup);clear(solidGroup);const shown=layerState.get('cone')??true;fovGroup.visible=fovEdges&&shown;solidGroup.visible=fovSolid&&shown;
     if(currentStation&&currentDevice&&fovSolid){addFovSolid(currentStation,currentDevice,0xff65bd);for(const s of extraStations)addFovSolid(s,s.device,s.color);}
     if(!currentStation||!currentDevice)return;addFovEdges(currentStation,currentDevice,LOOK.fovEdge);for(const s of extraStations)addFovEdges(s,s.device,s.color,{width:2,back:false});}
   function setFovEdges(on){fovEdges=Boolean(on);fovGroup.visible=fovEdges&&(layerState.get('cone')??true);}
