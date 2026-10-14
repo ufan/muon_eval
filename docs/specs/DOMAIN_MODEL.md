@@ -99,6 +99,15 @@ classDiagram
 | Scene | Value | Release ID + scenario ID or environment variable values | The physical world of a calculation: geometry and materials follow from the release and environment state only. Composition: scene = release + environment state | Partial: the code passes release and `environment` separately rather than as one scene value |
 | ViewState | Value, per view | — | Layer visibility, colours, transparency, camera, overlays, selection. Owned by the views and `main-page`; never part of a scene, snapshot key or result. Saved camera views of the demonstration mode (model frame, per release in browser storage) are view state too, never part of a plan | Current |
 
+### 2.1c Evaluation aims (Target, ADR-031)
+
+| Concept | Kind | Notes |
+|---|---|---|
+| EvaluationAim | Value within a plan or study | What the user wants a deployment to achieve: terms of (region, metric, aggregation, parameters), combined by weights or constraints. User input; the app never assumes one. Evaluated for any station set and used unchanged as a scan objective |
+| EvaluationRegion | Value | A recognition item, optionally limited by model-frame bounds; later an anomaly-hypothesis region. Evaluated at target points inside it from the calculation geometry |
+| Metric (per point) | Derived value of a station set at a point | From cached results: in a field of view, counts and error of the cell holding the line at the stated resolution, usable views, angular spread, counts per steradian, covering and uniquely covering stations |
+| AimTemplate | Value shipped with the app | Pre-filled aim (multi-view overlap of a target, extent of a region); editable; never applied unless chosen |
+
 ### 2.1b Anomaly hypotheses (Target, ADR-025)
 
 | Concept | Kind | Notes |

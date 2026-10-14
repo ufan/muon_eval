@@ -617,6 +617,24 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 
 **Consequences.** Users get one planning tool and one dataset-acceptance tool that open the same release from each other; no feature or calculation path exists twice; the dataset checklist for a second subject kind becomes a screen rather than a document.
 
+## ADR-031 Evaluation aims are user input; the app supplies metrics, regions and optimisation
+
+**Status.** Proposed (owner principle, 2026-10-14; details to confirm).
+
+**Context.** Deployments serve different aims: recording one target from several angles (for reconstruction), covering as much as possible of the whole subject or a part of it (e.g. the upper dam body from the upper gallery), detecting a hypothesised anomaly, or anything else a project needs. The first versions built aims into the app: the 15d summary class (good = ≥ 3 usable views and ≥ 30°) and a proposed "extent coverage" requirement each fixed one aim and its thresholds. Measurements on the Zhouning layouts showed the ranking of poses changes with the region, the resolution the question needs and the exposure (e.g. two upper stations: vertical best at native pixels, outward 60° best when 4×4 pixels are merged). Which of these matters is the user's decision, not the app's.
+
+**Decision.**
+- **The aim is user input.** An *evaluation aim* is defined by the user and stored in the study plan: one or more regions, a metric per region, how it is aggregated over the region, its parameters (counting-error level, required resolution, exposure assumptions, thresholds) and, for several terms, how they combine (weights or constraints). Nothing in the app assumes one aim.
+- **The app supplies building blocks, all subject-neutral:**
+  - *Regions:* recognition items, optionally limited by model-frame bounds (e.g. Z ≥ 57 m); later anomaly-hypothesis regions (ADR-025) and drawn boxes.
+  - *Per-point metrics* from each station's cached result, evaluated at target points of the region: in a field of view, counts and counting error of the cell holding the line (at the required resolution, native pixels by default), number of usable views, angular spread, counts per steradian, which stations see the point and which see it alone (unique contribution).
+  - *Aggregations over a region:* share of points meeting a condition, median, percentiles, minimum.
+- **Evaluation and optimisation use the same definition.** 多站总览 shows the aim's numbers for any station set; the scanning phase (FR-S1, FR-S2) uses the same aim as its objective to rank or optimise poses and stations. No separate formula path.
+- **Presets are templates, not defaults.** "Multi-view overlap of a target" (today's 15d class) and "extent of a region" ship as editable templates that fill in an aim; the app never ranks by a template the user did not choose. Their numbers carry the parameters they used.
+- **Resolution is a parameter of the aim.** The usable-view test is evaluated at the resolution the aim states (in metres at the point, or native pixels), never silently at the display binning; legends and exports show it.
+
+**Consequences.** The plan format gains aims and regions (data format, migration from 1.1). The 15d class thresholds move from view settings into an aim template; the 3D maps stay as they are and show the selected aim's metric where it is a per-point quantity. Scans can be compared across projects only through the aims stored with them.
+
 ---
 
 ## Open questions
@@ -640,6 +658,7 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 
 ## Change log
 
+- 2026-10-14: ADR-031 proposed: evaluation aims are user input; the app supplies regions, per-point metrics, aggregations and optimisation on the same definition (owner principle).
 - 2026-10-14: ADR-026 accepted for single station; back-side coverage under quick-response@4.0.0; implementation notes.
 - 2026-10-14: ADR-006 item 1: plan format implemented; scan format deferred to P5.
 - 2026-10-14: ADR-006 item 2 implemented (assessment port).
