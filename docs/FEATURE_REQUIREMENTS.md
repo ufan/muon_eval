@@ -172,7 +172,7 @@ Features the legacy backend had and the compiled backend does not provide yet. T
 | FR-N1 | Interactive overlay budgets. | Meet the budgets in [`../PROJECTION_VALIDATION.md` §3](specs/PROJECTION_VALIDATION.md#3-performance-budget), measured in desktop and narrow-screen HTTP browsers with recorded hardware; Node timings do not close browser gates. | Needed |
 | FR-N2 | Preview chunked-transfer regression. | Latest preview chunked-transfer change passes browser regression, including the narrow-screen overlay check that previously failed. | Needed |
 | FR-N3 | Cold start, peak memory and worst-case interaction measured. | Recorded for the real release worst cases. | Needed |
-| FR-N5 | Coverage highlight on integrated graphics. | Measured on reference laptops (Intel Core i5 with Iris Xe, and with UHD 620) at 1920×1080 in Chrome/Edge: orbiting with coverage on and 8 stations stays ≥ 30 fps (target 60 fps on Iris Xe); idle uses no GPU (on-demand rendering); automatic quality fallback (lower pixel ratio during interaction, Lambert shading, outlines off) when frame time exceeds budget. | Needed (with FR-M10) |
+| FR-N5 | Coverage highlight on integrated graphics. | Measured on reference laptops (Intel Core i5 with Iris Xe, and with UHD 620) at 1920×1080 in Chrome/Edge: orbiting with coverage on and 8 stations stays ≥ 30 fps (target 60 fps on Iris Xe); idle uses no GPU (on-demand rendering); automatic quality fallback (lower pixel ratio during interaction, Lambert shading, outlines off) when frame time exceeds budget. | Partly done: on-demand rendering (idle draws nothing; browser check counts draw calls); quality fallback and the laptop measurement open |
 | FR-N4 | Layout. | Common desktop and narrow screens; WebGL camera aspect and model scale unchanged after sidebar toggle or container resize (`AGENTS.md`). | Standing |
 
 ## Q. Quality, tooling and hygiene
@@ -239,6 +239,7 @@ Not urgent; staged after bundled datasets.
 
 ## Change log
 
+- 2026-10-14: FR-N5 partly done (on-demand rendering).
 - 2026-10-14: FR-M14 done for the contour layers ("专家诊断" drawer; comparison in its own "方案比较" section).
 - 2026-10-14: FR-M13 done (precision lines).
 - 2026-10-14: FR-D10 (dataset workbench) and FR-P4 (one export menu) added; FR-M14 extended (ADR-030).

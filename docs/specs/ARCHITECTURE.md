@@ -39,6 +39,8 @@ Inputs are owned by deployment-state and published read-only; views own selectio
 
 Recognition outlines (FR-M12, ADR-029) are view state over a finished result: `recognition-panel-view` lists the release's recognition items, keeps selection and threshold per release, and recomputes masks with the pure `recognition-layers` for each preview and final result; `projection-canvas-view` draws them in an SVG overlay and lists the items crossed by the hovered ray (length inside, entry distance). The 3D feature layer (FR-M11) draws the compiled components of the catalogue's direct features in class colours; `feature-layer-panel-view` keeps their visibility, compiled-scene-view does feature hover/pick and temporary emphasis, and main-page links both ways (pixel or item hover → features lit in 3D; feature hover → its outline emphasised; feature click → its outline toggled).
 
+The 3D view renders on demand: a frame is drawn only after a camera move (including damping), a resize or a call into the scene view, so an idle page uses no GPU time (FR-N5).
+
 The compiled main-app view reuses the computation-owned buffers of compiled-geometry-view and applies the display style of the former legacy scene (owner preference, 2026-10-12): dark background with fog and ground grid, translucent dam with edges, translucent rock and dark water, legacy lighting and perspective preset. The style replaces only the GLB display colours in the view; geometry-preview is standalone and not a main-app dependency.
 
 ## Current calculation strategy
