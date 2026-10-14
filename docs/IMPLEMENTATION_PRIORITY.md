@@ -43,7 +43,7 @@ Last updated: 2026-10-12
 | 11b | One "导出" menu on the versioned result format; comparison moves into it | FR-P4, ADR-030 | Right after #11 | Todo |
 | 12 | Async, cancellable assessment port | ADR-006 | `createLocalAssessmentPort`: `open(input).evaluate(quality, {signal, onProgress}) → Promise`, AbortError on cancel; the controller uses only the port. A worker or server port implements the same interface | Done |
 | AN1 | Anomaly schema as part of the plan format | FR-H1, FR-H11 | Field `anomalies` reserved (empty) in plan 1.0.0; schema designed with P4 as plan 1.1.0 (owner) | Todo |
-| 13 | Headless batch runner (Node CLI) | FR-S5, ADR-006 | Plan in, results out; future server worker | Todo |
+| 13 | Headless batch runner (Node CLI) | FR-S5, ADR-006 | `scripts/run-plan.mjs` on the pure `plan-runner.js`: plan in; per-station results, run summary and optional replayable comparison out; worker threads, byte-identical for any thread count. Six stations at 65² in about 6 s on four cores. Scan input with P5 | Done |
 
 ## P3 — Multi-station overview and demonstration (Phase 2)
 

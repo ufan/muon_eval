@@ -135,7 +135,8 @@ Scene composition (Target): **scene = release + environment state + active anoma
 | ProjectionResult | Value, versioned | `kind` ∈ {`compiled-detector-assessment`, `material-column-projection`} (`legacy-detector-assessment` is accepted only for replaying old exports), `schemaVersion`, identity (release, backend, scenario, variables, asset hashes), config, device, response, `modelVersion`, `plan` (hash + station ID of the source plan, or null; provenance, not identity), pixels, limitations | Current |
 | Per-station result cache | Keyed by snapshot key | Lets the overview and detail modes share results | Target (ADR-020) |
 | Coverage (view) | Derived view of a station | Geometric coverage = device acceptance × pose (no physics): points whose detector line lies inside the acceptance, in front or behind, above the detector; physical coverage = expected counts per steradian from a result. A view of results, never an input; the physical map belongs to one result and is cleared when inputs change | Current for a single station (`coverage-map.js`); multi-station Target (ADR-026, #15) |
-| Exports | Value, versioned | `muography-plan` 1.0.0 (round trip), contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison`; the export-only `compiled-deployment-snapshot` 0.1.0 is retired | Current |
+| PlanRun | Value, versioned | Output of the headless runner: one ProjectionResult per chosen station plus a summary (`muography-plan-run` 1.0.0: plan hash, release, scenario, quality, model version, per-station file digest and totals); no clock data, identical for any thread count ([PLAN_FORMAT](PLAN_FORMAT.md#batch-runs)) | Current |
+| Exports | Value, versioned | `muography-plan` 1.0.0 (round trip), `muography-plan-run` 1.0.0 (batch runs), contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison`; the export-only `compiled-deployment-snapshot` 0.1.0 is retired | Current |
 
 ## 3. Identities
 

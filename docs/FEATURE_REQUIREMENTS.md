@@ -119,7 +119,7 @@ Features the legacy backend had and the compiled backend does not provide yet. T
 | FR-S2 | Constraint filtering and relative ranking. | Engineering feasibility (space, transport, power, communications, maintenance), physical observability and safety/compliance recorded as separate dimensions; safety is an engineering input, never derived from projection metrics. Constraint, metric, default comparison set and ranking method definitions written down. | Needed |
 | FR-S3 | Robustness against position/pose/device/geometry perturbations. | Perturbation ranges declared in the scan definition; results report spread, not only the nominal value. | Needed |
 | FR-S4 | Workstation-scale performance. | A 20 stations × 36 azimuths × 7 elevations × 4 scenarios scan finishes in minutes on one workstation, via direction-map reuse and coarse-to-fine search (ADR-005). Benchmark tracked against the 2026-10-09 baseline (~10.6k rays/s/core). | Needed |
-| FR-S5 | Headless batch runner. | Node CLI: reads a plan/scan file, uses all cores, writes versioned results the app can load. Same modules as the browser. | Needed |
+| FR-S5 | Headless batch runner. | Node CLI: reads a plan/scan file, uses all cores, writes versioned results the app can load. Same modules as the browser. Plans: `npm run run-plan -- plan.json --out dir` writes one result per station, a reproducible run summary (`muography-plan-run` 1.0.0) and optionally a comparison the app replays; output is byte-identical for any thread count ([PLAN_FORMAT](specs/PLAN_FORMAT.md#batch-runs)). Scan files follow with P5. | Done (plans) |
 | FR-S6 | Distributed or shared scan execution. | Only when server trigger T2 is met. | Deferred |
 
 ## H. Anomaly hypotheses and sensitivity (ADR-025)

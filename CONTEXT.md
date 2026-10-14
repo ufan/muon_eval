@@ -53,6 +53,7 @@ Help users explore, filter and compare muography detector deployment plans for a
 | Geometric / physical acceptance | Geometric: which directions the detector can register at all (device geometry only). Physical: expected muon counts per direction, including flux, transmission and response | Used for the coverage highlight (FR-M10) |
 | Sensitivity | How well a plan would detect an anomaly: change in counts and its significance against statistical and systematic uncertainty | ΔN, significance, exposure to reach a threshold, minimum detectable size/contrast |
 | Scan | Batch calculation and comparison over a constrained parameter space | Ranges, steps, constraints, metrics, ranking, robustness |
+| Plan run | A headless evaluation of a saved plan's stations outside the browser, with the same calculation core | One result per station, a reproducible run summary, optional comparison |
 
 Note: "scenario" means a frozen environment variant, never the subject itself; the subject is a dataset of some kind.
 

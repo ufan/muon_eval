@@ -51,7 +51,8 @@ Open `http://127.0.0.1:8765/`. Any other static HTTP server also works once the 
 - 25×25 quick preview and 65×65 final projection.
 - Expected counts, transmission, material-contribution and response numeric layers.
 - Hovering a projection pixel highlights the 3D ray and material path.
-- Station metrics, comparison, versioned snapshot export.
+- Station metrics, comparison, versioned plan export and import.
+- Headless batch runs of a plan from the command line (see below).
 - Docker/Nginx and static-hosting deployment.
 
 ## Checks
@@ -72,6 +73,16 @@ Browser acceptance needs Playwright and Chromium (development only). Point to ex
 
 - `scripts/check-main-compiled-app.mjs`: main app; all four frozen scenarios, capability gates of the migration targets, recognition outlines (profile items, threshold, hover crossings, persistence), 3D feature layers (catalogue groups, defaults, persistence; toggles never change results), model coordinates, same-result updates, device settings, stations, persistence, exports, desktop and narrow screens. Screenshots go to a temporary directory.
 - `npm run test:browser:preview` (`scripts/check-compiled-preview.mjs`): standalone preview. Its finite-model reference step needs the derived assets in `dist/data/derived-interfaces/`, generated with the `manifold3d` Python package (see [geometry references](docs/specs/GEOMETRY_REFERENCES.md#offline-interface-construction)).
+
+## Batch runs
+
+A saved plan (导出方案) can be evaluated without the browser, on all cores:
+
+```bash
+npm run run-plan -- plan.json --out runs/study --compare material:concrete:0.15
+```
+
+This writes one result file per station, `summary.json` and `comparison.json`, which the app replays under 方案比较 → 重放比较. Options and formats: [plan format](docs/specs/PLAN_FORMAT.md#batch-runs).
 
 ## Selecting a release, backend and scenario
 

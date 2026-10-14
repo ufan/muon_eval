@@ -136,7 +136,7 @@ Any replacement tracer must pass the existing `conformance_rays.json` / `conform
 2. Asynchronous, cancellable assessment port (Promise + AbortSignal, as `evaluateCompiledAssessment` already does); only `assessment-controller.js` changes. *Done 2026-10-14:* `createLocalAssessmentPort` (`open(input)` → `evaluate(quality, { signal, onProgress })` → Promise, AbortError on cancel); the controller depends only on the port.
 3. Deterministic calculation: no result may depend on evaluation history (FR-C1).
 4. Traceable results for every backend (the legacy backend recorded its ray cutoff, FR-C2, before it was retired, ADR-028).
-5. Headless batch runner (Node CLI: plan in, results out) that later becomes the server worker unchanged.
+5. Headless batch runner (Node CLI: plan in, results out) that later becomes the server worker unchanged. *Done 2026-10-14 for plans:* `scripts/run-plan.mjs` (worker threads) over the pure `plan-runner.js`; results, a clock-free run summary and an optional comparison the app replays.
 6. Server language: Node reusing the same modules. If Python is preferred for orchestration, it calls Node/WebAssembly workers; formulas are never reimplemented.
 
 ## ADR-007 Geant4 runs as an external job, not inside the app

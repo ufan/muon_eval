@@ -77,6 +77,22 @@ Plans are written as UTF-8 JSON with 2-space indentation, members in the order o
 - **Results**: a `compiled-detector-assessment` result records `plan: { hash, stationId }` (or `null` when computed without a plan). This is provenance, not identity: the result's snapshot key is derived from its own inputs (`prepareProjectionPattern`), so the same physics from two plans has the same key. The member is additive; the result schema stays 0.1.0.
 - A plan never embeds results, view state (layers, outlines, camera) or dataset content.
 
+## Batch runs
+
+The headless runner (FR-S5, ADR-006) evaluates a plan's stations with the same modules as the app:
+
+```bash
+npm run run-plan -- plan.json --out runs/study [--stations all|selected|active|<id,id>] [--quality final|preview] [--workers N] [--compare material:<id>:<min path m>]
+```
+
+- Only registered releases (`contentHash: null`); the scenario is the plan's, or the release's first. Each station uses its own named detector, applied through the app's device-configuration path.
+- Stations are spread over worker threads (default: all cores); the output is byte-identical for any thread count.
+- Output directory (a run never overwrites another; an existing `summary.json` is refused):
+  - `<station id>.result.json`: the `compiled-detector-assessment` result, with its `plan` reference;
+  - `comparison.json` with `--compare`: a `projection-pattern-comparison` export of all stations; with `material:concrete:0.15` the app replays it in 方案比较 → 重放比较 (at most 20 stations);
+  - `summary.json`, format `muography-plan-run` 1.0.0: plan hash and title, release and scenario, quality and bins, model version, and per station its ID, name, file, SHA-256 of the file, total count and weighted transmission. It holds no clock or host data, so a run is reproducible from the plan, the release and the code version.
+- Code: `dist/modules/plan-runner.js` (pure: station choice, inputs, summary) and `scripts/run-plan.mjs` (files, threads).
+
 ## Not in 1.0
 
 - Scan definitions: their format is designed with the scan work (P5); a scan will reference a plan by its hash.
