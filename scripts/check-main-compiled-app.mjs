@@ -129,6 +129,12 @@ try{
  for(const map of ['spread','class','dominant','total','views'])await page.locator('#coverageMulti').selectOption(map);
  await page.locator('#coverageMulti').selectOption('class');assert.ok(await page.locator('#classThresholds').isVisible());await page.locator('#classViews').fill('4');await page.locator('#classViews').dispatchEvent('change');assert.match(await page.locator('#multiLegend').innerText(),/≥4 视角/);
  await page.locator('#classViews').fill('3');await page.locator('#classViews').dispatchEvent('change');await page.locator('#coverageMulti').selectOption('views');
+ // Slice plane and feature tint (15e): the mask comes from the calculation geometry; views never change results.
+ await page.locator('#coverageFeatures').uncheck();await page.locator('#coverageFeatures').check();
+ assert.equal(await page.locator('#sliceOn').isChecked(),false);await page.locator('#sliceOn').check();assert.match(await page.locator('#sliceOut').innerText(),/^Z = -?\d+\.\d m$/);
+ const sliceDone=()=>page.waitForFunction(()=>document.querySelector('#sliceHint').textContent.startsWith('切面只显示'),null,{timeout:30000});
+ await page.locator('#sliceAxis').selectOption('y');assert.match(await page.locator('#sliceOut').innerText(),/^Y = /);
+ await setInput('#slicePos','300','input');await sliceDone();await page.locator('#sliceOn').uncheck();
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
  // Placing: one click on the model moves the working station there; Esc cancels.
  await click('#placeStation');assert.ok(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')));await page.keyboard.press('Escape');assert.equal(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')),false);

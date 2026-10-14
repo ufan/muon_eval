@@ -39,7 +39,7 @@ export function createCoverageUniforms() {
 const VERTEX = ['varying vec3 vCovWorld;', 'vCovWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;'];
 const FRAGMENT_HEAD = `
 varying vec3 vCovWorld;
-uniform int covMode; uniform int covHasMap; uniform int covCore; uniform float covLayer;
+uniform int covMode; uniform int covHasMap; uniform int covCore; uniform float covLayer; uniform float covTwoSided;
 uniform vec3 covOrigin; uniform vec3 covForward; uniform vec3 covRight; uniform vec3 covUp;
 uniform vec2 covMax; uniform float covStep; uniform float covStrips; uniform float covBins;
 uniform sampler2D covMap; uniform vec3 covColor; uniform float covMinOpacity;
@@ -71,7 +71,7 @@ float covBin(float s) { // exact inverse of nativeAxisBins (coverage-map.js slop
 }`;
 const FRAGMENT_BODY = `
 #ifdef COV_MULTI
-if (covMode == 2 && covMulti > 0 && covLayer > 0.5 && gl_FrontFacing && covExtraCount > 0) {
+if (covMode == 2 && covMulti > 0 && covLayer > 0.5 && (gl_FrontFacing || covTwoSided > 0.5) && covExtraCount > 0) {
   // Several stations, physical: multi-view coverage, angular spread, class, dominant station or total counts.
   // One loop over the slots (0 = working station): the station code appears once in the shader, which keeps it
   // small enough to compile quickly (nine inlined calls made the first draw stall). Mirror of coverage-map.js
@@ -116,7 +116,7 @@ if (covMode == 2 && covMulti > 0 && covLayer > 0.5 && gl_FrontFacing && covExtra
   if (covOnLine) { diffuseColor.rgb = covLine; diffuseColor.a = 1.0; }
 } else
 #endif
-if (covMode > 0 && covLayer > 0.5 && gl_FrontFacing && covExtraCount > 0) {
+if (covMode > 0 && covLayer > 0.5 && (gl_FrontFacing || covTwoSided > 0.5) && covExtraCount > 0) {
   // Several stations: count those probing this point (inside the field of view, point above the station).
   vec3 covD = vCovWorld - covOrigin; float covE = covEdgeOf(covD, covForward, covRight, covUp, covMax), covW = fwidth(covE);
   int covK = covE <= 1.0 && covD.y > 0.0 ? 1 : 0; vec3 covLine = covColor; bool covOnLine = abs(covE - 1.0) < covW * 1.5 && (covD.y > 0.0 || dot(covD, covForward) > 0.0);
@@ -128,7 +128,7 @@ if (covMode > 0 && covLayer > 0.5 && gl_FrontFacing && covExtraCount > 0) {
   }
   if (covK > 0) { float covS = covCountStrength(covK); diffuseColor.rgb = mix(diffuseColor.rgb, covCountColor(covK), covS); diffuseColor.a = max(diffuseColor.a, covMinOpacity + 0.5 * covS); }
   if (covOnLine) { diffuseColor.rgb = covLine; diffuseColor.a = 1.0; }
-} else if (covMode > 0 && covLayer > 0.5 && gl_FrontFacing) {
+} else if (covMode > 0 && covLayer > 0.5 && (gl_FrontFacing || covTwoSided > 0.5)) {
   vec3 covD = vCovWorld - covOrigin; float covF = dot(covD, covForward);
   if (abs(covF) > 1e-6) {
     float covSx = dot(covD, covRight) / covF, covSy = dot(covD, covUp) / covF;
@@ -166,9 +166,10 @@ export function setCoverageVariant(materials, multi) {
     material.needsUpdate = true;
   }
 }
-export function attachCoverage(material, uniforms, layer) {
+// `twoSided` tints both faces (the slice plane); other surfaces are tinted once, on their front face.
+export function attachCoverage(material, uniforms, layer, twoSided = { value: 0 }) {
   material.onBeforeCompile = shader => {
-    Object.assign(shader.uniforms, uniforms, { covLayer: layer });
+    Object.assign(shader.uniforms, uniforms, { covLayer: layer, covTwoSided: twoSided });
     shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${VERTEX[0]}`)
       .replace('#include <project_vertex>', `#include <project_vertex>\n${VERTEX[1]}`);
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${FRAGMENT_HEAD}`)

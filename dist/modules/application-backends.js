@@ -5,6 +5,7 @@ import { loadCompiledMeshRuntime } from './compiled-mesh-runtime.js';
 import { createCompiledMainAssessment } from './compiled-main-assessment.js';
 import { compiledDefaultStations } from './compiled-deployment-adapter.js';
 import { placeInCavity } from './station-placement.js';
+import { computeSliceMask } from './slice-plane.js';
 
 export async function createApplicationBackend(dataset, selection) {
   if (selection.datasetId !== dataset.id) throw new Error('Loaded dataset differs from application selection');
@@ -18,6 +19,9 @@ export async function createApplicationBackend(dataset, selection) {
   return { selection: { ...selection, scenarioId }, runtime, assessment: createCompiledMainAssessment({ runtime }),
     // Station placement inside a clicked cavity, on the calculation's geometry (never the display's).
     placeInCavity: pick => placeInCavity(pick, (origin, direction, length) => runtime.traceRayModel(origin, direction, length)),
+    // Slice-plane mask on the calculation geometry: matter is any material denser than 0.01 g/cm³ (gases excluded).
+    sliceMask: request => computeSliceMask({ ...request, classify: point => runtime.classifyModel(point),
+      isMatter: c => (runtime.projectionGeometry.materials[c.material]?.density ?? 0) > 0.01 }),
     stations: compiledDefaultStations(dataset), environment: structuredClone(runtime.variables), waterLayers,
     capabilities: { continuousWater: false, targetSignificance: false, fluxCloud: false, layers: ['dam','terrain','upwater','downwater','cone'] },
     scenarios: [...dataset.geometry.scenarios.values()].map(s => ({ id: s.id, label: s.label, variables: { ...s.variables } })),

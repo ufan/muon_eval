@@ -6,6 +6,7 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { createCompiledGeometryView } from './compiled-geometry-view.js';
 import { detectorBasis } from './detector-pose.js';
 import { featureLayerGroups, featuresAlongRay } from './feature-layers.js';
+import { slicePoint } from './slice-plane.js';
 import { createCoverageUniforms, attachCoverage, setCoverageVariant, COVERAGE_SLOT_BINS, MULTI_MAPS } from './coverage-shader.js';
 import { countsPerSteradian, coverageBrightness, coverageReadout, coveringStations, multiViewCoverage, perSteradianMap, usableCounts, COVERAGE_LOG_RANGE } from './coverage-map.js';
 
@@ -41,7 +42,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   for(const component of runtime.components){const id=component.metadata.source_entity_id;if(component.metadata.flags.physics&&featureMeshes.has(id)){featureMeshes.get(id).push(geometryView.meshes.get(component.componentId));featureOfComponent.set(component.componentId,id);}}
   const featureVisible=new Map(featureIds.map(id=>[id,false]));let emphasised=new Set(),featuresSeen=null;
   // Coverage highlight (FR-M10, ADR-026): subject surfaces by default, terrain and water on request.
-  const coverage=createCoverageUniforms(),subjectCoverage={value:1},contextCoverage={value:0},coverageMaterials=[];let coverageResult=null;
+  const coverage=createCoverageUniforms(),subjectCoverage={value:1},contextCoverage={value:0},featureCoverage={value:1},coverageMaterials=[];let coverageResult=null;
   applyLook();
   const subjectMeshes=runtime.components.filter(c=>materialLayer(c)==='dam').map(c=>geometryView.meshes.get(c.componentId)),edgeRay=new THREE.Raycaster();
   // Ground grid at the base of the structure, sized from its footprint (former legacy view: 520 m, 20 m cells).
@@ -52,7 +53,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   let renderer,controls,observer,currentStation=null,currentDevice=null;
   const layerState=new Map();
   function applyLook(){for(const component of runtime.components){const mesh=geometryView.meshes.get(component.componentId),layer=materialLayer(component);let material=null;
-    if(featureOfComponent.has(component.componentId)){mesh.material.dispose();mesh.material=lookMaterial(features.get(featureOfComponent.get(component.componentId)).color,{flatShading:true,side:THREE.DoubleSide});mesh.visible=false;continue;}
+    if(featureOfComponent.has(component.componentId)){mesh.material.dispose();mesh.material=attachCoverage(lookMaterial(features.get(featureOfComponent.get(component.componentId)).color,{flatShading:true,side:THREE.DoubleSide}),coverage,featureCoverage);coverageMaterials.push(mesh.material);mesh.visible=false;continue;}
     if(component.metadata.material_id==='concrete')material=lookMaterial(LOOK.dam,{transparent:true,opacity:.78,flatShading:true,side:THREE.DoubleSide});
     else if(component.metadata.material_id==='steel')material=lookMaterial(LOOK.steel,{flatShading:true,side:THREE.DoubleSide});
     else if(layer==='terrain')material=lookMaterial(LOOK.rock,{transparent:true,opacity:.38,side:THREE.DoubleSide,depthWrite:false,flatShading:true});
@@ -75,7 +76,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     for(const component of runtime.components)if(materialLayer(component)===name){const mesh=geometryView.meshes.get(component.componentId);mesh.visible=visible&&component.metadata.flags.display&&component.metadata.realization!=='virtual';}}
   function setDamOpacity(opacity){for(const component of runtime.components)if(materialLayer(component)==='dam'){const material=geometryView.meshes.get(component.componentId).material;material.transparent=opacity<1;material.opacity=opacity;material.depthWrite=opacity>.72;material.needsUpdate=true;}}
   let multiOptions={map:'views',errorLevel:.1,minViews:3,goodSpreadDeg:30,minSpreadDeg:10};
-  function setCoverage({mode='off',core=false,context=false,multi=multiOptions}={}){multiOptions={...multiOptions,...multi};coverage.covMulti.value=MULTI_MAPS[multiOptions.map]??MULTI_MAPS.views;coverage.covMinCounts.value=usableCounts(multiOptions.errorLevel);coverage.covClassViews.value=multiOptions.minViews;coverage.covGoodSpread.value=multiOptions.goodSpreadDeg;coverage.covMinSpread.value=multiOptions.minSpreadDeg;coverage.covLogRange.value.set(...COVERAGE_LOG_RANGE);coverage.covMode.value={off:0,geometric:1,physical:2}[mode]??0;updateVariant();coverage.covCore.value=core?1:0;contextCoverage.value=context?1:0;for(const id of featureIds)showFeature(id);}
+  function setCoverage({mode='off',core=false,context=false,features:onFeatures=true,multi=multiOptions}={}){featureCoverage.value=onFeatures?1:0;multiOptions={...multiOptions,...multi};coverage.covMulti.value=MULTI_MAPS[multiOptions.map]??MULTI_MAPS.views;coverage.covMinCounts.value=usableCounts(multiOptions.errorLevel);coverage.covClassViews.value=multiOptions.minViews;coverage.covGoodSpread.value=multiOptions.goodSpreadDeg;coverage.covMinSpread.value=multiOptions.minSpreadDeg;coverage.covLogRange.value.set(...COVERAGE_LOG_RANGE);coverage.covMode.value={off:0,geometric:1,physical:2}[mode]??0;updateVariant();coverage.covCore.value=core?1:0;contextCoverage.value=context?1:0;for(const id of featureIds)showFeature(id);}
   // Physical brightness from a result's own counts per steradian; null while a newer pose is computing (geometric view shown instead).
   function setCoverageResult(data,device){coverage.covMap.value?.dispose();coverage.covMap.value=null;coverage.covHasMap.value=0;coverageResult=data&&device?{n:data.n,values:data.values}:null;workingCounts=data&&device?{n:data.n,counts:Float32Array.from(data.values,v=>v.count),device:{...device}}:null;buildAtlas();if(!data||!device)return;
     const perSr=countsPerSteradian(data.values,data.n,device),bytes=new Uint8Array(data.n*data.n*4);perSr.forEach((v,i)=>{bytes[4*i]=Math.round(255*coverageBrightness(v));bytes[4*i+3]=255;});
@@ -130,6 +131,22 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
       for(let iy=0;iy<source.n;iy++)for(let ix=0;ix<source.n;ix++){const at=2*(iy*width+slot*COVERAGE_SLOT_BINS+ix);data[at]=source.counts[iy*source.n+ix];data[at+1]=perSr[iy*source.n+ix];}};
     put(0,workingCounts);for(let i=0;i<slots-1;i++)put(i+1,extraStations[i]??null);
     coverage.covAtlas.value?.dispose();const texture=new THREE.DataTexture(data,width,COVERAGE_SLOT_BINS,THREE.RGFormat,THREE.FloatType);texture.magFilter=texture.minFilter=THREE.NearestFilter;texture.needsUpdate=true;coverage.covAtlas.value=texture;}
+  // Slice plane through the interior (15e, FR-M16): across one model axis, inside the subject's extent, tinted by the
+  // same coverage shader on both faces, and shown only where the calculation classifies matter (mask from the page).
+  const sliceTwoSided={value:1},sliceLayer={value:1},sliceMaterial=attachCoverage(new THREE.MeshBasicMaterial({color:0x2a3b45,side:THREE.DoubleSide,transparent:true,opacity:.92,alphaTest:.5,depthWrite:true}),coverage,sliceLayer,sliceTwoSided);
+  coverageMaterials.push(sliceMaterial);const sliceMesh=new THREE.Mesh(new THREE.BufferGeometry(),sliceMaterial);sliceMesh.visible=false;sliceMesh.renderOrder=3;scene.add(sliceMesh);let slice=null;
+  // The subject's extent in the model frame (5 % margin), for the plane and its slider.
+  function subjectExtent(){const min=[box.min.x,-box.max.z,box.min.y],max=[box.max.x,-box.min.z,box.max.y],pad=max.map((v,i)=>(v-min[i])*.05);return{min:min.map((v,i)=>v-pad[i]),max:max.map((v,i)=>v+pad[i])};}
+  function setSlice({on=false,axis='z',value=0}={}){slice=on?{axis,value,extent:subjectExtent()}:null;sliceMesh.visible=Boolean(slice);if(!slice)return;
+    const corners=[[0,0],[1,0],[1,1],[0,1]].map(([u,v])=>compiledPointToScene(slicePoint(axis,value,slice.extent,u,v)));
+    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(corners.flatMap(c=>[c.x,c.y,c.z]),3));
+    geometry.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,1,0,1,1,0,1],2));geometry.setIndex([0,1,2,0,2,3]);sliceMesh.geometry.dispose();sliceMesh.geometry=geometry;
+    sliceMaterial.alphaMap?.dispose();sliceMaterial.alphaMap=null;sliceMaterial.opacity=.35;sliceMaterial.needsUpdate=true;}
+  // mask: resolution² cells, row v from the bottom, 1 = matter; ignored when the plane has moved since it was asked for.
+  function setSliceMask({axis,value,resolution,mask}){if(!slice||slice.axis!==axis||slice.value!==value)return;const data=new Uint8Array(resolution*resolution*4);mask.forEach((m,i)=>data.fill(m?255:0,4*i,4*i+4));
+    const texture=new THREE.DataTexture(data,resolution,resolution,THREE.RGBAFormat);texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearFilter;texture.needsUpdate=true;
+    sliceMaterial.alphaMap?.dispose();sliceMaterial.alphaMap=texture;sliceMaterial.opacity=.92;sliceMaterial.needsUpdate=true;}
+  const sliceMatter=hit=>{const map=sliceMaterial.alphaMap;if(!map||!hit.uv)return true;const {width,data}=map.image,ix=Math.min(width-1,Math.floor(hit.uv.x*width)),iy=Math.min(width-1,Math.floor(hit.uv.y*width));return data[4*(iy*width+ix)]>0;};
   // Other stations shown with the working one (14d sketching): their fields of view in the shader, a marker each.
   let extraStations=[];
   function setCoverageStations(list=[]){extraStations=list.slice(0,coverage.covExtraOrigin.value.length).map(s=>({...s}));clear(extraGroup);coverage.covExtraCount.value=extraStations.length;
@@ -157,7 +174,9 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   function featureAt(event){const bounds=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-bounds.left)/bounds.width*2-1,-(event.clientY-bounds.top)/bounds.height*2+1);raycaster.setFromCamera(pointer,camera);
     const visible=[...featureMeshes.values()].flat().filter(mesh=>mesh.visible);return featureOfComponent.get(raycaster.intersectObjects(visible,false)[0]?.object.name)??null;}
   // Coverage at the subject surface under the pointer (FR-M10): what the station sees there (model frame z up; scene y up).
-  function coverageAt(){if(!coverage.covMode.value||!currentStation||!currentDevice)return null;const hit=raycaster.intersectObjects(subjectMeshes.filter(mesh=>mesh.visible),false)[0];
+  function coverageAt(){if(!coverage.covMode.value||!currentStation||!currentDevice)return null;
+    const targets=[...subjectMeshes.filter(mesh=>mesh.visible),...(sliceMesh.visible?[sliceMesh]:[]),...(featureCoverage.value?[...featureMeshes.values()].flat().filter(mesh=>mesh.visible):[])];
+    const hit=raycaster.intersectObjects(targets,false).find(h=>h.object!==sliceMesh||sliceMatter(h));
     if(!hit)return null;const point=[hit.point.x,-hit.point.z,hit.point.y],readout=coverageReadout(point,currentStation,currentDevice,coverageResult);
     if(extraStations.length&&coverage.covMode.value===2){readout.multi=multiViewCoverage(point,[{...currentStation,id:'working',device:currentDevice,n:workingCounts?.n,counts:workingCounts?.counts??null},...extraStations],multiOptions);
       readout.names=new Map([['working',`${currentStation.name??'当前点位'}（编辑中）`],...extraStations.map(s=>[s.id,s.name])]);return readout;}
@@ -197,12 +216,12 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   function renderFrame(){frame=null;const moving=controls.update();updateScale();renderer.render(scene,camera);if(moving)requestRender();}
   const api={
     build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
-    resize,setView,setLayer,setDamOpacity,drawDetector,setFovEdges,setFovSolid,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
+    resize,setView,setLayer,setDamOpacity,drawDetector,setSlice,setSliceMask,subjectExtent,setFovEdges,setFovSolid,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
     showRay:(trace,station,direction)=>displayTrace(rayGroup,trace,station,direction),
     showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
     clearProjection(){clear(projectionGroup);emphasiseFeatures([]);},showFlux(){},drawFluxCloud(){},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},
-    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);tip.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
+    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);sliceMesh.geometry.dispose();sliceMaterial.alphaMap?.dispose();sliceMaterial.dispose();tip.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
   };
   // Every public call may change what is shown: request a frame after it.
   for(const [name,fn] of Object.entries(api))if(name!=='dispose')api[name]=(...args)=>{const value=fn(...args);requestRender();return value;};

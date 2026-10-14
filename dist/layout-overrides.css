@@ -262,3 +262,4 @@
 .sub-option{margin-left:22px;font-size:12px}
 .multi-thresholds label{display:block;font-size:11px;color:var(--muted);margin:4px 0}.multi-thresholds input{width:44px;background:#08131b;color:var(--text);border:1px solid #294250;border-radius:5px;padding:1px 3px}.multi-thresholds select{background:#08131b;color:var(--text);border:1px solid #294250;border-radius:5px}
 .multi-thresholds label[hidden]{display:none}
+.slice-control{margin:8px 0}.slice-control label{display:inline-flex;margin:4px 8px 4px 0}.slice-control select{background:#08131b;color:var(--text);border:1px solid #294250;border-radius:6px;padding:3px}.slice-control[data-off] .layer-adjust,.slice-control[data-off] select,.slice-control[data-off] .hint{display:none}
