@@ -51,7 +51,8 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  function candidateState(id){const key=candidateKey(id);return results.has(key)?'ready':queue.state(key)??(workingBusy&&key===workingKey?'running':'pending');}
  const STATE_TEXT={running:'计算中…',queued:'排队计算',failed:'计算失败',pending:'待计算'};
  // Other stations in the coverage view (14d sketching): a stable colour per candidate, shown as a swatch in the list.
- const EXTRA_COLORS=['#4fc3f7','#ffd54f','#81c784','#ba68c8','#ff8a65','#4db6ac','#e57373','#9fa8da'];let coverageStationsMode='none',coverageSignature='';
+ // No red: red is the geometric count tint.
+ const EXTRA_COLORS=['#4fc3f7','#ffd54f','#81c784','#ba68c8','#4db6ac','#9fa8da','#90a4ae','#dce775'];let coverageStationsMode='none',coverageSignature='';
  function coverageExtras(){const pool=study.plan.stations.map(s=>s.id),deployment=study.plan.deployments.find(d=>d.id===study.activeDeployment)?.stations??[];
   return coverageStationSet(coverageStationsMode,{pool,compared:study.compared,deployment,exclude:study.modified?null:study.working.from}).map(id=>{const s=study.candidate(id),input=study.candidateInput(id);
    return{id,name:s.name,x:s.position[0],y:s.position[1],z:s.position[2],az:s.pose.azimuthDeg,el:s.pose.elevationDeg,device:input.device,color:EXTRA_COLORS[pool.indexOf(id)%EXTRA_COLORS.length]};});}

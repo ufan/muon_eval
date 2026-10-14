@@ -3,8 +3,8 @@ import * as THREE from 'three';
 // tinted at most once (front-facing side), mixed into its colour, with a minimum opacity,
 // so transparency sorting is unchanged and stacked layers do not add up. GLSL mirror of
 // coverage-map.js (lineSlopes, classifyCoverage, slopeBin, coveringStations); scene frame has Y up.
-// With extra stations (14d sketching), surfaces are shaded by how many stations probe them and
-// each station's field-of-view edge is drawn in its own colour.
+// With extra stations (14d sketching), surfaces are shaded by how many stations probe them, in one hue that grows
+// stronger with each station, and each station's field-of-view edge is drawn in its own colour.
 export const COVERAGE_EXTRA_SLOTS = 8;
 const slots = make => Array.from({ length: COVERAGE_EXTRA_SLOTS }, make);
 export function createCoverageUniforms() {
@@ -35,7 +35,10 @@ uniform int covExtraCount; uniform vec3 covExtraOrigin[COV_EXTRA]; uniform vec3 
 uniform vec3 covExtraRight[COV_EXTRA]; uniform vec3 covExtraUp[COV_EXTRA]; uniform vec2 covExtraMax[COV_EXTRA]; uniform vec3 covExtraColor[COV_EXTRA];
 // Field-of-view edge measure of one station at a point (<= 1 inside); 99 on the detector plane.
 float covEdgeOf(vec3 d, vec3 f, vec3 r, vec3 u, vec2 m) { float F = dot(d, f); return abs(F) < 1e-6 ? 99.0 : max(abs(dot(d, r) / F) / m.x, abs(dot(d, u) / F) / m.y); }
-vec3 covCountColor(int k) { return k == 1 ? vec3(0.16, 0.36, 0.85) : k == 2 ? vec3(0.02, 0.60, 0.50) : k == 3 ? vec3(0.88, 0.60, 0.02) : vec3(0.85, 0.18, 0.10); }
+// One hue for the number of covering stations, light to deep (ColorBrewer Reds, linear values): each extra
+// station makes the tint darker and stronger (5 steps, 5+ shared).
+vec3 covCountColor(int k) { return k == 1 ? vec3(0.973, 0.497, 0.356) : k == 2 ? vec3(0.973, 0.287, 0.168) : k == 3 ? vec3(0.965, 0.144, 0.068) : k == 4 ? vec3(0.73, 0.026, 0.019) : vec3(0.376, 0.005, 0.007); }
+float covCountStrength(int k) { return k == 1 ? 0.55 : k == 2 ? 0.65 : k == 3 ? 0.74 : k == 4 ? 0.82 : 0.9; }
 float covBin(float s) { // exact inverse of nativeAxisBins (coverage-map.js slopeBin)
   float count = 2.0 * covStrips - 1.0, j = floor(s / covStep + 0.5) + covStrips - 1.0;
   return (ceil((j + 1.0) * covBins / count) - 1.0 + 0.5) / covBins;
@@ -51,7 +54,7 @@ if (covMode > 0 && covLayer > 0.5 && gl_FrontFacing && covExtraCount > 0) {
     if (edge <= 1.0 && e.y > 0.0) covK++;
     if (!covOnLine && abs(edge - 1.0) < w * 1.5 && (e.y > 0.0 || dot(e, covExtraForward[i]) > 0.0)) { covOnLine = true; covLine = covExtraColor[i]; }
   }
-  if (covK > 0) { diffuseColor.rgb = mix(diffuseColor.rgb, covCountColor(covK), 0.7); diffuseColor.a = max(diffuseColor.a, covMinOpacity); }
+  if (covK > 0) { float covS = covCountStrength(covK); diffuseColor.rgb = mix(diffuseColor.rgb, covCountColor(covK), covS); diffuseColor.a = max(diffuseColor.a, covMinOpacity + 0.5 * covS); }
   if (covOnLine) { diffuseColor.rgb = covLine; diffuseColor.a = 1.0; }
 } else if (covMode > 0 && covLayer > 0.5 && gl_FrontFacing) {
   vec3 covD = vCovWorld - covOrigin; float covF = dot(covD, covForward);
@@ -88,6 +91,6 @@ export function attachCoverage(material, uniforms, layer) {
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${FRAGMENT_HEAD}`)
       .replace('#include <color_fragment>', `#include <color_fragment>\n${FRAGMENT_BODY}`);
   };
-  material.customProgramCacheKey = () => 'coverage-v2';
+  material.customProgramCacheKey = () => 'coverage-v4';
   return material;
 }
