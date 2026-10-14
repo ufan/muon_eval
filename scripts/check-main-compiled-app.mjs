@@ -143,6 +143,13 @@ try{
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
  await page.locator('.overview-item summary').first().click();const target=page.locator('[data-overview-station]').first(),targetName=await target.innerText();await target.click();await ready();
  assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${targetName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));
+ // Other stations' markers in 3D carry name labels; a click on a label or on the marker itself opens that station.
+ const labels=page.locator('.station-labels button:not([hidden])');await page.waitForFunction(()=>document.querySelectorAll('.station-labels button:not([hidden])').length>0);
+ const escape=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),opened=async name=>assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${escape(name)}」一致`));
+ {const label=labels.first(),name=await label.innerText();await label.click();await ready();await opened(name);}
+ {await page.waitForFunction(()=>document.querySelectorAll('.station-labels button:not([hidden])').length>0);const label=labels.first(),name=await label.innerText();
+  const anchor=await label.evaluate(e=>{const box=document.querySelector('#webgl').getBoundingClientRect();return[box.left+parseFloat(e.style.left),box.top+parseFloat(e.style.top)];});
+  await page.mouse.move(...anchor);await page.waitForTimeout(200);assert.match(await page.locator('.feature-tip').innerText(),/点击设为工作点位/);await page.mouse.down();await page.mouse.up();await ready();await opened(name);}
  await page.locator('#overviewShow3d').click();assert.equal(await page.locator('#coverageMode').inputValue(),'physical');assert.equal(await page.locator('#coverageMulti').inputValue(),'class');
  await page.locator('#coverageMulti').selectOption('views');await page.locator('#overviewStations').selectOption('none');
  // Placing: one click on the model moves the working station there; Esc cancels.

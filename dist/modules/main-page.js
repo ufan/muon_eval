@@ -199,5 +199,7 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
   placeStation({point,normal,direction,featureId=null}){setPlacingButton(false);const cavity=featureId?placeInCavity({point,direction,featureId}):null,note=$('#placeNote');
    const placed=(cavity?cavity.position:placementPoint(point,normal,direction)).map(v=>Math.round(v*100)/100);
    note.hidden=false;note.textContent=cavity?`已放入「${features.get(featureId).label.zh}」：底板 Z ${cavity.floorZ.toFixed(2)} m，离底板 ${(placed[2]-cavity.floorZ).toFixed(2)} m（空腔净高 ${(cavity.ceilingZ-cavity.floorZ).toFixed(2)} m）`:'已放在所点表面外 0.5 m（未点到空腔）';['x','y','z'].forEach((key,i)=>study.update(key,placed[i]));persistSession();sync();renderList();scheduleDetectorUpdate();},
-  placeCancelled(){setPlacingButton(false);},dispose(){queue.dispose();controller.dispose();mainPatterns.dispose?.();projectionView.dispose();sceneView.dispose();}});
+  placeCancelled(){setPlacingButton(false);},
+  // A station marker or its label in 3D opens that station as the working station (#15, FR-M4).
+  pickStation(id){selectCandidate(id);},dispose(){queue.dispose();controller.dispose();mainPatterns.dispose?.();projectionView.dispose();sceneView.dispose();}});
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { nearestScreenPoint } from './screen-pick.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
@@ -23,7 +24,7 @@ function clear(group) {
   group.clear();
 }
 
-export function createCompiledSceneView({ runtime, waterLayers, features=null, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{}, onCoveragePick=()=>{}, onPlacePick=()=>{}, onPlaceCancel=()=>{} }) {
+export function createCompiledSceneView({ runtime, waterLayers, features=null, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{}, onCoveragePick=()=>{}, onPlacePick=()=>{}, onPlaceCancel=()=>{}, onStationPick=()=>{} }) {
   const $=selector=>root.querySelector(selector),container=$('#webgl');
   const geometryView=createCompiledGeometryView(runtime),detectorGroup=new THREE.Group(),rayGroup=new THREE.Group(),projectionGroup=new THREE.Group(),extraGroup=new THREE.Group();
   const scene=new THREE.Scene();scene.background=new THREE.Color(LOOK.background);scene.fog=new THREE.FogExp2(LOOK.background,LOOK.fogDensity);
@@ -148,12 +149,19 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     sliceMaterial.alphaMap?.dispose();sliceMaterial.alphaMap=texture;sliceMaterial.opacity=.92;sliceMaterial.needsUpdate=true;}
   const sliceMatter=hit=>{const map=sliceMaterial.alphaMap;if(!map||!hit.uv)return true;const {width,data}=map.image,ix=Math.min(width-1,Math.floor(hit.uv.x*width)),iy=Math.min(width-1,Math.floor(hit.uv.y*width));return data[4*(iy*width+ix)]>0;};
   // Other stations shown with the working one (14d sketching): their fields of view in the shader, a marker each.
-  let extraStations=[];
-  function setCoverageStations(list=[]){extraStations=list.slice(0,coverage.covExtraOrigin.value.length).map(s=>({...s}));clear(extraGroup);coverage.covExtraCount.value=extraStations.length;
+  // Each one has a name label at its marker; a click on the label or the marker opens that station (#15, FR-M4).
+  let extraStations=[];const labels=document.createElement('div');labels.className='station-labels';container.after(labels);
+  function markerScreen(){if(!renderer)return[];const canvas=renderer.domElement.getBoundingClientRect();
+    return extraStations.map(s=>{const v=s.origin.clone().project(camera);return{id:s.id,x:canvas.left+(v.x+1)/2*canvas.width,y:canvas.top+(1-v.y)/2*canvas.height,visible:v.z<1&&Math.abs(v.x)<=1&&Math.abs(v.y)<=1};});}
+  function updateLabels(){if(!extraStations.length)return;const box=container.getBoundingClientRect(),screen=markerScreen();
+    [...labels.children].forEach((label,i)=>{const p=screen[i];label.hidden=!p?.visible;if(p?.visible){label.style.left=`${p.x-box.left}px`;label.style.top=`${p.y-box.top}px`;}});}
+  const markerAt=event=>nearestScreenPoint(markerScreen(),[event.clientX,event.clientY],12);
+  function setCoverageStations(list=[]){extraStations=list.slice(0,coverage.covExtraOrigin.value.length).map(s=>({...s,origin:compiledPointToScene([s.x,s.y,s.z])}));clear(extraGroup);coverage.covExtraCount.value=extraStations.length;
+    labels.replaceChildren(...extraStations.map(s=>{const label=document.createElement('button');label.type='button';label.textContent=s.name;label.dataset.station=s.id;label.title='设为工作点位';label.style.setProperty('--c',s.color);label.hidden=true;label.onclick=()=>onStationPick(s.id);return label;}));
     extraStations.forEach((s,i)=>{const basis=detectorBasis(s.az,s.el),origin=compiledPointToScene([s.x,s.y,s.z]);coverage.covExtraOrigin.value[i].copy(origin);
       coverage.covExtraForward.value[i].copy(compiledPointToScene(basis.forward));coverage.covExtraRight.value[i].copy(compiledPointToScene(basis.right));coverage.covExtraUp.value[i].copy(compiledPointToScene(basis.up));
       coverage.covExtraMax.value[i].set(s.device.maxSlopeX,s.device.maxSlopeY);coverage.covExtraColor.value[i].set(s.color);setSlot(i+1,{origin:coverage.covExtraOrigin.value[i],forward:coverage.covExtraForward.value[i],right:coverage.covExtraRight.value[i],up:coverage.covExtraUp.value[i],device:s.device,color:coverage.covExtraColor.value[i]});
-      const marker=new THREE.Mesh(new THREE.OctahedronGeometry(radius*.025),new THREE.MeshBasicMaterial({color:s.color,depthTest:false,transparent:true,opacity:.9}));marker.position.copy(origin);marker.renderOrder=5;extraGroup.add(marker);});buildAtlas();updateVariant();drawFovEdges();}
+      const marker=new THREE.Mesh(new THREE.OctahedronGeometry(radius*.025),new THREE.MeshBasicMaterial({color:s.color,depthTest:false,transparent:true,opacity:.9}));marker.position.copy(origin);marker.renderOrder=5;extraGroup.add(marker);});buildAtlas();updateVariant();drawFovEdges();updateLabels();requestRender();}
   function updateVariant(){setCoverageVariant(coverageMaterials,coverage.covMode.value===2&&coverage.covExtraCount.value>0);}
   function drawDetector(station,device){currentStation={...station};currentDevice={...device};setCoveragePose(station,device);clear(detectorGroup);clear(rayGroup);clear(projectionGroup);
     const origin=compiledPointToScene([station.x,station.y,station.z]),basis=detectorBasis(station.az,station.el),forward=compiledPointToScene(basis.forward).normalize(),right=compiledPointToScene(basis.right),up=compiledPointToScene(basis.up);
@@ -197,14 +205,16 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     return{point:model(hit.point),normal:model(normal),direction:model(raycaster.ray.direction),featureId:features?.get(featureId)?.category==='void'?featureId:null};}
   function cancelPlacing(event){if(event.key==='Escape'&&placing){setPlacing(false);onPlaceCancel();requestRender();}}
   function hoverFeature(event){if(placing){const bounds=container.getBoundingClientRect();tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;tip.textContent='点击模型表面放置当前点位 · Esc 取消';tip.hidden=false;return;}
-    if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;const id=featureAt(event);if(id!==hovered){hovered=id;onFeatureHover(id);}
+    if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;const station=markerAt(event);renderer.domElement.style.cursor=station?'pointer':'';
+    if(station){const bounds=container.getBoundingClientRect();tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;tip.textContent=`${extraStations.find(s=>s.id===station).name} · 点击设为工作点位`;tip.hidden=false;return;}
+    const id=featureAt(event);if(id!==hovered){hovered=id;onFeatureHover(id);}
     const bounds=container.getBoundingClientRect();tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;
     if(id){const feature=features.get(id);tip.textContent=`${feature.label.zh} · ${features.classes[feature.class].label.zh} · ${features.imagingRoles[feature.imagingRole]}`;tip.hidden=false;return;}
     const readout=coverageAt();if(!readout){tip.hidden=true;return;}tip.textContent=coverageText(readout);tip.hidden=false;});}
   function leaveFeature(){tip.hidden=true;if(hovered){hovered=null;onFeatureHover(null);}}
   function pressFeature(event){pressed=[event.clientX,event.clientY];}
   function releaseFeature(event){if(!pressed||Math.hypot(event.clientX-pressed[0],event.clientY-pressed[1])>4){pressed=null;return;}pressed=null;
-    if(placing){const surface=surfaceAt(event);if(!surface)return;setPlacing(false);onPlacePick(surface);requestRender();return;}const id=featureAt(event);if(id){onFeaturePick(id);return;}const readout=coverageAt();if(readout?.ix!==null&&readout?.ix!==undefined)onCoveragePick(readout.ix,readout.iy);}
+    if(placing){const surface=surfaceAt(event);if(!surface)return;setPlacing(false);onPlacePick(surface);requestRender();return;}const station=markerAt(event);if(station){onStationPick(station);return;}const id=featureAt(event);if(id){onFeaturePick(id);return;}const readout=coverageAt();if(readout?.ix!==null&&readout?.ix!==undefined)onCoveragePick(readout.ix,readout.iy);}
   function displayTrace(group,trace,station,direction){clear(group);const origin=compiledPointToScene([station.x,station.y,station.z]),dir=compiledPointToScene([direction.x,direction.y,direction.z]);
     for(const segment of trace.segments){if(segment.material==='air')continue;const a=origin.clone().addScaledVector(dir,segment.t0),b=origin.clone().addScaledVector(dir,segment.t1);group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),new THREE.LineBasicMaterial({color:materialColors[segment.material]??0xffffff,depthTest:false})));}
     const arrow=new THREE.ArrowHelper(dir,origin,radius*.2,0x65fff0);arrow.line.material.depthTest=arrow.cone.material.depthTest=false;group.add(arrow);
@@ -213,7 +223,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   // into this view); an idle scene costs no GPU time.
   let frame=null;
   function requestRender(){if(!renderer||frame!==null)return;frame=requestAnimationFrame(renderFrame);}
-  function renderFrame(){frame=null;const moving=controls.update();updateScale();renderer.render(scene,camera);if(moving)requestRender();}
+  function renderFrame(){frame=null;const moving=controls.update();updateScale();renderer.render(scene,camera);updateLabels();if(moving)requestRender();}
   const api={
     build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
     resize,setView,setLayer,setDamOpacity,drawDetector,setSlice,setSliceMask,subjectExtent,setFovEdges,setFovSolid,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
@@ -221,7 +231,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
     clearProjection(){clear(projectionGroup);emphasiseFeatures([]);},showFlux(){},drawFluxCloud(){},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},
-    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);sliceMesh.geometry.dispose();sliceMaterial.alphaMap?.dispose();sliceMaterial.dispose();tip.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
+    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);sliceMesh.geometry.dispose();sliceMaterial.alphaMap?.dispose();sliceMaterial.dispose();tip.remove();labels.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
   };
   // Every public call may change what is shown: request a frame after it.
   for(const [name,fn] of Object.entries(api))if(name!=='dispose')api[name]=(...args)=>{const value=fn(...args);requestRender();return value;};
