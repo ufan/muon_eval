@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { createCompiledGeometryView } from './compiled-geometry-view.js';
 import { detectorBasis } from './detector-pose.js';
 import { featureLayerGroups, featuresAlongRay } from './feature-layers.js';
@@ -11,7 +14,7 @@ export const compiledPointToScene = ([x,y,z]) => new THREE.Vector3(x,z,-y);
 const materialColors = { concrete:0xc0bcb0, rock:0x809488, water:0x49a7ff, steel:0xffad58, air:0x63ffe8 };
 // Display style of the main app (owner preference: the former legacy scene's look).
 // View-only: it replaces the GLB display colours and never touches the shared buffers.
-const LOOK = { background:0x071018, fogDensity:.00155, dam:0xaaa79c, steel:0x73808b, edge:0x3f5159, rock:0x6e756f,
+const LOOK = { fovEdge:0xffb8e0, background:0x071018, fogDensity:.00155, dam:0xaaa79c, steel:0x73808b, edge:0x3f5159, rock:0x6e756f,
   upwater:0x176b9d, downwater:0x2584ad, gridMajor:0x35505d, gridMinor:0x1d3038 };
 const lookMaterial = (color, options = {}) => new THREE.MeshStandardMaterial({ color, roughness:.78, metalness:.02, ...options });
 function clear(group) {
@@ -56,7 +59,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     else if(layer==='upwater'||layer==='downwater')material=lookMaterial(LOOK[layer],{transparent:true,opacity:.42,roughness:.18,metalness:.08,side:THREE.DoubleSide,depthWrite:false});
     if(!material)continue;attachCoverage(material,coverage,layer==='dam'?subjectCoverage:contextCoverage);mesh.material.dispose();mesh.material=material;
     if(layer==='dam')mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry,25),new THREE.LineBasicMaterial({color:LOOK.edge,transparent:true,opacity:.5})));}}
-  function resize(){if(!renderer)return;const bounds=container.getBoundingClientRect();if(!bounds.width||!bounds.height)return;camera.aspect=bounds.width/bounds.height;camera.updateProjectionMatrix();renderer.setSize(bounds.width,bounds.height,false);}
+  function resize(){if(!renderer)return;const bounds=container.getBoundingClientRect();if(!bounds.width||!bounds.height)return;camera.aspect=bounds.width/bounds.height;camera.updateProjectionMatrix();renderer.setSize(bounds.width,bounds.height,false);for(const material of lineMaterials)material.resolution.set(bounds.width,bounds.height);}
   function setView(mode){if(!controls)return;const axes={perspective:[.74,-.61,.27],front:[-1,0,.1],cross:[0,-1,.1],top:[0,0,1]};if(!axes[mode])throw new Error('Unknown scene view');
     const halfVertical=THREE.MathUtils.degToRad(camera.fov/2),halfHorizontal=Math.atan(Math.tan(halfVertical)*camera.aspect),distance=radius/Math.sin(Math.min(halfVertical,halfHorizontal))*(mode==='perspective'?.7:1.1);
     const offset=compiledPointToScene(axes[mode]).normalize().multiplyScalar(distance);camera.position.copy(target).add(offset);controls.target.copy(target);controls.update();$('#viewSelect').value=mode;}
@@ -68,7 +71,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     if(material==='water')for(const [layer,ids] of Object.entries(waterLayers))if(component.sourceEntityIds.some(id=>ids.includes(id)))return layer;
     return null;
   }
-  function setLayer(name,visible){layerState.set(name,visible);if(name==='cone'){detectorGroup.visible=rayGroup.visible=projectionGroup.visible=visible;return;}
+  function setLayer(name,visible){layerState.set(name,visible);if(name==='cone'){detectorGroup.visible=rayGroup.visible=projectionGroup.visible=visible;fovGroup.visible=visible&&fovEdges;return;}
     for(const component of runtime.components)if(materialLayer(component)===name){const mesh=geometryView.meshes.get(component.componentId);mesh.visible=visible&&component.metadata.flags.display&&component.metadata.realization!=='virtual';}}
   function setDamOpacity(opacity){for(const component of runtime.components)if(materialLayer(component)==='dam'){const material=geometryView.meshes.get(component.componentId).material;material.transparent=opacity<1;material.opacity=opacity;material.depthWrite=opacity>.72;material.needsUpdate=true;}}
   function setCoverage({mode='off',core=false,context=false}={}){coverage.covMode.value={off:0,geometric:1,physical:2}[mode]??0;coverage.covCore.value=core?1:0;contextCoverage.value=context?1:0;for(const id of featureIds)showFeature(id);}
@@ -79,28 +82,37 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   function setCoveragePose(station,device){const basis=detectorBasis(station.az,station.el);coverage.covOrigin.value.copy(compiledPointToScene([station.x,station.y,station.z]));
     coverage.covForward.value.copy(compiledPointToScene(basis.forward));coverage.covRight.value.copy(compiledPointToScene(basis.right));coverage.covUp.value.copy(compiledPointToScene(basis.up));
     coverage.covMax.value.set(device.maxSlopeX,device.maxSlopeY);coverage.covStep.value=device.nativeSlopeStep;coverage.covStrips.value=device.stripsX;}
+  // Field-of-view edges (option 视场棱线): the four corner lines of a station's acceptance as lines of constant screen
+  // width (WebGL ignores line widths), solid where visible and dashed where hidden. Each ends where it last leaves the
+  // subject within reach, so it spans the probed stretch even from a station inside the subject, or at a fixed length when
+  // it misses the subject.
+  const fovGroup=new THREE.Group(),lineMaterials=new Set();scene.add(fovGroup);let fovEdges=true;
+  function fatLines(points,{color,width,opacity,dashed=false}){const geometry=new LineSegmentsGeometry().setPositions(points),material=new LineMaterial({color,linewidth:width,transparent:true,opacity,dashed,
+      dashSize:radius*.025,gapSize:radius*.018,depthTest:!dashed,depthWrite:false});if(container.clientWidth)material.resolution.set(container.clientWidth,container.clientHeight);lineMaterials.add(material);
+    const line=new LineSegments2(geometry,material);if(dashed){line.computeLineDistances();line.renderOrder=5;}return line;}
+  function fovEdgePoints(station,device,{back=false}={}){const origin=compiledPointToScene([station.x,station.y,station.z]),basis=detectorBasis(station.az,station.el),forward=compiledPointToScene(basis.forward).normalize(),right=compiledPointToScene(basis.right),up=compiledPointToScene(basis.up);
+    const length=radius*.45,reach=radius*2.2,subject=subjectMeshes.filter(mesh=>mesh.visible),points=[];
+    for(const [x,y] of [[-1,-1],[1,-1],[1,1],[-1,1]]){const direction=forward.clone().addScaledVector(right,x*device.maxSlopeX).addScaledVector(up,y*device.maxSlopeY).normalize();if(back)direction.negate();
+      edgeRay.set(origin,direction);edgeRay.far=reach;const hits=edgeRay.intersectObjects(subject,false),end=origin.clone().addScaledVector(direction,hits.length?hits.at(-1).distance:length);points.push(origin.x,origin.y,origin.z,end.x,end.y,end.z);}
+    return points;}
+  function addFovEdges(station,device,color,{width=2.5,back=true}={}){const front=fovEdgePoints(station,device);
+    fovGroup.add(fatLines(front,{color,width,opacity:.95}),fatLines(front,{color,width:width*.8,opacity:.55,dashed:true}));
+    if(back){const behind=fovEdgePoints(station,device,{back:true});fovGroup.add(fatLines(behind,{color,width:width*.7,opacity:.4}),fatLines(behind,{color,width:width*.6,opacity:.25,dashed:true}));}}
+  function drawFovEdges(){for(const child of [...fovGroup.children]){lineMaterials.delete(child.material);}clear(fovGroup);fovGroup.visible=fovEdges&&(layerState.get('cone')??true);
+    if(!currentStation||!currentDevice)return;addFovEdges(currentStation,currentDevice,LOOK.fovEdge);for(const s of extraStations)addFovEdges(s,s.device,s.color,{width:2,back:false});}
+  function setFovEdges(on){fovEdges=Boolean(on);fovGroup.visible=fovEdges&&(layerState.get('cone')??true);}
   // Other stations shown with the working one (14d sketching): their fields of view in the shader, a marker each.
   let extraStations=[];
   function setCoverageStations(list=[]){extraStations=list.slice(0,coverage.covExtraOrigin.value.length).map(s=>({...s}));clear(extraGroup);coverage.covExtraCount.value=extraStations.length;
     extraStations.forEach((s,i)=>{const basis=detectorBasis(s.az,s.el),origin=compiledPointToScene([s.x,s.y,s.z]);coverage.covExtraOrigin.value[i].copy(origin);
       coverage.covExtraForward.value[i].copy(compiledPointToScene(basis.forward));coverage.covExtraRight.value[i].copy(compiledPointToScene(basis.right));coverage.covExtraUp.value[i].copy(compiledPointToScene(basis.up));
       coverage.covExtraMax.value[i].set(s.device.maxSlopeX,s.device.maxSlopeY);coverage.covExtraColor.value[i].set(s.color);
-      const marker=new THREE.Mesh(new THREE.OctahedronGeometry(radius*.025),new THREE.MeshBasicMaterial({color:s.color,depthTest:false,transparent:true,opacity:.9}));marker.position.copy(origin);marker.renderOrder=5;extraGroup.add(marker);});}
+      const marker=new THREE.Mesh(new THREE.OctahedronGeometry(radius*.025),new THREE.MeshBasicMaterial({color:s.color,depthTest:false,transparent:true,opacity:.9}));marker.position.copy(origin);marker.renderOrder=5;extraGroup.add(marker);});drawFovEdges();}
   function drawDetector(station,device){currentStation={...station};currentDevice={...device};setCoveragePose(station,device);clear(detectorGroup);clear(rayGroup);clear(projectionGroup);
     const origin=compiledPointToScene([station.x,station.y,station.z]),basis=detectorBasis(station.az,station.el),forward=compiledPointToScene(basis.forward).normalize(),right=compiledPointToScene(basis.right),up=compiledPointToScene(basis.up);
     const orientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),forward);
     for(let i=0;i<device.layers;i++){const mesh=new THREE.Mesh(new THREE.PlaneGeometry(device.width,device.height),new THREE.MeshBasicMaterial({color:0xff65bd,side:THREE.DoubleSide}));mesh.position.copy(origin).addScaledVector(forward,(i-(device.layers-1)/2)*device.spacing);mesh.quaternion.copy(orientation);detectorGroup.add(mesh);}
-    // Pyramid edges along the four corner lines of the acceptance, in front and (fainter) behind. Each ends where it last
-    // leaves the subject within reach, so it spans the probed stretch even from a station inside the subject, or at a fixed
-    // length when it misses the subject; solid where visible, dashed where hidden.
-    const length=radius*.45,reach=radius*2.2,subject=subjectMeshes.filter(mesh=>mesh.visible);
-    const corners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>forward.clone().addScaledVector(right,x*device.maxSlopeX).addScaledVector(up,y*device.maxSlopeY).normalize());
-    const end=direction=>{edgeRay.set(origin,direction);edgeRay.far=reach;const hits=edgeRay.intersectObjects(subject,false);return origin.clone().addScaledVector(direction,hits.length?hits.at(-1).distance:length);};
-    const edges=(directions,opacity)=>{const points=[];for(const direction of directions){const e=end(direction);points.push(origin.x,origin.y,origin.z,e.x,e.y,e.z);}
-      const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(points,3));
-      const hidden=new THREE.LineSegments(geometry.clone(),new THREE.LineDashedMaterial({color:0xff65bd,transparent:true,opacity:opacity*.6,dashSize:radius*.02,gapSize:radius*.015,depthTest:false}));hidden.computeLineDistances();hidden.renderOrder=5;
-      detectorGroup.add(new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:0xff65bd,transparent:true,opacity})),hidden);};
-    edges(corners,.75);edges(corners.map(direction=>direction.clone().negate()),.3);detectorGroup.add(new THREE.ArrowHelper(forward,origin,length,0xff65bd));
+    const length=radius*.45;detectorGroup.add(new THREE.ArrowHelper(forward,origin,length,0xff65bd));drawFovEdges();
   }
   // With coverage on, features the station sees (ADR-029 "in view") are drawn at full strength and the others faded.
   function showFeature(id){const visible=featureVisible.get(id)||emphasised.has(id),faded=coverage.covMode.value>0&&featuresSeen!==null&&!featuresSeen.has(id)&&!emphasised.has(id);
@@ -150,12 +162,12 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   function renderFrame(){frame=null;const moving=controls.update();updateScale();renderer.render(scene,camera);if(moving)requestRender();}
   const api={
     build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
-    resize,setView,setLayer,setDamOpacity,drawDetector,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
+    resize,setView,setLayer,setDamOpacity,drawDetector,setFovEdges,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
     showRay:(trace,station,direction)=>displayTrace(rayGroup,trace,station,direction),
     showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
     clearProjection(){clear(projectionGroup);emphasiseFeatures([]);},showFlux(){},drawFluxCloud(){},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},
-    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);tip.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
+    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);tip.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
   };
   // Every public call may change what is shown: request a frame after it.
   for(const [name,fn] of Object.entries(api))if(name!=='dispose')api[name]=(...args)=>{const value=fn(...args);requestRender();return value;};

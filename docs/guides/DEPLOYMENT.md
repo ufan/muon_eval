@@ -67,4 +67,4 @@ Application data is stored in each browser's `localStorage` and is not synchroni
 - Page: `dist/index.html`
 - Application entry: `dist/app.js`, modules in `dist/modules/`
 - Dataset registry and releases: `datasets/registry.json`, `datasets/<dataset-id>/<release>/`
-- Local Three.js: `dist/vendor/three/` (version `0.186.0`)
+- Local Three.js: `dist/vendor/three/` (version `0.186.0`; addons used: `controls/OrbitControls.js`, `lines/LineSegments2.js`, `lines/LineSegmentsGeometry.js`, `lines/LineMaterial.js`, copied unchanged from the npm package)
