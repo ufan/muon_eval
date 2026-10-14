@@ -83,10 +83,11 @@ Each release keeps several studies (FR-P8). Keys (all values UTF-8 text in `loca
 |---|---|
 | `muon-studies:<release>` | `{ "version": 1, "active": "<study id>", "studies": ["study-1", …] }` |
 | `muon-plan:<release>:<study id>` | The study's plan, canonical text |
-| `muon-session:<release>:<study id>` | Session state next to the plan: `{ "activeStation", "working", "compare" }`: the working station's source candidate, the working station itself (name, position, pose, model, device settings) and the candidates ticked for comparison (later: active deployment). Invalid parts are ignored on load |
+| `muon-session:<release>:<study id>` | Session state next to the plan: `{ "activeStation", "working", "compare", "activeDeployment" }`: the working station's source candidate, the working station itself (name, position, pose, model, device settings), the candidates ticked for comparison and the deployment shown in 部署组合. Invalid parts are ignored on load |
 
 - Study IDs are local (`study-N`, never reused while the old one exists); they are not part of the plan, so the same file can be imported twice as two studies.
-- Importing a plan always creates a new study of its release and makes it active; nothing is overwritten.
+- Importing a plan always creates a new study of its release and makes it active; nothing is overwritten. Deleting a study removes its plan and session; the first remaining study opens, or a fresh one from the dataset candidates.
+- Export ("导出方案 ▾"): the whole study, the current deployment, or all non-empty deployments, each as a plan file (`extractDeployments`); file names `muography-plan-<release>-<study id>[-<deployment id> | -deployments].json`.
 - The scenario of a stored plan follows the scenario chosen in the app.
 - Older storage is converted once: the single plan per release (`muon-plan:<release>`, 1.0) becomes `study-1` with its active station moved to the session; station lists from before plans (`muon-candidates:<release>`) also become `study-1`.
 - Code: `dist/modules/plan-store.js` (pure apart from the storage object passed in).

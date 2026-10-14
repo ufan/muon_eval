@@ -54,7 +54,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 |---|---|---|---|---|
 | 14a | Plan format 1.1.0 (named deployments, candidate notes; active station moves out of the plan) and several studies per release in browser storage, with migration from 1.0 and from one plan per release | FR-P1, FR-P7, FR-P8, ADR-020 | Data format; test first (L1 format and store, L3 schema). Minimal study picker (switch, new) in 候选部署点; import creates a study; runner takes `--deployment <id>` | Done |
 | 14b | Working station vs fixed candidates (update / save as new); per-candidate compact result cache with status; comparison of candidates replaces the separate "方案比较" rows | FR-P6, FR-P10, ADR-020 | `study-state.js` (working station, save as new, update, delete, apply detector to all; detectors shared by value), `candidate-results.js` (input key, compact entry ≈ 90 KB at 65², cache, background queue that yields to the working station). List shows each candidate's status and totals; ticking 比较 compares cached candidates; the comparison export recomputes full results; "导出当前结果" exports the working result. Open: filling the cache from a batch run (#13), path segments in the compact form (with #16) | Done |
-| 14c | Named deployments UI (new, copy, rename, delete, membership); study picker complete (rename, delete, import); export of a study or of deployments | FR-P7, FR-P8, FR-P9 | Needs 14a, 14b | Todo |
+| 14c | Named deployments UI (new, copy, rename, delete, membership); study picker complete (rename, delete, import); export of a study or of deployments | FR-P7, FR-P8, FR-P9 | 部署组合 section (members ticked from the candidates, "比较本组合的点位"); 工作方案 rename/delete; header menu 导出方案 ▾ (whole study, current deployment, all deployments). Multi-station metrics come with #15 | Done |
 | 14d | Sketching: place the working station by clicking the model; geometric coverage of several candidates at once | FR-P5, FR-M10 | Needs 14b; multi-station part of 15a | Todo |
 | 15 | Overview mode in 3D: all selected stations, colour per station, field-of-view cones, ray coverage on the subject; summary table; click → detail mode | FR-M4 | Reuses scene views; subject-neutral labels (FR-K1) | Todo |
 | 15a | Coverage highlight: geometric (live, single colour per station) and physical (count/sr brightness from the result) via projective texturing; slope-mapping L1 test against `detector-pose.js` | FR-M10, ADR-026 | Single station done (owner: ahead of #13): `coverage-map.js` (L1), `coverage-shader.js`, controls in 环境图层. Hover readout, click to the projection pixel, pyramid edges, on-demand rendering and in-view feature emphasis done. Open: multi-station with #15, FR-N5 measurement on an Intel i5 laptop | Partly done |
@@ -145,6 +145,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: 14c done (deployments UI, study rename/delete, plan export menu).
 - 2026-10-14: After 14b (owner): 候选部署点 open by default; the position-dependent compiled ray length is no longer reported as a sampling difference.
 - 2026-10-14: 14b done (working station, fixed candidates, per-candidate cache, comparison from the list).
 - 2026-10-14: 14a done (plan 1.1.0, several studies per release).

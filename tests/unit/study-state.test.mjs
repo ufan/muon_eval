@@ -103,3 +103,38 @@ test('compare flags and the working station persist as session state', () => {
   assert.equal(broken.working.from, 'north'); assert.equal(broken.modified, false); assert.deepEqual(broken.compared, ['north']);
   study.removeCandidate('station-2'); assert.deepEqual(study.compared, []);
 });
+
+test('deployments are created, renamed, copied, filled and deleted (FR-P7)', () => {
+  const study = open();
+  assert.deepEqual(study.plan.deployments.map(d => d.id), ['deployment-1', 'both']);
+  const id = study.createDeployment('Plan A');
+  assert.equal(id, 'deployment-3'); assert.equal(study.activeDeployment, id);
+  study.setMember(id, 'station-2', true); study.setMember(id, 'north', true); study.setMember(id, 'north', true);
+  assert.deepEqual(study.plan.deployments.at(-1), { id, name: 'Plan A', stations: ['station-2', 'north'] });
+  study.setMember(id, 'station-2', false);
+  assert.deepEqual(study.plan.deployments.at(-1).stations, ['north']);
+  const copy = study.copyDeployment(id, 'Plan A copy');
+  assert.deepEqual(study.plan.deployments.at(-1), { id: copy, name: 'Plan A copy', stations: ['north'] });
+  assert.equal(study.activeDeployment, copy);
+  study.renameDeployment(copy, 'Plan B'); assert.equal(study.plan.deployments.at(-1).name, 'Plan B');
+  assert.throws(() => study.renameDeployment(copy, ''), /name/);
+  assert.throws(() => study.setMember(copy, 'ghost', true), /ghost/);
+  study.deleteDeployment(copy);
+  assert.equal(study.plan.deployments.some(d => d.id === copy), false);
+  assert.equal(study.activeDeployment, 'deployment-1');
+  // Deleting a candidate removes it from every deployment.
+  study.removeCandidate('north'); assert.deepEqual(study.plan.deployments.find(d => d.id === id).stations, []);
+  validatePlan(study.plan);
+});
+
+test('the active deployment and the study title persist', () => {
+  const study = open({ activeDeployment: 'both' });
+  assert.equal(study.activeDeployment, 'both');
+  study.selectDeployment('deployment-1'); assert.equal(study.session().activeDeployment, 'deployment-1');
+  assert.throws(() => study.selectDeployment('ghost'), /ghost/);
+  assert.equal(open({ activeDeployment: 'ghost' }).activeDeployment, 'deployment-1');
+  const empty = open(null, { ...plan, deployments: [] });
+  assert.equal(empty.activeDeployment, null);
+  study.setTitle('Renamed study'); assert.equal(study.plan.title, 'Renamed study');
+  assert.throws(() => study.setTitle('x'.repeat(201)), /title/);
+});

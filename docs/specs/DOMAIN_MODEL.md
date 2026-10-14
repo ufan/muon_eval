@@ -125,10 +125,10 @@ Scene composition (Target): **scene = release + environment state + active anoma
 |---|---|---|---|
 | Station (candidate) | Entity within a plan | One entry of the study's candidate pool: unique ID within the plan, name, note, position in the model frame, one pose, detector reference, optional `candidateId` (the dataset candidate it started from). Several poses at one site are several stations. Fixed once saved: changed only by an explicit update (FR-P6) | Current (plan format; fixed in the app since 14b) |
 | Working station | Session state | The station being tuned in detail (position, pose, detector settings, source candidate); becomes a candidate only when saved; never part of the plan | Current (`study-state.js`, 14b) |
-| Deployment | Entity within a plan | Named subset of the candidate pool (unique ID within the plan, name, member station IDs); a station can be in several | Current in plan 1.1.0; UI with 14c |
+| Deployment | Entity within a plan | Named subset of the candidate pool (unique ID within the plan, name, member station IDs); a station can be in several | Current (plan 1.1.0, UI 14c) |
 | Pose | Value | Azimuth from model `X+` towards `Y+`, elevation above horizontal; detector-local basis follows | Current |
 | DeploymentPlan (study) | Aggregate root | One observation task on one release: scene (release reference + content hash for user-loaded datasets, scenario), named detector configurations (`default` required), candidate pool (stations), named deployments, reserved anomalies, schema version; `muography-plan` 1.1.0 ([PLAN_FORMAT](PLAN_FORMAT.md)). Session state (working station, active candidate, active deployment) is stored next to it, never inside | Current: plan 1.1.0, several studies per release (switch, new; import creates a study) |
-| Selection | Value | The deployment shown in the multi-station overview | Target (FR-M4, 14c) |
+| Selection | Value | The active deployment (session state); the overview shows it | Current as session state (14c); overview Target (FR-M4, #15) |
 
 ### 2.4 Assessment and results
 
@@ -186,7 +186,6 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 |---|---|---|
 | No `kind` in registry/specs; dam terms in generic modules | Dataset.kind | FR-K1, FR-K2, FR-K3 |
 | Only frozen scenario variables; no continuous environment variables (the retired legacy backend had a continuous upstream level) | Scenario, environment | FR-K2, FR-E1, MT-1 |
-| No deployment UI | Deployment | ADR-020, 14c |
 | Stations stored per release are invisible under another release (e.g. the retired legacy releases) | DeploymentPlan | FR-B2 |
 | One rock-like energy loss for all materials | Material | FR-K4 |
 | Generic modules name material IDs (`air`, `concrete`, `rock`, `steel`) instead of dataset-declared material roles | Material | FR-K11 |

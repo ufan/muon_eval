@@ -43,6 +43,11 @@ export function createStudyState({ plan, session = null, environment }) {
   const start = ids().has(session?.activeStation) ? session.activeStation : current.stations[0].id;
   let working = validWorking(current, session?.working) ?? fromCandidate(current, start);
   let compared = new Set((Array.isArray(session?.compare) ? session.compare : []).filter(id => ids().has(id)));
+  const deploymentIds = () => current.deployments.map(d => d.id);
+  let activeDeployment = deploymentIds().includes(session?.activeDeployment) ? session.activeDeployment : deploymentIds()[0] ?? null;
+  const deployment = id => { const d = current.deployments.find(item => item.id === id); if (!d) throw new Error(`Deployment ${id} is not in the study`); return d; };
+  const withDeployments = deployments => commit({ ...current, deployments });
+  const newDeploymentId = () => { let n = current.deployments.length + 1; while (deploymentIds().includes(`deployment-${n}`)) n++; return `deployment-${n}`; };
   const commit = next => { current = freeze(validatePlan({ ...next, detectors: prune(next.detectors, next.stations) })); };
   const station = (w, base = {}) => ({ ...base, name: w.name, position: [w.x, w.y, w.z], pose: { azimuthDeg: w.az, elevationDeg: w.el } });
   const configuration = settings => {
@@ -104,6 +109,19 @@ export function createStudyState({ plan, session = null, environment }) {
       const [detectors, detector] = resolveDetector(current.detectors, working.model, working.settings);
       commit({ ...current, detectors, stations: current.stations.map(s => ({ ...s, detector })) });
     },
+    // Named deployments (FR-P7): names come from the caller; members keep the order they were added in.
+    get activeDeployment() { return activeDeployment; },
+    selectDeployment(id) { deployment(id); activeDeployment = id; },
+    createDeployment(name, stations = []) { const id = newDeploymentId(); withDeployments([...current.deployments, { id, name, stations }]); activeDeployment = id; return id; },
+    copyDeployment(id, name) { return this.createDeployment(name, [...deployment(id).stations]); },
+    renameDeployment(id, name) { deployment(id); withDeployments(current.deployments.map(d => d.id === id ? { ...d, name } : d)); },
+    deleteDeployment(id) { deployment(id); withDeployments(current.deployments.filter(d => d.id !== id)); if (activeDeployment === id) activeDeployment = deploymentIds()[0] ?? null; },
+    setMember(id, stationId, on) {
+      this.candidate(stationId);
+      const d = deployment(id), stations = on ? (d.stations.includes(stationId) ? d.stations : [...d.stations, stationId]) : d.stations.filter(s => s !== stationId);
+      withDeployments(current.deployments.map(item => item.id === id ? { ...item, stations } : item));
+    },
+    setTitle(title) { commit({ ...current, title }); },
     setCompared(id, on) { this.candidate(id); if (on) compared.add(id); else compared.delete(id); },
     // Assessment inputs (deployment-state snapshot shape). The working station refers to
     // the plan only while it equals its candidate; otherwise it is not from the plan.
@@ -117,6 +135,6 @@ export function createStudyState({ plan, session = null, environment }) {
       return structuredClone({ station: { id: s.id, name: s.name, x: s.position[0], y: s.position[1], z: s.position[2], az: s.pose.azimuthDeg, el: s.pose.elevationDeg },
         device: { ...c.device, model: current.detectors[s.detector].device.model }, response: c.response, environment, plan: reference(s.id) });
     },
-    session() { return structuredClone({ activeStation: working.from, working, compare: this.compared }); }
+    session() { return structuredClone({ activeStation: working.from, working, compare: this.compared, activeDeployment }); }
   });
 }

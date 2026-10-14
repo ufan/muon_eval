@@ -2,7 +2,7 @@
 // Storage is passed in; reads and writes never throw (private windows, blocked storage).
 //   muon-studies:<release>          { version: 1, active, studies: [id, …] }
 //   muon-plan:<release>:<study>     the study's plan (canonical text)
-//   muon-session:<release>:<study>  session state next to the plan: { activeStation, working?, compare? }
+//   muon-session:<release>:<study>  session state next to the plan: { activeStation, working?, compare?, activeDeployment? }
 import { parsePlan, serializePlan, planFromState, planFromLegacyStorage, migratePlan } from './plan-format.js';
 import { defaultDeviceConfiguration, applyDeviceConfiguration, deviceSettingsData } from './device-configuration.js';
 
@@ -36,7 +36,8 @@ function readPlan(storage, release, id) {
 // station and compare flags pass through; study-state.js validates them.
 const session = (plan, stored) => ({ activeStation: plan.stations.some(s => s.id === stored?.activeStation) ? stored.activeStation : plan.stations[0].id,
   ...(stored?.working && typeof stored.working === 'object' ? { working: stored.working } : {}),
-  ...(Array.isArray(stored?.compare) ? { compare: stored.compare } : {}) });
+  ...(Array.isArray(stored?.compare) ? { compare: stored.compare } : {}),
+  ...(typeof stored?.activeDeployment === 'string' ? { activeDeployment: stored.activeDeployment } : {}) });
 const withScenario = (plan, scenario) => ({ ...plan, scene: { ...plan.scene, scenario } });
 
 export function saveStudy(storage, release, id, plan, sessionState) {
@@ -47,8 +48,9 @@ export function saveStudy(storage, release, id, plan, sessionState) {
   if (sessionState) ok = saveSession(storage, release, id, sessionState) && ok;
   return ok;
 }
-export const saveSession = (storage, release, id, { activeStation = null, working, compare } = {}) =>
-  write(storage, studySessionKey(release, id), JSON.stringify({ activeStation, ...(working ? { working } : {}), ...(compare ? { compare } : {}) }));
+export const saveSession = (storage, release, id, { activeStation = null, working, compare, activeDeployment } = {}) =>
+  write(storage, studySessionKey(release, id), JSON.stringify({ activeStation, ...(working ? { working } : {}), ...(compare ? { compare } : {}),
+    ...(typeof activeDeployment === 'string' ? { activeDeployment } : {}) }));
 
 export function listStudies(storage, release) {
   return (readIndex(storage, release)?.studies ?? []).map(id => {
