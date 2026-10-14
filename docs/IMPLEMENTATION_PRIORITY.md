@@ -65,6 +65,8 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | 15b-5 | Projection outlines and the profile-driven item list (next, with 15b-3): replaces the hard-coded "target structure layers" panel with the recognition items from the display profile (defaults on, visible-item filter, all-features search), contour of the item length at T, legend with T, hover list of crossed items, two-way linking | FR-M12 | Outline = d3-contour of the padded mask (ADR-029, as implemented); fixed-order list with out-of-view items greyed; selection and T persist per release; L5 in `check-main-compiled-app.mjs`. Linking moved to 15b-4; numbered 3D markers built then dropped (owner) | Done |
 | 15b-6 | Material items (concrete, steel) and the material envelope overlay in the main app | FR-M12 | Material items already work (15b-3; steel item left out by owner). Envelope toggle built, then removed after review (owner): it stays in the geometry preview | Done |
 | 15c | Statistical precision contour (1/√N at 5 % and 10 %); move existing contour layers under "专家诊断", off by default; two-way links between main app and preview with the shared `dataset`/`scenario` parameters | FR-M13, FR-M14, ADR-030 | `precision-contours.js` (L1); "专家诊断" and "方案比较" sections; `selectionHref` (L1); L5 in both browser checks | Done |
+| 15d | Physical multi-station coverage: 多视角覆盖 (usable views, 视角张角, summary class; default), 主导站点, 总计数, from each station's cached counts | FR-M15, ADR-026 | With #15; pure per-point evaluation (L1) mirrored in the shader | Todo |
+| 15e | Slice plane through the interior for geometric and multi-view coverage; coverage on target features | FR-M16, FR-M15 | With 15d | Todo |
 | 16 | Per-station projections side by side | FR-M4 | Reuses `projection-canvas-view.js` | Todo |
 | 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | Short animation export later | Todo |
 
@@ -145,6 +147,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: 15d (multi-view coverage, default mode) and 15e (slice plane) added after the coverage colour discussion (owner).
 - 2026-10-14: Geometric multi-station coverage in one red ramp (1 to 5+ stations); physical multi-station plan recorded for #15 (dominant station by default, total as option).
 - 2026-10-14: Optional translucent solid field-of-view pyramid (实心视锥, owner); extended beyond the concrete (at least 72 m, 20 m past the last exit).
 - 2026-10-14: Field-of-view edges as screen-width lines with an on/off option (owner).
