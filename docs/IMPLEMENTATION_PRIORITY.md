@@ -52,7 +52,10 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| 14 | Plan state: candidates vs selected deployment; per-station result cache keyed by snapshot | ADR-020, FR-P1 | Needs #11, #12; no recompute for unchanged stations; stale results never shown. Results of a batch run (#13) for the same plan hash and snapshot key can fill the cache | Todo |
+| 14a | Plan format 1.1.0 (named deployments, candidate notes; active station moves out of the plan) and several studies per release in browser storage, with migration from 1.0 and from one plan per release | FR-P1, FR-P7, FR-P8, ADR-020 | Data format; test first (L1 format and store, L3 schema). Minimal study picker (switch, new); import creates a study | Todo |
+| 14b | Working station vs fixed candidates (update / save as new); per-candidate compact result cache with status; comparison of candidates replaces the separate "方案比较" rows | FR-P6, FR-P10, ADR-020 | Needs 14a, #12; no recompute for unchanged candidates; stale results never shown. Results of a batch run (#13) with the same snapshot key can fill the cache | Todo |
+| 14c | Named deployments UI (new, copy, rename, delete, membership); study picker complete (rename, delete, import); export of a study or of deployments | FR-P7, FR-P8, FR-P9 | Needs 14a, 14b | Todo |
+| 14d | Sketching: place the working station by clicking the model; geometric coverage of several candidates at once | FR-P5, FR-M10 | Needs 14b; multi-station part of 15a | Todo |
 | 15 | Overview mode in 3D: all selected stations, colour per station, field-of-view cones, ray coverage on the subject; summary table; click → detail mode | FR-M4 | Reuses scene views; subject-neutral labels (FR-K1) | Todo |
 | 15a | Coverage highlight: geometric (live, single colour per station) and physical (count/sr brightness from the result) via projective texturing; slope-mapping L1 test against `detector-pose.js` | FR-M10, ADR-026 | Single station done (owner: ahead of #13): `coverage-map.js` (L1), `coverage-shader.js`, controls in 环境图层. Hover readout, click to the projection pixel, pyramid edges, on-demand rendering and in-view feature emphasis done. Open: multi-station with #15, FR-N5 measurement on an Intel i5 laptop | Partly done |
 | 15b-1 | Feature catalogue builder in the dataset adapter (from `semantics` and `vocabulary`; direct/aggregate from compiled components) | ADR-029, FR-K3 | Test first: L1 on a synthetic spec; L3 on Zhouning (44 features, 22 direct; virtual placeholders excluded) | Done |
@@ -142,6 +145,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: #14 replaced by 14a–14d after the study-workflow review (owner): fixed candidates, named deployments, several studies per release, recompute with a compact session cache.
 - 2026-10-14: #13 done (headless batch runner); its known limits recorded as 13a and on #14, FR-L4, FR-K11 and the browser regressions.
 - 2026-10-14: On-demand rendering and in-view feature emphasis done.
 - 2026-10-14: 15a hover/click link and pyramid edges done.

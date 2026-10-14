@@ -349,6 +349,27 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **Priority (owner decision 2026-10-10):** the overview comes right after the plan format, ahead of scan performance work. It is built in the current page with existing modules: it is mostly 3D scene and projection canvases, which stay framework-free under ADR-004 anyway, so it does not trigger the build-step switch. Stations are computed sequentially through the async port until scan workers exist.
 - Computation for several stations goes through the async, cancellable assessment port and workers (ADR-006 item 2, ADR-005 step 3); a stale station result never appears in the overview.
 
+**Study workflow (owner, 2026-10-14).** A user typically (1) sketches stations roughly on a new release, (2) tunes one station in detail and saves more candidates than needed, (3) tries combinations, in the same or a later session, and (4) exports one deployment or several alternatives (FR-P5). Decisions:
+1. **Candidates are flat:** one position + pose + detector each; several poses at one site are several candidates, grouped by location in the UI. A deployment can therefore use two poses of one site (two detectors).
+2. **Saved candidates are fixed.** The user edits a separate working station and applies it with "update candidate" or "save as new". A candidate's cached result stays valid until it is explicitly changed.
+3. **A new release starts with a fresh study.** Copying candidates from another release's study is deferred.
+4. **Results are recomputed when a study is opened, into a compact in-memory cache;** persistent storage is deferred.
+
+A **study** is one plan file: candidate pool, named deployments and detector configurations (plan 1.1.0). Several studies per release live in browser storage. The working station, the active candidate and the active deployment are session state stored next to the study, not in the plan.
+
+**Measured costs behind decision 4** (2026-10-14; Node on one 2.1 GHz Xeon core, the same V8 engine as Chrome; Zhouning, 6 candidates):
+
+| | Preview 25² | Final 65² |
+|---|---|---|
+| Compute per candidate | 80–200 ms | 420–780 ms (≈ 0.6 s) |
+| 20 / 50 candidates, one after another | ≈ 2 s / 5 s | ≈ 12 s / 30 s |
+| Result file (JSON) / gzip | 0.5–0.6 MB / 0.1 MB | 3.1–3.8 MB / 0.6–0.9 MB |
+| Full in-app result held in memory | 2.2 MB | 13.8 MB (result document alone: 5.4 MB) |
+| Compact form (32-bit numbers, ≈ 4 path segments per pixel; estimated) | ≈ 0.1 MB | ≈ 0.5 MB |
+| Reading a stored result back | 5–13 ms | 20–110 ms |
+
+Loading the dataset and building the runtime takes ≈ 1.2 s on every page load anyway. Recomputing a 20-candidate study costs ≈ 12 s in the background while the active candidate appears within a second; storage would save at most that, but adds stale results after an app update (the key would need the app version), eviction under disk pressure and Safari's 7-day limit. IndexedDB quotas are not the constraint (Chrome/Edge ≈ 60 % of free disk per origin, Firefox 10 % of disk or 10 GiB; documented limits, not measured); `localStorage` (≈ 5 MB) holds plans only. Memory is the constraint: full in-app results for 20 / 50 candidates would hold ≈ 280 / 690 MB, so the cache keeps the compact form (≈ 10 / 25 MB). **Revisit** persistent storage (compact form, 13a encoding) when a session's recomputation exceeds about 30–60 s.
+
 ## ADR-021 Simulated multi-projection reconstruction as a separate pipeline
 
 **Status:** Proposed (owner requirement 2026-10-10)
