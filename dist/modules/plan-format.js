@@ -1,7 +1,7 @@
 // Plan format muography-plan 1.0.0 (docs/specs/PLAN_FORMAT.md; FR-P1, FR-P2, ADR-006).
 // Pure: validation, migration, canonical text and conversion to and from the app's
 // deployment state. No DOM, storage or dataset access.
-import { digestSha256 } from './sha256.js';
+import { sha256Portable } from './sha256.js';
 
 export const PLAN_FORMAT = 'muography-plan';
 export const PLAN_SCHEMA_VERSION = '1.0.0';
@@ -115,8 +115,9 @@ export function parsePlan(source) {
 
 export const serializePlan = plan => `${JSON.stringify(validatePlan(plan), null, 2)}\n`;
 
-export async function planHash(plan) {
-  return `sha256:${await digestSha256(new TextEncoder().encode(serializePlan(plan)))}`;
+// Synchronous so every assessment input can carry its plan reference.
+export function planHash(plan) {
+  return `sha256:${sha256Portable(new TextEncoder().encode(serializePlan(plan)))}`;
 }
 
 const SETTINGS_DEVICE = ['width', 'height', 'stripPitch', 'strips', 'spacing'];

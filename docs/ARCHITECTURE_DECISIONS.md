@@ -132,7 +132,7 @@ Any replacement tracer must pass the existing `conformance_rays.json` / `conform
 **Context.** Already server-friendly: framework-free core runnable in Node; `createSession(input)` takes a detached snapshot; versioned JSON results with identity/model version; SHA-256-verified dataset releases; message-passing Workers; `main-page.js` takes `storage` as a parameter.
 
 **Decision.** Close these gaps before any server work, since each is cheap now and expensive later:
-1. Plan / scan / result schemas, versioned with migrations; they become the future API contract.
+1. Plan / scan / result schemas, versioned with migrations; they become the future API contract. *Plans done 2026-10-14* (`muography-plan` 1.0.0, PLAN_FORMAT.md); results record their source plan; the scan format is designed with P5.
 2. Asynchronous, cancellable assessment port (Promise + AbortSignal, as `evaluateCompiledAssessment` already does); only `assessment-controller.js` changes. *Done 2026-10-14:* `createLocalAssessmentPort` (`open(input)` → `evaluate(quality, { signal, onProgress })` → Promise, AbortError on cancel); the controller depends only on the port.
 3. Deterministic calculation: no result may depend on evaluation history (FR-C1).
 4. Traceable results for every backend (the legacy backend recorded its ray cutoff, FR-C2, before it was retired, ADR-028).
@@ -595,6 +595,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-14: ADR-006 item 1: plan format implemented; scan format deferred to P5.
 - 2026-10-14: ADR-006 item 2 implemented (assessment port).
 - 2026-10-14: ADR-004: caching rule until the build step (no-cache revalidation; content hashing deferred to the build).
 - 2026-10-14: ADR-030 accepted: planning app and dataset workbench as two entry points with one selection contract (owner).

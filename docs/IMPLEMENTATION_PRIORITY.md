@@ -39,10 +39,10 @@ Last updated: 2026-10-12
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| 11 | Plan / scan / result schemas with versions and migrations | FR-P1, FR-P2, ADR-006, FR-K1 | Becomes the future API contract; subject-neutral, references datasets by release ID (+ content hash) | Todo |
+| 11 | Plan / scan / result schemas with versions and migrations | FR-P1, FR-P2, ADR-006, FR-K1 | `muography-plan` 1.0.0 (PLAN_FORMAT.md, schema, `plan-format.js`, `plan-store.js`); storage, export and import in the app; results record their plan (hash + station). Scan format deferred to P5 (owner) | Done |
 | 11b | One "导出" menu on the versioned result format; comparison moves into it | FR-P4, ADR-030 | Right after #11 | Todo |
 | 12 | Async, cancellable assessment port | ADR-006 | `createLocalAssessmentPort`: `open(input).evaluate(quality, {signal, onProgress}) → Promise`, AbortError on cancel; the controller uses only the port. A worker or server port implements the same interface | Done |
-| AN1 | Anomaly schema as part of the plan format | FR-H1, FR-H11 | Design together with #11 | Todo |
+| AN1 | Anomaly schema as part of the plan format | FR-H1, FR-H11 | Field `anomalies` reserved (empty) in plan 1.0.0; schema designed with P4 as plan 1.1.0 (owner) | Todo |
 | 13 | Headless batch runner (Node CLI) | FR-S5, ADR-006 | Plan in, results out; future server worker | Todo |
 
 ## P3 — Multi-station overview and demonstration (Phase 2)
@@ -140,6 +140,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: #11 done (plan format 1.0.0, storage, export/import, result provenance); AN1 deferred to P4 as plan 1.1.0.
 - 2026-10-14: #12 done (async, cancellable assessment port).
 - 2026-10-14: Stale-module fix: `no-cache` revalidation in `nginx.conf` and the new `npm run serve`; per-file stamps reverted, content hashing deferred to the build step (owner).
 - 2026-10-14: 15c done (precision lines, expert diagnostics drawer, two-way links). Next: P2 #11/#12.

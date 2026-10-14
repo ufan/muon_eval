@@ -83,3 +83,13 @@ test('invalid device/response, unsupported transport range and cancellation fail
   const tooDense = { ...emptyRuntime, traceRayModel: () => ({ mwe: 20000, totals: { rock: 700 } }) };
   await assert.rejects(evaluateCompiledAssessment(tooDense, config, device, response), /numerical range/);
 });
+
+test('a result records the plan and station it was computed from, or null (PLAN_FORMAT.md)', async () => {
+  const plan = { hash: 'sha256:' + 'a'.repeat(64), stationId: 'north' };
+  assert.equal((await evaluateCompiledAssessment(emptyRuntime, config, device, response)).plan, null);
+  const linked = await evaluateCompiledAssessment(emptyRuntime, config, device, response, { plan });
+  assert.deepEqual(linked.plan, plan);
+  plan.stationId = 'changed';
+  assert.equal(linked.plan.stationId, 'north');
+  await assert.rejects(evaluateCompiledAssessment(emptyRuntime, config, device, response, { plan: { hash: 'md5:1', stationId: 'north' } }), /plan/);
+});

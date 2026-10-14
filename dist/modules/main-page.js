@@ -2,7 +2,7 @@ import { createMainPatternView } from './main-pattern-view.js';
 import { deviceSettingsData as serializeDeviceSettings } from './device-configuration.js';
 import { createRecognitionPanel } from './recognition-panel-view.js';
 import { createFeatureLayerPanel } from './feature-layer-panel-view.js';
-import { parsePlan, serializePlan, planFromState, stateFromPlan } from './plan-format.js';
+import { parsePlan, serializePlan, planFromState, stateFromPlan, planHash } from './plan-format.js';
 import { loadStoredPlan, storePlan } from './plan-store.js';
 import { selectionHref, APP_PAGES } from './application-selection.js';
 export function createMainPage({workbenchHref='./geometry-preview.html',datasetId,datasetVersion,features,recognitionItems,state,sceneView,projectionView,createController,scenarioId=null,releases=[],candidateIds=[],capabilities,environmentDescription,backendLabel,root=document,storage=localStorage}){
@@ -15,7 +15,8 @@ export function createMainPage({workbenchHref='./geometry-preview.html',datasetI
  const mainPatterns=createMainPatternView({canvas:$('#projectionCanvas'),host:$('#projectionBody'),backendLabel});
  const recognition=createRecognitionPanel({root,features,items:recognitionItems,storage,storageKey:`muon-recognition:${datasetId}`,onChange:()=>{projection.recognition=recognition.state();drawProjection();},onHoverItem:item=>sceneView.emphasiseFeatures(item?.kind==='features'?[...item.featureIds]:[])});
  const featureLayers=createFeatureLayerPanel({root,features,storage,storageKey:`muon-feature-layers:${datasetId}`,onVisibility:(id,visible)=>sceneView.setFeatureVisible(id,visible),onHoverFeatures:ids=>sceneView.emphasiseFeatures(ids)});projection.recognition=recognition.state();
- const inputs=()=>state.snapshot();
+ // Each input carries the plan it came from (provenance, not identity): plan hash + active station id.
+ const inputs=()=>({...state.snapshot(),plan:{hash:planHash(currentPlan()),stationId:state.candidates[state.active].id}});
  const controller=createController({readInputs:inputs,onInvalidate(){mainPatterns.invalidate();projection.data=null;recognition.update(null);projection.recognition=recognition.state();$('#projectionReadout').textContent='姿态更新中…';},onStart(input){sceneView.drawDetector(input.station,input.device);},onQuick({cloud,metrics},input){if(cloud)sceneView.showFlux(cloud,input.station);if(metrics){showQuickMetrics(metrics);sceneView.showRay(metrics.center,input.station,metrics.dirDoc);}},onProgress({quality,progress}){$('#projectionReadout').textContent=`${quality==='preview'?'快速预览':'精细投影'}计算中… ${Math.round(100*progress)}%`;},onResult(data,input){projection.data=data;recognition.update(data);projection.recognition=recognition.state();if(data.quality==='final'){updateProjectionAssessment(data,input.station);if(!capabilities.fluxCloud){const mid=Math.floor(data.n/2),pixel=data.values[mid*data.n+mid];sceneView.showRay(pixel.q,input.station,pixel.dir);}mainPatterns.update(data.patternResult,projection.mode);}drawProjection();},onError(error){console.error(error);$('#projectionReadout').textContent='评估计算失败：'+error.message;}});
  const scheduleDetectorUpdate=()=>controller.schedule(),resize=()=>sceneView.resize(),setView=mode=>sceneView.setView(mode),drawFluxCloud=()=>sceneView.drawFluxCloud();
  const drawProjection=()=>projectionView.draw(projection,state.response);

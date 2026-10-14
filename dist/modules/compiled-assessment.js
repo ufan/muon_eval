@@ -4,7 +4,10 @@ import { materialBoundaryProfile } from './material-envelopes.js';
 
 // Adapter only: all acceptance, transport and count formulas live in the shared
 // numerical core. Never derive physical truth from display or scene objects.
-export function createCompiledAssessmentPass(runtime, config, device, response) {
+// `plan` is provenance, not identity: { hash: 'sha256:…', stationId } of the plan the input came from, or null.
+export function createCompiledAssessmentPass(runtime, config, device, response, { plan = null } = {}) {
+  if (plan !== null && (!/^sha256:[0-9a-f]{64}$/.test(plan?.hash) || typeof plan.stationId !== 'string' || !plan.stationId)) throw new Error('Invalid plan reference');
+  const planReference = plan === null ? null : { hash: plan.hash, stationId: plan.stationId };
   const { origin, azimuthDeg, elevationDeg, bins, length } = config;
   if (!Array.isArray(origin) || origin.length !== 3 || !origin.every(Number.isFinite)
     || !Number.isFinite(length) || length <= 0 || length > 10000
@@ -55,7 +58,7 @@ export function createCompiledAssessmentPass(runtime, config, device, response) 
   return { schemaVersion: '0.1.0', kind: 'compiled-detector-assessment', frame: 'model_frame',
     materialContributionUnits: { totals: 'm', materialColumns: 'm.w.e.' },
     ...calculationIdentity, config: snapshot, device: deviceSnapshot, response: responseSnapshot,
-    modelVersion: result.modelVersion, totalCount: result.total, weightedTransmission: result.weightedTransmission, pixels,
+    plan: planReference ? { ...planReference } : null, modelVersion: result.modelVersion, totalCount: result.total, weightedTransmission: result.weightedTransmission, pixels,
     semanticAudit: runtime.semanticAudit ? structuredClone(runtime.semanticAudit) : null,
     limitations: ['Quick comparative model, not calibrated counts or full particle transport.',
       'Three-layer symmetric-readout response; full device slope field, independent of the material-map half angle.',
@@ -68,8 +71,8 @@ export function createCompiledAssessmentPass(runtime, config, device, response) 
 
 // Preview and main application share the same validation, sampling and result adapter.
 export async function evaluateCompiledAssessment(runtime, config, device, response,
-  { signal, yieldTask = () => Promise.resolve(), onProgress = () => {} } = {}) {
-  const work = createCompiledAssessmentPass(runtime, config, device, response);
+  { signal, yieldTask = () => Promise.resolve(), onProgress = () => {}, plan = null } = {}) {
+  const work = createCompiledAssessmentPass(runtime, config, device, response, { plan });
   const cancelled = () => { if (signal?.aborted) throw new DOMException('Assessment cancelled', 'AbortError'); };
   let state;
   do {

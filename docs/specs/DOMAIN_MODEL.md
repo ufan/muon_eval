@@ -132,7 +132,7 @@ Scene composition (Target): **scene = release + environment state + active anoma
 | AssessmentInput | Value, immutable snapshot | Scene (release + environment) + station + pose + device + response, copied at calculation start. Composition: assessment = scene + detector configuration + station + pose | Current (scene implicit) |
 | Session | Process | Binds one geometry context; produces preview (25²) then final (65²) from the same snapshot; cancellable | Current |
 | Trace | Value | Per ray: material totals, `materialColumns`, `mwe`, segments, entity lengths | Current |
-| ProjectionResult | Value, versioned | `kind` ∈ {`compiled-detector-assessment`, `material-column-projection`} (`legacy-detector-assessment` is accepted only for replaying old exports), `schemaVersion`, identity (release, backend, scenario, variables, asset hashes), config, device, response, `modelVersion`, pixels, limitations | Current |
+| ProjectionResult | Value, versioned | `kind` ∈ {`compiled-detector-assessment`, `material-column-projection`} (`legacy-detector-assessment` is accepted only for replaying old exports), `schemaVersion`, identity (release, backend, scenario, variables, asset hashes), config, device, response, `modelVersion`, `plan` (hash + station ID of the source plan, or null; provenance, not identity), pixels, limitations | Current |
 | Per-station result cache | Keyed by snapshot key | Lets the overview and detail modes share results | Target (ADR-020) |
 | Coverage (view) | Derived view of a station | Geometric coverage = device acceptance × pose (no physics); physical coverage = expected counts per steradian from a result. A view of results, never an input; bound to the result's snapshot key | Target (ADR-026) |
 | Exports | Value, versioned | `muography-plan` 1.0.0 (round trip), contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison`; the export-only `compiled-deployment-snapshot` 0.1.0 is retired | Current |
@@ -209,6 +209,7 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-14: ProjectionResult records its source plan (hash + station ID).
 - 2026-10-14: DeploymentPlan and Station current (`muography-plan` 1.0.0); plan hash identity; two open questions answered (per-plan named detector configurations; plans own stations with a candidate reference).
 - 2026-10-14: Invariant 15: pixels are lines evaluated at their sky end (FR-C7).
 - 2026-10-13: Added RecognitionItem (display profile).

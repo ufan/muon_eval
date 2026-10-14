@@ -73,7 +73,8 @@ Plans are written as UTF-8 JSON with 2-space indentation, members in the order o
 
 ## Identity and links
 
-- **Plan hash**: SHA-256 of the canonical text, written `sha256:<hex>`. A result computed from a plan records the plan hash and the station ID (`plan` member of the result), next to its own snapshot key.
+- **Plan hash**: SHA-256 of the canonical text, written `sha256:<hex>`.
+- **Results**: a `compiled-detector-assessment` result records `plan: { hash, stationId }` (or `null` when computed without a plan). This is provenance, not identity: the result's snapshot key is derived from its own inputs (`prepareProjectionPattern`), so the same physics from two plans has the same key. The member is additive; the result schema stays 0.1.0.
 - A plan never embeds results, view state (layers, outlines, camera) or dataset content.
 
 ## Not in 1.0

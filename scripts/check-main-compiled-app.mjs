@@ -8,7 +8,7 @@ import { extname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { replayPatternComparison } from '../dist/modules/pattern-comparison.js';
-import { parsePlan, serializePlan } from '../dist/modules/plan-format.js';
+import { parsePlan, serializePlan, planHash } from '../dist/modules/plan-format.js';
 
 const options=new Map();for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i],value=process.argv[i+1];if(!['--playwright','--chromium'].includes(key)||!value)throw Error('Usage: node scripts/check-main-compiled-app.mjs [--playwright /path/index.mjs] [--chromium /path/browser]');options.set(key,value);}
 // Environment fallback lets `npm run test:browser` locate an existing Playwright/Chromium.
@@ -67,6 +67,8 @@ try{
  const planPending=page.waitForEvent('download');await click('#export');const download=await planPending,planText=await readFile(await download.path(),'utf8'),plan=parsePlan(planText);
  assert.equal(serializePlan(plan),planText);assert.equal(plan.scene.release,release);assert.equal(plan.scene.scenario,'low');assert.ok(plan.stations.every(s=>s.candidateId===s.id));
  assert.deepEqual(plan.stations.find(s=>s.id===plan.deployment.active).pose,{azimuthDeg:25,elevationDeg:35});
+ // The result records the plan it came from: same hash as the exported plan, and the active station.
+ assert.deepEqual(result.plan,{hash:planHash(plan),stationId:plan.deployment.active});
  // Device form recomputes from one snapshot; results are history-independent (FR-C1), so doubling exposure doubles counts exactly.
  await click('#deviceSettings');await page.locator('#cfgExposure').fill('60');await page.locator('#deviceForm').evaluate(element=>element.requestSubmit());await ready();
  const doubled=(await comparison()).entries.at(-1).result;assert.equal(doubled.response.exposureDays,60);assert.equal(doubled.totalCount,result.totalCount*2);assert.equal(doubled.weightedTransmission,result.weightedTransmission);
