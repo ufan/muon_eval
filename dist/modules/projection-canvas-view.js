@@ -12,6 +12,8 @@ export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave
  const recognition=()=>projection.recognition??{items:[],layers:new Map(),selected:new Set(),threshold:0};
  const selectedItems=()=>{const r=recognition();return r.items.filter(item=>r.selected.has(item.id)&&r.layers.get(item.id)?.inView);};
  function drawOutlines(){const svg=$('#projectionOutlines'),d=projection.data;svg.replaceChildren();if(!d)return;const n=d.n,r=recognition(),used=new Map(),placed=[],size=n*.05;svg.setAttribute('viewBox',`0 0 ${n} ${n}`);
+  // Material envelopes below the outlines: thin, unlabelled sampled edges.
+  for(const envelope of r.envelopes??[]){if(!envelope.edges.length)continue;const path=document.createElementNS(SVG,'path');path.setAttribute('d',envelope.edges.map(e=>`M${e.x0},${e.y0}L${e.x1},${e.y1}`).join(''));path.setAttribute('stroke',envelope.color);path.classList.add('envelope');path.dataset.envelope=envelope.material;svg.append(path);}
   for(const item of selectedItems()){const layer=r.layers.get(item.id),rings=outlineRings(layer.mask,n),dash=DASHES[(used.get(item.color)??0)%DASHES.length];used.set(item.color,(used.get(item.color)??0)+1);
    const path=document.createElementNS(SVG,'path');path.setAttribute('d',rings.map(ring=>'M'+ring.map(p=>p.join(',')).join('L')+'Z').join(''));path.setAttribute('stroke',item.color);if(dash)path.setAttribute('stroke-dasharray',dash);path.dataset.item=item.id;svg.append(path);
    // Label at the top-left corner of the largest ring.

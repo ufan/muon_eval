@@ -362,6 +362,7 @@ Display only; computed from a finished result by `recognition-layers.js` and nev
 - Item length `L` per pixel: for a feature item, the sum of the central ray's `entityLengths` over the member entities; for a material item, the ray's material total (`totals[material]`).
 - Mask: `L > T`, with `T` a display setting (default 0.1 m). Image coverage = mask pixels / all pixels; "in view" = coverage > 0.
 - Outline: boundary of the mask, from d3-contour on the mask padded with one empty pixel per side at level 0.5, so it matches the mask and closes along the image border. Like every per-pixel quantity it inherits the one-ray-per-pixel aliasing of §11.6 (about half a pixel at edges).
+- Material envelopes (optional): the preview's sampled envelope rule (`material-envelopes.js`) applied to the same projection, with presence tolerance `T`; edges between neighbouring pixels where a material appears or ends, or where its air interfaces appear, change in number, or jump in depth by ≥ max(4 m, 25 %).
 - Hover crossings: items with `L > T` on the hovered ray, ordered by the start of the first segment inside the item (entry distance from the detector), each with `L`. `L` is the physically relevant value (material traversed; for a void, material missing from the path); entry distance only locates the item along the ray (0 m when the detector is inside it).
 
 ## 12. Legacy target structures, outlines and significance

@@ -38,7 +38,7 @@ Last updated: 2026-10-10
 | 026 | Coverage highlight by GPU projective texturing of acceptance and count maps | Proposed |
 | 027 | Three.js for display only; geometry and physics in own framework-free modules | Accepted (retrospective) |
 | 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
-| 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; catalogue, display profile, recognition layers, projection outlines and the 3D feature layer implemented (15b-1…15b-5) |
+| 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; implemented (15b-1…15b-6); optional fill and sampled-pixel view open |
 
 ---
 
@@ -544,6 +544,10 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **Linking.** Hovering a projection pixel emphasises (lights, and shows even if hidden) the features its ray runs through by more than T; hovering a recognition item or a layer row emphasises its features; hovering a feature in 3D shows "label · class · imaging role" and thickens its item's outline; clicking a feature toggles its item's outline, or adds the feature as an item when no item lists it.
 - **Not yet.** Full opacity when in view of a selected station is part of the coverage work (FR-M10, 15a). Features inside an opaque dam are only visible with the dam made translucent (dam opacity slider).
 
+*As implemented (15b-6, 2026-10-14).*
+- **Material items** use the 15b-3 mechanism unchanged. The Zhouning profile keeps only "Dam concrete"; a steel ("Gates") item was left out by the owner, as gates are not observation targets.
+- **Material envelope overlay** in the main app: one toggle under the recognition list, off by default, remembered per release. It reuses the preview's rule (`materialEnvelopeEdges`: material silhouettes, air-interface presence, topology and depth jumps of ≥ 4 m or 25 %) on the main-app projection, drawn as thin unlabelled lines below the outlines (white concrete, orange rock). A material counts as present where its length exceeds the outline threshold `T`, so envelopes and material outlines agree. Only materials the shared rule supports (concrete, rock) are drawn.
+
 A station inside a feature (e.g. a detector in a gallery) sees that feature with entry distance 0 m in every upward pixel, so its mask covers most of the image. This is correct and is shown as such; hiding the feature that contains the station is a possible later display option, not a mask rule.
 
 **Consequences.** One mechanism replaces legacy MT-2/MT-5 and serves later anomaly footprints and multi-station evaluation; a small display-profile schema is added; FR-GE4 later upgrades merged solids without redesign.
@@ -571,6 +575,7 @@ A station inside a feature (e.g. a detector in a gallery) sees that feature with
 
 ## Change log
 
+- 2026-10-14: ADR-029 implementation notes for 15b-6 (material envelope overlay in the main app).
 - 2026-10-13: ADR-029 implementation notes for 15b-4 (feature-layer rule, default visibility, linking).
 - 2026-10-13: ADR-029: numbered 3D entry markers dropped (owner); hover list leads with length.
 - 2026-10-13: ADR-029 implementation notes for 15b-3/15b-5 (fixed list order, outline = mask boundary, items not yet built).
