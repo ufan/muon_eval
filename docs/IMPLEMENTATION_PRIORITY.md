@@ -40,10 +40,11 @@ Last updated: 2026-10-12
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
 | 11 | Plan / scan / result schemas with versions and migrations | FR-P1, FR-P2, ADR-006, FR-K1 | `muography-plan` 1.0.0 (PLAN_FORMAT.md, schema, `plan-format.js`, `plan-store.js`); storage, export and import in the app; results record their plan (hash + station). Scan format deferred to P5 (owner) | Done |
-| 11b | One "导出" menu on the versioned result format; comparison moves into it | FR-P4, ADR-030 | Right after #11 | Todo |
+| 11b | One "导出" menu on the versioned result format; comparison moves into it | FR-P4, ADR-030 | Right after #11; do 13a with it | Todo |
 | 12 | Async, cancellable assessment port | ADR-006 | `createLocalAssessmentPort`: `open(input).evaluate(quality, {signal, onProgress}) → Promise`, AbortError on cancel; the controller uses only the port. A worker or server port implements the same interface | Done |
 | AN1 | Anomaly schema as part of the plan format | FR-H1, FR-H11 | Field `anomalies` reserved (empty) in plan 1.0.0; schema designed with P4 as plan 1.1.0 (owner) | Todo |
-| 13 | Headless batch runner (Node CLI) | FR-S5, ADR-006 | `scripts/run-plan.mjs` on the pure `plan-runner.js`: plan in; per-station results, run summary and optional replayable comparison out; worker threads, byte-identical for any thread count. Six stations at 65² in about 6 s on four cores. Scan input with P5 | Done |
+| 13 | Headless batch runner (Node CLI) | FR-S5, ADR-006 | `scripts/run-plan.mjs` on the pure `plan-runner.js`: plan in; per-station results, run summary and optional replayable comparison out; worker threads, byte-identical for any thread count. Six stations at 65² in about 6 s on four cores. Scan input with P5. Known limits are tracked in 13a, #14, FR-L4, FR-K11 and the pending browser regressions | Done |
+| 13a | Open run outputs in the app; smaller result files | FR-S5, FR-P4 | With 11b (same versioned result format and export/import menu). (1) The app cannot open a single `<station>.result.json` or a run folder (`summary.json`); today only `comparison.json` replays. (2) Sizes: a 65² result is 3–4 MB of JSON and `comparison.json` embeds every result (22 MB for 6 stations), so about 14 stations exceed the app's 50 MB import limit, and replay stops at 20 rows. Fix: comparison references result files by SHA-256 (as `summary.json` does) instead of embedding them, and a compact result encoding; limits set from measurements | Todo |
 
 ## P3 — Multi-station overview and demonstration (Phase 2)
 
@@ -51,7 +52,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 
 | # | Item | Ref | Notes | Status |
 |---|---|---|---|---|
-| 14 | Plan state: candidates vs selected deployment; per-station result cache keyed by snapshot | ADR-020, FR-P1 | Needs #11, #12; no recompute for unchanged stations; stale results never shown | Todo |
+| 14 | Plan state: candidates vs selected deployment; per-station result cache keyed by snapshot | ADR-020, FR-P1 | Needs #11, #12; no recompute for unchanged stations; stale results never shown. Results of a batch run (#13) for the same plan hash and snapshot key can fill the cache | Todo |
 | 15 | Overview mode in 3D: all selected stations, colour per station, field-of-view cones, ray coverage on the subject; summary table; click → detail mode | FR-M4 | Reuses scene views; subject-neutral labels (FR-K1) | Todo |
 | 15a | Coverage highlight: geometric (live, single colour per station) and physical (count/sr brightness from the result) via projective texturing; slope-mapping L1 test against `detector-pose.js` | FR-M10, ADR-026 | Single station done (owner: ahead of #13): `coverage-map.js` (L1), `coverage-shader.js`, controls in 环境图层. Hover readout, click to the projection pixel, pyramid edges, on-demand rendering and in-view feature emphasis done. Open: multi-station with #15, FR-N5 measurement on an Intel i5 laptop | Partly done |
 | 15b-1 | Feature catalogue builder in the dataset adapter (from `semantics` and `vocabulary`; direct/aggregate from compiled components) | ADR-029, FR-K3 | Test first: L1 on a synthetic spec; L3 on Zhouning (44 features, 22 direct; virtual placeholders excluded) | Done |
@@ -91,6 +92,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 |---|---|---|
 | Preview chunked-transfer browser regression incl. failed narrow-screen overlay check | FR-N2 | Todo |
 | Cold start, peak memory, worst-case interaction measurements | FR-N3 | Todo |
+| A runner `comparison.json` replays in the main app (方案比较 → 重放比较); checked so far only with the same module in Node | FR-S5 | Todo (with 13a) |
 
 ## Later (Phases 5–8, parallel and conditional tracks)
 
@@ -140,6 +142,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: #13 done (headless batch runner); its known limits recorded as 13a and on #14, FR-L4, FR-K11 and the browser regressions.
 - 2026-10-14: On-demand rendering and in-view feature emphasis done.
 - 2026-10-14: 15a hover/click link and pyramid edges done.
 - 2026-10-14: 15a single-station coverage done ahead of #13 (owner).

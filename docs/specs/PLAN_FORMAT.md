@@ -92,6 +92,7 @@ npm run run-plan -- plan.json --out runs/study [--stations all|selected|active|<
   - `comparison.json` with `--compare`: a `projection-pattern-comparison` export of all stations; with `material:concrete:0.15` the app replays it in 方案比较 → 重放比较 (at most 20 stations);
   - `summary.json`, format `muography-plan-run` 1.0.0: plan hash and title, release and scenario, quality and bins, model version, and per station its ID, name, file, SHA-256 of the file, total count and weighted transmission. It holds no clock or host data, so a run is reproducible from the plan, the release and the code version.
 - Code: `dist/modules/plan-runner.js` (pure: station choice, inputs, summary) and `scripts/run-plan.mjs` (files, threads).
+- Known limits (tracked in `docs/IMPLEMENTATION_PRIORITY.md`): the app opens only `comparison.json`, not single results or run folders, and large runs exceed its import limits (13a); no user-loaded datasets (FR-L4); no scan files (P5).
 
 ## Not in 1.0
 
