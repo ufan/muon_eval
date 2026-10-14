@@ -60,8 +60,7 @@ Open `http://127.0.0.1:8765/`. Do not open `dist/index.html` directly: browsers 
 Layered test commands ([test strategy](docs/specs/TEST_STRATEGY.md)); no npm packages are needed:
 
 ```bash
-npm run stamp               # after changing any file in dist/: refresh the content stamps in both pages
-npm test                    # L0 syntax/whitespace/stamps + L1 unit + L2 contract, ~5 s; every commit
+npm test                    # L0 syntax/whitespace + L1 unit + L2 contract, ~5 s; every commit
 npm run test:data           # L3 dataset releases, conformance, semantic mapping (needs Python jsonschema>=4.10)
 npm run test:integration    # L4 whole calculation chain on real datasets, ~25 s; before push
 npm run test:browser        # L5 main app; about a minute
