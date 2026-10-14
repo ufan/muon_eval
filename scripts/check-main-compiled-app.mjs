@@ -121,7 +121,8 @@ try{
  await page.locator('#coverageStations').selectOption('compared');assert.equal(await page.locator('#candidateList .cov-swatch').count(),1);assert.ok(await page.locator('#coverageCountLegend').isVisible());
  await page.locator('#coverageStations').selectOption('all');assert.equal(await page.locator('#candidateList .cov-swatch').count(),count-1);
  assert.ok(await page.locator('#fovEdges').isChecked());await page.locator('#fovEdges').uncheck();
- await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovEdges').check();await page.locator('#coverageMode').selectOption('physical');
+ await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovEdges').check();
+ assert.equal(await page.locator('#fovSolid').isChecked(),false);await page.locator('#fovSolid').check();await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovSolid').uncheck();await page.locator('#coverageMode').selectOption('physical');
  // Placing: one click on the model moves the working station there; Esc cancels.
  await click('#placeStation');assert.ok(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')));await page.keyboard.press('Escape');assert.equal(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')),false);
  const xyz=async()=>Promise.all(['#x','#y','#z'].map(id=>page.locator(id).inputValue())),start=await xyz();await click('#placeStation');

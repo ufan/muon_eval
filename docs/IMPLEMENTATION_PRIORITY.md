@@ -145,6 +145,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: Optional translucent solid field-of-view pyramid (实心视锥, owner).
 - 2026-10-14: Field-of-view edges as screen-width lines with an on/off option (owner).
 - 2026-10-14: Placement inside a clicked cavity (owner).
 - 2026-10-14: 14d done (click-to-place, multi-station geometric coverage); #14 complete.
