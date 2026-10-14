@@ -69,6 +69,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | 15e | Slice plane through the interior for geometric and multi-view coverage; coverage on target features | FR-M16, FR-M15 | `slice-plane.js` (plane, mask; L1, real model L4), mask from `classifyModel` (density > 0.01 g/cm³) in chunks after the slider rests, abortable; plane in the coverage pass with two-sided shading; feature meshes tinted (构件表面着色, on by default); 环境图层 → 切面 | Done |
 | 16 | Per-station projections side by side | FR-M4 | 多站总览 → 并排查看各点位投影: one tile per overview station from its cached compact result (no recomputation), the main projection's fixed colour scale (now shared in `projection-tiles.js`, L1), horizon, selected outlines from the cached item lengths, optional precision lines; hover shows pixel values; a station name opens it. Hover crossings need path segments in the cache (follow-up) | Done |
 | 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | 演示模式 in the header: the 3D view alone with the overview's stations; caption (release title, study, deployment, station count), legend (station colours, coverage map), footnote with the limitations and inputs (release, scenario, exposure, detector, date); the page's view presets and saved camera views per release, stepped with ← →; working station labelled; projection panel on demand; PNG screenshot with the same caption, legend, labels and footnote (`demo-snapshot.js`, L1); Esc leaves. Short animation export later | Done |
+| 17a | Regions and extent coverage: regions (recognition item + optional model-frame limits) in the plan (`muography-plan` 1.2, data format), target points clipped to the region, extent columns in 多站总览 (in a field of view, ≥ 1 usable view, unique contribution per station) | FR-M17 | Test first: plan migration 1.1 → 1.2 (L1), region clipping and extent numbers (L1), real-model region samples (L4). Resolution of the usable-view test pending an owner decision | Todo |
 
 ## P4 — Anomaly hypotheses and sensitivity (Phase 3)
 
@@ -89,7 +90,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 | 19 | Direction-map reuse per station/scenario + coarse-to-fine | ADR-005 step 1 | Validate against direct tracing | Todo |
 | 20 | JS tracer optimisation (top-level BVH, flat arrays, no per-ray allocation) | ADR-005 step 2 | Must pass conformance rays/points | Todo |
 | 21 | Worker-parallel evaluation (Node + browser) | ADR-005 step 3 | Also speeds up the multi-station overview | Todo |
-| 22 | Scan constraints, ranking, robustness | FR-S1…S3 | Write metric/ranking definitions first | Todo |
+| 22 | Scan constraints, ranking, robustness | FR-S1…S3 | Write metric/ranking definitions first; includes pose sweeps ranked by a region's extent or multi-view score (FR-M17, owner 2026-10-14) | Todo |
 
 ## Pending browser regressions (fit in when touching the preview)
 
@@ -153,6 +154,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 - 2026-10-14: #15 done (station labels in 3D; a click on a marker or label opens the station).
 - 2026-10-14: #16 done (projections side by side from the cache; colour scale shared with the main projection).
 - 2026-10-14: #17 done (demonstration mode with presets, saved views, labels, limitations footnote and PNG screenshots; animation export later).
+- 2026-10-14: 17a added (regions and extent coverage, FR-M17); pose sweeps go to scanning (#22).
 - 2026-10-14: 15d (multi-view coverage, default mode) and 15e (slice plane) added after the coverage colour discussion (owner).
 - 2026-10-14: Geometric multi-station coverage in one red ramp (1 to 5+ stations); physical multi-station plan recorded for #15 (dominant station by default, total as option).
 - 2026-10-14: Optional translucent solid field-of-view pyramid (实心视锥, owner); extended beyond the concrete (at least 72 m, 20 m past the last exit).
