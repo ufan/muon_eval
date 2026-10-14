@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { outlineRings, crossingsAlongRay, detectorSpaceItems } from './recognition-layers.js';
+import { precisionContours } from './precision-contours.js';
 // Projection panel view: heat map on the canvas, recognition outlines (FR-M12) in
 // an SVG overlay in pixel units, and the hover readout with the crossed items.
 const SVG='http://www.w3.org/2000/svg',DASHES=['','5 3','2 2','8 3 2 3'];
 const escapeHtml=text=>String(text).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};`);
 export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave=()=>{}}){
  const $=s=>root.querySelector(s);
- let projection={data:null,mode:'counts',recognition:null},RESPONSE={};
+ let projection={data:null,mode:'counts',recognition:null,precision:false},RESPONSE={},precisionCache={data:null,contours:[]};
  function heatColor(t){const stops=[[.0,0x397cff],[.38,0x24d5c1],[.72,0xffd166],[1,0xff5f55]],out=new THREE.Color(stops[0][1]);for(let i=0;i<stops.length-1;i++){const [a,ca]=stops[i],[b,cb]=stops[i+1];if(t>=a&&t<=b)return out.set(ca).lerp(new THREE.Color(cb),(t-a)/(b-a))}return out.set(stops.at(-1)[1])}
  function colorCss(t){const c=heatColor(THREE.MathUtils.clamp(t,0,1));return`rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`}
  const recognition=()=>projection.recognition??{items:[],layers:new Map(),selected:new Set(),threshold:0};
@@ -19,6 +20,10 @@ export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave
    const horizon=document.createElementNS(SVG,'path');horizon.setAttribute('d',line);horizon.classList.add('horizon');svg.append(horizon);
    const first=[...Array(n).keys()].find(r=>back[r*n]),labels=[['前方来向 ↑',first-.5],['后方来向 ↓',first+size*1.1]];
    for(const [label,y] of labels){if(!Number.isFinite(y)||y<size||y>n-.3)continue;const text=document.createElementNS(SVG,'text');text.setAttribute('x',.6);text.setAttribute('y',y);text.setAttribute('font-size',size*.85);text.classList.add('horizon-label');text.textContent=label;svg.append(text);}}
+  // Statistical precision (FR-M13): counting error 1/sqrt(N) = 10 % (dashed) and 5 % (solid); neutral, unnamed lines.
+  if(projection.precision){if(precisionCache.data!==d)precisionCache={data:d,contours:precisionContours(d)};
+   for(const {relativeError,lines} of precisionCache.contours){if(!lines.length)continue;const path=document.createElementNS(SVG,'path');path.setAttribute('d',lines.map(l=>'M'+l.map(p=>p.join(',')).join('L')).join(''));path.classList.add('precision');path.dataset.level=String(relativeError);svg.append(path);
+    const longest=lines.reduce((a,b)=>b.length>a.length?b:a),[x,y]=longest[Math.floor(longest.length/2)],text=document.createElementNS(SVG,'text'),lx=Math.min(x+.3,n*.9);let ly=Math.max(y-.3,size);while(placed.some(([px,py])=>Math.abs(px-lx)<n*.25&&Math.abs(py-ly)<size*1.1))ly+=size*1.15;placed.push([lx,ly]);text.setAttribute('x',lx);text.setAttribute('y',ly);text.setAttribute('font-size',size*.8);text.classList.add('precision-label');text.textContent=`${Math.round(relativeError*100)}%`;svg.append(text);}}
   for(const item of selectedItems()){const layer=r.layers.get(item.id),rings=outlineRings(layer.mask,n),dash=DASHES[(used.get(item.color)??0)%DASHES.length];used.set(item.color,(used.get(item.color)??0)+1);
    const path=document.createElementNS(SVG,'path');path.setAttribute('d',rings.map(ring=>'M'+ring.map(p=>p.join(',')).join('L')+'Z').join(''));path.setAttribute('stroke',item.color);if(dash)path.setAttribute('stroke-dasharray',dash);path.dataset.item=item.id;svg.append(path);
    // Label at the top-left corner of the largest ring.

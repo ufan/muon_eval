@@ -382,6 +382,10 @@ Display only; computed from a finished result by `recognition-layers.js` and nev
 - Outline: boundary of the mask, from d3-contour on the mask padded with one empty pixel per side at level 0.5, so it matches the mask and closes along the image border. Like every per-pixel quantity it inherits the one-ray-per-pixel aliasing of §11.6 (about half a pixel at edges).
 - Hover crossings: items with `L > T` on the hovered ray, ordered by the start of the first segment inside the item (entry distance from the detector), each with `L`. `L` is the physically relevant value (material traversed; for a void, material missing from the path); entry distance only locates the item along the ray (0 m when the detector is inside it).
 
+### 11.8 Statistical precision lines (FR-M13)
+
+Display only, from a finished projection's raw expected counts `N` per pixel (not the display-smoothed values). The relative counting error is `1/√N`; the lines mark `1/√N = 10 %` (`N = 100`, dashed) and `5 %` (`N = 400`, solid) for the current exposure, so doubling the exposure moves them outward. `precision-contours.js` contours `log10 N` with d3-contour (smoothed, so the line is interpolated in log counts between pixel centres), pads the field by repeating its edge values so lines run to the image border, and drops segments lying on the border. Pixels with no counts use `log10 N = −3`. Statistical error only; systematic terms (FR-H6) are not included.
+
 ## 12. Legacy target structures, outlines and significance
 
 Retired with the legacy backend (ADR-028). This section is kept as the description of migration targets MT-2 (target layers) and MT-3 (structural significance, superseded by anomaly hypotheses, FR-H); a compiled re-implementation uses dataset-declared semantic targets, not these dam-specific heuristics.
