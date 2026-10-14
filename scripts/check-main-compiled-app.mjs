@@ -160,6 +160,20 @@ try{
   await page.mouse.move(...anchor);await page.waitForTimeout(200);assert.match(await page.locator('.feature-tip').innerText(),/点击设为工作点位/);await page.mouse.down();await page.mouse.up();await ready();await opened(name);}
  await page.locator('#overviewShow3d').click();assert.equal(await page.locator('#coverageMode').inputValue(),'physical');assert.equal(await page.locator('#coverageMulti').inputValue(),'class');
  await page.locator('#coverageMulti').selectOption('views');await page.locator('#overviewStations').selectOption('none');
+ // Demonstration mode (#17): the 3D view alone with caption, legend and limitations; presets and saved views stepped with ← →;
+ // the screenshot is a PNG; Esc leaves. Views never change results; the camera keeps the container's aspect ratio.
+ {const unchanged=await currentResult();await page.locator('#overviewStations').selectOption('all');await click('#demoMode');
+  assert.ok(await page.locator('.app').evaluate(e=>e.classList.contains('demo')));assert.ok(await page.locator('aside.left').isHidden());assert.ok(await page.locator('#projectionPanel').isHidden());
+  assert.match(await page.locator('#demoCaption').innerText(),/\d+ 个点位/);assert.match(await page.locator('#demoFootnote').innerText(),/非施工或安全结论[\s\S]*曝光 \d+ 天/);
+  assert.ok(await page.locator('#demoLegend div').count()>=2);await page.waitForFunction(()=>!document.querySelector('.station-labels .working-label').hidden);
+  await page.waitForFunction(()=>{const canvas=document.querySelector('#webgl canvas'),box=document.querySelector('#webgl').getBoundingClientRect();return Math.abs(canvas.width/canvas.height-box.width/box.height)<.01&&box.width>window.innerWidth*.95;});
+  const view=await page.locator('#viewSelect').inputValue();await page.keyboard.press('ArrowRight');assert.notEqual(await page.locator('#viewSelect').inputValue(),view);
+  accept('演示视角');await click('#demoSaveView');assert.equal(await page.locator('#demoSaved [data-demo-view]').innerText(),'演示视角');
+  await click('#demoProjection');assert.ok(await page.locator('#projectionPanel').isVisible());await click('#demoProjection');
+  const download=page.waitForEvent('download');await click('#demoShot');assert.match((await download).suggestedFilename(),/^muography-demo-.+-\d{8}-\d{4}\.png$/);
+  await click('#demoSaved [data-demo-remove]');assert.equal(await page.locator('#demoSaved button').count(),0);
+  await page.keyboard.press('Escape');assert.equal(await page.locator('.app').evaluate(e=>e.classList.contains('demo')),false);assert.ok(await page.locator('aside.left').isVisible());
+  assert.ok(await page.locator('.station-labels .working-label').isHidden());await page.locator('#overviewStations').selectOption('none');await page.waitForTimeout(300);assert.deepEqual(await currentResult(),unchanged);}
  // Placing: one click on the model moves the working station there; Esc cancels.
  await click('#placeStation');assert.ok(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')));await page.keyboard.press('Escape');assert.equal(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')),false);
  const xyz=async()=>Promise.all(['#x','#y','#z'].map(id=>page.locator(id).inputValue())),start=await xyz();await click('#placeStation');
@@ -205,5 +219,5 @@ try{
  accept();await click('#deleteStudy');await ready();assert.deepEqual((await studies()).map(([id])=>id),['study-1','study-2','study-4']);assert.equal(await page.locator('#studySelect').inputValue(),'study-1');
  assert.equal(await page.locator('#deploymentSelect option').count(),1);
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
- console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, studies (rename, delete), working station and candidates, deployments and plan export menu, multi-station coverage, overview and placement, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
+ console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, studies (rename, delete), working station and candidates, deployments and plan export menu, multi-station coverage, overview, demonstration mode and placement, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

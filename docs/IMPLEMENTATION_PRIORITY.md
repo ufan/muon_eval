@@ -68,7 +68,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 | 15d | Physical multi-station coverage: 多视角覆盖 (usable views, 视角张角, summary class; default), 主导站点, 总计数, from each station's cached counts | FR-M15, ADR-026 | `coverage-map.js` per-point reference (L1), shader variant `COV_MULTI` with a nine-slot loop over a float texture of each station's counts; 环境图层 → 覆盖范围 物理 → 多站物理 (default 多视角覆盖：可用视角数), error level, class thresholds, legend, hover | Done |
 | 15e | Slice plane through the interior for geometric and multi-view coverage; coverage on target features | FR-M16, FR-M15 | `slice-plane.js` (plane, mask; L1, real model L4), mask from `classifyModel` (density > 0.01 g/cm³) in chunks after the slider rests, abortable; plane in the coverage pass with two-sided shading; feature meshes tinted (构件表面着色, on by default); 环境图层 → 切面 | Done |
 | 16 | Per-station projections side by side | FR-M4 | 多站总览 → 并排查看各点位投影: one tile per overview station from its cached compact result (no recomputation), the main projection's fixed colour scale (now shared in `projection-tiles.js`, L1), horizon, selected outlines from the cached item lengths, optional precision lines; hover shows pixel values; a station name opens it. Hover crossings need path segments in the cache (follow-up) | Done |
-| 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | Short animation export later | Todo |
+| 17 | Demonstration mode: clean layout, camera presets, labels, screenshot export | FR-M5 | 演示模式 in the header: the 3D view alone with the overview's stations; caption (release title, study, deployment, station count), legend (station colours, coverage map), footnote with the limitations and inputs (release, scenario, exposure, detector, date); the page's view presets and saved camera views per release, stepped with ← →; working station labelled; projection panel on demand; PNG screenshot with the same caption, legend, labels and footnote (`demo-snapshot.js`, L1); Esc leaves. Short animation export later | Done |
 
 ## P4 — Anomaly hypotheses and sensitivity (Phase 3)
 
@@ -152,6 +152,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 - 2026-10-14: #15 summary table done (多站总览: per-item station numbers and multi-view numbers, click a station to open it); stale notes on multi-station physical coverage in #15 and 15a corrected.
 - 2026-10-14: #15 done (station labels in 3D; a click on a marker or label opens the station).
 - 2026-10-14: #16 done (projections side by side from the cache; colour scale shared with the main projection).
+- 2026-10-14: #17 done (demonstration mode with presets, saved views, labels, limitations footnote and PNG screenshots; animation export later).
 - 2026-10-14: 15d (multi-view coverage, default mode) and 15e (slice plane) added after the coverage colour discussion (owner).
 - 2026-10-14: Geometric multi-station coverage in one red ramp (1 to 5+ stations); physical multi-station plan recorded for #15 (dominant station by default, total as option).
 - 2026-10-14: Optional translucent solid field-of-view pyramid (实心视锥, owner); extended beyond the concrete (at least 72 m, 20 m past the last exit).

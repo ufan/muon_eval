@@ -97,7 +97,7 @@ classDiagram
 | Concept | Kind | Identity | Notes | Status |
 |---|---|---|---|---|
 | Scene | Value | Release ID + scenario ID or environment variable values | The physical world of a calculation: geometry and materials follow from the release and environment state only. Composition: scene = release + environment state | Partial: the code passes release and `environment` separately rather than as one scene value |
-| ViewState | Value, per view | — | Layer visibility, colours, transparency, camera, overlays, selection. Owned by the views and `main-page`; never part of a scene, snapshot key or result | Current |
+| ViewState | Value, per view | — | Layer visibility, colours, transparency, camera, overlays, selection. Owned by the views and `main-page`; never part of a scene, snapshot key or result. Saved camera views of the demonstration mode (model frame, per release in browser storage) are view state too, never part of a plan | Current |
 
 ### 2.1b Anomaly hypotheses (Target, ADR-025)
 

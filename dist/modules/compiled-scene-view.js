@@ -150,14 +150,17 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   const sliceMatter=hit=>{const map=sliceMaterial.alphaMap;if(!map||!hit.uv)return true;const {width,data}=map.image,ix=Math.min(width-1,Math.floor(hit.uv.x*width)),iy=Math.min(width-1,Math.floor(hit.uv.y*width));return data[4*(iy*width+ix)]>0;};
   // Other stations shown with the working one (14d sketching): their fields of view in the shader, a marker each.
   // Each one has a name label at its marker; a click on the label or the marker opens that station (#15, FR-M4).
-  let extraStations=[];const labels=document.createElement('div');labels.className='station-labels';container.after(labels);
-  function markerScreen(){if(!renderer)return[];const canvas=renderer.domElement.getBoundingClientRect();
-    return extraStations.map(s=>{const v=s.origin.clone().project(camera);return{id:s.id,x:canvas.left+(v.x+1)/2*canvas.width,y:canvas.top+(1-v.y)/2*canvas.height,visible:v.z<1&&Math.abs(v.x)<=1&&Math.abs(v.y)<=1};});}
-  function updateLabels(){if(!extraStations.length)return;const box=container.getBoundingClientRect(),screen=markerScreen();
-    [...labels.children].forEach((label,i)=>{const p=screen[i];label.hidden=!p?.visible;if(p?.visible){label.style.left=`${p.x-box.left}px`;label.style.top=`${p.y-box.top}px`;}});}
+  // In demonstration mode (#17) the working station is labelled too (not clickable: it is already open).
+  let extraStations=[],demo=false;const labels=document.createElement('div');labels.className='station-labels';container.after(labels);
+  const workingLabel=document.createElement('span');workingLabel.className='working-label';workingLabel.hidden=true;labels.append(workingLabel);
+  function screenOf(origin,canvas){const v=origin.clone().project(camera);return{x:canvas.left+(v.x+1)/2*canvas.width,y:canvas.top+(1-v.y)/2*canvas.height,visible:v.z<1&&Math.abs(v.x)<=1&&Math.abs(v.y)<=1};}
+  function markerScreen(){if(!renderer)return[];const canvas=renderer.domElement.getBoundingClientRect();return extraStations.map(s=>({id:s.id,...screenOf(s.origin,canvas)}));}
+  function workingScreen(){if(!renderer||!currentStation)return null;return screenOf(compiledPointToScene([currentStation.x,currentStation.y,currentStation.z]),renderer.domElement.getBoundingClientRect());}
+  function updateLabels(){const box=container.getBoundingClientRect(),screen=markerScreen(),place=(label,p)=>{label.hidden=!p?.visible;if(p?.visible){label.style.left=`${p.x-box.left}px`;label.style.top=`${p.y-box.top}px`;}};
+    [...labels.querySelectorAll('[data-station]')].forEach((label,i)=>place(label,screen[i]));workingLabel.textContent=currentStation?.name||'工作点位';place(workingLabel,demo?workingScreen():null);}
   const markerAt=event=>nearestScreenPoint(markerScreen(),[event.clientX,event.clientY],12);
   function setCoverageStations(list=[]){extraStations=list.slice(0,coverage.covExtraOrigin.value.length).map(s=>({...s,origin:compiledPointToScene([s.x,s.y,s.z])}));clear(extraGroup);coverage.covExtraCount.value=extraStations.length;
-    labels.replaceChildren(...extraStations.map(s=>{const label=document.createElement('button');label.type='button';label.textContent=s.name;label.dataset.station=s.id;label.title='设为工作点位';label.style.setProperty('--c',s.color);label.hidden=true;label.onclick=()=>onStationPick(s.id);return label;}));
+    labels.replaceChildren(workingLabel,...extraStations.map(s=>{const label=document.createElement('button');label.type='button';label.textContent=s.name;label.dataset.station=s.id;label.title='设为工作点位';label.style.setProperty('--c',s.color);label.hidden=true;label.onclick=()=>onStationPick(s.id);return label;}));
     extraStations.forEach((s,i)=>{const basis=detectorBasis(s.az,s.el),origin=compiledPointToScene([s.x,s.y,s.z]);coverage.covExtraOrigin.value[i].copy(origin);
       coverage.covExtraForward.value[i].copy(compiledPointToScene(basis.forward));coverage.covExtraRight.value[i].copy(compiledPointToScene(basis.right));coverage.covExtraUp.value[i].copy(compiledPointToScene(basis.up));
       coverage.covExtraMax.value[i].set(s.device.maxSlopeX,s.device.maxSlopeY);coverage.covExtraColor.value[i].set(s.color);setSlot(i+1,{origin:coverage.covExtraOrigin.value[i],forward:coverage.covExtraForward.value[i],right:coverage.covExtraRight.value[i],up:coverage.covExtraUp.value[i],device:s.device,color:coverage.covExtraColor.value[i]});
@@ -228,6 +231,16 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
     resize,setView,setLayer,setDamOpacity,drawDetector,setSlice,setSliceMask,subjectExtent,setFovEdges,setFovSolid,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
     showRay:(trace,station,direction)=>displayTrace(rayGroup,trace,station,direction),
+    // Demonstration mode (#17): labels, camera views as view state (model frame, z up) and a capture of the
+    // current frame with every station's label position (CSS pixels within the image).
+    setDemo(on){demo=Boolean(on);updateLabels();requestRender();},
+    cameraView(){if(!controls)return null;const model=v=>[v.x,-v.z,v.y];return{position:model(camera.position),target:model(controls.target)};},
+    setCameraView({position,target}){if(!controls||![...position,...target].every(Number.isFinite))return;camera.position.copy(compiledPointToScene(position));controls.target.copy(compiledPointToScene(target));controls.update();requestRender();},
+    capture(){if(!renderer)return null;controls.update();renderer.render(scene,camera);const box=renderer.domElement.getBoundingClientRect(),image=document.createElement('canvas');
+      image.width=renderer.domElement.width;image.height=renderer.domElement.height;image.getContext('2d').drawImage(renderer.domElement,0,0);
+      const at=p=>({x:p.x-box.left,y:p.y-box.top}),screen=markerScreen(),working=workingScreen();
+      const labelled=[...(working?.visible?[{text:currentStation.name||'工作点位',color:'#ff4fb3',...at(working)}]:[]),...extraStations.map((s,i)=>screen[i].visible?{text:s.name,color:s.color,...at(screen[i])}:null).filter(Boolean)];
+      requestRender();return{image,width:box.width,height:box.height,labels:labelled};},
     showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
     clearProjection(){clear(projectionGroup);emphasiseFeatures([]);},showFlux(){},drawFluxCloud(){},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},

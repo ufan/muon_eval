@@ -9,6 +9,8 @@ import { assessmentKey, compactResult, compactItemLengths, createResultCache, cr
 import { overviewTable } from './overview-table.js';
 import { createOverviewPanel } from './overview-panel-view.js';
 import { createProjectionTiles } from './projection-tiles-view.js';
+import { createDemoView } from './demo-view.js';
+import { demoFootnote } from './demo-snapshot.js';
 import { openStudies, saveStudy, saveSession, createStudy, switchStudy, listStudies, deleteStudy } from './plan-store.js';
 import { selectionHref, APP_PAGES } from './application-selection.js';
 import { placementPoint, coverageStationSet } from './coverage-map.js';
@@ -67,7 +69,7 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
    d.onclick=e=>{if(!e.target.closest('.compare'))selectCandidate(s.id);};
    d.querySelector('[data-compare]').onchange=e=>{study.setCompared(s.id,e.target.checked);persistSession();refreshCandidates();showComparison();};return d;}));
   const source=w.from===null?null:study.candidate(w.from);$('#workingStatus').textContent=source===null?'未保存的新点位':modified?`来自「${source.name}」· 已修改，未保存`:`与候选「${source.name}」一致`;
-  $('#updateCandidate').disabled=source===null||!modified;$('#remove').disabled=source===null||study.plan.stations.length<2;renderDeployments();renderOverview();}
+  $('#updateCandidate').disabled=source===null||!modified;$('#remove').disabled=source===null||study.plan.stations.length<2;renderDeployments();renderOverview();demo.render();}
  // Multi-station overview (#15, FR-M4, FR-M15): per recognition item, the working station and the stations chosen in the overview
  // (the same set as 覆盖范围 → 其他点位), from their cached compact results. Target points come once per page from the calculation
  // geometry, after the first final result so they never delay it.
@@ -84,6 +86,14 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
   const signature=JSON.stringify([stations.map(s=>[s.id,s.name,s.x,s.y,s.z,s.az,s.el,s.n??0,s.entry?s.entry.totalCount:null]),threshold,multiOptions,!!samples]);if(signature===overviewSignature)return;overviewSignature=signature;
   const rows=overviewTable({items:recognitionItems,stations,samples:samples??new Map(),threshold,options:multiOptions}),pending=stations.filter(s=>!s.entry).length;
   overview.render({rows,minViews:multiOptions.minViews,message:`${stations.length} 个点位${pending?`（${pending} 个计算中）`:''}${samples?'':' · 目标内部采样待第一个结果完成后进行…'}`});}
+ // Demonstration mode (#17, FR-M5): the overview's stations in a clean view; caption, legend and footnote say what is shown
+ // and what the numbers are not, on screen and in every screenshot.
+ function describeDemo(){const stations=overviewStations(),set=$('#overviewStations').value,deployment=study.plan.deployments.find(d=>d.id===study.activeDeployment),mode=$('#coverageMode').value,multi=!$('#multiControls').hidden,count=!$('#coverageCountLegend').hidden;
+  const coverage=mode==='off'?null:multi?$('#multiLegend').textContent:count?$('#coverageCountLegend').textContent:mode==='physical'?'覆盖：物理（计数/sr，对数亮度）':'覆盖：几何视场';
+  return{caption:{title:$('.title').textContent,subtitle:`${studyLabel({id:studyId,title:study.plan.title})}${set==='deployment'&&deployment?` · ${deployment.name}`:''} · ${stations.length} 个点位`},
+   legend:[...stations.map(s=>({color:s.color??'#ff4fb3',text:`${s.name}${s.entry?'':'（计算中）'}`})),...(coverage?[{text:coverage}]:[])],
+   footnote:[...demoFootnote({release:datasetId,scenario:scenarioId??'—',exposureDays:study.configuration.response.exposureDays,detector:study.configuration.device.model,date:new Date()}),...(multi?['多视角覆盖与综合等级为规划参考，不是重建质量保证。']:[])]};}
+ const demo=createDemoView({root,sceneView,storage,storageKey:`muon-demo-views:${datasetId}`,datasetId,describe:describeDemo});
  function bindOverview(){const select=$('#overviewStations'),stations=$('#coverageStations');select.value=stations.value;select.onchange=()=>{stations.value=select.value;stations.onchange();};
   $('#overviewTiles').onclick=()=>{const state=tilesState(overviewStations());tilesSignature='';tiles.open(state);};
   $('#overviewShow3d').onclick=()=>{$('#coverageMode').value='physical';$('#coverageMulti').value='class';stations.onchange();};}
