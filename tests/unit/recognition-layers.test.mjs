@@ -90,29 +90,6 @@ test('inputs are not modified', () => {
   assert.deepEqual(data, copy);
 });
 
-test('material envelopes are drawn in display pixel units from the shared envelope rule', async () => {
-  const { materialEnvelopes } = await import('../../dist/modules/recognition-layers.js');
-  // Concrete only in the bottom-left pixel (iy = 0 is the bottom row); one air gap deeper on the right.
-  const pixel = (concrete, segments = []) => ({ q: { totals: { concrete, rock: 0 }, segments } });
-  const field = { n: 2, values: [
-    pixel(5, [{ t0: 0, t1: 5, material: 'concrete' }]), pixel(0),
-    pixel(0), pixel(0)
-  ] };
-  const [concrete] = materialEnvelopes(field, ['concrete'], { threshold: 0.1 });
-  assert.equal(concrete.material, 'concrete');
-  // Bottom-left pixel in display order is row 1, column 0: edges to its right and above it.
-  assert.deepEqual(concrete.edges.map(({ x0, y0, x1, y1 }) => [x0, y0, x1, y1]).sort(), [[0, 1, 1, 1], [1, 1, 1, 2]]);
-  assert.deepEqual(materialEnvelopes(field, ['concrete'], { threshold: 10 })[0].edges, []);
-});
-
-test('material envelopes include air-interface depth jumps inside the material', async () => {
-  const { materialEnvelopes } = await import('../../dist/modules/recognition-layers.js');
-  const ray = gapAt => ({ q: { totals: { concrete: 20, rock: 0 }, segments: [
-    { t0: 0, t1: gapAt, material: 'concrete' }, { t0: gapAt, t1: gapAt + 2, material: 'air' }, { t0: gapAt + 2, t1: 22, material: 'concrete' }] } });
-  const field = { n: 2, values: [ray(5), ray(15), ray(5), ray(15)] };
-  assert.equal(materialEnvelopes(field, ['concrete'])[0].edges.length, 2);
-  assert.equal(materialEnvelopes(field, ['concrete'], { depthEdges: false })[0].edges.length, 0);
-});
 
 // The space the detector sits in is not a target in its own image: the connected
 // stretch of a ray that starts inside an item does not count; a re-entry does.

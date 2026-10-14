@@ -19,8 +19,6 @@ export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave
    const horizon=document.createElementNS(SVG,'path');horizon.setAttribute('d',line);horizon.classList.add('horizon');svg.append(horizon);
    const first=[...Array(n).keys()].find(r=>back[r*n]),labels=[['前方来向 ↑',first-.5],['后方来向 ↓',first+size*1.1]];
    for(const [label,y] of labels){if(!Number.isFinite(y)||y<size||y>n-.3)continue;const text=document.createElementNS(SVG,'text');text.setAttribute('x',.6);text.setAttribute('y',y);text.setAttribute('font-size',size*.85);text.classList.add('horizon-label');text.textContent=label;svg.append(text);}}
-  // Material envelopes below the outlines: thin, unlabelled sampled edges.
-  for(const envelope of r.envelopes??[]){if(!envelope.edges.length)continue;const path=document.createElementNS(SVG,'path');path.setAttribute('d',envelope.edges.map(e=>`M${e.x0},${e.y0}L${e.x1},${e.y1}`).join(''));path.setAttribute('stroke',envelope.color);path.classList.add('envelope');path.dataset.envelope=envelope.material;svg.append(path);}
   for(const item of selectedItems()){const layer=r.layers.get(item.id),rings=outlineRings(layer.mask,n),dash=DASHES[(used.get(item.color)??0)%DASHES.length];used.set(item.color,(used.get(item.color)??0)+1);
    const path=document.createElementNS(SVG,'path');path.setAttribute('d',rings.map(ring=>'M'+ring.map(p=>p.join(',')).join('L')+'Z').join(''));path.setAttribute('stroke',item.color);if(dash)path.setAttribute('stroke-dasharray',dash);path.dataset.item=item.id;svg.append(path);
    // Label at the top-left corner of the largest ring.

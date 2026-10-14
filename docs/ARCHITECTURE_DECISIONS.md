@@ -38,7 +38,7 @@ Last updated: 2026-10-10
 | 026 | Coverage highlight by GPU projective texturing of acceptance and count maps | Proposed |
 | 027 | Three.js for display only; geometry and physics in own framework-free modules | Accepted (retrospective) |
 | 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
-| 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; implemented (15b-1…15b-6); optional fill and sampled-pixel view open |
+| 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; implemented (15b-1…15b-6; envelope overlay kept in the preview only); optional fill and sampled-pixel view open |
 
 ---
 
@@ -520,7 +520,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **Mask** of an item: pixels whose central ray's length inside the item (sum over members, `L`) exceeds **T**, a display setting with default 0.1 m (`conformance_length_m.concrete`), named in the legend, adjustable, independent of pixel size, never changing results.
 - **Outline** = contour of `L` at level `T`, extracted with the existing contour pipeline (d3-contour on the native grid, display mapping, constant-width SVG, contour export v1), closed at the image border; optional "show sampled pixels" staircase; legend states edges are accurate to about half a pixel (FR-V12).
 - **Overlaps**: masks are independent and may overlap; outlines only by default, in item colour; same-colour items distinguished by line pattern and labels; nearer items drawn on top; optional translucent fill. Hover lists recognition items crossed by the pixel's ray in ray order with the length inside each item (the physically relevant number: material traversed, or for a void the material missing from the path) and the distance from the detector to its entry (a locating aid for order and near/far), expandable to all features. No point markers in 3D (owner, 2026-10-13: they add nothing to the drawn ray and pile up at the detector); the 3D answer is emphasising the crossed features themselves (two-way link, 15b-4).
-- **Merged solids**: material items (`concrete` → "Dam concrete", `steel` → "Gates") use the same rule and are labelled as material outlines; the existing material envelope overlay is brought into the main app as its own toggle (useful from inside the subject); per-solid outlines arrive with FR-GE4 without design change.
+- **Merged solids**: material items (`concrete` → "Dam concrete", `steel` → "Gates") use the same rule and are labelled as material outlines; the material envelope overlay stays in the geometry preview (see *As implemented (15b-6)*); per-solid outlines arrive with FR-GE4 without design change.
 
 *Contours (policy).* The contour mechanism is kept (outlines, anomaly footprints FR-H9, significance FR-H6). Existing material-contribution and response contour layers move to "Expert diagnostics", off by default, no new features (FR-M14). Decision-oriented lines take priority: outlines (FR-M12), statistical precision contour 1/√N at 5 %/10 % (FR-M13), anomaly significance (FR-H6).
 
@@ -546,7 +546,8 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 *As implemented (15b-6, 2026-10-14).*
 - **Material items** use the 15b-3 mechanism unchanged. The Zhouning profile keeps only "Dam concrete"; a steel ("Gates") item was left out by the owner, as gates are not observation targets.
-- **Material envelope overlay** in the main app: one toggle under the recognition list, off by default, remembered per release. It reuses the preview's rule (`materialEnvelopeEdges`: material silhouettes, air-interface presence, topology and depth jumps of ≥ 4 m or 25 %) on the main-app projection, drawn as thin unlabelled lines below the outlines (white concrete, orange rock). A material counts as present where its length exceeds the outline threshold `T`, so envelopes and material outlines agree. Only materials the shared rule supports (concrete, rock) are drawn.
+- **Material envelope overlay: not in the main app (owner, 2026-10-14).** Built in 15b-6, then removed after review: its silhouette edges duplicate the material item outline ("Dam concrete" is exactly the concrete silhouette), and what remains are unlabelled air-interface depth edges ("some surface at a different depth here") that users could not attribute to any object, densest where they matter least. Identified outlines (profile items plus any direct feature from "其他构件…") carry the useful part. The overlay stays an expert diagnostic in the geometry preview; a main-app version would come back only under expert diagnostics (FR-M14), depth edges only, in a neutral colour, and after its material semantics are generalised (FR-K11).
+- **Colour rule.** Hues are reserved for named features and items (their dataset class colours); overlays without identity (horizon, diagnostics) use neutral greys/white, so they can never be confused with a feature.
 
 **The detector's own space (owner, 2026-10-14).** For a feature item, the connected stretch of a ray that starts at the detector inside the item is not counted: a detector in a gallery would otherwise see that gallery in every upward pixel (68–100 % of the image), which is correct but carries no information. Only a re-entry further out counts, for the mask, the hover crossings (entry distance measured to the re-entry) and the 3D emphasis. The readout names the items containing the detector instead. Material items are unaffected; counts are unaffected.
 
@@ -575,6 +576,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-14: ADR-029: material envelope overlay removed from the main app (owner); colour rule: hues only for named features.
 - 2026-10-14: ADR-029: the detector's own space is excluded from feature masks and crossings (owner).
 - 2026-10-14: ADR-029 implementation notes for 15b-6 (material envelope overlay in the main app).
 - 2026-10-13: ADR-029 implementation notes for 15b-4 (feature-layer rule, default visibility, linking).

@@ -1,11 +1,10 @@
-import { computeRecognitionLayers, materialEnvelopes, DEFAULT_MASK_THRESHOLD_M } from './recognition-layers.js';
+import { computeRecognitionLayers, DEFAULT_MASK_THRESHOLD_M } from './recognition-layers.js';
 import { recognitionItemForFeature } from './feature-layers.js';
 // Recognition-item list of the projection panel (ADR-029, FR-M12): the release's
 // display-profile items plus any direct feature the user adds, the mask threshold,
-// the layers of the current result and the optional material envelope overlay.
-// Selection, threshold and the envelope toggle persist per release.
+// and the layers of the current result. Selection and threshold persist per release.
 export function createRecognitionPanel({ root = document, features, items, storage, storageKey, onChange = () => {}, onHoverItem = () => {} }) {
-  const $ = s => root.querySelector(s), list = $('#recognitionItems'), extra = $('#recognitionExtra'), thresholdInput = $('#recognitionThreshold'), envelopeInput = $('#materialEnvelope');
+  const $ = s => root.querySelector(s), list = $('#recognitionItems'), extra = $('#recognitionExtra'), thresholdInput = $('#recognitionThreshold');
   const featureItem = feature => Object.freeze({ id: `feature:${feature.id}`, label: feature.label, kind: 'features',
     featureIds: Object.freeze([feature.id]), material: null, color: feature.color, default: false });
   let saved = {};
@@ -15,16 +14,10 @@ export function createRecognitionPanel({ root = document, features, items, stora
   const known = new Set(allItems().map(item => item.id));
   const selected = new Set(Array.isArray(saved.selected) ? saved.selected.filter(id => known.has(id)) : items.filter(item => item.default).map(item => item.id));
   let threshold = Number.isFinite(saved.threshold) && saved.threshold >= 0 ? saved.threshold : DEFAULT_MASK_THRESHOLD_M;
-  let envelope = saved.envelope === true, data = null, layers = new Map(), envelopes = [];
-  const persist = () => { try { storage.setItem(storageKey, JSON.stringify({ selected: [...selected], extras: [...extras], threshold, envelope })); } catch {} };
+  let data = null, layers = new Map();
+  const persist = () => { try { storage.setItem(storageKey, JSON.stringify({ selected: [...selected], extras: [...extras], threshold })); } catch {} };
 
-  // Envelope materials supported by the shared rule and present in this release.
-  const ENVELOPE_COLORS = { concrete: '#FFFFFF', rock: '#FF9648' };
-  function compute() {
-    layers = data ? new Map(computeRecognitionLayers(data, allItems(), { threshold }).map(layer => [layer.id, layer])) : new Map();
-    const materials = data && envelope ? Object.keys(ENVELOPE_COLORS).filter(material => Object.hasOwn(data.values[0].q.totals, material)) : [];
-    envelopes = materials.length ? materialEnvelopes(data, materials, { threshold }).map(e => ({ ...e, color: ENVELOPE_COLORS[e.material] })) : [];
-  }
+  function compute() { layers = data ? new Map(computeRecognitionLayers(data, allItems(), { threshold }).map(layer => [layer.id, layer])) : new Map(); }
   function render() {
     // Fixed order (profile, then added features) so the list does not jump between results;
     // items without pixels in the current view are greyed, not hidden.
@@ -52,8 +45,6 @@ export function createRecognitionPanel({ root = document, features, items, stora
     const feature = features.get(extra.value); if (!feature) return;
     extras.add(feature.id); selected.add(`feature:${feature.id}`); persist(); fillExtra(); compute(); render(); onChange();
   });
-  envelopeInput.checked = envelope;
-  envelopeInput.addEventListener('change', () => { envelope = envelopeInput.checked; persist(); compute(); onChange(); });
   thresholdInput.value = String(threshold);
   thresholdInput.addEventListener('change', () => {
     const value = Number(thresholdInput.value);
@@ -72,6 +63,6 @@ export function createRecognitionPanel({ root = document, features, items, stora
       persist(); render(); onChange();
     },
     itemForFeature: featureId => recognitionItemForFeature(allItems(), featureId),
-    state: () => ({ items: allItems(), layers, selected: new Set(selected), threshold, envelopes })
+    state: () => ({ items: allItems(), layers, selected: new Set(selected), threshold })
   });
 }

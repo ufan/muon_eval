@@ -180,6 +180,7 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 | Station carries pose; no plan aggregate; single active station | Station, Pose, DeploymentPlan | FR-P1, ADR-020 |
 | Stations stored per release are invisible under another release (e.g. the retired legacy releases) | DeploymentPlan | FR-B2 |
 | One rock-like energy loss for all materials | Material | FR-K4 |
+| Generic modules name material IDs (`air`, `concrete`, `rock`, `steel`) instead of dataset-declared material roles | Material | FR-K11 |
 | Scene is not one value in code (release and environment passed separately) | Scene | FR-P1 (plan schema) |
 | No direct test that toggling every display layer leaves the projection result and snapshot key unchanged | Invariant 3 | FR-Q11 |
 

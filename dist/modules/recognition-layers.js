@@ -4,7 +4,6 @@
 // Fields are returned in display order (top row first); projections store the
 // bottom row first.
 import contours from '../vendor/d3-contour/contours.js';
-import { materialBoundaryProfile, materialEnvelopeEdges } from './material-envelopes.js';
 
 export const DEFAULT_MASK_THRESHOLD_M = 0.1;
 
@@ -84,16 +83,4 @@ export function crossingsAlongRay(pixel, items, { threshold = 0 } = {}) {
       : segment.entityIds.some(id => item.featureIds.includes(id))));
     return [{ id: item.id, entryM: entry ? entry.t0 : NaN, lengthM }];
   }).sort((a, b) => a.entryM - b.entryM);
-}
-
-// Material envelopes (sampled material silhouettes and air-interface depth edges) of a
-// main-app projection, in display pixel units like the outlines. Same rule as the
-// geometry preview; a material counts as present where its length exceeds the threshold.
-export function materialEnvelopes({ n, values }, materials, { threshold = DEFAULT_MASK_THRESHOLD_M, depthEdges = true } = {}) {
-  checkThreshold(threshold);
-  if (!Number.isInteger(n) || n < 1 || values?.length !== n * n) throw new Error('Invalid projection field');
-  const pixels = new Array(n * n);
-  for (let iy = 0; iy < n; iy++) for (let ix = 0; ix < n; ix++)
-    pixels[(n - 1 - iy) * n + ix] = { materialBoundaries: materialBoundaryProfile(values[iy * n + ix].q) };
-  return materials.map(material => ({ material, edges: materialEnvelopeEdges(pixels, n, material, { tolerance: threshold, depthEdges }) }));
 }
