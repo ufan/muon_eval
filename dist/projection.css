@@ -16,3 +16,4 @@
 #projectionOutlines path.horizon{stroke:#d7e3e8;stroke-opacity:.75;stroke-width:1.2;stroke-dasharray:4 3;filter:none}#projectionOutlines text.horizon-label{fill:#d7e3e8;fill-opacity:.85;font-weight:500}
 #projectionReadout .detector-space{color:#8ea5b2}
 #projectionOutlines path.precision{stroke:#ffffff;stroke-opacity:.85;stroke-width:1.3;filter:drop-shadow(0 0 1px #000)}#projectionOutlines path.precision[data-level="0.1"]{stroke-dasharray:5 3}#projectionOutlines text.precision-label{fill:#ffffff;font-weight:600;paint-order:stroke;stroke:#071018;stroke-width:.25}.precision-toggle{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin:6px 0 0;font-size:11px;color:#c8d9df}.precision-toggle small{flex-basis:100%;padding-left:20px;color:#728b97;font-size:10px}
+#projectionOutlines rect.picked-pixel{fill:none;stroke:#ffffff;stroke-width:2;vector-effect:non-scaling-stroke}

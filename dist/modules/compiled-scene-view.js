@@ -4,7 +4,7 @@ import { createCompiledGeometryView } from './compiled-geometry-view.js';
 import { detectorBasis } from './detector-pose.js';
 import { featureLayerGroups, featuresAlongRay } from './feature-layers.js';
 import { createCoverageUniforms, attachCoverage } from './coverage-shader.js';
-import { countsPerSteradian, coverageBrightness } from './coverage-map.js';
+import { countsPerSteradian, coverageBrightness, coverageReadout } from './coverage-map.js';
 
 // View-only model Z-up → scene Y-up transform. Never classify or trace a mesh here.
 export const compiledPointToScene = ([x,y,z]) => new THREE.Vector3(x,z,-y);
@@ -19,7 +19,7 @@ function clear(group) {
   group.clear();
 }
 
-export function createCompiledSceneView({ runtime, waterLayers, features=null, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{} }) {
+export function createCompiledSceneView({ runtime, waterLayers, features=null, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{}, onCoveragePick=()=>{} }) {
   const $=selector=>root.querySelector(selector),container=$('#webgl');
   const geometryView=createCompiledGeometryView(runtime),detectorGroup=new THREE.Group(),rayGroup=new THREE.Group(),projectionGroup=new THREE.Group();
   const scene=new THREE.Scene();scene.background=new THREE.Color(LOOK.background);scene.fog=new THREE.FogExp2(LOOK.background,LOOK.fogDensity);
@@ -38,8 +38,9 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   for(const component of runtime.components){const id=component.metadata.source_entity_id;if(component.metadata.flags.physics&&featureMeshes.has(id)){featureMeshes.get(id).push(geometryView.meshes.get(component.componentId));featureOfComponent.set(component.componentId,id);}}
   const featureVisible=new Map(featureIds.map(id=>[id,false]));let emphasised=new Set();
   // Coverage highlight (FR-M10, ADR-026): subject surfaces by default, terrain and water on request.
-  const coverage=createCoverageUniforms(),subjectCoverage={value:1},contextCoverage={value:0};
+  const coverage=createCoverageUniforms(),subjectCoverage={value:1},contextCoverage={value:0};let coverageResult=null;
   applyLook();
+  const subjectMeshes=runtime.components.filter(c=>materialLayer(c)==='dam').map(c=>geometryView.meshes.get(c.componentId)),edgeRay=new THREE.Raycaster();
   // Ground grid at the base of the structure, sized from its footprint (former legacy view: 520 m, 20 m cells).
   const footprint=box.getSize(new THREE.Vector3()),gridSize=Math.max(100,Math.ceil(2.25*Math.max(footprint.x,footprint.z)/20)*20);
   const ground=new THREE.GridHelper(gridSize,gridSize/20,LOOK.gridMajor,LOOK.gridMinor);ground.position.set(box.getCenter(new THREE.Vector3()).x,box.min.y+.05,box.getCenter(new THREE.Vector3()).z);scene.add(ground);
@@ -72,7 +73,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   function setDamOpacity(opacity){for(const component of runtime.components)if(materialLayer(component)==='dam'){const material=geometryView.meshes.get(component.componentId).material;material.transparent=opacity<1;material.opacity=opacity;material.depthWrite=opacity>.72;material.needsUpdate=true;}}
   function setCoverage({mode='off',core=false,context=false}={}){coverage.covMode.value={off:0,geometric:1,physical:2}[mode]??0;coverage.covCore.value=core?1:0;contextCoverage.value=context?1:0;}
   // Physical brightness from a result's own counts per steradian; null while a newer pose is computing (geometric view shown instead).
-  function setCoverageResult(data,device){coverage.covMap.value?.dispose();coverage.covMap.value=null;coverage.covHasMap.value=0;if(!data||!device)return;
+  function setCoverageResult(data,device){coverage.covMap.value?.dispose();coverage.covMap.value=null;coverage.covHasMap.value=0;coverageResult=data&&device?{n:data.n,values:data.values}:null;if(!data||!device)return;
     const perSr=countsPerSteradian(data.values,data.n,device),bytes=new Uint8Array(data.n*data.n*4);perSr.forEach((v,i)=>{bytes[4*i]=Math.round(255*coverageBrightness(v));bytes[4*i+3]=255;});
     const texture=new THREE.DataTexture(bytes,data.n,data.n,THREE.RGBAFormat);texture.magFilter=texture.minFilter=THREE.NearestFilter;texture.needsUpdate=true;coverage.covMap.value=texture;coverage.covBins.value=data.n;coverage.covHasMap.value=1;}
   function setCoveragePose(station,device){const basis=detectorBasis(station.az,station.el);coverage.covOrigin.value.copy(compiledPointToScene([station.x,station.y,station.z]));
@@ -82,13 +83,17 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     const origin=compiledPointToScene([station.x,station.y,station.z]),basis=detectorBasis(station.az,station.el),forward=compiledPointToScene(basis.forward).normalize(),right=compiledPointToScene(basis.right),up=compiledPointToScene(basis.up);
     const orientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),forward);
     for(let i=0;i<device.layers;i++){const mesh=new THREE.Mesh(new THREE.PlaneGeometry(device.width,device.height),new THREE.MeshBasicMaterial({color:0xff65bd,side:THREE.DoubleSide}));mesh.position.copy(origin).addScaledVector(forward,(i-(device.layers-1)/2)*device.spacing);mesh.quaternion.copy(orientation);detectorGroup.add(mesh);}
-    const length=radius*.45,far=origin.clone().addScaledVector(forward,length),corners=[];
-    for(const [x,y] of [[-1,-1],[1,-1],[1,1],[-1,1]])corners.push(far.clone().addScaledVector(right,x*(device.width/2+length*device.maxSlopeX)).addScaledVector(up,y*(device.height/2+length*device.maxSlopeY)));
-    const positions=[];for(let i=0;i<4;i++)for(const point of [origin,corners[i],corners[i],corners[(i+1)%4]])positions.push(point.x,point.y,point.z);
-    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));detectorGroup.add(new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:0xff65bd,transparent:true,opacity:.7})),new THREE.ArrowHelper(forward,origin,length,0xff65bd));
-    // The same lines continue behind the detector: their upper part is probed by muons arriving from behind (quick-response@4.0.0).
-    const back=[];for(let i=0;i<4;i++){const c=origin.clone().multiplyScalar(2).sub(corners[i]),n=origin.clone().multiplyScalar(2).sub(corners[(i+1)%4]);back.push(origin.x,origin.y,origin.z,c.x,c.y,c.z,c.x,c.y,c.z,n.x,n.y,n.z);}
-    const backGeometry=new THREE.BufferGeometry();backGeometry.setAttribute('position',new THREE.Float32BufferAttribute(back,3));detectorGroup.add(new THREE.LineSegments(backGeometry,new THREE.LineBasicMaterial({color:0xff65bd,transparent:true,opacity:.25})));
+    // Pyramid edges along the four corner lines of the acceptance, in front and (fainter) behind. Each ends where it last
+    // leaves the subject within reach, so it spans the probed stretch even from a station inside the subject, or at a fixed
+    // length when it misses the subject; solid where visible, dashed where hidden.
+    const length=radius*.45,reach=radius*2.2,subject=subjectMeshes.filter(mesh=>mesh.visible);
+    const corners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>forward.clone().addScaledVector(right,x*device.maxSlopeX).addScaledVector(up,y*device.maxSlopeY).normalize());
+    const end=direction=>{edgeRay.set(origin,direction);edgeRay.far=reach;const hits=edgeRay.intersectObjects(subject,false);return origin.clone().addScaledVector(direction,hits.length?hits.at(-1).distance:length);};
+    const edges=(directions,opacity)=>{const points=[];for(const direction of directions){const e=end(direction);points.push(origin.x,origin.y,origin.z,e.x,e.y,e.z);}
+      const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(points,3));
+      const hidden=new THREE.LineSegments(geometry.clone(),new THREE.LineDashedMaterial({color:0xff65bd,transparent:true,opacity:opacity*.6,dashSize:radius*.02,gapSize:radius*.015,depthTest:false}));hidden.computeLineDistances();hidden.renderOrder=5;
+      detectorGroup.add(new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:0xff65bd,transparent:true,opacity})),hidden);};
+    edges(corners,.75);edges(corners.map(direction=>direction.clone().negate()),.3);detectorGroup.add(new THREE.ArrowHelper(forward,origin,length,0xff65bd));
   }
   function showFeature(id){const visible=featureVisible.get(id)||emphasised.has(id);for(const mesh of featureMeshes.get(id)){mesh.visible=visible;mesh.material.emissive.set(emphasised.has(id)?mesh.material.color:0x000000);mesh.material.emissiveIntensity=emphasised.has(id)?1.4:1;}}
   function setFeatureVisible(id,visible){if(!featureMeshes.has(id))return;featureVisible.set(id,visible);showFeature(id);}
@@ -98,17 +103,24 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),tip=document.createElement('div');tip.className='feature-tip';tip.hidden=true;container.after(tip);let hovered=null,pressed=null,pending=false;
   function featureAt(event){const bounds=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-bounds.left)/bounds.width*2-1,-(event.clientY-bounds.top)/bounds.height*2+1);raycaster.setFromCamera(pointer,camera);
     const visible=[...featureMeshes.values()].flat().filter(mesh=>mesh.visible);return featureOfComponent.get(raycaster.intersectObjects(visible,false)[0]?.object.name)??null;}
+  // Coverage at the subject surface under the pointer (FR-M10): what the station sees there (model frame z up; scene y up).
+  function coverageAt(){if(!coverage.covMode.value||!currentStation||!currentDevice)return null;const hit=raycaster.intersectObjects(subjectMeshes.filter(mesh=>mesh.visible),false)[0];
+    return hit?coverageReadout([hit.point.x,-hit.point.z,hit.point.y],currentStation,currentDevice,coverageResult):null;}
+  function coverageText(r){if(r.status==='outside')return'视场外';if(r.status==='no-flux')return`前方地平线以下 · 无缪子通量 · sx ${r.sx.toFixed(2)} · sy ${r.sy.toFixed(2)}`;
+    return`${currentStation.name??'当前站点'}覆盖 · ${r.side==='back'?'后方来向':'前方来向'} · sx ${r.sx.toFixed(2)} · sy ${r.sy.toFixed(2)}${r.countsPerSr===null?'':` · ${r.countsPerSr.toExponential(1)} 计数/sr`}${r.ix===null?'':' · 点击查看投影像素'}`;}
   function hoverFeature(event){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;const id=featureAt(event);if(id!==hovered){hovered=id;onFeatureHover(id);}
-    if(!id){tip.hidden=true;return;}const feature=features.get(id),bounds=container.getBoundingClientRect();tip.textContent=`${feature.label.zh} · ${features.classes[feature.class].label.zh} · ${features.imagingRoles[feature.imagingRole]}`;tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;tip.hidden=false;});}
+    const bounds=container.getBoundingClientRect();tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;
+    if(id){const feature=features.get(id);tip.textContent=`${feature.label.zh} · ${features.classes[feature.class].label.zh} · ${features.imagingRoles[feature.imagingRole]}`;tip.hidden=false;return;}
+    const readout=coverageAt();if(!readout){tip.hidden=true;return;}tip.textContent=coverageText(readout);tip.hidden=false;});}
   function leaveFeature(){tip.hidden=true;if(hovered){hovered=null;onFeatureHover(null);}}
   function pressFeature(event){pressed=[event.clientX,event.clientY];}
-  function releaseFeature(event){if(!pressed||Math.hypot(event.clientX-pressed[0],event.clientY-pressed[1])>4){pressed=null;return;}pressed=null;const id=featureAt(event);if(id)onFeaturePick(id);}
+  function releaseFeature(event){if(!pressed||Math.hypot(event.clientX-pressed[0],event.clientY-pressed[1])>4){pressed=null;return;}pressed=null;const id=featureAt(event);if(id){onFeaturePick(id);return;}const readout=coverageAt();if(readout?.ix!==null&&readout?.ix!==undefined)onCoveragePick(readout.ix,readout.iy);}
   function displayTrace(group,trace,station,direction){clear(group);const origin=compiledPointToScene([station.x,station.y,station.z]),dir=compiledPointToScene([direction.x,direction.y,direction.z]);
     for(const segment of trace.segments){if(segment.material==='air')continue;const a=origin.clone().addScaledVector(dir,segment.t0),b=origin.clone().addScaledVector(dir,segment.t1);group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),new THREE.LineBasicMaterial({color:materialColors[segment.material]??0xffffff,depthTest:false})));}
     const arrow=new THREE.ArrowHelper(dir,origin,radius*.2,0x65fff0);arrow.line.material.depthTest=arrow.cone.material.depthTest=false;group.add(arrow);
   }
   return Object.freeze({
-    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();});observer.observe(container);resize();renderer.setAnimationLoop(()=>{controls.update();updateScale();renderer.render(scene,camera);});if(featureIds.length){renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);}$('#loading').style.display='none';},
+    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();});observer.observe(container);resize();renderer.setAnimationLoop(()=>{controls.update();updateScale();renderer.render(scene,camera);});{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);}$('#loading').style.display='none';},
     resize,setView,setLayer,setDamOpacity,drawDetector,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,
     showRay:(trace,station,direction)=>displayTrace(rayGroup,trace,station,direction),
     showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},

@@ -13,7 +13,7 @@ async function main(){
  const registry=await response.json(),selection=resolveApplicationSelection(registry,location.search);
  const dataset=await loadDataset(selection.datasetId),backend=await createApplicationBackend(dataset,selection);
  const state=createDeploymentState({stations:backend.stations,environment:backend.environment});let page;
- const sceneView=createCompiledSceneView({dataset,runtime:backend.runtime,waterLayers:backend.waterLayers,features:dataset.features,onResize:()=>page?.constrainProjectionPanel(),onFeatureHover:id=>page?.hoverFeature(id),onFeaturePick:id=>page?.pickFeature(id)});
+ const sceneView=createCompiledSceneView({dataset,runtime:backend.runtime,waterLayers:backend.waterLayers,features:dataset.features,onResize:()=>page?.constrainProjectionPanel(),onFeatureHover:id=>page?.hoverFeature(id),onFeaturePick:id=>page?.pickFeature(id),onCoveragePick:(ix,iy)=>page?.pickCoverage(ix,iy)});
  const projectionView=createProjectionCanvasView({onHover:(data,x,y,options)=>sceneView.showProjectionPixel(data,x,y,options),onLeave:()=>sceneView.clearProjection()});
  createApplicationSelectionView({registry,selection:backend.selection,scenarios:backend.scenarios,backendLabel:selection.backend,description:backend.environmentDescription,title:dataset.identity.title,frame:dataset.geometry?.source.frames.model_frame});
  page=createMainPage({workbenchHref:selectionHref(APP_PAGES.workbench,backend.selection),datasetId:dataset.id,datasetVersion:dataset.identity.dataset_version,features:dataset.features,recognitionItems:dataset.recognitionItems,state,sceneView,projectionView,capabilities:backend.capabilities,

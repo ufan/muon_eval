@@ -5,6 +5,7 @@
 // sky end (quick-response@4.0.0), so points above the detector are probed in front of
 // and behind it, and points in front below the detector's horizon receive no flux.
 import { nativeAxisBins, pixelSolidAngle } from './detector-projection.js';
+import { detectorBasis } from './detector-pose.js';
 
 // Fixed log10 range of counts per steradian for the physical brightness, so stations
 // and plans compare on one scale: 10^3 to 10^7.5 spans the 0.5–99.5 % range measured
@@ -47,4 +48,17 @@ export function coverageBrightness(countsPerSr) {
   const [low, high] = COVERAGE_LOG_RANGE;
   if (!(countsPerSr > 0)) return 0;
   return Math.min(1, Math.max(0, (Math.log10(countsPerSr) - low) / (high - low)));
+}
+
+// What one station sees at a surface point (model frame): status, line slopes and side,
+// and, with a result, the projection pixel holding that line and its counts per steradian.
+export function coverageReadout(point, station, device, result) {
+  const origin = [station.x, station.y, station.z], basis = detectorBasis(station.az, station.el);
+  const status = classifyCoverage(point, origin, basis, device), slopes = lineSlopes(point, origin, basis);
+  const readout = { status, sx: slopes?.sx ?? null, sy: slopes?.sy ?? null, side: slopes?.side ?? null, ix: null, iy: null, countsPerSr: null };
+  if (status === 'outside' || !result) return readout;
+  const ix = slopeBin(slopes.sx, result.n, device), iy = slopeBin(slopes.sy, result.n, device);
+  if (ix === null || iy === null) return readout;
+  const bins = nativeAxisBins(result.n, device);
+  return { ...readout, ix, iy, countsPerSr: result.values[iy * result.n + ix].count / pixelSolidAngle(bins[ix], bins[iy], device) };
 }

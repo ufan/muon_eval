@@ -64,3 +64,20 @@ test('brightness is a fixed logarithmic scale of counts per steradian', () => {
   assert.equal(coverageBrightness(10 ** ((low + high) / 2)), .5);
   assert.equal(coverageBrightness(10 ** (high + 3)), 1);
 });
+
+test('the readout of a surface point names its pixel exactly and its counts per steradian', async () => {
+  const { coverageReadout } = await import('../../dist/modules/coverage-map.js');
+  const response = { layerEfficiency: .9, deadLiveFraction: .95, angularResolutionDeg: .01, systematicFraction: .03, exposureDays: 2, angularModel: 'gaisser' };
+  const n = 5, values = createProjectionPass({ n, device, response, flux: () => 7e-3, sampleRay: () => ({ dir: { z: 1 }, q: { mwe: 0 } }) }).advance(n).result.values;
+  const station = { x: origin[0], y: origin[1], z: origin[2], az: 30, el: 25 }, bins = nativeAxisBins(n, device);
+  // Aim at the centre of pixel (ix 3, iy 1) from in front, above the detector.
+  const point = at(slopeDirection(basis, bins[3].slope, bins[1].slope), 40);
+  const readout = coverageReadout(point, station, device, { n, values });
+  assert.equal(readout.status, 'probed'); assert.equal(readout.side, 'front');
+  assert.deepEqual([readout.ix, readout.iy], [3, 1]);
+  assert.ok(Math.abs(readout.countsPerSr / countsPerSteradian(values, n, device)[1 * n + 3] - 1) < 1e-12);
+  // Without a result: geometry only.
+  const geometric = coverageReadout(point, station, device, null);
+  assert.equal(geometric.countsPerSr, null); assert.deepEqual([geometric.ix, geometric.iy], [null, null]);
+  assert.equal(coverageReadout(at(basis.right, 3), station, device, { n, values }).status, 'outside');
+});
