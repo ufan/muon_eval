@@ -87,3 +87,53 @@ export function coverageStationSet(mode, { pool, compared = [], deployment = [],
   const chosen = new Set(source);
   return pool.filter(id => chosen.has(id) && id !== exclude).slice(0, MAX_EXTRA_COVERAGE);
 }
+
+// Multi-view coverage (15d, FR-M15, ADR-026). A station gives a usable view of a point when the
+// projection pixel holding its line through the point has N ≥ (1/errorLevel)² counts, the
+// counting-error level of the precision lines. A planning heuristic, not a reconstruction guarantee.
+export function usableCounts(errorLevel) {
+  if (!(errorLevel > 0 && errorLevel < 1)) throw new Error('Counting error level must be in (0, 1)');
+  return Math.round((1 / errorLevel) ** 2);
+}
+
+// What one station ({ id, x, y, z, az, el, device, n, counts }) records at a point: null when the point
+// is not probed; otherwise the pixel's counts (null while the station's result is pending), counts per
+// steradian and the unit direction from the station to the point. `counts` is the result's per-pixel
+// counts, bottom row first (as in the projection's own values).
+export function stationViewAt(point, station) {
+  const origin = [station.x, station.y, station.z], basis = detectorBasis(station.az, station.el);
+  if (classifyCoverage(point, origin, basis, station.device) !== 'probed') return null;
+  const d = point.map((v, i) => v - origin[i]), length = Math.hypot(...d), direction = d.map(v => v / length);
+  if (!station.counts) return { id: station.id, counts: null, countsPerSr: null, direction };
+  const { sx, sy } = lineSlopes(point, origin, basis), ix = slopeBin(sx, station.n, station.device), iy = slopeBin(sy, station.n, station.device);
+  if (ix === null || iy === null) return { id: station.id, counts: null, countsPerSr: null, direction };
+  const bins = nativeAxisBins(station.n, station.device), counts = station.counts[iy * station.n + ix];
+  return { id: station.id, counts, countsPerSr: counts / pixelSolidAngle(bins[ix], bins[iy], station.device), direction };
+}
+
+// seen / usable / pending station ids, the largest angle between usable views, the weakest usable
+// view's counting error, the dominant station (most counts per steradian), the summed counts per
+// steradian, and the class: 'none' (not seen), 'insufficient' (< 2 usable views or spread < minSpreadDeg),
+// 'good' (≥ minViews usable views and spread ≥ goodSpreadDeg) or 'limited'.
+export function multiViewCoverage(point, stations, { errorLevel = .1, minViews = 3, goodSpreadDeg = 30, minSpreadDeg = 10 } = {}) {
+  const views = stations.map(s => stationViewAt(point, s)).filter(Boolean), threshold = usableCounts(errorLevel);
+  const measured = views.filter(v => v.counts !== null), usable = measured.filter(v => v.counts >= threshold);
+  let spread = 0;
+  for (let i = 0; i < usable.length; i++) for (let j = i + 1; j < usable.length; j++) {
+    spread = Math.max(spread, Math.acos(Math.max(-1, Math.min(1, dot(usable[i].direction, usable[j].direction)))) * 180 / Math.PI);
+  }
+  const dominant = measured.reduce((best, v) => !best || v.countsPerSr > best.countsPerSr ? v : best, null);
+  const cls = !views.length ? 'none' : usable.length < 2 || spread < minSpreadDeg ? 'insufficient'
+    : usable.length >= minViews && spread >= goodSpreadDeg ? 'good' : 'limited';
+  return { seen: views.map(v => v.id), usable: usable.map(v => v.id), pending: views.filter(v => v.counts === null).map(v => v.id),
+    spreadDeg: spread, weakestError: usable.length ? Math.max(...usable.map(v => 1 / Math.sqrt(v.counts))) : null,
+    dominant: dominant ? { id: dominant.id, countsPerSr: dominant.countsPerSr } : null,
+    totalCountsPerSr: measured.reduce((t, v) => t + v.countsPerSr, 0), class: cls };
+}
+
+// Counts per steradian of every pixel from a counts array (bottom row first), for the physical maps.
+export function perSteradianMap(counts, n, device) {
+  const bins = nativeAxisBins(n, device), out = new Float32Array(n * n);
+  for (let iy = 0; iy < n; iy++) for (let ix = 0; ix < n; ix++) out[iy * n + ix] = counts[iy * n + ix] / pixelSolidAngle(bins[ix], bins[iy], device);
+  return out;
+}

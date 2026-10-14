@@ -6,8 +6,8 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { createCompiledGeometryView } from './compiled-geometry-view.js';
 import { detectorBasis } from './detector-pose.js';
 import { featureLayerGroups, featuresAlongRay } from './feature-layers.js';
-import { createCoverageUniforms, attachCoverage } from './coverage-shader.js';
-import { countsPerSteradian, coverageBrightness, coverageReadout, coveringStations } from './coverage-map.js';
+import { createCoverageUniforms, attachCoverage, setCoverageVariant, COVERAGE_SLOT_BINS, MULTI_MAPS } from './coverage-shader.js';
+import { countsPerSteradian, coverageBrightness, coverageReadout, coveringStations, multiViewCoverage, perSteradianMap, usableCounts, COVERAGE_LOG_RANGE } from './coverage-map.js';
 
 // View-only model Z-up → scene Y-up transform. Never classify or trace a mesh here.
 export const compiledPointToScene = ([x,y,z]) => new THREE.Vector3(x,z,-y);
@@ -41,7 +41,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   for(const component of runtime.components){const id=component.metadata.source_entity_id;if(component.metadata.flags.physics&&featureMeshes.has(id)){featureMeshes.get(id).push(geometryView.meshes.get(component.componentId));featureOfComponent.set(component.componentId,id);}}
   const featureVisible=new Map(featureIds.map(id=>[id,false]));let emphasised=new Set(),featuresSeen=null;
   // Coverage highlight (FR-M10, ADR-026): subject surfaces by default, terrain and water on request.
-  const coverage=createCoverageUniforms(),subjectCoverage={value:1},contextCoverage={value:0};let coverageResult=null;
+  const coverage=createCoverageUniforms(),subjectCoverage={value:1},contextCoverage={value:0},coverageMaterials=[];let coverageResult=null;
   applyLook();
   const subjectMeshes=runtime.components.filter(c=>materialLayer(c)==='dam').map(c=>geometryView.meshes.get(c.componentId)),edgeRay=new THREE.Raycaster();
   // Ground grid at the base of the structure, sized from its footprint (former legacy view: 520 m, 20 m cells).
@@ -57,7 +57,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     else if(component.metadata.material_id==='steel')material=lookMaterial(LOOK.steel,{flatShading:true,side:THREE.DoubleSide});
     else if(layer==='terrain')material=lookMaterial(LOOK.rock,{transparent:true,opacity:.38,side:THREE.DoubleSide,depthWrite:false,flatShading:true});
     else if(layer==='upwater'||layer==='downwater')material=lookMaterial(LOOK[layer],{transparent:true,opacity:.42,roughness:.18,metalness:.08,side:THREE.DoubleSide,depthWrite:false});
-    if(!material)continue;attachCoverage(material,coverage,layer==='dam'?subjectCoverage:contextCoverage);mesh.material.dispose();mesh.material=material;
+    if(!material)continue;attachCoverage(material,coverage,layer==='dam'?subjectCoverage:contextCoverage);coverageMaterials.push(material);mesh.material.dispose();mesh.material=material;
     if(layer==='dam')mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry,25),new THREE.LineBasicMaterial({color:LOOK.edge,transparent:true,opacity:.5})));}}
   function resize(){if(!renderer)return;const bounds=container.getBoundingClientRect();if(!bounds.width||!bounds.height)return;camera.aspect=bounds.width/bounds.height;camera.updateProjectionMatrix();renderer.setSize(bounds.width,bounds.height,false);for(const material of lineMaterials)material.resolution.set(bounds.width,bounds.height);}
   function setView(mode){if(!controls)return;const axes={perspective:[.74,-.61,.27],front:[-1,0,.1],cross:[0,-1,.1],top:[0,0,1]};if(!axes[mode])throw new Error('Unknown scene view');
@@ -74,14 +74,17 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   function setLayer(name,visible){layerState.set(name,visible);if(name==='cone'){detectorGroup.visible=rayGroup.visible=projectionGroup.visible=visible;fovGroup.visible=visible&&fovEdges;solidGroup.visible=visible&&fovSolid;return;}
     for(const component of runtime.components)if(materialLayer(component)===name){const mesh=geometryView.meshes.get(component.componentId);mesh.visible=visible&&component.metadata.flags.display&&component.metadata.realization!=='virtual';}}
   function setDamOpacity(opacity){for(const component of runtime.components)if(materialLayer(component)==='dam'){const material=geometryView.meshes.get(component.componentId).material;material.transparent=opacity<1;material.opacity=opacity;material.depthWrite=opacity>.72;material.needsUpdate=true;}}
-  function setCoverage({mode='off',core=false,context=false}={}){coverage.covMode.value={off:0,geometric:1,physical:2}[mode]??0;coverage.covCore.value=core?1:0;contextCoverage.value=context?1:0;for(const id of featureIds)showFeature(id);}
+  let multiOptions={map:'views',errorLevel:.1,minViews:3,goodSpreadDeg:30,minSpreadDeg:10};
+  function setCoverage({mode='off',core=false,context=false,multi=multiOptions}={}){multiOptions={...multiOptions,...multi};coverage.covMulti.value=MULTI_MAPS[multiOptions.map]??MULTI_MAPS.views;coverage.covMinCounts.value=usableCounts(multiOptions.errorLevel);coverage.covClassViews.value=multiOptions.minViews;coverage.covGoodSpread.value=multiOptions.goodSpreadDeg;coverage.covMinSpread.value=multiOptions.minSpreadDeg;coverage.covLogRange.value.set(...COVERAGE_LOG_RANGE);coverage.covMode.value={off:0,geometric:1,physical:2}[mode]??0;updateVariant();coverage.covCore.value=core?1:0;contextCoverage.value=context?1:0;for(const id of featureIds)showFeature(id);}
   // Physical brightness from a result's own counts per steradian; null while a newer pose is computing (geometric view shown instead).
-  function setCoverageResult(data,device){coverage.covMap.value?.dispose();coverage.covMap.value=null;coverage.covHasMap.value=0;coverageResult=data&&device?{n:data.n,values:data.values}:null;if(!data||!device)return;
+  function setCoverageResult(data,device){coverage.covMap.value?.dispose();coverage.covMap.value=null;coverage.covHasMap.value=0;coverageResult=data&&device?{n:data.n,values:data.values}:null;workingCounts=data&&device?{n:data.n,counts:Float32Array.from(data.values,v=>v.count),device:{...device}}:null;buildAtlas();if(!data||!device)return;
     const perSr=countsPerSteradian(data.values,data.n,device),bytes=new Uint8Array(data.n*data.n*4);perSr.forEach((v,i)=>{bytes[4*i]=Math.round(255*coverageBrightness(v));bytes[4*i+3]=255;});
     const texture=new THREE.DataTexture(bytes,data.n,data.n,THREE.RGBAFormat);texture.magFilter=texture.minFilter=THREE.NearestFilter;texture.needsUpdate=true;coverage.covMap.value=texture;coverage.covBins.value=data.n;coverage.covHasMap.value=1;}
   function setCoveragePose(station,device){const basis=detectorBasis(station.az,station.el);coverage.covOrigin.value.copy(compiledPointToScene([station.x,station.y,station.z]));
     coverage.covForward.value.copy(compiledPointToScene(basis.forward));coverage.covRight.value.copy(compiledPointToScene(basis.right));coverage.covUp.value.copy(compiledPointToScene(basis.up));
-    coverage.covMax.value.set(device.maxSlopeX,device.maxSlopeY);coverage.covStep.value=device.nativeSlopeStep;coverage.covStrips.value=device.stripsX;}
+    coverage.covMax.value.set(device.maxSlopeX,device.maxSlopeY);coverage.covStep.value=device.nativeSlopeStep;coverage.covStrips.value=device.stripsX;setSlot(0,{origin:coverage.covOrigin.value,forward:coverage.covForward.value,right:coverage.covRight.value,up:coverage.covUp.value,device,color:coverage.covColor.value});}
+  function setSlot(i,{origin,forward,right,up,device,color}){coverage.covSlotOrigin.value[i].copy(origin);coverage.covSlotForward.value[i].copy(forward);coverage.covSlotRight.value[i].copy(right);coverage.covSlotUp.value[i].copy(up);
+    coverage.covSlotMax.value[i].set(device.maxSlopeX,device.maxSlopeY);coverage.covSlotStep.value[i]=device.nativeSlopeStep;coverage.covSlotStrips.value[i]=device.stripsX;coverage.covSlotColor.value[i].copy(color);}
   // Field-of-view edges (option 视场棱线): the four corner lines of a station's acceptance as lines of constant screen
   // width (WebGL ignores line widths), solid where visible and dashed where hidden. Each ends where it last leaves the
   // subject within reach, so it spans the probed stretch even from a station inside the subject, or at a fixed length when
@@ -119,13 +122,22 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     if(!currentStation||!currentDevice)return;addFovEdges(currentStation,currentDevice,LOOK.fovEdge);for(const s of extraStations)addFovEdges(s,s.device,s.color,{width:2,back:false});}
   function setFovEdges(on){fovEdges=Boolean(on);fovGroup.visible=fovEdges&&(layerState.get('cone')??true);}
   function setFovSolid(on){fovSolid=Boolean(on);drawFovEdges();}
+  // Physical maps of all shown stations (15d) in one float texture: slot 0 the working station, slots 1–8 the others;
+  // R = counts, G = counts per steradian, bottom row first. A slot without a result yet has 0 bins (pending).
+  let workingCounts=null;
+  function buildAtlas(){const slots=coverage.covSlotBins.value.length,width=slots*COVERAGE_SLOT_BINS,data=new Float32Array(width*COVERAGE_SLOT_BINS*2);
+    const put=(slot,source)=>{coverage.covSlotBins.value[slot]=source?.counts?source.n:0;if(!source?.counts)return;const perSr=perSteradianMap(source.counts,source.n,source.device);
+      for(let iy=0;iy<source.n;iy++)for(let ix=0;ix<source.n;ix++){const at=2*(iy*width+slot*COVERAGE_SLOT_BINS+ix);data[at]=source.counts[iy*source.n+ix];data[at+1]=perSr[iy*source.n+ix];}};
+    put(0,workingCounts);for(let i=0;i<slots-1;i++)put(i+1,extraStations[i]??null);
+    coverage.covAtlas.value?.dispose();const texture=new THREE.DataTexture(data,width,COVERAGE_SLOT_BINS,THREE.RGFormat,THREE.FloatType);texture.magFilter=texture.minFilter=THREE.NearestFilter;texture.needsUpdate=true;coverage.covAtlas.value=texture;}
   // Other stations shown with the working one (14d sketching): their fields of view in the shader, a marker each.
   let extraStations=[];
   function setCoverageStations(list=[]){extraStations=list.slice(0,coverage.covExtraOrigin.value.length).map(s=>({...s}));clear(extraGroup);coverage.covExtraCount.value=extraStations.length;
     extraStations.forEach((s,i)=>{const basis=detectorBasis(s.az,s.el),origin=compiledPointToScene([s.x,s.y,s.z]);coverage.covExtraOrigin.value[i].copy(origin);
       coverage.covExtraForward.value[i].copy(compiledPointToScene(basis.forward));coverage.covExtraRight.value[i].copy(compiledPointToScene(basis.right));coverage.covExtraUp.value[i].copy(compiledPointToScene(basis.up));
-      coverage.covExtraMax.value[i].set(s.device.maxSlopeX,s.device.maxSlopeY);coverage.covExtraColor.value[i].set(s.color);
-      const marker=new THREE.Mesh(new THREE.OctahedronGeometry(radius*.025),new THREE.MeshBasicMaterial({color:s.color,depthTest:false,transparent:true,opacity:.9}));marker.position.copy(origin);marker.renderOrder=5;extraGroup.add(marker);});drawFovEdges();}
+      coverage.covExtraMax.value[i].set(s.device.maxSlopeX,s.device.maxSlopeY);coverage.covExtraColor.value[i].set(s.color);setSlot(i+1,{origin:coverage.covExtraOrigin.value[i],forward:coverage.covExtraForward.value[i],right:coverage.covExtraRight.value[i],up:coverage.covExtraUp.value[i],device:s.device,color:coverage.covExtraColor.value[i]});
+      const marker=new THREE.Mesh(new THREE.OctahedronGeometry(radius*.025),new THREE.MeshBasicMaterial({color:s.color,depthTest:false,transparent:true,opacity:.9}));marker.position.copy(origin);marker.renderOrder=5;extraGroup.add(marker);});buildAtlas();updateVariant();drawFovEdges();}
+  function updateVariant(){setCoverageVariant(coverageMaterials,coverage.covMode.value===2&&coverage.covExtraCount.value>0);}
   function drawDetector(station,device){currentStation={...station};currentDevice={...device};setCoveragePose(station,device);clear(detectorGroup);clear(rayGroup);clear(projectionGroup);
     const origin=compiledPointToScene([station.x,station.y,station.z]),basis=detectorBasis(station.az,station.el),forward=compiledPointToScene(basis.forward).normalize(),right=compiledPointToScene(basis.right),up=compiledPointToScene(basis.up);
     const orientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),forward);
@@ -147,9 +159,14 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   // Coverage at the subject surface under the pointer (FR-M10): what the station sees there (model frame z up; scene y up).
   function coverageAt(){if(!coverage.covMode.value||!currentStation||!currentDevice)return null;const hit=raycaster.intersectObjects(subjectMeshes.filter(mesh=>mesh.visible),false)[0];
     if(!hit)return null;const point=[hit.point.x,-hit.point.z,hit.point.y],readout=coverageReadout(point,currentStation,currentDevice,coverageResult);
+    if(extraStations.length&&coverage.covMode.value===2){readout.multi=multiViewCoverage(point,[{...currentStation,id:'working',device:currentDevice,n:workingCounts?.n,counts:workingCounts?.counts??null},...extraStations],multiOptions);
+      readout.names=new Map([['working',`${currentStation.name??'当前点位'}（编辑中）`],...extraStations.map(s=>[s.id,s.name])]);return readout;}
     if(extraStations.length)readout.covering=coveringStations(point,[{...currentStation,id:'working',name:currentStation.name??'当前点位',device:currentDevice},...extraStations]).map(id=>id==='working'?`${currentStation.name??'当前点位'}（编辑中）`:extraStations.find(s=>s.id===id).name);
     return readout;}
-  function coverageText(r){if(r.covering)return r.covering.length?`${r.covering.length} 个点位覆盖：${r.covering.join('、')}${r.ix===null?'':' · 点击查看当前点位投影像素'}`:'无点位覆盖';if(r.status==='outside')return'视场外';if(r.status==='no-flux')return`前方地平线以下 · 无缪子通量 · sx ${r.sx.toFixed(2)} · sy ${r.sy.toFixed(2)}`;
+  const CLASS_TEXT={none:'无点位覆盖',insufficient:'不足',limited:'有限',good:'良好'};
+  function coverageText(r){if(r.multi){const m=r.multi,names=ids=>ids.map(id=>r.names.get(id)).join('、');if(m.class==='none')return'无点位覆盖';
+      return`可用视角 ${m.usable.length}/${m.seen.length}${m.usable.length?`（${names(m.usable)}）`:''} · 张角 ${m.spreadDeg.toFixed(0)}° · ${m.weakestError===null?'无可用视角':`最弱视角误差 ${(100*m.weakestError).toFixed(1)}%`} · 等级 ${CLASS_TEXT[m.class]}${m.pending.length?` · ${m.pending.length} 个点位结果计算中`:''}${m.dominant?` · 主导 ${r.names.get(m.dominant.id)}`:''}`;}
+    if(r.covering)return r.covering.length?`${r.covering.length} 个点位覆盖：${r.covering.join('、')}${r.ix===null?'':' · 点击查看当前点位投影像素'}`:'无点位覆盖';if(r.status==='outside')return'视场外';if(r.status==='no-flux')return`前方地平线以下 · 无缪子通量 · sx ${r.sx.toFixed(2)} · sy ${r.sy.toFixed(2)}`;
     return`${currentStation.name??'当前站点'}覆盖 · ${r.side==='back'?'后方来向':'前方来向'} · sx ${r.sx.toFixed(2)} · sy ${r.sy.toFixed(2)}${r.countsPerSr===null?'':` · ${r.countsPerSr.toExponential(1)} 计数/sr`}${r.ix===null?'':' · 点击查看投影像素'}`;}
   // Placing the working station (14d): one click on a visible surface; Esc cancels.
   let placing=false;

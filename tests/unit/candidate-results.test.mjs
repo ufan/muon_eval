@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assessmentKey, createResultCache, createCandidateQueue, compareEntries } from '../../dist/modules/candidate-results.js';
+import { assessmentKey, createResultCache, createCandidateQueue, compareEntries, entryCountsBottomFirst } from '../../dist/modules/candidate-results.js';
 
 // Per-candidate session result cache (FR-P10, ADR-020).
 const input = (el = 25, extra = {}) => ({ station: { id: 'a', name: 'A', x: 1, y: 2, z: 3, az: 0, el }, device: { model: 'm', width: .4, stripsX: 256 },
@@ -92,4 +92,10 @@ test('cached candidates compare through the shared indicators and parameter diff
   assert.deepEqual(comparison.differences.map(d => d.fields), [[], ['detector']]);
   assert.equal(comparison.comparable, false);
   assert.throws(() => compareEntries([]), /at least one/);
+});
+
+test('cached counts are handed to views bottom row first, as in the projection values', () => {
+  const n = 3, entry = { n, pixels: { count: Float32Array.from([7, 8, 9, 4, 5, 6, 1, 2, 3]) } };
+  assert.deepEqual([...entryCountsBottomFirst(entry)], [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.equal(entryCountsBottomFirst(undefined), null);
 });

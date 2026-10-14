@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { detectorBasis, slopeDirection, skySideDirection } from '../../dist/modules/detector-pose.js';
-import { createProjectionPass, nativeAxisBins } from '../../dist/modules/detector-projection.js';
-import { lineSlopes, classifyCoverage, slopeBin, countsPerSteradian, coverageBrightness, COVERAGE_LOG_RANGE, placementPoint, coveringStations, coverageStationSet, MAX_EXTRA_COVERAGE } from '../../dist/modules/coverage-map.js';
+import { createProjectionPass, nativeAxisBins, pixelSolidAngle } from '../../dist/modules/detector-projection.js';
+const pixelSolidAngleOf = (bx, by) => pixelSolidAngle(bx, by, { layers: 3, width: 1, height: 1, stripsX: 64, stripsY: 64, nativeSlopeStep: .02 / .3, maxSlopeX: 63 * .02 / .3, maxSlopeY: 63 * .02 / .3 });
+import { lineSlopes, classifyCoverage, slopeBin, countsPerSteradian, coverageBrightness, COVERAGE_LOG_RANGE, placementPoint, coveringStations, coverageStationSet, MAX_EXTRA_COVERAGE, usableCounts, stationViewAt, multiViewCoverage, perSteradianMap } from '../../dist/modules/coverage-map.js';
 
 // Coverage highlight (FR-M10, ADR-026): what a station probes, evaluated per surface point.
 const N = 16, step = .002 / .3;
@@ -112,4 +113,54 @@ test('the extra coverage set follows the chosen source, skips the working statio
   const many = Array.from({ length: 12 }, (_, i) => `s${i}`);
   assert.equal(coverageStationSet('all', { pool: many, compared: [], deployment: [], exclude: null }).length, MAX_EXTRA_COVERAGE);
   assert.throws(() => coverageStationSet('some', context), /Unknown/);
+});
+
+// Multi-view coverage (15d, FR-M15): usable views (enough counts on the station's line through the
+// point), their angular spread and a summary class. Wide synthetic device, three stations looking up.
+const wide = { layers: 3, width: 1, height: 1, stripsX: 64, stripsY: 64, nativeSlopeStep: .02 / .3, maxSlopeX: 63 * .02 / .3, maxSlopeY: 63 * .02 / .3 };
+const up = (id, x, y, counts, n = 9) => ({ id, x, y, z: 0, az: 0, el: 90, device: wide, n, counts: counts === null ? null : new Float32Array(n * n).fill(counts) });
+const P = [20, 20, 60];
+
+test('usable views need N ≥ (1/error)² counts', () => {
+  assert.equal(usableCounts(.1), 100); assert.equal(usableCounts(.05), 400);
+  assert.throws(() => usableCounts(0), /error/);
+});
+
+test('a station reads the counts of the pixel holding its line through the point (bottom row first)', () => {
+  const n = 9, station = { ...up('a', 0, 0, 0, n), counts: Float32Array.from({ length: n * n }, (_, i) => i) };
+  const view = stationViewAt(P, station), slopes = lineSlopes(P, [0, 0, 0], detectorBasis(0, 90));
+  const ix = slopeBin(slopes.sx, n, wide), iy = slopeBin(slopes.sy, n, wide);
+  assert.equal(view.counts, iy * n + ix);
+  assert.ok(view.countsPerSr > view.counts);
+  assert.ok(Math.abs(Math.hypot(...view.direction) - 1) < 1e-12 && view.direction[2] > 0);
+  assert.equal(stationViewAt([20, 20, -60], station), null);
+  assert.equal(stationViewAt(P, { ...station, counts: null }).counts, null);
+});
+
+test('usable views, spread, weakest view and class follow the decided thresholds', () => {
+  // Directions from A, B, C to P: A–B and A–C 35.1°, B–C 50.5°.
+  let m = multiViewCoverage(P, [up('A', 0, 0, 400), up('B', 40, 0, 150), up('C', 0, 40, 50)]);
+  assert.deepEqual([m.seen, m.usable], [['A', 'B', 'C'], ['A', 'B']]);
+  assert.ok(Math.abs(m.spreadDeg - 35.1) < .1);
+  assert.ok(Math.abs(m.weakestError - 1 / Math.sqrt(150)) < 1e-6);
+  assert.equal(m.class, 'limited');
+  assert.equal(m.dominant.id, 'A');
+  m = multiViewCoverage(P, [up('A', 0, 0, 400), up('B', 40, 0, 150), up('C', 0, 40, 120)]);
+  assert.equal(m.usable.length, 3); assert.ok(Math.abs(m.spreadDeg - 50.5) < .1); assert.equal(m.class, 'good');
+  assert.ok(Math.abs(m.totalCountsPerSr - [ 'A', 'B', 'C' ].reduce((t, id, i) => t + stationViewAt(P, [up('A', 0, 0, 400), up('B', 40, 0, 150), up('C', 0, 40, 120)][i]).countsPerSr, 0)) < 1e-6);
+  // 5 % level: only A is usable.
+  assert.equal(multiViewCoverage(P, [up('A', 0, 0, 400), up('B', 40, 0, 150), up('C', 0, 40, 120)], { errorLevel: .05 }).class, 'insufficient');
+  // Two usable views from almost the same direction are insufficient (< 10°).
+  assert.equal(multiViewCoverage(P, [up('A', 0, 0, 400), up('B', 2, 0, 400)]).class, 'insufficient');
+  // Custom thresholds.
+  assert.equal(multiViewCoverage(P, [up('A', 0, 0, 400), up('B', 40, 0, 150)], { minViews: 2 }).class, 'good');
+  // A station still computing is seen but neither usable nor counted in the totals.
+  m = multiViewCoverage(P, [up('A', 0, 0, 400), up('B', 40, 0, null)]);
+  assert.deepEqual([m.seen, m.usable, m.pending], [['A', 'B'], ['A'], ['B']]);
+  assert.equal(multiViewCoverage([500, 500, 1], [up('A', 0, 0, 400)]).class, 'none');
+});
+
+test('the counts-per-steradian map divides each pixel by its own solid angle (bottom row first)', () => {
+  const n = 5, counts = Float32Array.from({ length: n * n }, (_, i) => i + 1), map = perSteradianMap(counts, n, wide), bins = nativeAxisBins(n, wide);
+  for (const [ix, iy] of [[0, 0], [2, 3], [4, 4]]) assert.ok(Math.abs(map[iy * n + ix] - counts[iy * n + ix] / pixelSolidAngleOf(bins[ix], bins[iy])) < 1e-3 * map[iy * n + ix]);
 });

@@ -122,7 +122,14 @@ try{
  await page.locator('#coverageStations').selectOption('all');assert.equal(await page.locator('#candidateList .cov-swatch').count(),count-1);
  assert.ok(await page.locator('#fovEdges').isChecked());await page.locator('#fovEdges').uncheck();
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovEdges').check();
- assert.equal(await page.locator('#fovSolid').isChecked(),false);await page.locator('#fovSolid').check();await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovSolid').uncheck();await page.locator('#coverageMode').selectOption('physical');
+ assert.equal(await page.locator('#fovSolid').isChecked(),false);await page.locator('#fovSolid').check();await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovSolid').uncheck();
+ // Physical multi-station maps (15d): 多视角覆盖 by default, legend per map, thresholds only for the class map; views never change results.
+ await page.locator('#coverageMode').selectOption('physical');assert.ok(await page.locator('#multiControls').isVisible());assert.equal(await page.locator('#coverageMulti').inputValue(),'views');
+ assert.ok(await page.locator('#coverageCountLegend').isHidden());assert.match(await page.locator('#multiLegend').innerText(),/可用视角数/);assert.ok(await page.locator('#classThresholds').isHidden());
+ for(const map of ['spread','class','dominant','total','views'])await page.locator('#coverageMulti').selectOption(map);
+ await page.locator('#coverageMulti').selectOption('class');assert.ok(await page.locator('#classThresholds').isVisible());await page.locator('#classViews').fill('4');await page.locator('#classViews').dispatchEvent('change');assert.match(await page.locator('#multiLegend').innerText(),/≥4 视角/);
+ await page.locator('#classViews').fill('3');await page.locator('#classViews').dispatchEvent('change');await page.locator('#coverageMulti').selectOption('views');
+ await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
  // Placing: one click on the model moves the working station there; Esc cancels.
  await click('#placeStation');assert.ok(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')));await page.keyboard.press('Escape');assert.equal(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')),false);
  const xyz=async()=>Promise.all(['#x','#y','#z'].map(id=>page.locator(id).inputValue())),start=await xyz();await click('#placeStation');

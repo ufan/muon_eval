@@ -5,7 +5,7 @@ import { createFeatureLayerPanel } from './feature-layer-panel-view.js';
 import { featureLayerGroups, featuresInView } from './feature-layers.js';
 import { parsePlan, serializePlan, planFromState, extractDeployments } from './plan-format.js';
 import { createStudyState } from './study-state.js';
-import { assessmentKey, compactResult, createResultCache, createCandidateQueue, compareEntries } from './candidate-results.js';
+import { assessmentKey, compactResult, createResultCache, createCandidateQueue, compareEntries, entryCountsBottomFirst } from './candidate-results.js';
 import { openStudies, saveStudy, saveSession, createStudy, switchStudy, listStudies, deleteStudy } from './plan-store.js';
 import { selectionHref, APP_PAGES } from './application-selection.js';
 import { placementPoint, coverageStationSet } from './coverage-map.js';
@@ -55,8 +55,9 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  const EXTRA_COLORS=['#4fc3f7','#ffd54f','#81c784','#ba68c8','#4db6ac','#9fa8da','#90a4ae','#dce775'];let coverageStationsMode='none',coverageSignature='';
  function coverageExtras(){const pool=study.plan.stations.map(s=>s.id),deployment=study.plan.deployments.find(d=>d.id===study.activeDeployment)?.stations??[];
   return coverageStationSet(coverageStationsMode,{pool,compared:study.compared,deployment,exclude:study.modified?null:study.working.from}).map(id=>{const s=study.candidate(id),input=study.candidateInput(id);
-   return{id,name:s.name,x:s.position[0],y:s.position[1],z:s.position[2],az:s.pose.azimuthDeg,el:s.pose.elevationDeg,device:input.device,color:EXTRA_COLORS[pool.indexOf(id)%EXTRA_COLORS.length]};});}
- function syncCoverageStations(extras=coverageExtras()){const signature=JSON.stringify(extras.map(s=>[s.id,s.x,s.y,s.z,s.az,s.el,s.device.maxSlopeX,s.device.maxSlopeY,s.color]));$('#coverageCountLegend').hidden=!extras.length;if(signature===coverageSignature)return;coverageSignature=signature;sceneView.setCoverageStations(extras);}
+   const entry=results.get(assessmentKey(input));
+   return{id,name:s.name,x:s.position[0],y:s.position[1],z:s.position[2],az:s.pose.azimuthDeg,el:s.pose.elevationDeg,device:input.device,color:EXTRA_COLORS[pool.indexOf(id)%EXTRA_COLORS.length],n:entry?.n,counts:entryCountsBottomFirst(entry)};});}
+ function syncCoverageStations(extras=coverageExtras()){const signature=JSON.stringify(extras.map(s=>[s.id,s.x,s.y,s.z,s.az,s.el,s.device.maxSlopeX,s.device.maxSlopeY,s.color,s.n??0,s.counts?s.counts[0]+s.counts[s.counts.length>>1]:null]));$('#coverageCountLegend').hidden=!extras.length||$('#coverageMode').value==='physical';$('#multiControls').hidden=!extras.length||$('#coverageMode').value!=='physical';if(signature===coverageSignature)return;coverageSignature=signature;sceneView.setCoverageStations(extras);}
  function renderList(){const h=$('#candidateList');if(!h||!study)return;const extras=coverageExtras(),swatch=new Map(extras.map(s=>[s.id,s.color]));syncCoverageStations(extras);const w=study.working,compared=new Set(study.compared),modified=study.modified;
   h.replaceChildren(...study.plan.stations.map(s=>{const state=candidateState(s.id),entry=results.get(candidateKey(s.id)),d=document.createElement('div');d.className='candidate'+(s.id===w.from?' active':'');d.dataset.candidate=s.id;
    d.innerHTML=`<label class="compare"><input type="checkbox" data-compare="${escapeHtml(s.id)}"${compared.has(s.id)?' checked':''}>比较</label><b>${swatch.has(s.id)?`<i class="cov-swatch" style="--c:${swatch.get(s.id)}" title="覆盖视图中的颜色"></i>`:''}${escapeHtml(s.name)}${s.id===w.from&&modified?' <em>· 编辑中</em>':''}</b><span>X ${s.position[0].toFixed(1)} · Y ${s.position[1].toFixed(1)} · Z ${s.position[2].toFixed(1)}</span><span>方位 ${s.pose.azimuthDeg}° · 仰角 ${s.pose.elevationDeg}°</span><span class="result-status" data-state="${state}">${state==='ready'?`${formatCount(entry.totalCount)} 计数 · 透射 ${(100*entry.weightedTransmission).toFixed(2)}%`:STATE_TEXT[state]}</span>`;
@@ -121,8 +122,20 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  function bindCoverage(){const key=`muon-coverage:${datasetId}`;let saved={};try{saved=JSON.parse(storage.getItem(key))??{};}catch{}
   const mode=$('#coverageMode'),core=$('#coverageCore'),context=$('#coverageContext'),stations=$('#coverageStations');mode.value=['off','geometric','physical'].includes(saved.mode)?saved.mode:'off';core.checked=saved.core===true;context.checked=saved.context===true;
   stations.value=['none','compared','deployment','all'].includes(saved.stations)?saved.stations:'none';
-  const apply=()=>{const value={mode:mode.value,core:core.checked,context:context.checked,stations:stations.value};$('#coverageOptions').hidden=value.mode==='off';sceneView.setCoverage(value);coverageStationsMode=value.mode==='off'?'none':value.stations;renderList();try{storage.setItem(key,JSON.stringify(value));}catch{}};
-  for(const input of [mode,core,context,stations])input.onchange=apply;apply();}
+  // Physical multi-station maps (15d, FR-M15): 多视角覆盖 by default; thresholds as decided (10 %, ≥ 3 views and ≥ 30°, < 10°).
+  const multi=$('#coverageMulti'),error=$('#coverageError'),views=$('#classViews'),good=$('#classGoodSpread'),minimum=$('#classMinSpread'),m=saved.multi??{};
+  multi.value=['views','spread','class','dominant','total'].includes(m.map)?m.map:'views';error.value=m.errorLevel===.05?'0.05':'0.1';views.value=m.minViews??3;good.value=m.goodSpreadDeg??30;minimum.value=m.minSpreadDeg??10;
+  const clampInput=(input,low,high,fallback)=>{const v=Math.round(+input.value);input.value=Number.isFinite(v)?Math.min(high,Math.max(low,v)):fallback;return +input.value;};
+  const legend=value=>{const sw=(c,t)=>`<i style="--c:${c}"></i>${t}`,grey=sw('#3c3c3c','有视场但无可用视角（深灰）');
+   return{views:`可用视角数（计数误差 ≤ ${value.errorLevel*100}%）：${['#fcbba1','#fc9272','#fb6a4a','#de2d26','#a50f15'].map((c,i)=>sw(c,i<4?String(i+1):'5+')).join(' ')} · ${grey}`,
+    spread:`可用视角的最大张角：${sw('#c6dbef','<10°')} ${sw('#6baed6','10–30°')} ${sw('#2171b5','30–60°')} ${sw('#08306b','>60°')} · ${grey}`,
+    class:`综合等级（规划参考，非重建质量保证）：${sw('#1a9850',`良好 ≥${value.minViews} 视角且 ≥${value.goodSpreadDeg}°`)} ${sw('#fdae61','有限')} ${sw('#d73027',`不足 <2 视角或 <${value.minSpreadDeg}°`)}`,
+    dominant:'每点取计数/sr 最高的点位颜色，亮度为该点位的计数/sr（颜色不混合）',total:`各点位计数/sr 之和（总统计量的参考指标，不是一次测量）：暗→橙→白，10³–3×10⁷ /sr · ${grey}`}[value.map];};
+  const apply=()=>{const value={mode:mode.value,core:core.checked,context:context.checked,stations:stations.value,
+    multi:{map:multi.value,errorLevel:+error.value,minViews:clampInput(views,2,9,3),goodSpreadDeg:clampInput(good,1,179,30),minSpreadDeg:clampInput(minimum,0,179,10)}};
+   $('#coverageOptions').hidden=value.mode==='off';$('#classThresholds').hidden=value.multi.map!=='class';$('#multiLegend').innerHTML=legend(value.multi);
+   sceneView.setCoverage(value);coverageStationsMode=value.mode==='off'?'none':value.stations;coverageSignature='';renderList();try{storage.setItem(key,JSON.stringify(value));}catch{}};
+  for(const input of [mode,core,context,stations,multi,error,views,good,minimum])input.onchange=apply;apply();}
  // Placing the working station on the model (14d): one click on a visible surface, 0.5 m off it on the viewer's side.
  function setPlacingButton(on){const button=$('#placeStation');button.classList.toggle('active',on);button.textContent=on?'在模型上点击…（Esc 取消）':'在模型上点选位置';}
  // Field-of-view edges (视场棱线): a view option, on by default, remembered per release.

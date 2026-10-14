@@ -87,3 +87,11 @@ export function compareEntries(items) {
   return { rows: items.map(({ label, entry }) => ({ label, indicators: entry.indicators })), differences,
     comparable: differences.every(d => !d.fields.length) };
 }
+
+// A cached entry's per-pixel counts in the projection's own order (bottom row first), or null.
+export function entryCountsBottomFirst(entry) {
+  if (!entry) return null;
+  const n = entry.n, out = new Float32Array(n * n);
+  for (let row = 0; row < n; row++) out.set(entry.pixels.count.subarray((n - 1 - row) * n, (n - row) * n), row * n);
+  return out;
+}
