@@ -20,8 +20,14 @@ export function nativeAxisBins(n, device, cache = new Map()) {
   return bins;
 }
 
+// Acceptance-weighted solid angle of one pixel: a slope cell spans step^2 cos^3 sr.
+export function pixelSolidAngle(bx, by, device) {
+  const cosTheta = 1 / Math.sqrt(1 + bx.slope * bx.slope + by.slope * by.slope);
+  return device.nativeSlopeStep ** 2 * (bx.sumWeight * by.sumWeight) * cosTheta ** 3;
+}
+
 export function evaluateProjectionPixel({ bx, by, dir, q, side = 'front', device, response, flux, includeContext = false }) {
-  const sx = bx.slope, sy = by.slope, acceptanceWeight = bx.sumWeight * by.sumWeight;
+  const sx = bx.slope, sy = by.slope;
   const areaCm2 = device.width * device.height * 1e4, seconds = response.exposureDays * 86400;
   // Fixed three-layer coincidence is retained, even if device.layers differs.
   const response0 = response.layerEfficiency ** 3 * response.deadLiveFraction;
@@ -30,7 +36,7 @@ export function evaluateProjectionPixel({ bx, by, dir, q, side = 'front', device
   // plane area, cosTheta projects it onto the ray (intensity is per area
   // perpendicular to the ray), and a slope cell spans step^2 cos^3 sr.
   const cosTheta = 1 / Math.sqrt(1 + sx * sx + sy * sy);
-  const dOmega = device.nativeSlopeStep ** 2 * acceptanceWeight * cosTheta ** 3;
+  const dOmega = pixelSolidAngle(bx, by, device);
   const factor = areaCm2 * cosTheta * seconds * dOmega * response0;
   const count = through * factor, openCount = open * factor, transmission = open > 0 ? through / open : 0;
   return { value: { sx, sy, dir, side, q, count, ...(includeContext ? { openCount } : {}), transmission, factor, sigByTarget: {},

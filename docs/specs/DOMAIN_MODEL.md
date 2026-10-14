@@ -134,7 +134,7 @@ Scene composition (Target): **scene = release + environment state + active anoma
 | Trace | Value | Per ray: material totals, `materialColumns`, `mwe`, segments, entity lengths | Current |
 | ProjectionResult | Value, versioned | `kind` ∈ {`compiled-detector-assessment`, `material-column-projection`} (`legacy-detector-assessment` is accepted only for replaying old exports), `schemaVersion`, identity (release, backend, scenario, variables, asset hashes), config, device, response, `modelVersion`, `plan` (hash + station ID of the source plan, or null; provenance, not identity), pixels, limitations | Current |
 | Per-station result cache | Keyed by snapshot key | Lets the overview and detail modes share results | Target (ADR-020) |
-| Coverage (view) | Derived view of a station | Geometric coverage = device acceptance × pose (no physics); physical coverage = expected counts per steradian from a result. A view of results, never an input; bound to the result's snapshot key | Target (ADR-026) |
+| Coverage (view) | Derived view of a station | Geometric coverage = device acceptance × pose (no physics): points whose detector line lies inside the acceptance, in front or behind, above the detector; physical coverage = expected counts per steradian from a result. A view of results, never an input; the physical map belongs to one result and is cleared when inputs change | Current for a single station (`coverage-map.js`); multi-station Target (ADR-026, #15) |
 | Exports | Value, versioned | `muography-plan` 1.0.0 (round trip), contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison`; the export-only `compiled-deployment-snapshot` 0.1.0 is retired | Current |
 
 ## 3. Identities
@@ -209,6 +209,7 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-14: Coverage (view) current for a single station; back-side lines included.
 - 2026-10-14: ProjectionResult records its source plan (hash + station ID).
 - 2026-10-14: DeploymentPlan and Station current (`muography-plan` 1.0.0); plan hash identity; two open questions answered (per-plan named detector configurations; plans own stations with a candidate reference).
 - 2026-10-14: Invariant 15: pixels are lines evaluated at their sky end (FR-C7).

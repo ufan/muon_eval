@@ -53,7 +53,7 @@ Moved ahead of scan performance by owner decision (OQ-7). Built in the current p
 |---|---|---|---|---|
 | 14 | Plan state: candidates vs selected deployment; per-station result cache keyed by snapshot | ADR-020, FR-P1 | Needs #11, #12; no recompute for unchanged stations; stale results never shown | Todo |
 | 15 | Overview mode in 3D: all selected stations, colour per station, field-of-view cones, ray coverage on the subject; summary table; click → detail mode | FR-M4 | Reuses scene views; subject-neutral labels (FR-K1) | Todo |
-| 15a | Coverage highlight: geometric (live, single colour per station) and physical (count/sr brightness from the result) via projective texturing; slope-mapping L1 test against `detector-pose.js` | FR-M10, ADR-026 | Single-station first (no plan needed), then multi-station with #15; measure FR-N5 on an Intel i5 laptop | Todo |
+| 15a | Coverage highlight: geometric (live, single colour per station) and physical (count/sr brightness from the result) via projective texturing; slope-mapping L1 test against `detector-pose.js` | FR-M10, ADR-026 | Single station done (owner: ahead of #13): `coverage-map.js` (L1), `coverage-shader.js`, controls in 环境图层. Open: hover/click link, multi-station with #15, FR-N5 measurement on an Intel i5 laptop | Partly done |
 | 15b-1 | Feature catalogue builder in the dataset adapter (from `semantics` and `vocabulary`; direct/aggregate from compiled components) | ADR-029, FR-K3 | Test first: L1 on a synthetic spec; L3 on Zhouning (44 features, 22 direct; virtual placeholders excluded) | Done |
 | 15b-2 | Display profile: schema, optional loading and validation; Zhouning profile with ~5 recognition items | ADR-029 | Schema in `datasets/schemas/`; resolver `display-profile.js` (L1); Zhouning profile (7 items) with its own registry hash outside the authored package integrity (L3, release check); added to the existing release (owner: option a) | Done |
 | 15b-3 | Recognition masks per result: item length field, mask at T, image coverage, in-view flag (pure) | FR-M12 | `recognition-layers.js`; L1 tests incl. strict threshold, material items, border-closed rings, crossing order | Done |
@@ -140,6 +140,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: 15a single-station coverage done ahead of #13 (owner).
 - 2026-10-14: #11 done (plan format 1.0.0, storage, export/import, result provenance); AN1 deferred to P4 as plan 1.1.0.
 - 2026-10-14: #12 done (async, cancellable assessment port).
 - 2026-10-14: Stale-module fix: `no-cache` revalidation in `nginx.conf` and the new `npm run serve`; per-file stamps reverted, content hashing deferred to the build step (owner).

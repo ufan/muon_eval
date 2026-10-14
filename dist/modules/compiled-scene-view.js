@@ -3,6 +3,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createCompiledGeometryView } from './compiled-geometry-view.js';
 import { detectorBasis } from './detector-pose.js';
 import { featureLayerGroups, featuresAlongRay } from './feature-layers.js';
+import { createCoverageUniforms, attachCoverage } from './coverage-shader.js';
+import { countsPerSteradian, coverageBrightness } from './coverage-map.js';
 
 // View-only model Z-up → scene Y-up transform. Never classify or trace a mesh here.
 export const compiledPointToScene = ([x,y,z]) => new THREE.Vector3(x,z,-y);
@@ -35,6 +37,8 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   const featureIds=features?featureLayerGroups(features).flatMap(group=>group.featureIds):[],featureMeshes=new Map(featureIds.map(id=>[id,[]])),featureOfComponent=new Map();
   for(const component of runtime.components){const id=component.metadata.source_entity_id;if(component.metadata.flags.physics&&featureMeshes.has(id)){featureMeshes.get(id).push(geometryView.meshes.get(component.componentId));featureOfComponent.set(component.componentId,id);}}
   const featureVisible=new Map(featureIds.map(id=>[id,false]));let emphasised=new Set();
+  // Coverage highlight (FR-M10, ADR-026): subject surfaces by default, terrain and water on request.
+  const coverage=createCoverageUniforms(),subjectCoverage={value:1},contextCoverage={value:0};
   applyLook();
   // Ground grid at the base of the structure, sized from its footprint (former legacy view: 520 m, 20 m cells).
   const footprint=box.getSize(new THREE.Vector3()),gridSize=Math.max(100,Math.ceil(2.25*Math.max(footprint.x,footprint.z)/20)*20);
@@ -49,7 +53,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     else if(component.metadata.material_id==='steel')material=lookMaterial(LOOK.steel,{flatShading:true,side:THREE.DoubleSide});
     else if(layer==='terrain')material=lookMaterial(LOOK.rock,{transparent:true,opacity:.38,side:THREE.DoubleSide,depthWrite:false,flatShading:true});
     else if(layer==='upwater'||layer==='downwater')material=lookMaterial(LOOK[layer],{transparent:true,opacity:.42,roughness:.18,metalness:.08,side:THREE.DoubleSide,depthWrite:false});
-    if(!material)continue;mesh.material.dispose();mesh.material=material;
+    if(!material)continue;attachCoverage(material,coverage,layer==='dam'?subjectCoverage:contextCoverage);mesh.material.dispose();mesh.material=material;
     if(layer==='dam')mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry,25),new THREE.LineBasicMaterial({color:LOOK.edge,transparent:true,opacity:.5})));}}
   function resize(){if(!renderer)return;const bounds=container.getBoundingClientRect();if(!bounds.width||!bounds.height)return;camera.aspect=bounds.width/bounds.height;camera.updateProjectionMatrix();renderer.setSize(bounds.width,bounds.height,false);}
   function setView(mode){if(!controls)return;const axes={perspective:[.74,-.61,.27],front:[-1,0,.1],cross:[0,-1,.1],top:[0,0,1]};if(!axes[mode])throw new Error('Unknown scene view');
@@ -66,7 +70,15 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   function setLayer(name,visible){layerState.set(name,visible);if(name==='cone'){detectorGroup.visible=rayGroup.visible=projectionGroup.visible=visible;return;}
     for(const component of runtime.components)if(materialLayer(component)===name){const mesh=geometryView.meshes.get(component.componentId);mesh.visible=visible&&component.metadata.flags.display&&component.metadata.realization!=='virtual';}}
   function setDamOpacity(opacity){for(const component of runtime.components)if(materialLayer(component)==='dam'){const material=geometryView.meshes.get(component.componentId).material;material.transparent=opacity<1;material.opacity=opacity;material.depthWrite=opacity>.72;material.needsUpdate=true;}}
-  function drawDetector(station,device){currentStation={...station};currentDevice={...device};clear(detectorGroup);clear(rayGroup);clear(projectionGroup);
+  function setCoverage({mode='off',core=false,context=false}={}){coverage.covMode.value={off:0,geometric:1,physical:2}[mode]??0;coverage.covCore.value=core?1:0;contextCoverage.value=context?1:0;}
+  // Physical brightness from a result's own counts per steradian; null while a newer pose is computing (geometric view shown instead).
+  function setCoverageResult(data,device){coverage.covMap.value?.dispose();coverage.covMap.value=null;coverage.covHasMap.value=0;if(!data||!device)return;
+    const perSr=countsPerSteradian(data.values,data.n,device),bytes=new Uint8Array(data.n*data.n*4);perSr.forEach((v,i)=>{bytes[4*i]=Math.round(255*coverageBrightness(v));bytes[4*i+3]=255;});
+    const texture=new THREE.DataTexture(bytes,data.n,data.n,THREE.RGBAFormat);texture.magFilter=texture.minFilter=THREE.NearestFilter;texture.needsUpdate=true;coverage.covMap.value=texture;coverage.covBins.value=data.n;coverage.covHasMap.value=1;}
+  function setCoveragePose(station,device){const basis=detectorBasis(station.az,station.el);coverage.covOrigin.value.copy(compiledPointToScene([station.x,station.y,station.z]));
+    coverage.covForward.value.copy(compiledPointToScene(basis.forward));coverage.covRight.value.copy(compiledPointToScene(basis.right));coverage.covUp.value.copy(compiledPointToScene(basis.up));
+    coverage.covMax.value.set(device.maxSlopeX,device.maxSlopeY);coverage.covStep.value=device.nativeSlopeStep;coverage.covStrips.value=device.stripsX;}
+  function drawDetector(station,device){currentStation={...station};currentDevice={...device};setCoveragePose(station,device);clear(detectorGroup);clear(rayGroup);clear(projectionGroup);
     const origin=compiledPointToScene([station.x,station.y,station.z]),basis=detectorBasis(station.az,station.el),forward=compiledPointToScene(basis.forward).normalize(),right=compiledPointToScene(basis.right),up=compiledPointToScene(basis.up);
     const orientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),forward);
     for(let i=0;i<device.layers;i++){const mesh=new THREE.Mesh(new THREE.PlaneGeometry(device.width,device.height),new THREE.MeshBasicMaterial({color:0xff65bd,side:THREE.DoubleSide}));mesh.position.copy(origin).addScaledVector(forward,(i-(device.layers-1)/2)*device.spacing);mesh.quaternion.copy(orientation);detectorGroup.add(mesh);}
@@ -74,6 +86,9 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     for(const [x,y] of [[-1,-1],[1,-1],[1,1],[-1,1]])corners.push(far.clone().addScaledVector(right,x*(device.width/2+length*device.maxSlopeX)).addScaledVector(up,y*(device.height/2+length*device.maxSlopeY)));
     const positions=[];for(let i=0;i<4;i++)for(const point of [origin,corners[i],corners[i],corners[(i+1)%4]])positions.push(point.x,point.y,point.z);
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));detectorGroup.add(new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:0xff65bd,transparent:true,opacity:.7})),new THREE.ArrowHelper(forward,origin,length,0xff65bd));
+    // The same lines continue behind the detector: their upper part is probed by muons arriving from behind (quick-response@4.0.0).
+    const back=[];for(let i=0;i<4;i++){const c=origin.clone().multiplyScalar(2).sub(corners[i]),n=origin.clone().multiplyScalar(2).sub(corners[(i+1)%4]);back.push(origin.x,origin.y,origin.z,c.x,c.y,c.z,c.x,c.y,c.z,n.x,n.y,n.z);}
+    const backGeometry=new THREE.BufferGeometry();backGeometry.setAttribute('position',new THREE.Float32BufferAttribute(back,3));detectorGroup.add(new THREE.LineSegments(backGeometry,new THREE.LineBasicMaterial({color:0xff65bd,transparent:true,opacity:.25})));
   }
   function showFeature(id){const visible=featureVisible.get(id)||emphasised.has(id);for(const mesh of featureMeshes.get(id)){mesh.visible=visible;mesh.material.emissive.set(emphasised.has(id)?mesh.material.color:0x000000);mesh.material.emissiveIntensity=emphasised.has(id)?1.4:1;}}
   function setFeatureVisible(id,visible){if(!featureMeshes.has(id))return;featureVisible.set(id,visible);showFeature(id);}
@@ -94,7 +109,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   }
   return Object.freeze({
     build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();});observer.observe(container);resize();renderer.setAnimationLoop(()=>{controls.update();updateScale();renderer.render(scene,camera);});if(featureIds.length){renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);}$('#loading').style.display='none';},
-    resize,setView,setLayer,setDamOpacity,drawDetector,setFeatureVisible,emphasiseFeatures,
+    resize,setView,setLayer,setDamOpacity,drawDetector,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,
     showRay:(trace,station,direction)=>displayTrace(rayGroup,trace,station,direction),
     showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
     clearProjection(){clear(projectionGroup);emphasiseFeatures([]);},showFlux(){},drawFluxCloud(){},

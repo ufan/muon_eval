@@ -386,6 +386,10 @@ Display only; computed from a finished result by `recognition-layers.js` and nev
 
 Display only, from a finished projection's raw expected counts `N` per pixel (not the display-smoothed values). The relative counting error is `1/√N`; the lines mark `1/√N = 10 %` (`N = 100`, dashed) and `5 %` (`N = 400`, solid) for the current exposure, so doubling the exposure moves them outward. `precision-contours.js` contours `log10 N` with d3-contour (smoothed, so the line is interpolated in log counts between pixel centres), pads the field by repeating its edge values so lines run to the image border, and drops segments lying on the border. Pixels with no counts use `log10 N = −3`. Statistical error only; systematic terms (FR-H6) are not included.
 
+### 11.9 Coverage map (FR-M10)
+
+Display only. For a surface point `p` and station origin `o` with basis (forward `f`, right `r`, up `u`): `d = p − o`, slopes `sx = d·r / d·f`, `sy = d·u / d·f` (identical from either end of the line). The point is *probed* when `|sx| ≤ maxSlopeX`, `|sy| ≤ maxSlopeY` and `p` lies above the detector; *no flux* when inside the slopes, in front (`d·f > 0`) and not above. The physical brightness uses counts per steradian `N / dΩ` of the pixel containing `(sx, sy)` (bin `ceil((j+1)·n/(2N_strips−1)) − 1` for native index `j`), with `dΩ` from `pixelSolidAngle` (§10.2), on a fixed log scale 10³–10^7.5 sr⁻¹ (`coverage-map.js`).
+
 ## 12. Legacy target structures, outlines and significance
 
 Retired with the legacy backend (ADR-028). This section is kept as the description of migration targets MT-2 (target layers) and MT-3 (structural significance, superseded by anomaly hypotheses, FR-H); a compiled re-implementation uses dataset-declared semantic targets, not these dam-specific heuristics.

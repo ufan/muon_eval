@@ -35,7 +35,7 @@ Last updated: 2026-10-10
 | 023 | Layered, lightweight test-driven development | Accepted |
 | 024 | Desktop distribution as a thin wrapper over the unchanged web app | Proposed |
 | 025 | Anomaly hypotheses in the physical scene; perturbative sensitivity evaluation | Accepted |
-| 026 | Coverage highlight by GPU projective texturing of acceptance and count maps | Proposed |
+| 026 | Coverage highlight by GPU projective texturing of acceptance and count maps | Accepted; single-station implemented (15a, 2026-10-14); multi-station with #15 |
 | 027 | Three.js for display only; geometry and physics in own framework-free modules | Accepted (retrospective) |
 | 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
 | 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; implemented (15b-1…15b-6; envelope overlay kept in the preview only); optional fill and sampled-pixel view open |
@@ -452,6 +452,14 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - *Pyramid edges.* Drawn solid where visible and dashed where hidden behind opaque surfaces, instead of the current always-on-top lines.
 - *Water and terrain* (when toggled on) follow the same rules; water stays visually secondary (lower tint strength) so the subject reads first.
 
+**Back-side lines (2026-10-14, quick-response@4.0.0).** A pixel is a line through the detector and its muons come from the line's sky end (FR-C7). A surface point is therefore covered when its line lies inside the acceptance, *in front of or behind* the detector, and the point is above the detector (`p.z > origin.z`). Points in front below that height receive no flux and are shown grey; points behind below it are not covered. The slopes of a line are the same from either end, so one formula serves both sides. This replaces "directions below the horizon carry no flux" above.
+
+**As implemented, single station (15a, 2026-10-14).**
+- `coverage-map.js` (pure, L1-tested against `detector-pose.js`): line slopes of a point, the probed / no-flux / outside classification, the exact slope → projection-bin inverse of `nativeAxisBins` (`ceil((j+1)·n/(2N−1)) − 1`), counts per steradian from the core's `pixelSolidAngle` (extracted from `evaluateProjectionPixel`, unchanged numerically), and the brightness scale. `coverage-shader.js` is its GLSL mirror, injected into the subject materials (front-facing side, mixed into the colour, minimum opacity 0.35), so transparency works as decided above.
+- *Geometric* mode tests the device slope range (the acceptance weight is positive exactly there) and follows the pose as soon as the detector is redrawn; *physical* mode reads a per-result texture of counts per steradian (raw counts), set from each preview and final result and cleared when inputs change, so a stale map falls back to the geometric view. Brightness: fixed log scale 10³–10^7.5 per steradian (measured 0.5–99.5 % range over the Zhouning stations, default device, 30-day exposure: 10^2.7–10^7.3), ramp dark → station colour → white; it scales with exposure.
+- Crisp field-of-view and in-front horizon lines; optional core field of view and terrain/water; the back half of the viewing pyramid is drawn faintly. Off by default; mode and options remembered per release (view state).
+- *Not yet:* hover (covering stations, slopes, counts per steradian) and click to the projection pixel; pyramid edges ending at the subject and dashed when hidden; feature emphasis when in view; multi-station colours and overlap modes (#15); on-demand rendering and the FR-N5 measurement on an integrated-graphics laptop.
+
 **GPU cost on integrated graphics (2026-10-12).** The scene is small: 33 components with ~131k triangles (~65k vertices) plus two terrain grids (281×287 and 201×201, ~240k triangles), drawn at device pixel ratio ≤ 2 with antialiasing and on-demand rendering (no frames while idle). Per fragment and station the coverage test is a few dot products, two divisions, range checks and one 65×65 texture lookup (~30 operations), small next to the existing physically based lighting of `MeshStandardMaterial`. Estimate at 1920×1080, overdraw ~3 under transparency and 8 stations: of the order of 5–10 GFLOP per frame, i.e. ~0.3–0.6 TFLOPS for 60 fps. Intel Iris Xe (11th gen Core i5 and later, ~1.5–2 TFLOPS) has ample headroom; older UHD 620 (8th gen, ~0.4 TFLOPS) is expected to stay interactive (≥30 fps) with a few stations, with 60 fps not guaranteed at high pixel ratio. This is an estimate, not a measurement (the development container only has a software renderer), so FR-N5 requires measuring on reference hardware. Safeguards: on-demand rendering; pixel ratio capped lower (e.g. 1.25) during camera interaction; a cheaper subject material (Lambert) and outline-off quality setting when frame time exceeds budget; stations beyond the per-pass limit drawn in an extra pass.
 
 ## ADR-027 Three.js for display only; geometry and physics in own framework-free modules
@@ -595,6 +603,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-14: ADR-026 accepted for single station; back-side coverage under quick-response@4.0.0; implementation notes.
 - 2026-10-14: ADR-006 item 1: plan format implemented; scan format deferred to P5.
 - 2026-10-14: ADR-006 item 2 implemented (assessment port).
 - 2026-10-14: ADR-004: caching rule until the build step (no-cache revalidation; content hashing deferred to the build).
