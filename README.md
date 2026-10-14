@@ -12,14 +12,13 @@ docker compose up -d --build
 
 Open `http://localhost:8080/`.
 
-Any static HTTP server works once the datasets are copied into `dist/`:
+For local use, the bundled server serves `dist/` and the datasets directly and makes browsers revalidate every file, so an update is never hidden by the cache:
 
 ```bash
-node scripts/sync-datasets.mjs
-python3 -m http.server 8765 --directory dist
+npm run serve        # node scripts/serve.mjs [--port 8765] [--host 0.0.0.0 for the LAN]
 ```
 
-Open `http://127.0.0.1:8765/`. Do not open `dist/index.html` directly: browsers block ES modules and JSON on `file://` pages. See [the deployment guide](docs/guides/DEPLOYMENT.md) for servers and static hosting.
+Open `http://127.0.0.1:8765/`. Any other static HTTP server also works once the datasets are copied into `dist/` (`node scripts/sync-datasets.mjs`, then for example `python3 -m http.server 8765 --directory dist`); such servers send no cache instructions, so hard-reload (Ctrl+Shift+R) after an update. Do not open `dist/index.html` directly: browsers block ES modules and JSON on `file://` pages. See [the deployment guide](docs/guides/DEPLOYMENT.md) for servers and static hosting.
 
 ## Directory layout
 

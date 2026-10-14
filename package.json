@@ -16,6 +16,7 @@
     "test:browser": "node scripts/check-main-compiled-app.mjs",
     "test:browser:preview": "node scripts/check-compiled-preview.mjs",
     "test:all": "npm test && npm run test:data && npm run test:integration && npm run test:browser",
-    "sync-datasets": "node scripts/sync-datasets.mjs"
+    "sync-datasets": "node scripts/sync-datasets.mjs",
+    "serve": "node scripts/serve.mjs"
   }
 }

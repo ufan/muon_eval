@@ -117,6 +117,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 | Installable offline web app (PWA) | FR-W1, ADR-024 | When offline use is needed; small |
 | Desktop installer via thin Tauri wrapper | FR-W2, W3 | Answer to OQ-9 |
 | Preview performance extensions | Roadmap "Deferred" | Paused |
+| Content-hashed file names and long-lived caching | ADR-004 | With the build step; until then servers send `no-cache` |
 | W1 Dataset workbench: slim the preview to dataset checks with pass/fail, same style and language, delete its duplicated station/comparison/export paths | FR-D10, ADR-030 | After 15c and 11b, or with the first second-kind dataset |
 
 ## Done
@@ -139,6 +140,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-14: Stale-module fix: `no-cache` revalidation in `nginx.conf` and the new `npm run serve`; per-file stamps reverted, content hashing deferred to the build step (owner).
 - 2026-10-14: 15c done (precision lines, expert diagnostics drawer, two-way links). Next: P2 #11/#12.
 - 2026-10-14: ADR-030: 15c extended (links), 11b export menu, W1 dataset workbench; after 15c, P2 #11/#12 come next because #15/#16 depend on them.
 - 2026-10-14: Material envelope overlay removed from the main app (owner); FR-K11 recorded.

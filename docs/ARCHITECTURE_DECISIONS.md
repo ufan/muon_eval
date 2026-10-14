@@ -100,6 +100,7 @@ Costs accepted: no shared plans or central results, compute bounded by one machi
 - Use the framework for new form/list/table screens only. The 3D scene and projection canvas stay framework-free. The old page is migrated piece by piece.
 - Framework state must not own calculation inputs or results; the existing deployment state and assessment controller remain the source. UI state (e.g. sidebar expansion) never enters scientific result files.
 - The switch supersedes ADR-013: source moves to `src/` with a built static output. In the same change, update hosting binding (`.openai/hosting.json`), Docker/nginx, `AGENTS.md` checks (`node --check dist/app.js`) and README.
+- **Caching until then (2026-10-14).** File names carry no content hash, so servers send `Cache-Control: no-cache` for scripts and stylesheets (`nginx.conf`, `scripts/serve.mjs`): browsers revalidate and get a 304 for unchanged files. Content-hashed file names with long-lived caching come with this build step; hand-maintained per-file stamps were tried and reverted (owner).
 
 ## ADR-005 Performance strategy: algorithm first, native code last
 
@@ -594,6 +595,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-14: ADR-004: caching rule until the build step (no-cache revalidation; content hashing deferred to the build).
 - 2026-10-14: ADR-030 accepted: planning app and dataset workbench as two entry points with one selection contract (owner).
 - 2026-10-14: ADR-029: material envelope overlay removed from the main app (owner); colour rule: hues only for named features.
 - 2026-10-14: ADR-029: the detector's own space is excluded from feature masks and crossings (owner).
