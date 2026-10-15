@@ -70,7 +70,7 @@ data contract + coordinate adapters → pure geometry query interfaces
 ## Phase 5 — New planning and scan screens
 
 **Goal:** usable UI for plans, scans and comparisons.
-**Covers:** ADR-004 (Vite + small framework introduced here, old page migrated gradually); FR-N1…N4.
+**Covers:** ADR-004 (Vite + small framework introduced here, old page migrated gradually); FR-N1…N4. The main-view layout of ADR-032 (deployment left, station right, 单站考察 / 多站评估 modes, floating viewport controls) is done ahead of this phase on the current page; the detector's-eye view (FR-M18) and target-first workflow (FR-M19) belong here.
 **Exit:** plan and scan screens built on the Phase 1 and Phase 4 formats; hosting/Docker/docs updated for the build step.
 
 ## Phase 6 — Multi-station evaluation, coverage and reports
@@ -128,6 +128,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-15: Main-view layout (ADR-032) brought forward; FR-M18 detector's-eye view and FR-M19 target-first workflow added to Phase 5.
 - 2026-10-14: Planning app and dataset workbench as two linked entry points (ADR-030): expert diagnostics with 15c (Phase 2), one export menu after the plan format (Phase 1), workbench slimming later.
 - 2026-10-13: Phase 2 includes subject features (FR-M11, FR-M12; ADR-029).
 - 2026-10-12: Legacy backend retired (FR-B3); gaps tracked as migration targets MT-1…MT-6.

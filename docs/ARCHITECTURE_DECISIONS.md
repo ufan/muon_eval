@@ -635,6 +635,22 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 
 **Consequences.** The plan format gains aims and regions (data format, migration from 1.1). The 15d class thresholds move from view settings into an aim template; the 3D maps stay as they are and show the selected aim's metric where it is a per-point quantity. Scans can be compared across projects only through the aims stored with them.
 
+## ADR-032 Main-view layout: deployment left, station right, task modes, floating viewport controls
+
+**Status.** Accepted (owner, 2026-10-15); implemented step by step on the review branch.
+
+**Context.** After several review rounds the sidebars mixed four kinds of content: geometry layers, viewing aids (cone, ray, coverage), deployment configuration (study, candidates, deployments) and single- and multi-station results. Controls used constantly during station inspection sat between rarely used ones, the projection floated over the 3D view, and multi-station analysis (overview, comparison, diagnostics) competed for the same narrow columns. Seven layouts were sketched (floating tools with a bottom drawer, task modes, docked projection with a full-screen workspace, an in-scene station inspector with a detector's-eye view, a candidate filmstrip, dockable panels, target-first); the owner chose the task-mode frame with parts of two others.
+
+**Decision.**
+- **Left sidebar: deployment configuration only** — 工作方案, 候选部署点, 部署组合.
+- **Right sidebar: the single (working) station** — 当前探测器, 投影结果 (map, pixel readout, depth profile, pin and side view, precision lines, recognition outlines), 站点评估 with export. Device parameters stay a header dialog. The readout appears only for a hovered or pinned pixel (no idle summary).
+- **Viewport controls float over the 3D view.** A collapsed 图层 popover holds the geometry layers; a chip bar holds the viewing aids (视锥, 射线, 覆盖, 切面) with small popovers for their options. They fade when the pointer has been away from the view, never while a popover is open, and without animation under reduced motion.
+- **Two task modes in the header: 单站考察 and 多站评估.** Multi-station mode replaces the right sidebar with a wide analysis panel: a station picker (compared candidates, current deployment or all), one card per station with a thumbnail projection and key numbers from the cached results, the target × station table, 方案比较 and 专家诊断. Entering it switches the 3D coverage to multi-view physical coverage for those stations; leaving restores the previous settings. The mode is per-browser view state.
+- **Station interaction:** right-click in the 3D view offers 瞄准此处 (set azimuth/elevation to look at the point, via a pure function) and 放到此处; keyboard shortcuts toggle the viewing aids and nudge the pose. Drag handles on the detector are a later, separate decision (vendoring TransformControls).
+- **Not now:** a docking framework (more machinery than the app needs, ADR-004); the detector's-eye view (FR-M18) and target-first workflow (FR-M19) are recorded as future features.
+
+**Consequences.** Every layout change is view state only and never changes results; element IDs stay so the browser test keeps its selectors. The browser test gains the mode switch and the floating controls. Narrow screens need compact versions of the chip bar and the mode switch. Demonstration mode keeps the projection floating over the view.
+
 ---
 
 ## Open questions
@@ -658,6 +674,7 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 
 ## Change log
 
+- 2026-10-15: ADR-032 accepted: main-view layout with deployment left, station right, task modes and floating viewport controls (owner).
 - 2026-10-14: ADR-031 principle accepted, specification deferred (owner).
 - 2026-10-14: ADR-031 proposed: evaluation aims are user input; the app supplies regions, per-point metrics, aggregations and optimisation on the same definition (owner principle).
 - 2026-10-14: ADR-026 accepted for single station; back-side coverage under quick-response@4.0.0; implementation notes.
