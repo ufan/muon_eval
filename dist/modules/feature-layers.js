@@ -6,12 +6,15 @@ import { crossingsAlongRay, computeRecognitionLayers } from './recognition-layer
 
 const DEFAULT_ROLES = new Set(['reference_void', 'target']);
 
-export function featureLayerGroups(catalogue) {
+// Groups the display profile hides (resolveFeatureLayerOptions) are kept, unlisted and off by default: the panel
+// leaves them out and the 3D view does not pick them, but linked emphasis can still highlight their features.
+export function featureLayerGroups(catalogue, { hiddenGroups = [] } = {}) {
+  const hidden = new Set(hiddenGroups);
   return catalogue.groups.map(group => {
     const features = group.featureIds.map(id => catalogue.get(id)).filter(f => f.kind === 'direct' && f.category !== 'water');
     // Shown by default only when everything in the group is something users look for.
     return { id: group.id, label: group.label, featureIds: features.map(f => f.id),
-      defaultVisible: features.length > 0 && features.every(f => DEFAULT_ROLES.has(f.imagingRole)) };
+      defaultVisible: !hidden.has(group.id) && features.length > 0 && features.every(f => DEFAULT_ROLES.has(f.imagingRole)), listed: !hidden.has(group.id) };
   }).filter(group => group.featureIds.length);
 }
 

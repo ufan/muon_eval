@@ -166,6 +166,11 @@
 .bank-directions { display: flex; align-items: center; gap: 22px; }
 .bank-directions b { color: #8ea5b2; font-weight: 600; }
 .orientation-strip span { display: inline-flex; align-items: center; gap: 5px; color: #bed0d7; }
+/* Axis labels come from the display profile and can be long: the three items wrap rather than clip in a narrow view. */
+.orientation-strip { white-space: normal; }
+/* Keep clear of the projection panel's default place (right 14px, 300px wide). */
+@media (min-width: 721px) { .app:not(.demo) .orientation-strip { right: 336px; } }
+.axis-definitions { flex-wrap: wrap; row-gap: 2px; }
 .orientation-strip i { width: 12px; height: 3px; display: inline-block; }
 .orientation-strip .axis-x { background: #49a7ff; }
 .orientation-strip .axis-y { background: #ff9f4a; }

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "display-profile.schema.json",
   "title": "Display profile 1.x (ADR-029)",
-  "description": "Presentation-only choices of a dataset release: recognition items offered for projection outlines. Never part of geometry or result identity. Feature IDs, selections and materials are checked against the release by the application loader.",
+  "description": "Presentation-only choices of a dataset release: recognition items offered for projection outlines and (1.1) feature groups left out of the 3D layer panel and 3D picking, and short axis labels for the 3D view. Never part of geometry or result identity. Feature IDs, selections and materials are checked against the release by the application loader.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -117,6 +117,110 @@
           "required": [
             "color"
           ]
+        }
+      }
+    },
+    "feature_layers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hidden_groups"
+      ],
+      "description": "Profile 1.1: feature groups (catalogue group IDs) not listed in the 3D layer panel and not pickable in the 3D view; their features stay in the scene so linked emphasis can still highlight them. View choice only.",
+      "properties": {
+        "hidden_groups": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          }
+        }
+      }
+    },
+    "axes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "X",
+        "Y",
+        "Z",
+        "origin"
+      ],
+      "description": "Profile 1.1: short zh/en wording of the model-frame axes and origin for the 3D view's axis legend. Presentation only; the dataset's frame definitions remain the source of truth.",
+      "properties": {
+        "X": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "zh",
+            "en"
+          ],
+          "properties": {
+            "zh": {
+              "type": "string",
+              "minLength": 1
+            },
+            "en": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "Y": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "zh",
+            "en"
+          ],
+          "properties": {
+            "zh": {
+              "type": "string",
+              "minLength": 1
+            },
+            "en": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "Z": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "zh",
+            "en"
+          ],
+          "properties": {
+            "zh": {
+              "type": "string",
+              "minLength": 1
+            },
+            "en": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "origin": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "zh",
+            "en"
+          ],
+          "properties": {
+            "zh": {
+              "type": "string",
+              "minLength": 1
+            },
+            "en": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         }
       }
     }

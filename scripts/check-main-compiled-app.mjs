@@ -60,10 +60,12 @@ try{
  await page.locator('#precisionContours').check();assert.ok(await page.locator('#projectionOutlines path.precision').count()>0);
  await setInput('#recognitionThreshold','0.5','change');assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);
  // 3D feature layers come from the catalogue: void systems only, defaults from imaging roles (FR-M11).
- assert.deepEqual(await page.locator('[data-feature-group]').evaluateAll(inputs=>inputs.map(input=>[input.dataset.featureGroup,input.checked])),[['flood_release',false],['gallery',true],['vertical_transport',true],['monitoring',true]]);
- assert.equal(await page.locator('[data-feature]').count(),20);
- for(const selector of ['[data-feature-group="flood_release"]','[data-feature-group="gallery"]'])await page.locator(selector).evaluate(element=>{element.checked=!element.checked;element.dispatchEvent(new Event('change',{bubbles:true}));});
- assert.equal(await page.locator('[data-feature="gallery_upper"]').isChecked(),false);
+ assert.deepEqual(await page.locator('[data-feature-group]').evaluateAll(inputs=>inputs.map(input=>[input.dataset.featureGroup,input.checked])),[['gallery',true],['vertical_transport',true],['monitoring',true]]);
+ // The display profile hides the flood-release system from the layer panel (profile 1.1, owner 2026-10-15).
+ assert.equal(await page.locator('[data-feature-group="flood_release"]').count(),0);
+ assert.equal(await page.locator('[data-feature]').count(),8);
+ for(const selector of ['[data-feature-group="monitoring"]','[data-feature-group="vertical_transport"]'])await page.locator(selector).evaluate(element=>{element.checked=!element.checked;element.dispatchEvent(new Event('change',{bubbles:true}));});
+ assert.equal(await page.locator('[data-feature="elevator_shaft"]').isChecked(),false);assert.ok(await page.locator('[data-feature="gallery_upper"]').isChecked());
  for(const selector of ['[data-layer="dam"]','[data-layer="terrain"]','[data-layer="upwater"]','[data-layer="downwater"]'])await page.locator(selector).evaluate(element=>{element.checked=false;element.dispatchEvent(new Event('change',{bubbles:true}));});
  // Coverage highlight (FR-M10): off by default; a view option only, so the result below is unchanged.
  assert.equal(await page.locator('#coverageMode').inputValue(),'off');assert.ok(await page.locator('#coverageOptions').isHidden());
@@ -193,7 +195,8 @@ try{
  assert.match(await page.locator('#placeNote').innerText(),/0\.5 m|已放入/);
  // A cavity seen through the semi-transparent concrete takes the click: the station goes inside it, 1 m above its floor.
  await setInput('#viewSelect','top','change');let cavityNote=null;
- for(const fy of [.35,.42,.5,.58,.65])for(const fx of [.2,.3,.4,.5,.6,.7,.8]){if(cavityNote)break;await click('#placeStation');await page.mouse.move(view.x+view.width*fx,view.y+view.height*fy);await page.mouse.down();await page.mouse.up();
+ const steps=(from,to,step)=>Array.from({length:Math.round((to-from)/step)+1},(_,i)=>+(from+i*step).toFixed(3));
+ for(const fy of steps(.25,.75,.05))for(const fx of steps(.15,.85,.05)){if(cavityNote)break;await click('#placeStation');await page.mouse.move(view.x+view.width*fx,view.y+view.height*fy);await page.mouse.down();await page.mouse.up();
   const note=await page.locator('#placeNote').innerText();if(note.startsWith('已放入'))cavityNote=note;else if(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')))await page.keyboard.press('Escape');}
  assert.ok(cavityNote,'no cavity found under the top-view grid');const [,floor]=/底板 Z ([\d.]+) m，离底板 1\.00 m/.exec(cavityNote);assert.ok(Math.abs(+await page.locator('#z').inputValue()-(+floor+1))<.011,cavityNote);
  await ready();await setInput('#viewSelect','perspective','change');
@@ -204,7 +207,7 @@ try{
  // Device settings and edited stations persist across a reload.
  await page.reload();await ready();await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');assert.equal(await page.locator('#azNumber').inputValue(),'25');
  assert.equal(await page.locator('#recognitionThreshold').inputValue(),'0.5');assert.ok(await page.locator('#precisionContours').isChecked());assert.equal(await page.locator('#coverageMode').inputValue(),'physical');assert.ok(await page.locator('#coverageContext').isChecked());assert.ok(await page.locator(`[data-recognition="${shown}"]`).isChecked());
- assert.ok(await page.locator('[data-feature-group="flood_release"]').isChecked());assert.equal(await page.locator('[data-feature-group="gallery"]').isChecked(),false);
+ assert.equal(await page.locator('[data-feature-group="monitoring"]').isChecked(),false);assert.equal(await page.locator('[data-feature-group="vertical_transport"]').isChecked(),false);
  // An imported plan becomes a new study (FR-P8): in place for the current release and scenario; another scenario opens that scenario.
  const studies=async()=>page.locator('#studySelect option').evaluateAll(options=>options.map(o=>[o.value,o.selected]));
  assert.deepEqual(await studies(),[['study-1',true]]);

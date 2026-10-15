@@ -24,7 +24,7 @@ function clear(group) {
   group.clear();
 }
 
-export function createCompiledSceneView({ runtime, waterLayers, features=null, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{}, onCoveragePick=()=>{}, onPlacePick=()=>{}, onPlaceCancel=()=>{}, onStationPick=()=>{} }) {
+export function createCompiledSceneView({ runtime, waterLayers, features=null, featureLayers={}, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{}, onCoveragePick=()=>{}, onPlacePick=()=>{}, onPlaceCancel=()=>{}, onStationPick=()=>{} }) {
   const $=selector=>root.querySelector(selector),container=$('#webgl');
   const geometryView=createCompiledGeometryView(runtime),detectorGroup=new THREE.Group(),axisGroup=new THREE.Group(),projectionGroup=new THREE.Group(),extraGroup=new THREE.Group();
   const scene=new THREE.Scene();scene.background=new THREE.Color(LOOK.background);scene.fog=new THREE.FogExp2(LOOK.background,LOOK.fogDensity);
@@ -39,7 +39,8 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   }
   if(box.isEmpty())box.copy(wholeBox);
   // Subject-feature layer (FR-M11): the compiled components of direct features, drawn in their class colours.
-  const featureIds=features?featureLayerGroups(features).flatMap(group=>group.featureIds):[],featureMeshes=new Map(featureIds.map(id=>[id,[]])),featureOfComponent=new Map();
+  // Groups the display profile hides keep their meshes (linked emphasis can highlight them) but are never picked.
+  const layerGroups=features?featureLayerGroups(features,featureLayers):[],featureIds=layerGroups.flatMap(group=>group.featureIds),pickableFeatures=new Set(layerGroups.filter(group=>group.listed).flatMap(group=>group.featureIds)),featureMeshes=new Map(featureIds.map(id=>[id,[]])),featureOfComponent=new Map();
   for(const component of runtime.components){const id=component.metadata.source_entity_id;if(component.metadata.flags.physics&&featureMeshes.has(id)){featureMeshes.get(id).push(geometryView.meshes.get(component.componentId));featureOfComponent.set(component.componentId,id);}}
   const featureVisible=new Map(featureIds.map(id=>[id,false]));let emphasised=new Set(),featuresSeen=null;
   // Coverage highlight (FR-M10, ADR-026): subject surfaces by default, terrain and water on request.
@@ -191,7 +192,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   // Hover and pick per feature; a click is a press and release without orbiting.
   const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),tip=document.createElement('div');tip.className='feature-tip';tip.hidden=true;container.after(tip);let hovered=null,pressed=null,pending=false;
   function featureAt(event){const bounds=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-bounds.left)/bounds.width*2-1,-(event.clientY-bounds.top)/bounds.height*2+1);raycaster.setFromCamera(pointer,camera);
-    const visible=[...featureMeshes.values()].flat().filter(mesh=>mesh.visible);return featureOfComponent.get(raycaster.intersectObjects(visible,false)[0]?.object.name)??null;}
+    const visible=[...featureMeshes.values()].flat().filter(mesh=>mesh.visible&&pickableFeatures.has(featureOfComponent.get(mesh.name)));return featureOfComponent.get(raycaster.intersectObjects(visible,false)[0]?.object.name)??null;}
   // Coverage at the subject surface under the pointer (FR-M10): what the station sees there (model frame z up; scene y up).
   function coverageAt(){if(!coverage.covMode.value||!currentStation||!currentDevice)return null;
     const targets=[...subjectMeshes.filter(mesh=>mesh.visible),...(sliceMesh.visible?[sliceMesh]:[]),...(featureCoverage.value?[...featureMeshes.values()].flat().filter(mesh=>mesh.visible):[])];

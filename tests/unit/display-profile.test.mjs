@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildFeatureCatalogue } from '../../dist/modules/feature-catalogue.js';
-import { resolveRecognitionItems } from '../../dist/modules/display-profile.js';
+import { resolveRecognitionItems, resolveFeatureLayerOptions, resolveAxisLabels } from '../../dist/modules/display-profile.js';
 
 // Synthetic, subject-neutral catalogue (ADR-029).
 const catalogue = buildFeatureCatalogue({
@@ -73,4 +73,23 @@ test('invalid profiles fail closed', () => {
     [profile([{ ...ok, select: { system: 'access' } }]), /exactly one/],
     [profile([{ ...ok, color: 'blue' }]), /colour/]
   ]) assert.throws(() => resolveRecognitionItems(document, catalogue, materials), pattern);
+});
+
+test('feature-layer options: hidden groups must name known feature groups', () => {
+  assert.deepEqual(resolveFeatureLayerOptions(null, catalogue), { hiddenGroups: [] });
+  assert.deepEqual(resolveFeatureLayerOptions({ profile_version: '1.0', recognition_items: [] }, catalogue), { hiddenGroups: [] });
+  assert.deepEqual(resolveFeatureLayerOptions({ profile_version: '1.1', feature_layers: { hidden_groups: ['access'] } }, catalogue), { hiddenGroups: ['access'] });
+  assert.throws(() => resolveFeatureLayerOptions({ profile_version: '1.1', feature_layers: { hidden_groups: ['nope'] } }, catalogue), /Unknown feature group nope/);
+  assert.throws(() => resolveFeatureLayerOptions({ profile_version: '1.1', feature_layers: { hidden_groups: ['access', 'access'] } }, catalogue), /Duplicate/);
+  assert.throws(() => resolveFeatureLayerOptions({ profile_version: '1.1', feature_layers: { hidden_groups: [] } }, catalogue), /at least one/);
+});
+
+test('axis labels: optional, need a zh/en label for X, Y, Z and the origin', () => {
+  const label = (zh, en) => ({ zh, en });
+  const axes = { X: label('东', 'East'), Y: label('北', 'North'), Z: label('上', 'Up'), origin: label('基点', 'Datum') };
+  assert.equal(resolveAxisLabels(null), null);
+  assert.equal(resolveAxisLabels({ profile_version: '1.1', recognition_items: [] }), null);
+  assert.deepEqual(resolveAxisLabels({ profile_version: '1.1', axes }), axes);
+  assert.throws(() => resolveAxisLabels({ profile_version: '1.1', axes: { ...axes, Z: undefined } }), /axis Z/);
+  assert.throws(() => resolveAxisLabels({ profile_version: '1.1', axes: { ...axes, origin: label('', 'Datum') } }), /origin/);
 });

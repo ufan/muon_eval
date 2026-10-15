@@ -14,7 +14,7 @@ import { demoFootnote } from './demo-snapshot.js';
 import { openStudies, saveStudy, saveSession, createStudy, switchStudy, listStudies, deleteStudy } from './plan-store.js';
 import { selectionHref, APP_PAGES } from './application-selection.js';
 import { placementPoint, coverageStationSet } from './coverage-map.js';
-export function createMainPage({workbenchHref='./geometry-preview.html',datasetId,datasetVersion,features,recognitionItems,state,sceneView,projectionView,createController,createPort,placeInCavity=()=>null,sliceMask=null,targetSamples=null,scenarioId=null,releases=[],candidateIds=[],capabilities,environmentDescription,backendLabel,root=document,storage=localStorage}){
+export function createMainPage({workbenchHref='./geometry-preview.html',datasetId,datasetVersion,features,featureLayerOptions={},recognitionItems,state,sceneView,projectionView,createController,createPort,placeInCavity=()=>null,sliceMask=null,targetSamples=null,scenarioId=null,releases=[],candidateIds=[],capabilities,environmentDescription,backendLabel,root=document,storage=localStorage}){
  const $=s=>root.querySelector(s),$$=s=>[...root.querySelectorAll(s)];
 
  const projection={mode:'counts',data:null,recognition:null,precision:false};
@@ -25,8 +25,8 @@ export function createMainPage({workbenchHref='./geometry-preview.html',datasetI
  const escapeHtml=text=>String(text).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};`);
  const mainPatterns=createMainPatternView({canvas:$('#projectionCanvas'),host:$('aside.right'),backendLabel,onExportComparison:()=>fullResults(study.compared)});
  const recognition=createRecognitionPanel({root,features,items:recognitionItems,storage,storageKey:`muon-recognition:${datasetId}`,onChange:()=>{projection.recognition=recognition.state();drawProjection();renderOverview();},onHoverItem:item=>sceneView.emphasiseFeatures(item?.kind==='features'?[...item.featureIds]:[])});
- const layerFeatureIds=featureLayerGroups(features).flatMap(group=>group.featureIds);
- const featureLayers=createFeatureLayerPanel({root,features,storage,storageKey:`muon-feature-layers:${datasetId}`,onVisibility:(id,visible)=>sceneView.setFeatureVisible(id,visible),onHoverFeatures:ids=>sceneView.emphasiseFeatures(ids)});projection.recognition=recognition.state();
+ const layerFeatureIds=featureLayerGroups(features,featureLayerOptions).filter(group=>group.listed).flatMap(group=>group.featureIds);
+ const featureLayers=createFeatureLayerPanel({root,features,featureLayers:featureLayerOptions,storage,storageKey:`muon-feature-layers:${datasetId}`,onVisibility:(id,visible)=>sceneView.setFeatureVisible(id,visible),onHoverFeatures:ids=>sceneView.emphasiseFeatures(ids)});projection.recognition=recognition.state();
  // The working station's input; it refers to the plan only while it equals its candidate (study-state.js).
  const inputs=()=>study.snapshot();
  // Per-candidate results (FR-P10): compact entries by assessment key, filled one at a time in the background;
