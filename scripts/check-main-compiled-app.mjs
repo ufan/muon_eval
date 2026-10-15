@@ -56,7 +56,7 @@ try{
  // Lines below the horizon count muons from behind the detector (quick-response@4.0.0).
  assert.equal(await page.locator('#projectionOutlines path.horizon').count(),1);
  const inView=page.locator('#recognitionItems label:not(.out) [data-recognition]');assert.ok(await inView.count()>0);const shown=await inView.first().getAttribute('data-recognition');await inView.first().check();
- assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);assert.match(await page.locator('#projectionReadout').innerText(),/识别轮廓：/);
+ assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);assert.doesNotMatch(await page.locator('#projectionReadout').innerText(),/总计数/,'no idle summary (ADR-032)');
  // Precision lines (FR-M13): off by default, drawn from the result's own counts, remembered.
  assert.equal(await page.locator('#precisionContours').isChecked(),false);assert.equal(await page.locator('#projectionOutlines path.precision').count(),0);
  await page.locator('#precisionContours').check();assert.ok(await page.locator('#projectionOutlines path.precision').count()>0);

@@ -20,7 +20,8 @@ const videoType = () => typeof MediaRecorder === 'undefined' ? null : VIDEO_TYPE
 
 export function createDemoView({ root = document, sceneView, storage, storageKey, datasetId, describe, onToggle = () => {} }) {
   const $ = s => root.querySelector(s), app = $('.app'), bar = $('#demoBar');
-  let on = false, current = null, saved = [];
+  let on = false, current = null, saved = [], projectionHome = null;
+  const projection = $('#projectionPanel');
   try { saved = (JSON.parse(storage.getItem(storageKey)) ?? []).filter(v => typeof v?.id === 'string' && Array.isArray(v.position) && Array.isArray(v.target)); } catch {}
   const persist = () => { try { storage.setItem(storageKey, JSON.stringify(saved)); } catch {} };
   // Presets are the page's own view list (#viewSelect), so their names come from the dataset's views.
@@ -52,7 +53,10 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
     $('#demoFootnote').replaceChildren(...footnote.map(text => Object.assign(document.createElement('div'), { textContent: text })));
   }
   function setOn(value) {
-    on = Boolean(value); app.classList.toggle('demo', on); app.classList.remove('demo-projection'); if (on) current = $('#viewSelect').value;
+    on = Boolean(value); app.classList.toggle('demo', on); app.classList.remove('demo-projection');
+    // The projection sits in the right sidebar (ADR-032); in demonstration mode it floats over the 3D view again.
+    if (on) { projectionHome = { parent: projection.parentElement, next: projection.nextElementSibling }; $('#viewport').append(projection); }
+    else if (projectionHome) { projectionHome.parent.insertBefore(projection, projectionHome.next); projectionHome = null; } if (on) current = $('#viewSelect').value;
     for (const id of ['#demoBar', '#demoCaption', '#demoLegend', '#demoFootnote']) $(id).hidden = !on;
     $('#demoProjection').setAttribute('aria-pressed', 'false');
     sceneView.setDemo(on); renderViews(); render(); onToggle(on);

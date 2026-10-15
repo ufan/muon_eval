@@ -317,3 +317,11 @@
 #viewport.tools-idle .vt-bar, #viewport.tools-idle #layersTool { opacity: .22; }
 @media (prefers-reduced-motion: reduce) { #viewport .vt-bar, #viewport #layersTool { transition: none; } }
 .app.demo .vt-bar, .app.demo #layersTool { display: none; }
+/* 投影结果 in the right sidebar (ADR-032): a sidebar section, not a floating window. In demonstration mode
+   demo-view.js moves the panel back over the 3D view, where the floating styles above apply. */
+.right #projectionPanel { position: static; width: auto; max-height: none; overflow: visible; padding: 15px 16px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; user-select: auto; }
+.right #projectionHandle { cursor: default; margin-bottom: 4px; }
+.right #projectionHandle b { font-size: 12px; letter-spacing: .1em; color: #b9ccd5; }
+.right #projectionHandle span { display: none; }
+#projectionReadout .readout-hint { color: #8ea5b2; }
+.app.demo #projectionPanel { top: 56px; max-height: calc(100% - 70px); }
