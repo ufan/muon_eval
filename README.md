@@ -50,7 +50,7 @@ Open `http://127.0.0.1:8765/`. Any other static HTTP server also works once the 
 - Material classification and water-equivalent column density along rays.
 - 25×25 quick preview and 65×65 final projection.
 - Expected counts, transmission, material-contribution and response numeric layers.
-- Hovering a projection pixel highlights the 3D ray and material path.
+- Hovering a projection pixel shows its ray in 3D (material-colored tubes, solid where visible and ghosted where hidden, rings at surface crossings) and a depth profile in the readout; a click pins the pixel and "侧视射线" views its ray side-on.
 - Station metrics, comparison, versioned plan export and import.
 - Headless batch runs of a plan from the command line (see below).
 - Docker/Nginx and static-hosting deployment.

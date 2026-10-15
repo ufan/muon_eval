@@ -8,12 +8,12 @@ import { createCompiledGeometryView } from './compiled-geometry-view.js';
 import { detectorBasis } from './detector-pose.js';
 import { featureLayerGroups, featuresAlongRay } from './feature-layers.js';
 import { slicePoint } from './slice-plane.js';
+import { displayedRaySegments, rayExitStub, rayMarkers, rayMaterialColor, rayProfile, sideViewPose } from './ray-display.js';
 import { createCoverageUniforms, attachCoverage, setCoverageVariant, COVERAGE_SLOT_BINS, MULTI_MAPS } from './coverage-shader.js';
 import { countsPerSteradian, coverageBrightness, coverageReadout, coveringStations, multiViewCoverage, perSteradianMap, usableCounts, COVERAGE_LOG_RANGE } from './coverage-map.js';
 
 // View-only model Z-up → scene Y-up transform. Never classify or trace a mesh here.
 export const compiledPointToScene = ([x,y,z]) => new THREE.Vector3(x,z,-y);
-const materialColors = { concrete:0xc0bcb0, rock:0x809488, water:0x49a7ff, steel:0xffad58, air:0x63ffe8 };
 // Display style of the main app (owner preference: the former legacy scene's look).
 // View-only: it replaces the GLB display colours and never touches the shared buffers.
 const LOOK = { fovEdge:0xffb8e0, background:0x071018, fogDensity:.00155, dam:0xaaa79c, steel:0x73808b, edge:0x3f5159, rock:0x6e756f,
@@ -26,9 +26,9 @@ function clear(group) {
 
 export function createCompiledSceneView({ runtime, waterLayers, features=null, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{}, onCoveragePick=()=>{}, onPlacePick=()=>{}, onPlaceCancel=()=>{}, onStationPick=()=>{} }) {
   const $=selector=>root.querySelector(selector),container=$('#webgl');
-  const geometryView=createCompiledGeometryView(runtime),detectorGroup=new THREE.Group(),rayGroup=new THREE.Group(),projectionGroup=new THREE.Group(),extraGroup=new THREE.Group();
+  const geometryView=createCompiledGeometryView(runtime),detectorGroup=new THREE.Group(),projectionGroup=new THREE.Group(),extraGroup=new THREE.Group();
   const scene=new THREE.Scene();scene.background=new THREE.Color(LOOK.background);scene.fog=new THREE.FogExp2(LOOK.background,LOOK.fogDensity);
-  scene.add(geometryView.group,detectorGroup,rayGroup,projectionGroup,extraGroup,new THREE.HemisphereLight(0xbfe3ff,0x17221b,2.4));
+  scene.add(geometryView.group,detectorGroup,projectionGroup,extraGroup,new THREE.HemisphereLight(0xbfe3ff,0x17221b,2.4));
   const light=new THREE.DirectionalLight(0xfff0d6,3.1);light.position.set(160,260,150);scene.add(light);
   const box=new THREE.Box3(),wholeBox=new THREE.Box3();geometryView.group.updateMatrixWorld(true);
   for(const component of runtime.components) {
@@ -75,7 +75,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     if(material==='water')for(const [layer,ids] of Object.entries(waterLayers))if(component.sourceEntityIds.some(id=>ids.includes(id)))return layer;
     return null;
   }
-  function setLayer(name,visible){layerState.set(name,visible);if(name==='cone'){detectorGroup.visible=rayGroup.visible=projectionGroup.visible=visible;fovGroup.visible=visible&&fovEdges;solidGroup.visible=visible&&fovSolid;return;}
+  function setLayer(name,visible){layerState.set(name,visible);if(name==='cone'){detectorGroup.visible=projectionGroup.visible=visible;fovGroup.visible=visible&&fovEdges;solidGroup.visible=visible&&fovSolid;return;}
     for(const component of runtime.components)if(materialLayer(component)===name){const mesh=geometryView.meshes.get(component.componentId);mesh.visible=visible&&component.metadata.flags.display&&component.metadata.realization!=='virtual';}}
   function setDamOpacity(opacity){for(const component of runtime.components)if(materialLayer(component)==='dam'){const material=geometryView.meshes.get(component.componentId).material;material.transparent=opacity<1;material.opacity=opacity;material.depthWrite=opacity>.72;material.needsUpdate=true;}}
   let multiOptions={map:'views',errorLevel:.1,minViews:3,goodSpreadDeg:30,minSpreadDeg:10};
@@ -162,7 +162,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     return[...(working?.visible?[{text:currentStation.name||'工作点位',color:'#ff4fb3',...at(working)}]:[]),...extraStations.map((s,i)=>screen[i].visible?{text:s.name,color:s.color,...at(screen[i])}:null).filter(Boolean)];}
   function workingScreen(){if(!renderer||!currentStation)return null;return screenOf(compiledPointToScene([currentStation.x,currentStation.y,currentStation.z]),renderer.domElement.getBoundingClientRect());}
   function updateLabels(){const box=container.getBoundingClientRect(),screen=markerScreen(),place=(label,p)=>{label.hidden=!p?.visible;if(p?.visible){label.style.left=`${p.x-box.left}px`;label.style.top=`${p.y-box.top}px`;}};
-    [...labels.querySelectorAll('[data-station]')].forEach((label,i)=>place(label,screen[i]));workingLabel.textContent=currentStation?.name||'工作点位';place(workingLabel,demo?workingScreen():null);}
+    [...labels.querySelectorAll('[data-station]')].forEach((label,i)=>place(label,screen[i]));workingLabel.textContent=currentStation?.name||'工作点位';place(workingLabel,demo?workingScreen():null);placeRayLabels();}
   const markerAt=event=>nearestScreenPoint(markerScreen(),[event.clientX,event.clientY],12);
   function setCoverageStations(list=[]){extraStations=list.slice(0,coverage.covExtraOrigin.value.length).map(s=>({...s,origin:compiledPointToScene([s.x,s.y,s.z])}));clear(extraGroup);coverage.covExtraCount.value=extraStations.length;
     labels.replaceChildren(workingLabel,...extraStations.map(s=>{const label=document.createElement('button');label.type='button';label.textContent=s.name;label.dataset.station=s.id;label.title='设为工作点位';label.style.setProperty('--c',s.color);label.hidden=true;label.onclick=()=>onStationPick(s.id);return label;}));
@@ -171,7 +171,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
       coverage.covExtraMax.value[i].set(s.device.maxSlopeX,s.device.maxSlopeY);coverage.covExtraColor.value[i].set(s.color);setSlot(i+1,{origin:coverage.covExtraOrigin.value[i],forward:coverage.covExtraForward.value[i],right:coverage.covExtraRight.value[i],up:coverage.covExtraUp.value[i],device:s.device,color:coverage.covExtraColor.value[i]});
       const marker=new THREE.Mesh(new THREE.OctahedronGeometry(radius*.025),new THREE.MeshBasicMaterial({color:s.color,depthTest:false,transparent:true,opacity:.9}));marker.position.copy(origin);marker.renderOrder=5;extraGroup.add(marker);});buildAtlas();updateVariant();drawFovEdges();updateLabels();requestRender();}
   function updateVariant(){setCoverageVariant(coverageMaterials,coverage.covMode.value===2&&coverage.covExtraCount.value>0);}
-  function drawDetector(station,device){currentStation={...station};currentDevice={...device};setCoveragePose(station,device);clear(detectorGroup);clear(rayGroup);clear(projectionGroup);
+  function drawDetector(station,device){currentStation={...station};currentDevice={...device};setCoveragePose(station,device);clear(detectorGroup);clearRay();
     const origin=compiledPointToScene([station.x,station.y,station.z]),basis=detectorBasis(station.az,station.el),forward=compiledPointToScene(basis.forward).normalize(),right=compiledPointToScene(basis.right),up=compiledPointToScene(basis.up);
     const orientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),forward);
     for(let i=0;i<device.layers;i++){const mesh=new THREE.Mesh(new THREE.PlaneGeometry(device.width,device.height),new THREE.MeshBasicMaterial({color:0xff65bd,side:THREE.DoubleSide}));mesh.position.copy(origin).addScaledVector(forward,(i-(device.layers-1)/2)*device.spacing);mesh.quaternion.copy(orientation);detectorGroup.add(mesh);}
@@ -223,38 +223,67 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   function pressFeature(event){pressed=[event.clientX,event.clientY];}
   function releaseFeature(event){if(!pressed||Math.hypot(event.clientX-pressed[0],event.clientY-pressed[1])>4){pressed=null;return;}pressed=null;
     if(placing){const surface=surfaceAt(event);if(!surface)return;setPlacing(false);onPlacePick(surface);requestRender();return;}const station=markerAt(event);if(station){onStationPick(station);return;}const id=featureAt(event);if(id){onFeaturePick(id);return;}const readout=coverageAt();if(readout?.ix!==null&&readout?.ix!==undefined)onCoveragePick(readout.ix,readout.iy);}
-  function displayTrace(group,trace,station,direction){clear(group);const origin=compiledPointToScene([station.x,station.y,station.z]),dir=compiledPointToScene([direction.x,direction.y,direction.z]);
-    for(const segment of trace.segments){if(segment.material==='air')continue;const a=origin.clone().addScaledVector(dir,segment.t0),b=origin.clone().addScaledVector(dir,segment.t1);group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),new THREE.LineBasicMaterial({color:materialColors[segment.material]??0xffffff,depthTest:false})));}
-    const arrow=new THREE.ArrowHelper(dir,origin,radius*.2,0x65fff0);arrow.line.material.depthTest=arrow.cone.material.depthTest=false;group.add(arrow);
-  }
+  // Hovered ray: a lit tube per material interval, depth-tested, so it is solid where nothing hides it; a ghost copy drawn
+  // over everything shows the hidden stretches dimmed. Solid versus ghosted tells in front of versus behind or inside a
+  // surface. Rings and labels mark the trace's surface crossings. Tube and ring sizes stay constant in screen pixels.
+  // Which intervals are drawn, their colors and the crossings come from ray-display.js (shared with the depth profile).
+  const RAY_TUBE_PX=2.4,RAY_STUB_PX=1.2,RAY_RING_PX=7,RAY_GHOST_OPACITY=.38,Y_AXIS=new THREE.Vector3(0,1,0),Z_AXIS=new THREE.Vector3(0,0,1);
+  let rayParts=[],rayLabels=[];const rayLabelLayer=document.createElement('div');rayLabelLayer.className='ray-labels';container.after(rayLabelLayer);
+  function addRayPair(geometry,color,position,quaternion,kind,length=1){
+    const solid=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.35,roughness:.45,metalness:0}));
+    const ghost=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color,transparent:true,opacity:RAY_GHOST_OPACITY,depthTest:false,depthWrite:false,toneMapped:false}));ghost.renderOrder=10;
+    for(const mesh of [solid,ghost]){mesh.position.copy(position);mesh.quaternion.copy(quaternion);projectionGroup.add(mesh);rayParts.push({mesh,kind,length});}}
+  function clearRay(){clear(projectionGroup);rayParts=[];rayLabels=[];rayLabelLayer.replaceChildren();}
+  function displayRay(trace,station,direction){clearRay();const origin=compiledPointToScene([station.x,station.y,station.z]),dir=compiledPointToScene([direction.x,direction.y,direction.z]).normalize(),at=m=>origin.clone().addScaledVector(dir,m);
+    const along=new THREE.Quaternion().setFromUnitVectors(Y_AXIS,dir),across=new THREE.Quaternion().setFromUnitVectors(Z_AXIS,dir);
+    for(const segment of displayedRaySegments(trace)){const length=segment.t1-segment.t0;if(!(length>0))continue;addRayPair(new THREE.CylinderGeometry(1,1,1,16),rayMaterialColor(segment.material),at((segment.t0+segment.t1)/2),along,'tube',length);}
+    // A thin stub into the open air after the exit shows the ray leaving the last surface.
+    const stub=rayExitStub(trace);if(stub)addRayPair(new THREE.CylinderGeometry(1,1,1,12),rayMaterialColor('air'),at((stub.t0+stub.t1)/2),along,'stub',stub.t1-stub.t0);
+    for(const marker of rayMarkers(trace)){const point=at(marker.distanceM);addRayPair(new THREE.TorusGeometry(1,.16,10,40),0xffffff,point,across,'ring');
+      const label=document.createElement('span');label.textContent=marker.label;label.dataset.kind=marker.kind;label.hidden=true;rayLabelLayer.append(label);rayLabels.push({label,point});}
+    updateLabels();}
+  function scaleRay(){if(!rayParts.length)return;const height=Math.max(1,container.clientHeight),perPixel=2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/height;
+    for(const {mesh,kind,length} of rayParts){const pixel=perPixel*camera.position.distanceTo(mesh.position);if(kind==='tube'||kind==='stub'){const r=(kind==='tube'?RAY_TUBE_PX:RAY_STUB_PX)*pixel;mesh.scale.set(r,length,r);}else mesh.scale.setScalar(RAY_RING_PX*pixel);}}
+  function placeRayLabels(){const canvas=renderer?.domElement.getBoundingClientRect(),box=container.getBoundingClientRect(),shown=projectionGroup.visible;
+    for(const {label,point} of rayLabels){const p=canvas&&shown?screenOf(point,canvas):null;label.hidden=!p?.visible;if(p?.visible){label.style.left=`${p.x-box.left}px`;label.style.top=`${p.y-box.top}px`;}}}
+  // Side view of a projection pixel's ray: the camera moves (eased, unless reduced motion is preferred) to look at the
+  // ray side-on, framed to the drawn length. Any user camera input cancels the move.
+  let cameraMove=null;
+  function viewRaySideOn(data,x,y){if(!controls||!currentStation)return;const pixel=data.values[y*data.n+x],lengthM=rayExitStub(pixel.q)?.t1??rayProfile(pixel.q).lengthM;if(!(lengthM>0))return;
+    const origin=compiledPointToScene([currentStation.x,currentStation.y,currentStation.z]),dir=compiledPointToScene([pixel.dir.x,pixel.dir.y,pixel.dir.z]).normalize();
+    const pose=sideViewPose({origin:origin.toArray(),direction:dir.toArray(),lengthM,eye:camera.position.toArray(),fovDeg:camera.fov,aspect:camera.aspect}),to={position:new THREE.Vector3(...pose.position),target:new THREE.Vector3(...pose.target)};
+    if(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches){cameraMove=null;camera.position.copy(to.position);controls.target.copy(to.target);controls.update();return;}
+    cameraMove={from:{position:camera.position.clone(),target:controls.target.clone()},to,start:performance.now(),ms:650};}
+  function stepCameraMove(){if(!cameraMove)return false;const t=Math.min(1,(performance.now()-cameraMove.start)/cameraMove.ms),e=t<.5?2*t*t:1-(-2*t+2)**2/2;
+    camera.position.lerpVectors(cameraMove.from.position,cameraMove.to.position,e);controls.target.lerpVectors(cameraMove.from.target,cameraMove.to.target,e);if(t>=1)cameraMove=null;return true;}
   // On-demand rendering (FR-N5): a frame is drawn only after a change (camera move and its damping, resize, or any call
   // into this view); an idle scene costs no GPU time.
   let frame=null;
   function requestRender(){if(!renderer||frame!==null)return;frame=requestAnimationFrame(renderFrame);}
-  function renderFrame(){frame=null;if(recording)return;const moving=controls.update();updateScale();renderer.render(scene,camera);updateLabels();if(moving)requestRender();}
+  function renderFrame(){frame=null;if(recording)return;const easing=stepCameraMove(),moving=controls.update();updateScale();scaleRay();renderer.render(scene,camera);updateLabels();if(moving||easing)requestRender();}
   let recording=false;
   const api={
-    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
+    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);controls.addEventListener('start',()=>{cameraMove=null;});requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
     resize,setView,setLayer,setDamOpacity,drawDetector,setSlice,setSliceMask,subjectExtent,setFovEdges,setFovSolid,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
-    showRay:(trace,station,direction)=>displayTrace(rayGroup,trace,station,direction),
     // Demonstration mode (#17): labels, camera views as view state (model frame, z up) and a capture of the
     // current frame with every station's label position (CSS pixels within the image).
     setDemo(on){demo=Boolean(on);updateLabels();requestRender();},
     cameraView(){if(!controls)return null;const model=v=>[v.x,-v.z,v.y];return{position:model(camera.position),target:model(controls.target)};},
     setCameraView({position,target}){if(!controls||![...position,...target].every(Number.isFinite))return;camera.position.copy(compiledPointToScene(position));controls.target.copy(compiledPointToScene(target));controls.update();requestRender();},
-    capture(){if(!renderer)return null;controls.update();renderer.render(scene,camera);const box=renderer.domElement.getBoundingClientRect(),image=document.createElement('canvas');
+    capture(){if(!renderer)return null;controls.update();scaleRay();renderer.render(scene,camera);const box=renderer.domElement.getBoundingClientRect(),image=document.createElement('canvas');
       image.width=renderer.domElement.width;image.height=renderer.domElement.height;image.getContext('2d').drawImage(renderer.domElement,0,0);
       requestRender();return{image,width:box.width,height:box.height,labels:frameLabels()};},
     // Animation export (FR-M5): preset views in the model frame, and one frame drawn from a given view into a 2D context
     // (CSS pixels of the view) while recording; on-demand rendering pauses meanwhile.
     presetView(mode){const model=v=>[v.x,-v.z,v.y],view=presetCamera(mode);return{position:model(view.position),target:model(view.target)};},
     setRecording(on){recording=Boolean(on);if(!recording)requestRender();},
-    drawFrame(view,ctx,width,height){if(!renderer)return null;camera.position.copy(compiledPointToScene(view.position));controls.target.copy(compiledPointToScene(view.target));camera.lookAt(controls.target);updateScale();
+    drawFrame(view,ctx,width,height){if(!renderer)return null;camera.position.copy(compiledPointToScene(view.position));controls.target.copy(compiledPointToScene(view.target));camera.lookAt(controls.target);updateScale();scaleRay();
       renderer.render(scene,camera);ctx.drawImage(renderer.domElement,0,0,width,height);return frameLabels();},
-    showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayTrace(projectionGroup,pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
-    clearProjection(){clear(projectionGroup);emphasiseFeatures([]);},showFlux(){},drawFluxCloud(){},
+    showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayRay(pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
+    viewRaySideOn,
+    clearProjection(){clearRay();emphasiseFeatures([]);},showFlux(){},drawFluxCloud(){},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},
-    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);sliceMesh.geometry.dispose();sliceMaterial.alphaMap?.dispose();sliceMaterial.dispose();tip.remove();labels.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(rayGroup);clear(projectionGroup);geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
+    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);sliceMesh.geometry.dispose();sliceMaterial.alphaMap?.dispose();sliceMaterial.dispose();tip.remove();labels.remove();rayLabelLayer.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clearRay();geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
   };
   // Every public call may change what is shown: request a frame after it.
   for(const [name,fn] of Object.entries(api))if(name!=='dispose')api[name]=(...args)=>{const value=fn(...args);requestRender();return value;};

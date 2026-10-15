@@ -1,11 +1,12 @@
 import { outlineRings, crossingsAlongRay, detectorSpaceItems } from './recognition-layers.js';
 import { precisionContours } from './precision-contours.js';
 import { colorLevel, heatRgb } from './projection-tiles.js';
+import { RAY_MATERIALS, rayMarkers, rayProfile } from './ray-display.js';
 // Projection panel view: heat map on the canvas, recognition outlines (FR-M12) in
 // an SVG overlay in pixel units, and the hover readout with the crossed items.
 const SVG='http://www.w3.org/2000/svg',DASHES=['','5 3','2 2','8 3 2 3'];
 const escapeHtml=text=>String(text).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};`);
-export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave=()=>{}}){
+export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave=()=>{},onSideView=()=>{}}){
  const $=s=>root.querySelector(s);
  let projection={data:null,mode:'counts',recognition:null,precision:false},RESPONSE={},precisionCache={data:null,contours:[]},selected=null;
  // One fixed colour scale for every station (projection-tiles.js), shared with the side-by-side view (#16).
@@ -36,12 +37,25 @@ export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave
  function detectorSpace(d){const r=recognition(),ids=detectorSpaceItems(d.values[Math.floor(d.values.length/2)],r.items);if(!ids.length)return'';const byId=new Map(r.items.map(item=>[item.id,item]));return`<br><span class="detector-space">探测器位于：${ids.map(id=>escapeHtml(byId.get(id).label.zh)).join('、')}（自身空间不计入轮廓）</span>`;}
  function summary(){const items=selectedItems();return items.length?`识别轮廓：${items.map(item=>escapeHtml(item.label.zh)).join('、')} · 长度 > ${recognition().threshold} m`:'识别轮廓未选择';}
  function drawProjection(){const d=projection.data;if(!d){drawOutlines();return;}const canvas=$('#projectionCanvas'),ctx=canvas.getContext('2d'),n=d.n,w=canvas.width/n,h=canvas.height/n,mode=projection.mode;ctx.clearRect(0,0,canvas.width,canvas.height);for(let iy=0;iy<n;iy++)for(let ix=0;ix<n;ix++){const q=d.values[iy*n+ix],t=mode==='counts'?colorLevel(mode,q.displayCount):mode==='transmission'?colorLevel(mode,q.displayTransmission):0;ctx.fillStyle=mode==='significance'?'#10202a':colorCss(t);ctx.fillRect(ix*w,canvas.height-(iy+1)*h,w+.5,h+.5)}drawOutlines();const title=mode==='counts'?`${RESPONSE.exposureDays}天预计计数`:mode==='transmission'?'坝体透射率':'结构对比显著度';$('#projectionReadout').innerHTML=`${title} · 总计数 ${Math.round(d.total).toLocaleString()}<br>加权透射 ${(d.weightedTransmission*100).toFixed(2)}%<br>${summary()}${detectorSpace(d)}`}
- function hover(ev){const d=projection.data;if(!d)return;const r=ev.currentTarget.getBoundingClientRect();showPixel(Math.max(0,Math.min(d.n-1,Math.floor((ev.clientX-r.left)/r.width*d.n))),Math.max(0,Math.min(d.n-1,d.n-1-Math.floor((ev.clientY-r.top)/r.height*d.n))));}
+ function pixelAt(ev){const d=projection.data,r=ev.currentTarget.getBoundingClientRect();return[Math.max(0,Math.min(d.n-1,Math.floor((ev.clientX-r.left)/r.width*d.n))),Math.max(0,Math.min(d.n-1,d.n-1-Math.floor((ev.clientY-r.top)/r.height*d.n)))];}
+ function hover(ev){if(!projection.data)return;showPixel(...pixelAt(ev));}
+ function pin(ev){const d=projection.data;if(!d)return;const [ix,iy]=pixelAt(ev);selected=pinned(ix,iy)?null:{data:d,ix,iy};drawOutlines();showPixel(ix,iy);}
+ function readoutClick(ev){if(ev.target.closest('[data-ray-side]')&&selected?.data===projection.data)onSideView(selected.data,selected.ix,selected.iy);}
  // Readout of one pixel (ix from the left, iy from the bottom), shared by hover and by a click on the 3D coverage.
  function showPixel(ix,iy){const d=projection.data;if(!d)return;const q=d.values[iy*d.n+ix],rec=recognition(),byId=new Map(rec.items.map(item=>[item.id,item]));
   const crossings=crossingsAlongRay(q,rec.items,{threshold:rec.threshold}).map(c=>({...c,color:byId.get(c.id).color,label:byId.get(c.id).label.zh}));onHover(d,ix,iy,{threshold:rec.threshold});
   const list=crossings.length?crossings.map(c=>`<span class="crossing"><i style="--c:${c.color}"></i>${escapeHtml(c.label)} · 穿行 ${c.lengthM.toFixed(1)} m · 距探测器 ${c.entryM.toFixed(1)} m 处进入</span>`).join(''):'<span class="crossing none">未穿过识别图层</span>';
-  $('#projectionReadout').innerHTML=`像素 (${ix+1},${iy+1}) · sx ${q.sx.toFixed(2)} · sy ${q.sy.toFixed(2)}${q.side==='back'?' · 后方来向':''}<br>${Math.round(q.count)} 事件/${RESPONSE.exposureDays}天 · 透射 ${(q.transmission*100).toFixed(3)}%<br>柱密度 ${q.q.mwe.toFixed(0)} m.w.e.${list}`;}
- const canvas=$('#projectionCanvas'),leave=()=>{onLeave();drawProjection();if(selected?.data===projection.data)showPixel(selected.ix,selected.iy);};canvas.addEventListener('mousemove',hover);canvas.addEventListener('mouseleave',leave);
- return Object.freeze({draw(state,response){projection=state;RESPONSE={...response};drawProjection();},selectPixel(ix,iy){const d=projection.data;if(!d||!Number.isInteger(ix)||!Number.isInteger(iy)||ix<0||iy<0||ix>=d.n||iy>=d.n)return;selected={data:d,ix,iy};drawOutlines();showPixel(ix,iy);},emphasiseItem(id){for(const path of root.querySelectorAll('#projectionOutlines path'))path.classList.toggle('emphasised',path.dataset.item===id);},dispose(){canvas.removeEventListener('mousemove',hover);canvas.removeEventListener('mouseleave',leave);}});
+  $('#projectionReadout').innerHTML=`像素 (${ix+1},${iy+1}) · sx ${q.sx.toFixed(2)} · sy ${q.sy.toFixed(2)}${q.side==='back'?' · 后方来向':''}<br>${Math.round(q.count)} 事件/${RESPONSE.exposureDays}天 · 透射 ${(q.transmission*100).toFixed(3)}%<br>柱密度 ${q.q.mwe.toFixed(0)} m.w.e.${list}${profile(q.q)}${rayActions(ix,iy)}`;}
+ // Depth profile of the hovered ray: one bar from the detector (0 m) to the end of the drawn ray, colored like the 3D
+ // tube (ray-display.js), with a tick at each surface crossing; it replaces a text legend of the ray colors.
+ function profile(trace){const {lengthM,parts}=rayProfile(trace);if(!(lengthM>0))return'';const at=m=>100*m/lengthM,pct=m=>`${at(m).toFixed(2)}%`,markers=rayMarkers(trace);
+  const bar=parts.map(p=>{const width=at(p.toM-p.fromM),name=RAY_MATERIALS[p.material]?.short??p.label;return`<i style="left:${pct(p.fromM)};width:${width.toFixed(2)}%;--c:${p.color}" title="${escapeHtml(`${p.label} · ${p.fromM.toFixed(1)}–${p.toM.toFixed(1)} m`)}">${width>=18?escapeHtml(name):''}</i>`;}).join('');
+  let last=0;const ticks=markers.map(m=>`<u style="left:${pct(m.distanceM)}"></u>`).join(''),labels=markers.map(m=>{const x=at(m.distanceM);if(x-last<12||x>88)return'';last=x;return`<b style="left:${x.toFixed(2)}%">${m.distanceM.toFixed(1)}</b>`;}).join('');
+  return`<div class="ray-profile" aria-label="射线材料剖面（自探测器起）"><div class="ray-profile-bar">${bar}${ticks}</div><div class="ray-profile-axis"><b class="start">0</b>${labels}<b class="end">${lengthM.toFixed(1)} m</b></div></div>`;}
+ // Pinned pixel (a click on the projection or on the 3D coverage): its ray stays after the pointer leaves, and can be
+ // viewed side-on in 3D.
+ const pinned=(ix,iy)=>selected?.data===projection.data&&selected.ix===ix&&selected.iy===iy;
+ function rayActions(ix,iy){return pinned(ix,iy)?'<div class="ray-actions"><button type="button" data-ray-side>侧视射线</button><span>已固定 · 再次点击该像素取消</span></div>':'<div class="ray-actions"><span>点击像素固定射线</span></div>';}
+ const canvas=$('#projectionCanvas'),leave=()=>{onLeave();drawProjection();if(selected?.data===projection.data)showPixel(selected.ix,selected.iy);};canvas.addEventListener('mousemove',hover);canvas.addEventListener('mouseleave',leave);canvas.addEventListener('click',pin);$('#projectionReadout').addEventListener('click',readoutClick);
+ return Object.freeze({draw(state,response){projection=state;RESPONSE={...response};drawProjection();},selectPixel(ix,iy){const d=projection.data;if(!d||!Number.isInteger(ix)||!Number.isInteger(iy)||ix<0||iy<0||ix>=d.n||iy>=d.n)return;selected={data:d,ix,iy};drawOutlines();showPixel(ix,iy);},emphasiseItem(id){for(const path of root.querySelectorAll('#projectionOutlines path'))path.classList.toggle('emphasised',path.dataset.item===id);},dispose(){canvas.removeEventListener('mousemove',hover);canvas.removeEventListener('mouseleave',leave);canvas.removeEventListener('click',pin);$('#projectionReadout').removeEventListener('click',readoutClick);}});
 }
