@@ -25,21 +25,21 @@ Measured 2026-10-10 (single file, sequential). The full Node suite takes about 3
 | Layer | Files |
 |---|---|
 | L0 | `node --check` on every entry point; `git diff --check` |
-| L1 | `contribution-contours`, `contribution-view`, `demand-render`, `numeric-pattern-client`, `pattern-capture-store`, `pattern-input-chunks`, `pattern-timing`, `projection-color-scale`, `projection-pattern-contract`, `structural-reference-projection`, `structural-reference-qualification` (each ≈ 0.1–0.3 s) |
+| L1 | `muon-response`, `detector-projection`, `main-architecture`, `feature-catalogue`, `display-profile`, `recognition-layers`, `feature-layers`, `precision-contours`, `application-selection`, `serve`, `plan-format`, `plan-store`, `plan-runner`, `study-state`, `candidate-results`, `pattern-differences`, `station-placement`, `coverage-map`, `slice-plane`, `target-samples`, `overview-table`, `screen-pick`, `projection-tiles`, `demo-snapshot`, `webm-muxer`, `contribution-contours`, `contribution-view`, `demand-render`, `numeric-pattern-client`, `pattern-capture-store`, `pattern-input-chunks`, `pattern-timing`, `projection-color-scale`, `projection-pattern-contract`, `structural-reference-projection`, `structural-reference-qualification` (each ≈ 0.1–0.3 s) |
 | L2 | `calculation-core` (frozen formulas), `projection-pattern-fixtures` (analytic oracle, ≈ 4 s), `contour-benchmark`, `derived-interface-artifact`, `interface-csg`, `structural-reference-benchmark`, `structural-reference-candidates` (recorded native evidence) |
-| L3 | `scripts/check-dataset-release.py`, `scripts/check-geometry-conformance.mjs`, `scripts/check-semantic-mapping.mjs`, `scripts/check-interface-artifacts.mjs` (needs `manifold3d`); tests `dataset-v07`, `compiled-mesh`, `semantic-mapping`, `structural-reference-domain` |
-| L4 | `main-architecture` (≈ 13 s), `dda-ray-tracer` (≈ 18 s), `main-compiled-backend`, `legacy-target-interpretation`, `compiled-assessment`, `projection-pattern-fields`, `material-projection`, `material-envelopes`, `material-contributions`, `contribution-export`, `pattern-interpretation`, `legacy-geometry-adapter` |
-| L5 | `scripts/check-main-compiled-app.mjs`, `scripts/check-main-app.mjs`, `scripts/check-compiled-preview.mjs` (finite-model step needs derived assets) |
+| L3 | `scripts/check-dataset-release.py`, `scripts/check-geometry-conformance.mjs`, `scripts/check-semantic-mapping.mjs`, `scripts/check-interface-artifacts.mjs` (needs `manifold3d`); tests `plan-format` (schema and validator agree, via Python `jsonschema`), `dataset-v07`, `feature-catalogue`, `display-profile`, `compiled-mesh`, `semantic-mapping`, `structural-reference-domain` |
+| L4 | `main-compiled-backend`, `compiled-assessment`, `projection-pattern-fields`, `material-projection`, `material-envelopes`, `material-contributions`, `contribution-export`, `pattern-interpretation`, `plan-runner` (CLI equals in-app evaluation, any thread count), `candidate-results` (compact form, shared keys), `station-placement` (cavity placement on the real model), `slice-plane` (section mask through a gallery), `target-samples` (points inside each recognition item) |
+| L5 | `scripts/check-main-compiled-app.mjs`, `scripts/check-compiled-preview.mjs` (finite-model step needs derived assets) |
 | L6 | `scripts/benchmark-*.mjs` |
 
-Some L4 files test behaviour that could be shown at L1/L2 with synthetic inputs (for example DDA traversal rules in `dda-ray-tracer`). Move such cases down when touching those files, keeping one real-dataset check per module at L4.
+Some L4 files test behaviour that could be shown at L1/L2 with synthetic inputs. Move such cases down when touching those files, keeping one real-dataset check per module at L4.
 
 ## 3. When to write a test first
 
 Test first:
 
 - **Pure calculation functions** (coordinates, directions, flux, acceptance, tracing rules, contour extraction, metrics): write the failing L1 test from the spec, then the code.
-- **Every bug fix**: first a test that reproduces the bug and fails, at the lowest layer that shows it. Example: FR-C1 starts with an L1 test asserting that the same flux input gives the same value regardless of what was evaluated before.
+- **Every bug fix**: first a test that reproduces the bug and fails, at the lowest layer that shows it. Example: FR-C1 started with an L1 test (`tests/unit/muon-response.test.mjs`) showing that a projection pixel's count changed with the pixels evaluated before it.
 - **Data formats and contracts** (plan/scan/result schemas, exports): write the round-trip and rejection tests (L2) with the schema.
 - **Domain invariants** in [DOMAIN_MODEL.md](DOMAIN_MODEL.md) §4: each invariant has at least one test that would fail if it were broken.
 
@@ -66,7 +66,7 @@ Tests live in layer directories: `tests/unit`, `tests/contract`, `tests/data`, `
 | `npm test` | L0–L2 | Every commit | ~5 s |
 | `npm run test:data` | L3 | After data/geometry/tracer changes | ~11 s |
 | `npm run test:integration` | L4 | Before push | ~22 s |
-| `npm run test:browser` | L5 (main app: compiled default and legacy) | Before merging UI/flow changes; before release | ~110 s |
+| `npm run test:browser` | L5 (main app) | Before merging UI/flow changes; before release | ~60 s |
 | `npm run test:browser:preview` | L5 (standalone preview; needs derived assets) | When the preview changes | — |
 | `npm run test:all` | L0–L5 | Before release | |
 
@@ -74,6 +74,5 @@ Single layers: `npm run test:unit`, `npm run test:contract`. L0 is `npm run chec
 
 ## 6. Gaps
 
-- Domain invariant 8 (history independence) has no test and is currently violated (FR-C1).
 - No type checking at L0 yet (FR-Q3).
 - Some L4 files contain cases that belong at L1/L2 (§2); move them down when touching those files.

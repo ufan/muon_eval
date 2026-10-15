@@ -1,4 +1,6 @@
 import { adaptDamSpecV07 } from './dam-spec-v07.js';
+import { buildFeatureCatalogue } from './feature-catalogue.js';
+import { resolveRecognitionItems } from './display-profile.js';
 import { validateBundle, validateTerrainHeader, verifySha256 } from './dataset-validation.js';
 
 // fetch/digest injection lets Node tests exercise the actual browser loading path.
@@ -15,11 +17,11 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
   id ??= registry.default_dataset;
   const entry = registry.datasets?.[id];
   if (!entry) throw new Error(`数据集 ${id} 未登记`);
+  if (entry.adapter !== 'dam-spec-v07') throw new Error(`Unsupported dataset adapter ${entry.adapter}`);
   const base = new URL(entry.base_url, registryAddress).href;
-  const strict = entry.adapter === 'dam-spec-v07';
   const bytes = async relative => {
     const buffer = await fetchBytes(new URL(relative, base));
-    if (strict || entry.integrity?.[relative]) await verifySha256(buffer, entry.integrity?.[relative], relative, options.digest);
+    await verifySha256(buffer, entry.integrity?.[relative], relative, options.digest);
     return buffer;
   };
   const readJson = async relative => json(await bytes(relative));
@@ -27,10 +29,8 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
     const header = await readJson(descriptor.header);
     const buffer = await bytes(descriptor.data);
     validateTerrainHeader(header, buffer.byteLength);
-    if (strict) {
-      if (header.file !== descriptor.data.split('/').at(-1)) throw new Error('Terrain header names a different data file');
-      await verifySha256(buffer, header.sha256, descriptor.data, options.digest);
-    }
+    if (header.file !== descriptor.data.split('/').at(-1)) throw new Error('Terrain header names a different data file');
+    await verifySha256(buffer, header.sha256, descriptor.data, options.digest);
     // Decode the declared endianness rather than relying on host byte order.
     const view = new DataView(buffer), values = new Float32Array(buffer.byteLength / 4);
     for (let i = 0; i < values.length; i++) {
@@ -49,28 +49,35 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
     loadTerrain(entry.terrain_far)
   ]);
   const identity = validateBundle(spec, id, { candidates, siteConditions, compiledManifest });
-  let geometry = null;
-  if (strict) {
-    if (compiledManifest.manifest_version !== '0.3' || compiledManifest.frame?.name !== 'model_frame') throw new Error('Unsupported compiled manifest contract');
-    if (compiledManifest.input.spec_file !== entry.spec || compiledManifest.input.spec_sha256 !== entry.integrity[entry.spec]) throw new Error('Manifest source spec does not match registry');
-    geometry = adaptDamSpecV07(spec);
-    for (const candidate of candidates.candidates) {
-      if (!geometry.entities.has(candidate.host_entity_id) || candidate.binding !== false) throw new Error(`Invalid candidate ${candidate.id}`);
+  if (compiledManifest.manifest_version !== '0.3' || compiledManifest.frame?.name !== 'model_frame') throw new Error('Unsupported compiled manifest contract');
+  if (compiledManifest.input.spec_file !== entry.spec || compiledManifest.input.spec_sha256 !== entry.integrity[entry.spec]) throw new Error('Manifest source spec does not match registry');
+  const geometry = adaptDamSpecV07(spec);
+  for (const candidate of candidates.candidates) {
+    if (!geometry.entities.has(candidate.host_entity_id) || candidate.binding !== false) throw new Error(`Invalid candidate ${candidate.id}`);
+  }
+  for (const condition of siteConditions.conditions) {
+    if (!geometry.entities.has(condition.entity_id)) throw new Error(`Unknown site-condition entity ${condition.entity_id}`);
+  }
+  for (const scenario of geometry.scenarios.values()) {
+    const compiled = compiledManifest.scenarios[scenario.id];
+    const sameVariables = compiled && Object.keys(compiled.variables).length === Object.keys(scenario.variables).length
+      && Object.entries(scenario.variables).every(([name, value]) => compiled.variables[name] === value);
+    if (!sameVariables) throw new Error(`Compiled scenario ${scenario.id} does not match source`);
+    for (const component of compiled.components) {
+      if (component.scenario_id !== scenario.id || component.frame !== 'model_frame' || !geometry.materials.has(component.material_id)) throw new Error(`Invalid compiled component ${component.component_id}`);
     }
-    for (const condition of siteConditions.conditions) {
-      if (!geometry.entities.has(condition.entity_id)) throw new Error(`Unknown site-condition entity ${condition.entity_id}`);
-    }
-    for (const scenario of geometry.scenarios.values()) {
-      const compiled = compiledManifest.scenarios[scenario.id];
-      const sameVariables = compiled && Object.keys(compiled.variables).length === Object.keys(scenario.variables).length
-        && Object.entries(scenario.variables).every(([name, value]) => compiled.variables[name] === value);
-      if (!sameVariables) throw new Error(`Compiled scenario ${scenario.id} does not match source`);
-      for (const component of compiled.components) {
-        if (component.scenario_id !== scenario.id || component.frame !== 'model_frame' || !geometry.materials.has(component.material_id)) throw new Error(`Invalid compiled component ${component.component_id}`);
-      }
-      if (compiledManifest.outputs[compiled.glb] !== entry.integrity[`compiled/${compiled.glb}`]) throw new Error(`Compiled mesh ${compiled.glb} does not match registry`);
-    }
-  } else if (identity.schema_version !== '0.6') throw new Error(`Unsupported dataset schema ${identity.schema_version}`);
+    if (compiledManifest.outputs[compiled.glb] !== entry.integrity[`compiled/${compiled.glb}`]) throw new Error(`Compiled mesh ${compiled.glb} does not match registry`);
+  }
+  const features = buildFeatureCatalogue({ entities: geometry.entities.values(), waterBodies: geometry.waterBodies.values(),
+    vocabulary: spec.vocabulary, components: Object.values(compiledManifest.scenarios).flatMap(scenario => scenario.components) });
+  // Optional display profile: presentation only, with its own hash outside the authored package integrity (ADR-029).
+  let profile = null;
+  if (entry.display_profile) {
+    const buffer = await fetchBytes(new URL(entry.display_profile.path, base));
+    await verifySha256(buffer, entry.display_profile.sha256, entry.display_profile.path, options.digest);
+    profile = json(buffer);
+  }
+  const recognitionItems = resolveRecognitionItems(profile, features, [...geometry.materials.keys()]);
   const loadCompiledScenario = async scenarioId => {
     const scenario = compiledManifest.scenarios[scenarioId];
     if (!scenario) throw new Error(`Unknown compiled scenario ${scenarioId}`);
@@ -78,13 +85,7 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
     await verifySha256(buffer, compiledManifest.outputs[scenario.glb], relative, options.digest);
     return { scenarioId, variables: scenario.variables, components: scenario.components, buffer };
   };
-  return { id, identity, base, entry, spec, geometry, candidates, detectorModels, siteConditions, compiledManifest, terrainNear, terrainFar, loadCompiledScenario };
-}
-
-export async function loadDefaultDataset(registryUrl = './datasets/registry.json', options = {}) {
-  const dataset = await loadDataset(null, registryUrl, options);
-  if (dataset.geometry) throw new Error('loadDefaultDataset is a legacy-only compatibility loader; use loadDataset with explicit application backend selection for v0.7');
-  return dataset;
+  return { id, identity, base, entry, spec, geometry, features, recognitionItems, candidates, detectorModels, siteConditions, compiledManifest, terrainNear, terrainFar, loadCompiledScenario };
 }
 
 export function sampleTerrainModel(terrain, modelX, modelY) {

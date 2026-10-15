@@ -20,17 +20,26 @@ export function nativeAxisBins(n, device, cache = new Map()) {
   return bins;
 }
 
-export function evaluateProjectionPixel({ bx, by, dir, q, device, response, flux, includeContext = false }) {
-  const sx = bx.slope, sy = by.slope, acceptanceWeight = bx.sumWeight * by.sumWeight;
+// Acceptance-weighted solid angle of one pixel: a slope cell spans step^2 cos^3 sr.
+export function pixelSolidAngle(bx, by, device) {
+  const cosTheta = 1 / Math.sqrt(1 + bx.slope * bx.slope + by.slope * by.slope);
+  return device.nativeSlopeStep ** 2 * (bx.sumWeight * by.sumWeight) * cosTheta ** 3;
+}
+
+export function evaluateProjectionPixel({ bx, by, dir, q, side = 'front', device, response, flux, includeContext = false }) {
+  const sx = bx.slope, sy = by.slope;
   const areaCm2 = device.width * device.height * 1e4, seconds = response.exposureDays * 86400;
   // Fixed three-layer coincidence is retained, even if device.layers differs.
   const response0 = response.layerEfficiency ** 3 * response.deadLiveFraction;
   const open = flux(dir.z, 1), through = flux(dir.z, minimumMuonEnergy(q.mwe));
-  const dOmega = device.nativeSlopeStep ** 2 * acceptanceWeight / (1 + sx * sx + sy * sy) ** 1.5;
-  const edge = .85 + .15 * Math.sqrt(Math.max(0, acceptanceWeight / (device.stripsX * device.stripsY)));
-  const factor = areaCm2 * seconds * dOmega * response0 * edge;
+  // Two-plane geometric factor (FR-C3): area x overlap weight is the aligned
+  // plane area, cosTheta projects it onto the ray (intensity is per area
+  // perpendicular to the ray), and a slope cell spans step^2 cos^3 sr.
+  const cosTheta = 1 / Math.sqrt(1 + sx * sx + sy * sy);
+  const dOmega = pixelSolidAngle(bx, by, device);
+  const factor = areaCm2 * cosTheta * seconds * dOmega * response0;
   const count = through * factor, openCount = open * factor, transmission = open > 0 ? through / open : 0;
-  return { value: { sx, sy, dir, q, count, ...(includeContext ? { openCount } : {}), transmission, factor, sigByTarget: {},
+  return { value: { sx, sy, dir, side, q, count, ...(includeContext ? { openCount } : {}), transmission, factor, sigByTarget: {},
     nativeRangeX: [bx.first, bx.last], nativeRangeY: [by.first, by.last] }, openCount };
 }
 
@@ -57,11 +66,11 @@ export function applyProjectionResolution(values, n, device, response) {
 
 // Scheduling and cancellation belong to the caller. sampleRay injects any
 // geometry backend; only its direction.z (model vertical cosine) and mwe matter.
+// It must return the sky end of the pixel's line (skySideDirection) and its side.
 export function createProjectionPass({ n, device, response, sampleRay, flux, axisBinCache, includeContext = false }) {
   device = { ...device }; response = { ...response };
   if (!Number.isInteger(n) || n < 1 || n > 2 * device.stripsX - 1) throw new Error('Invalid detector projection size');
-  const cache = new Map();
-  flux ||= (cosZ, energy) => integratedSurfaceFlux(cosZ, energy, response.angularModel, cache);
+  flux ||= (cosZ, energy) => integratedSurfaceFlux(cosZ, energy, response.angularModel);
   const binsX = nativeAxisBins(n, device, axisBinCache), binsY = nativeAxisBins(n, device, axisBinCache);
   const values = []; let total = 0, openTotal = 0, row = 0, result;
   function advance(rows) {
@@ -69,8 +78,9 @@ export function createProjectionPass({ n, device, response, sampleRay, flux, axi
     if (result) return { done: true, progress: 1, result };
     const end = Math.min(n, row + rows);
     for (; row < end; row++) for (let column = 0; column < n; column++) {
-      const bx = binsX[column], by = binsY[row], { dir, q } = sampleRay(bx.slope, by.slope);
-      const evaluated = evaluateProjectionPixel({ bx, by, dir, q, device, response, flux, includeContext });
+      const bx = binsX[column], by = binsY[row], { dir, q, side } = sampleRay(bx.slope, by.slope);
+      if (!(dir.z >= 0)) throw new Error('Projection rays must point to the sky side of the detector line');
+      const evaluated = evaluateProjectionPixel({ bx, by, dir, q, side, device, response, flux, includeContext });
       total += evaluated.value.count; openTotal += evaluated.openCount; values.push(evaluated.value);
     }
     if (row === n) {

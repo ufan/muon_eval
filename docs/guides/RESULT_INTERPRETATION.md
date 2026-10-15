@@ -52,13 +52,12 @@ The side-panel heading "station assessment" does not mean a relative scan rankin
 | Systematic error | Affects structural significance only | Should come from calibration or a sensitivity range, not be tuned freely |
 | Angular flux model | Zenith dependence and absolute counts | Gaisser by default; cos² only for rough comparison |
 
-Developers must not "optimize" how a plan looks by tuning systematic error, the edge factor or colour scales. Parameter changes need a physical or calibration basis and must appear in exported results.
+Developers must not "optimize" how a plan looks by tuning systematic error, efficiencies or colour scales. Parameter changes need a physical or calibration basis and must appear in exported results.
 
 ## 4. Main current uncertainties and technical debt
 
 ### Geometry
 
-- Hydraulic-cavity visual clipping and material classification still have two implementations that can drift (legacy backend);
 - some chute, bottom-outlet, observation-room and lower-gallery dimensions are approximate or assumed;
 - the full reservoir bed, both banks and external rock terrain are missing;
 - the engineering bounding box can truncate external rock paths.
@@ -73,7 +72,7 @@ Developers must not "optimize" how a plan looks by tuning systematic error, the 
 ### Detector
 
 - Three-layer efficiency is treated as independent identical efficiencies `ε³`;
-- the edge efficiency is an empirical formula;
+- geometric acceptance is the ideal two-plane factor (cos⁴θ per slope cell, since model 3.0.0); real detectors lose further efficiency toward the field edge, not modelled here;
 - trigger, noise, reconstruction, energy- and direction-dependent efficiencies are not modelled;
 - angular resolution is an approximate 2D Gaussian display smoothing.
 

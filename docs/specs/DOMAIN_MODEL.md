@@ -16,10 +16,10 @@ Last updated: 2026-10-12
 
 | Context | Responsibility | Main concepts | Code today |
 |---|---|---|---|
-| Dataset & geometry | What the subject is: identity, frames, materials, volumes, scenarios, compiled geometry | Dataset, Release, Kind, Scenario, Material, Entity, Component, Frame | `dataset-loader`, `dataset-validation`, `dam-spec-v07`, `coordinates`, `compiled-glb`, `triangle-bvh`, `compiled-mesh-runtime`; legacy `geometry-kernel`, `legacy-geometry-adapter` |
+| Dataset & geometry | What the subject is: identity, frames, materials, volumes, scenarios, compiled geometry | Dataset, Release, Kind, Scenario, Material, Entity, Component, Frame | `dataset-loader`, `dataset-validation`, `dam-spec-v07`, `coordinates`, `compiled-glb`, `triangle-bvh`, `compiled-mesh-runtime`; `geometry-v07-qualification` (qualification only) |
 | Detector | What measures: device geometry and response, independent of any dataset | DetectorConfiguration (Device, Response) | `detector-defaults`, `device-configuration`, `detector-pose` |
-| Deployment planning | Where and how detectors are placed | Station, Pose, Candidate, DeploymentPlan, Selection | `deployment-state`, `*-deployment-adapter` (Partial: no plan aggregate yet) |
-| Assessment | What a deployment would see: rays, columns, counts | AssessmentInput (snapshot), Session, Trace, ProjectionResult | `main-assessment`, `compiled-main-assessment`, `compiled-assessment`, `detector-projection`, `muon-response`, `assessment-controller` |
+| Deployment planning | Where and how detectors are placed | Station, Pose, Candidate, DeploymentPlan, Selection | `deployment-state`, `compiled-deployment-adapter` (Partial: no plan aggregate yet) |
+| Assessment | What a deployment would see: rays, columns, counts | AssessmentInput (snapshot), Session, Trace, ProjectionResult | `compiled-main-assessment`, `compiled-assessment`, `detector-projection`, `muon-response`, `assessment-controller` |
 | Interpretation | Derived numerical layers and comparisons on results | PatternField, Overlay, Comparison, Export | `projection-pattern-*`, `contribution-*`, `pattern-comparison*`, `finite-model-references` |
 | Anomaly & sensitivity | What problem the deployment must detect, and how well it would | AnomalyHypothesis, Region, DensityModel, HostConstraint, ParameterSweep, SensitivityResult | Target (ADR-025, FR-H); legacy counterfactual significance is a dam-specific precursor |
 | Scan | Many assessments over a constrained space | ScanDefinition, ScanResult, Ranking | Target (FR-S1…S5) |
@@ -44,9 +44,10 @@ classDiagram
   class Frame { source frame; model frame; transforms }
   class Candidate { id; position (source frame); hostEntity; rationale }
   class DetectorConfiguration { device; response }
-  class Station { id; name; position (model frame) }
+  class Station { id; name; note; position (model frame) }
   class Pose { azimuthDeg; elevationDeg }
-  class DeploymentPlan { scene; candidates; selected deployment }
+  class DeploymentPlan { scene; candidates; named deployments }
+  class Deployment { id; name; member stations }
   class AssessmentInput { scene; station; pose; device; response }
   class ProjectionResult { kind; schemaVersion; identity; config; pixels; limitations }
   Dataset "1" --> "*" Release
@@ -61,7 +62,9 @@ classDiagram
   Scene "*" --> "0..1" Scenario : frozen variant
   ViewState ..> Scene : displays, never changes
   DeploymentPlan "*" --> "1" Scene
-  DeploymentPlan "1" --> "*" Station : candidates / selected
+  DeploymentPlan "1" --> "*" Station : candidate pool
+  DeploymentPlan "1" --> "*" Deployment
+  Deployment "*" --> "*" Station : members
   Station "1" --> "1" Pose
   DeploymentPlan "1" --> "*" DetectorConfiguration
   AssessmentInput ..> Scene
@@ -84,6 +87,8 @@ classDiagram
 | Water body / environment volume | Entity | ID | Kind-specific environment volumes (water for dams; burden, overburden for other kinds) | Current for dams |
 | Scenario | Entity | Scenario ID within a release (`low`, `mid`, …) | A frozen environment variant: complete variable values plus its compiled geometry. Not the subject | Current |
 | Component | Entity | Component ID within a scenario | Closed mesh with one material and flags; maps to a source entity only with evidence, otherwise "aggregate" | Current |
+| SubjectFeature | Value (catalogue entry per release) | Source entity or water body ID | Named part of the subject with label, semantic class, group, colour and kind (`direct`: own component; `aggregate`: inside a merged component, unavailable until FR-GE4). One catalogue serves the 3D feature layer, projection outlines, picking, coverage tinting and ROI metrics; selections of features are view state (ADR-029) | Current: catalogue built by `feature-catalogue.js` at load (`dataset.features`); consumers pending (ADR-029, #15b) |
+| RecognitionItem | Value (per release, from the display profile) | Item ID within the profile | One feature, several direct features (by members or semantic selection) or a material, with label, colour and default; only direct features may be members; presentation only, never in result identity | Current: `display-profile.js` → `dataset.recognitionItems`; derived defaults without a profile |
 | Candidate | Value | Candidate ID | Dataset-supplied suggested station position in the source frame, with host entity and rationale; not a recommendation of pose | Current |
 | Site conditions, detector models | Value | Per release | Sidecars; detector model sidecar is not used as calibration | Current (unused for physics) |
 
@@ -92,7 +97,16 @@ classDiagram
 | Concept | Kind | Identity | Notes | Status |
 |---|---|---|---|---|
 | Scene | Value | Release ID + scenario ID or environment variable values | The physical world of a calculation: geometry and materials follow from the release and environment state only. Composition: scene = release + environment state | Partial: the code passes release and `environment` separately rather than as one scene value |
-| ViewState | Value, per view | — | Layer visibility, colours, transparency, camera, overlays, selection. Owned by the views and `main-page`; never part of a scene, snapshot key or result | Current |
+| ViewState | Value, per view | — | Layer visibility, colours, transparency, camera, overlays, selection. Owned by the views and `main-page`; never part of a scene, snapshot key or result. Saved camera views of the demonstration mode (model frame, per release in browser storage) are view state too, never part of a plan | Current |
+
+### 2.1c Evaluation aims (Target, ADR-031)
+
+| Concept | Kind | Notes |
+|---|---|---|
+| EvaluationAim | Value within a plan or study | What the user wants a deployment to achieve: terms of (region, metric, aggregation, parameters), combined by weights or constraints. User input; the app never assumes one. Evaluated for any station set and used unchanged as a scan objective |
+| EvaluationRegion | Value | A recognition item, optionally limited by model-frame bounds; later an anomaly-hypothesis region. Evaluated at target points inside it from the calculation geometry |
+| Metric (per point) | Derived value of a station set at a point | From cached results: in a field of view, counts and error of the cell holding the line at the stated resolution, usable views, angular spread, counts per steradian, covering and uniquely covering stations |
+| AimTemplate | Value shipped with the app | Pre-filled aim (multi-view overlap of a target, extent of a region); editable; never applied unless chosen |
 
 ### 2.1b Anomaly hypotheses (Target, ADR-025)
 
@@ -118,10 +132,12 @@ Scene composition (Target): **scene = release + environment state + active anoma
 
 | Concept | Kind | Notes | Status |
 |---|---|---|---|
-| Station | Entity within a plan | Name and position in the model frame; currently also carries the pose (`az`, `el`) | Partial: station and pose not separated |
+| Station (candidate) | Entity within a plan | One entry of the study's candidate pool: unique ID within the plan, name, note, position in the model frame, one pose, detector reference, optional `candidateId` (the dataset candidate it started from). Several poses at one site are several stations. Fixed once saved: changed only by an explicit update (FR-P6) | Current (plan format; fixed in the app since 14b) |
+| Working station | Session state | The station being tuned in detail (position, pose, detector settings, source candidate); becomes a candidate only when saved; never part of the plan. Can be placed by clicking the model: inside a clicked cavity (feature category `void`) on its floor plus 1 m, found with the calculation geometry, or 0.5 m off another surface | Current (`study-state.js`, 14b) |
+| Deployment | Entity within a plan | Named subset of the candidate pool (unique ID within the plan, name, member station IDs); a station can be in several | Current (plan 1.1.0, UI 14c) |
 | Pose | Value | Azimuth from model `X+` towards `Y+`, elevation above horizontal; detector-local basis follows | Current |
-| DeploymentPlan | Aggregate root | Scene (release reference + content hash for user-loaded datasets, environment/scenario), candidate stations, **selected deployment** (subset with pose and device each), calculation settings, schema version | Target (FR-P1, ADR-020); today `deployment-state` holds candidates + one `active` index and is stored per release ID in `localStorage` |
-| Selection | Value | Which stations are deployed; drives the multi-station overview | Target (FR-M4) |
+| DeploymentPlan (study) | Aggregate root | One observation task on one release: scene (release reference + content hash for user-loaded datasets, scenario), named detector configurations (`default` required), candidate pool (stations), named deployments, reserved anomalies, schema version; `muography-plan` 1.1.0 ([PLAN_FORMAT](PLAN_FORMAT.md)). Session state (working station, active candidate, active deployment) is stored next to it, never inside | Current: plan 1.1.0, several studies per release (switch, new; import creates a study) |
+| Selection | Value | The active deployment (session state); the overview shows it | Current as session state (14c); overview Target (FR-M4, #15) |
 
 ### 2.4 Assessment and results
 
@@ -130,14 +146,17 @@ Scene composition (Target): **scene = release + environment state + active anoma
 | AssessmentInput | Value, immutable snapshot | Scene (release + environment) + station + pose + device + response, copied at calculation start. Composition: assessment = scene + detector configuration + station + pose | Current (scene implicit) |
 | Session | Process | Binds one geometry context; produces preview (25²) then final (65²) from the same snapshot; cancellable | Current |
 | Trace | Value | Per ray: material totals, `materialColumns`, `mwe`, segments, entity lengths | Current |
-| ProjectionResult | Value, versioned | `kind` ∈ {`compiled-detector-assessment`, `legacy-detector-assessment`, `material-column-projection`}, `schemaVersion`, identity (release, backend, scenario, variables, asset hashes), config, device, response, `modelVersion`, pixels, limitations | Current |
-| Per-station result cache | Keyed by snapshot key | Lets the overview and detail modes share results | Target (ADR-020) |
-| Coverage (view) | Derived view of a station | Geometric coverage = device acceptance × pose (no physics); physical coverage = expected counts per steradian from a result. A view of results, never an input; bound to the result's snapshot key | Target (ADR-026) |
-| Exports | Value, versioned | `compiled-deployment-snapshot` 0.1.0, contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison`, legacy plan JSON | Current; not yet a round-trip plan format |
+| ProjectionResult | Value, versioned | `kind` ∈ {`compiled-detector-assessment`, `material-column-projection`} (`legacy-detector-assessment` is accepted only for replaying old exports), `schemaVersion`, identity (release, backend, scenario, variables, asset hashes), config, device, response, `modelVersion`, `plan` (hash + station ID of the source plan, or null; provenance, not identity), pixels, limitations | Current |
+| Per-candidate result cache | Keyed by the assessment key (all effective inputs; names, ids and plan reference excluded), session memory | Compact form per candidate (≈ 90 KB at 65² plus sparse per-item ray lengths, no path segments yet); recomputed in the background when a study is opened; shared by the list, comparison, coverage view and overview (FR-P10) | Current (`candidate-results.js`, 14b) |
+| Coverage (view) | Derived view of a station | Geometric coverage = device acceptance × pose (no physics): points whose detector line lies inside the acceptance, in front or behind, above the detector; physical coverage = expected counts per steradian from a result. A view of results, never an input; the physical map belongs to one result and is cleared when inputs change | Current for a single station and, geometric only, for up to 8 other candidates (`coverage-map.js`, 14d); multi-station physical Target (ADR-026, #15) |
+| Usable view | Derived value of a station at a point | The station sees the point (geometric coverage) and the projection pixel holding its line through the point has N ≥ 100 counts (≤ 10 % counting error; option N ≥ 400). Multi-view coverage counts usable views and measures their angular spread (FR-M15). A station is never a usable view of points in the feature it sits in | Current on subject surfaces (`coverage-map.js`, 15d), on a slice plane through the interior and on shown target features (15e) |
+| PlanRun | Value, versioned | Output of the headless runner: one ProjectionResult per chosen station plus a summary (`muography-plan-run` 1.0.0: plan hash, release, scenario, quality, model version, per-station file digest and totals); no clock data, identical for any thread count ([PLAN_FORMAT](PLAN_FORMAT.md#batch-runs)) | Current |
+| Exports | Value, versioned | `muography-plan` 1.1.0 (round trip; reads 1.0), `muography-plan-run` 1.0.0 (batch runs), contour export 1.0.0, `projection-pattern-layers` 1.0.0, `projection-pattern-comparison`; the export-only `compiled-deployment-snapshot` 0.1.0 is retired | Current |
 
 ## 3. Identities
 
-- **Release ID** is the only key for data references: caches, stored stations, plans and results use the full string, never the dataset ID alone.
+- **Release ID** is the only key for data references: caches, stored plans, plan files and results use the full string, never the dataset ID alone.
+- **Plan hash**: `sha256:` of a plan's canonical text ([PLAN_FORMAT](PLAN_FORMAT.md)); identical plans have identical hashes. Station IDs are unique within a plan.
 - **Snapshot key**: a deterministic, sorted-key JSON of all effective inputs (`createPatternSnapshot`); identical inputs give identical keys. Not a hash or signature.
 - **Asset identity**: SHA-256 of the source spec and scenario GLB from the verified manifest; synthetic buffers are labelled `unverified-buffer`.
 - **User-loaded datasets** (Target, ADR-019): release ID plus content hash; a plan refuses to run against a different file.
@@ -151,21 +170,24 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 3. Display, classification and ray intersection express the same geometry. View state is never part of a scene, snapshot or result: hiding a material region, internal feature or environment volume never removes it from physics. (Module boundaries in `tests/integration/main-architecture.test.mjs`; overlay independence per PROJECTION_VALIDATION §1; a direct layer-toggle test is a gap, §6)
 4. A frozen scenario's geometry is never interpolated to represent another environment.
 5. A device configuration means the same thing for every dataset; datasets never supply uncalibrated device parameters implicitly.
-6. A result always carries the identity of everything it was computed from (release, backend, scenario/variables, model version, device, response, sampling, ray length) and its limitations. (FR-C5; legacy ray length still missing, FR-C2)
+6. A result always carries the identity of everything it was computed from (release, backend, scenario/variables, model version, device, response, sampling, ray length) and its limitations. (FR-C5; legacy ray length recorded since FR-C2)
 7. A stale result is never published over a newer input. (`assessment-controller.js`, tests)
-8. Results are history-independent: the same input gives the same output. **Currently violated** by the flux cache (FR-C1).
+8. Results are history-independent: the same input gives the same output. (`muon-response.js` has no cache since `quick-response@2.0.0`; `tests/unit/muon-response.test.mjs`)
 9. Generic code never branches on a dataset's kind or name. (FR-K1; existing leaks being removed)
 10. Aggregate components never acquire source-entity ownership by name or proximity.
 11. Unknown or approximate dimensions stay explicit metadata; they are never replaced by unexplained constants.
 12. (Target) An active anomaly is part of the physical scene whether or not the view shows it; it never modifies the dataset release.
 13. (Target) An anomaly changes only its declared host materials inside its region, after material precedence.
 14. (Target) Baseline and perturbed results of a sensitivity evaluation come from the same snapshot and traces; the anomaly definition is part of the snapshot identity.
+15. A projection pixel is a line through the detector; its ray, column and counts are those of the line's sky end, and the pixel records whether that end is in front of or behind the detector (`side`). Since `quick-response@4.0.0` the projection core rejects a ray below the horizon. (`detector-pose.js` `skySideDirection`, `detector-projection.js`, tests)
+16. A deployment lists only stations of its own plan, each once; removing a station removes it from every deployment. A plan never holds session or view state (working station, active candidate, layers).
+17. A saved candidate changes only by an explicit update; its cached result is valid exactly while its snapshot key is unchanged.
 
 ## 5. Lifecycles
 
 - **Release**: imported byte for byte → validated (schemas, hashes, conformance) → registered with a `status` → may become the registry default (current default: `zhouning-lower-reservoir-dam@0.6.2+schema0.7.0`). Releases are immutable; changes produce a new release.
 - **Assessment**: input change → debounce → snapshot → session → preview (25²) → final (65²) → published; any newer input cancels and invalidates the old generation.
-- **Deployment plan** (Target): draft → stations selected → evaluated (per-station cached results) → exported/shared; schema-versioned with migrations.
+- **Study** (FR-P5): created for a release (fresh, or imported) → candidates sketched and tuned (working station → saved candidates) → named deployments composed and evaluated from per-candidate cached results → one or several deployments exported; schema-versioned with migrations.
 - **Reconstruction** (Target): plan → simulated measurements → column estimates → voxel reconstruction → quality metrics; always labelled simulated.
 
 ## 6. Gaps between the current code and this model
@@ -173,19 +195,15 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 | Gap | Model element | Tracked as |
 |---|---|---|
 | No `kind` in registry/specs; dam terms in generic modules | Dataset.kind | FR-K1, FR-K2, FR-K3 |
-| Legacy environment is `{upstream, downstream}`; compiled uses scenario variables | Scenario, environment | FR-K2, FR-E1 |
-| Station carries pose; no plan aggregate; single active station | Station, Pose, DeploymentPlan | FR-P1, ADR-020 |
-| Stations stored per release are invisible after the default changed | DeploymentPlan | FR-B2 |
-| Flux cache makes results history-dependent | Invariant 8 | FR-C1 |
-| Legacy results do not record the 500 m ray cutoff | Invariant 6 | FR-C2 |
+| Only frozen scenario variables; no continuous environment variables (the retired legacy backend had a continuous upstream level) | Scenario, environment | FR-K2, FR-E1, MT-1 |
+| Stations stored per release are invisible under another release (e.g. the retired legacy releases) | DeploymentPlan | FR-B2 |
 | One rock-like energy loss for all materials | Material | FR-K4 |
+| Generic modules name material IDs (`air`, `concrete`, `rock`, `steel`) instead of dataset-declared material roles | Material | FR-K11 |
 | Scene is not one value in code (release and environment passed separately) | Scene | FR-P1 (plan schema) |
 | No direct test that toggling every display layer leaves the projection result and snapshot key unchanged | Invariant 3 | FR-Q11 |
 
 ## 7. Open modelling questions
 
-- Does a DeploymentPlan carry one detector configuration or one per station? (Recommended: per station, defaulting to a plan-level configuration.)
-- Is "candidate" (dataset-supplied) distinct from "station" (plan-owned) in the saved plan, or does a plan copy candidates into stations? (Recommended: plans own stations and keep a reference to the originating candidate ID.)
 - How are continuous environment variables (e.g. water level, burden level) modelled per kind: declared ranges with kind-specific resolvers, or only frozen scenarios?
 - What are the identity and versioning of a ScanDefinition and a Reconstruction run?
 
@@ -208,6 +226,16 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-14: Coverage (view) current for a single station; back-side lines included.
+- 2026-10-14: ProjectionResult records its source plan (hash + station ID).
+- 2026-10-14: DeploymentPlan and Station current (`muography-plan` 1.0.0); plan hash identity; two open questions answered (per-plan named detector configurations; plans own stations with a candidate reference).
+- 2026-10-14: Invariant 15: pixels are lines evaluated at their sky end (FR-C7).
+- 2026-10-13: Added RecognitionItem (display profile).
+- 2026-10-13: SubjectFeature catalogue implemented (`feature-catalogue.js`); virtual entities excluded.
+- 2026-10-13: Added SubjectFeature (proposed catalogue, ADR-029).
+- 2026-10-12: Legacy backend retired (ADR-028): module lists, ProjectionResult kinds, exports and environment gap updated.
+- 2026-10-12: Legacy ray length recorded (FR-C2); gap row removed.
+- 2026-10-12: Invariant 8 now holds and is tested (FR-C1); gap row removed.
 - 2026-10-12: Added Coverage as a derived view (ADR-026).
 - 2026-10-12: Renamed "deficiency" to "anomaly" (AnomalyHypothesis).
 - 2026-10-12: Added anomaly hypotheses (Target, ADR-025): context, concepts, scene composition, invariants 12–14, register row.

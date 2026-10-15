@@ -1,4 +1,5 @@
-// Explicit release/backend selection. No fallback to another scientific backend.
+// Explicit release/scenario selection. The compiled GLB/BVH backend is the only
+// scientific backend; unknown releases, backends or scenarios fail closed.
 export function resolveApplicationSelection(registry, search = '') {
   const params = new URLSearchParams(search);
   for (const key of ['dataset', 'backend', 'scenario']) {
@@ -7,17 +8,21 @@ export function resolveApplicationSelection(registry, search = '') {
   const datasetId = params.get('dataset') ?? registry.default_dataset;
   const entry = registry.datasets?.[datasetId];
   if (!entry) throw new Error(`Unregistered dataset release ${datasetId}`);
-  if (entry.adapter && entry.adapter !== 'dam-spec-v07') throw new Error(`Unsupported dataset adapter ${entry.adapter}`);
-  const supportedBackend = entry.adapter === 'dam-spec-v07' ? 'compiled' : 'legacy';
-  const backend = params.get('backend') ?? supportedBackend;
-  if (backend !== supportedBackend) throw new Error(`Backend ${backend} cannot run release ${datasetId}`);
-  const scenarioId = params.get('scenario');
-  if (backend === 'legacy' && scenarioId !== null) throw new Error('Legacy continuous-water backend does not accept frozen scenario IDs');
-  return Object.freeze({ datasetId, backend, scenarioId });
+  if (entry.adapter !== 'dam-spec-v07') throw new Error(`Unsupported dataset adapter ${entry.adapter}`);
+  const backend = params.get('backend') ?? 'compiled';
+  if (backend !== 'compiled') throw new Error(`Backend ${backend} cannot run release ${datasetId}`);
+  return Object.freeze({ datasetId, backend, scenarioId: params.get('scenario') });
 }
 
-export function applicationSelectionSearch({ datasetId, backend, scenarioId }) {
-  const params = new URLSearchParams({ dataset: datasetId, backend });
+export function applicationSelectionSearch({ datasetId, scenarioId }) {
+  const params = new URLSearchParams({ dataset: datasetId, backend: 'compiled' });
   if (scenarioId !== null && scenarioId !== undefined) params.set('scenario', scenarioId);
   return `?${params}`;
+}
+
+// The two entry points (ADR-030) link to each other with the same selection.
+export const APP_PAGES = Object.freeze({ main: './', workbench: './geometry-preview.html' });
+export function selectionHref(page, selection) {
+  if (!Object.values(APP_PAGES).includes(page)) throw new Error(`Unknown application page ${page}`);
+  return page + applicationSelectionSearch(selection);
 }

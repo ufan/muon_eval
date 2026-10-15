@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "display-profile.schema.json",
+  "title": "Display profile 1.x (ADR-029)",
+  "description": "Presentation-only choices of a dataset release: recognition items offered for projection outlines. Never part of geometry or result identity. Feature IDs, selections and materials are checked against the release by the application loader.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile_version",
+    "recognition_items"
+  ],
+  "properties": {
+    "profile_version": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$"
+    },
+    "note": {
+      "type": "string"
+    },
+    "recognition_items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "default"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "label": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "zh",
+              "en"
+            ],
+            "properties": {
+              "zh": {
+                "type": "string",
+                "minLength": 1
+              },
+              "en": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "members": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "select": {
+            "type": "object",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "properties": {
+              "system": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "class": {
+                "type": "string"
+              },
+              "imaging_role": {
+                "type": "string"
+              }
+            }
+          },
+          "material": {
+            "type": "string",
+            "minLength": 1
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "default": {
+            "type": "boolean"
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "members"
+            ]
+          },
+          {
+            "required": [
+              "select"
+            ]
+          },
+          {
+            "required": [
+              "material"
+            ]
+          }
+        ],
+        "if": {
+          "required": [
+            "material"
+          ]
+        },
+        "then": {
+          "required": [
+            "color"
+          ]
+        }
+      }
+    }
+  }
+}

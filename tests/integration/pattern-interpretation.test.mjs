@@ -15,8 +15,6 @@ import { comparePatternResults, createPatternComparisonExport, replayPatternComp
 import { loadRegisteredDataset } from '../../scripts/dataset-fixture.mjs';
 import { loadCompiledMeshRuntime } from '../../dist/modules/compiled-mesh-runtime.js';
 import { sha256Portable } from '../../dist/modules/sha256.js';
-import { adaptLegacyPatternResult } from '../../dist/modules/legacy-pattern-adapter.js';
-import { createProjectionPass } from '../../dist/modules/detector-projection.js';
 import { createPatternSnapshot, createPatternField } from '../../dist/modules/projection-pattern-contract.js';
 import { createPatternLayerExport, replayPatternLayerExport } from '../../dist/modules/pattern-layer-export.js';
 import { evaluatePatternComparisonBatch } from '../../dist/modules/pattern-comparison-batch.js';
@@ -85,7 +83,9 @@ test('finite reference stale source/pose identity fails and absence differs from
 
 test('response contours distinguish acceptance from attenuation, raw from smoothing, and zero/invalid support at 25/65', async () => {
   for (const bins of [25, 65]) {
-    const f = fixture('slab'), result = await evaluateCompiledAssessment(f.runtime, { ...config, bins, origin: [10, 0, 0] }, device, { ...response, angularResolutionDeg: 5 });
+    // Station above the slab (top z = 4): neither end of any line reaches it, so the view is open sky
+    // (since quick-response@4.0.0 lines below the horizon are traced from behind the detector).
+    const f = fixture('slab'), result = await evaluateCompiledAssessment(f.runtime, { ...config, bins, origin: [10, 0, 10] }, device, { ...response, angularResolutionDeg: 5 });
     const before = structuredClone(result), open = responsePattern(result, { quantity: 'expected-count', context: 'open-sky', levels: [1, 10, 100] });
     const attenuation = responsePattern(result);
     assert.ok(result.pixels.filter(p => p.openCount > 0).every(p => p.count === p.openCount && p.transmission === 1));
@@ -146,18 +146,6 @@ test('comparison indicators/pose sensitivity share single-site definitions and r
   const mismatch = comparePatternResults([a, exposure], selection); assert.equal(mismatch.comparable, false);
   assert.ok(mismatch.differences[1].fields.includes('response')); assert.equal(mismatch.sensitivity[0].state, 'incomparable');
   assert.throws(() => comparePatternResults([a], { ...selection, id: 'invented' }));
-});
-
-test('legacy adapter reads completed core outputs without retracing and preserves backend identity/counts/columns', () => {
-  const pass = createProjectionPass({ n: 3, device, response, includeContext: true,
-    sampleRay: (sx, sy) => ({ dir: { x: sx, y: sy, z: 1 }, q: { totals: { concrete: 2, air: 1 }, mwe: 4.8, targetLengths: {} } }) });
-  const done = pass.advance(3).result, saved = structuredClone(done);
-  const result = adaptLegacyPatternResult({ pass: done, identity: { release_id: 'legacy-test@1' }, materials: { concrete: { density: 2.4 }, air: { density: 0 } },
-    station: { x: 0, y: 0, z: 0, az: 0, el: 30 }, device, response, environment: { upstream: 1 }, traceSettings: { maximumRayDistanceM: 100 }, directionToModel: dir => [dir.x, dir.y, dir.z] });
-  assert.equal(result.backend, 'legacy-dda@1.0.0'); assert.equal(result.kind, 'legacy-detector-assessment');
-  assert.equal(result.totalCount, done.total); assert.ok(result.pixels.every(p => p.materialColumns.concrete === 4.8));
-  assert.equal(prepareProjectionPattern(result).snapshot.inputs.backendVersion, result.backend);
-  assert.deepEqual(done, saved); responsePattern(result);
 });
 
 test('explicit batch/single sites reuse the same response core and indicators, snapshot settings and cancel', async () => {

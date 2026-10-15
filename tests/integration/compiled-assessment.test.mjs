@@ -5,6 +5,7 @@ import { defaultAssessmentDevice, defaultAssessmentResponse } from '../../dist/m
 import { createProjectionPass } from '../../dist/modules/detector-projection.js';
 import { detectorBasis, slopeDirection } from '../../dist/modules/material-projection.js';
 import { loadCompiledMeshRuntime } from '../../dist/modules/compiled-mesh-runtime.js';
+import { skySideDirection } from '../../dist/modules/detector-pose.js';
 import { loadRegisteredDataset } from '../../scripts/dataset-fixture.mjs';
 
 const device = defaultAssessmentDevice(), response = defaultAssessmentResponse();
@@ -22,8 +23,8 @@ test('BVH assessment uses identical shared count formulas for all published scen
       const settings = { ...response, angularModel };
       const actual = await evaluateCompiledAssessment(runtime, { ...config, origin }, device, settings);
       const reference = createProjectionPass({ n: config.bins, device, response: settings, sampleRay: (sx, sy) => {
-        const direction = slopeDirection(basis, sx, sy);
-        return { dir: { x: direction[0], y: direction[1], z: direction[2] }, q: runtime.traceRayModel(origin, direction, config.length) };
+        const { direction, side } = skySideDirection(slopeDirection(basis, sx, sy));
+        return { dir: { x: direction[0], y: direction[1], z: direction[2] }, side, q: runtime.traceRayModel(origin, direction, config.length) };
       } }).advance(config.bins).result;
       assert.equal(actual.totalCount, reference.total); assert.equal(actual.weightedTransmission, reference.weightedTransmission);
       assert.equal(actual.scenarioId, scenarioId); assert.deepEqual(actual.variables, runtime.variables);
@@ -38,6 +39,10 @@ test('BVH assessment uses identical shared count formulas for all published scen
         assert.ok(Math.abs(sum - pixel.mwe) <= Math.max(1e-9, 1e-12 * Math.abs(pixel.mwe)));
       }
       assert.ok(actual.pixels[0].sy > 0); assert.ok(actual.pixels.at(-1).sy < 0);
+      // Lines below the horizon in front are traced from their sky end behind the detector and do count.
+      const back = actual.pixels.filter(p => p.side === 'back');
+      assert.ok(back.length > 0 && back.every(p => p.direction[2] > 0 && slopeDirection(basis, p.sx, p.sy)[2] < 0));
+      assert.ok(back.some(p => p.count > 0));
       assert.equal(JSON.parse(JSON.stringify(actual)).pixels.length, 625);
     }
   }
@@ -77,4 +82,14 @@ test('invalid device/response, unsupported transport range and cancellation fail
   assert.equal(yields, 1);
   const tooDense = { ...emptyRuntime, traceRayModel: () => ({ mwe: 20000, totals: { rock: 700 } }) };
   await assert.rejects(evaluateCompiledAssessment(tooDense, config, device, response), /numerical range/);
+});
+
+test('a result records the plan and station it was computed from, or null (PLAN_FORMAT.md)', async () => {
+  const plan = { hash: 'sha256:' + 'a'.repeat(64), stationId: 'north' };
+  assert.equal((await evaluateCompiledAssessment(emptyRuntime, config, device, response)).plan, null);
+  const linked = await evaluateCompiledAssessment(emptyRuntime, config, device, response, { plan });
+  assert.deepEqual(linked.plan, plan);
+  plan.stationId = 'changed';
+  assert.equal(linked.plan.stationId, 'north');
+  await assert.rejects(evaluateCompiledAssessment(emptyRuntime, config, device, response, { plan: { hash: 'md5:1', stationId: 'north' } }), /plan/);
 });

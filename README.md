@@ -12,14 +12,13 @@ docker compose up -d --build
 
 Open `http://localhost:8080/`.
 
-Any static HTTP server works once the datasets are copied into `dist/`:
+For local use, the bundled server serves `dist/` and the datasets directly and makes browsers revalidate every file, so an update is never hidden by the cache:
 
 ```bash
-node scripts/sync-datasets.mjs
-python3 -m http.server 8765 --directory dist
+npm run serve        # node scripts/serve.mjs [--port 8765] [--host 0.0.0.0 for the LAN]
 ```
 
-Open `http://127.0.0.1:8765/`. Do not open `dist/index.html` directly: browsers block ES modules and JSON on `file://` pages. See [the deployment guide](docs/guides/DEPLOYMENT.md) for servers and static hosting.
+Open `http://127.0.0.1:8765/`. Any other static HTTP server also works once the datasets are copied into `dist/` (`node scripts/sync-datasets.mjs`, then for example `python3 -m http.server 8765 --directory dist`); such servers send no cache instructions, so hard-reload (Ctrl+Shift+R) after an update. Do not open `dist/index.html` directly: browsers block ES modules and JSON on `file://` pages. See [the deployment guide](docs/guides/DEPLOYMENT.md) for servers and static hosting.
 
 ## Directory layout
 
@@ -35,8 +34,7 @@ Open `http://127.0.0.1:8765/`. Do not open `dist/index.html` directly: browsers 
   - `modules/application-selection.js`, `application-backends.js`: explicit release/backend/scenario resolution and bounded assembly; no automatic backend fallback.
   - `modules/deployment-state.js`, `assessment-controller.js`: application input state, calculation snapshots, scheduling and cancellation.
   - `modules/compiled-main-assessment.js`: main-app session for frozen BVH scenarios, reusing the batched evaluation and result adapter of `compiled-assessment.js`.
-  - `modules/main-assessment.js`: legacy single-point evaluation with an injected geometry interface, reusing the shared ray/response core.
-  - `modules/main-page.js`, `compiled-scene-view.js`, `legacy-scene-view.js`, `projection-canvas-view.js`: DOM, 3D display and result layers; none owns scientific geometry.
+  - `modules/main-page.js`, `compiled-scene-view.js`, `projection-canvas-view.js`: DOM, 3D display and result layers; none owns scientific geometry.
   - `style.css`, `projection.css`, `layout-overrides.css`: base, projection and responsive styles.
   - `vendor/`: offline Three.js 0.186.0 and d3-contour.
 - `scripts/`: checks, benchmarks and tooling (`sync-datasets.mjs` for static hosting).
@@ -45,15 +43,16 @@ Open `http://127.0.0.1:8765/`. Do not open `dist/index.html` directly: browsers 
 
 ## Current capabilities
 
-- Compiled GLB/BVH geometry backend (default) with frozen scenarios, display and calculation sharing the same model buffers; legacy parametric dam backend with continuous water level as a compatibility path.
-- Internal features (galleries, observation rooms, elevator shafts) and hollowed voids (spillway openings, chutes) in the 3D view.
+- Compiled GLB/BVH geometry backend with frozen scenarios, display and calculation sharing the same model buffers. The legacy parametric backend was retired; its features without a compiled counterpart yet (continuous water level, target layers and structural significance, internal-feature layer, flux cloud) stay in the UI, disabled, as migration targets ([feature requirements](docs/FEATURE_REQUIREMENTS.md), section B).
+- Hollowed voids (spillway openings, chutes) in the 3D view; internal features in the standalone preview.
 - Adding, removing and editing candidate stations, positions and poses; azimuth/elevation inputs synchronized with sliders.
 - Configurable detector geometry and response parameters.
 - Material classification and water-equivalent column density along rays.
 - 25×25 quick preview and 65×65 final projection.
-- Expected counts, transmission, material-contribution and response numeric layers; legacy structural significance and target contours on the legacy backend.
+- Expected counts, transmission, material-contribution and response numeric layers.
 - Hovering a projection pixel highlights the 3D ray and material path.
-- Station metrics, comparison, versioned snapshot export; legacy 3D flux cloud.
+- Station metrics, comparison, versioned plan export and import.
+- Headless batch runs of a plan from the command line (see below).
 - Docker/Nginx and static-hosting deployment.
 
 ## Checks
@@ -64,7 +63,7 @@ Layered test commands ([test strategy](docs/specs/TEST_STRATEGY.md)); no npm pac
 npm test                    # L0 syntax/whitespace + L1 unit + L2 contract, ~5 s; every commit
 npm run test:data           # L3 dataset releases, conformance, semantic mapping (needs Python jsonschema>=4.10)
 npm run test:integration    # L4 whole calculation chain on real datasets, ~25 s; before push
-npm run test:browser        # L5 main app, compiled default and legacy release; minutes
+npm run test:browser        # L5 main app; about a minute
 npm run test:all            # everything above
 ```
 
@@ -72,9 +71,18 @@ Detailed rules are in `AGENTS.md`.
 
 Browser acceptance needs Playwright and Chromium (development only). Point to existing installs with `PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs` and `CHROMIUM_PATH=/path/to/chromium`, or pass `--playwright`/`--chromium` to the scripts directly.
 
-- `scripts/check-main-compiled-app.mjs`: default compiled app; all four frozen scenarios, explicit switch to legacy, capability gates, model coordinates, same-result updates, exports, desktop and narrow screens. Screenshots go to a temporary directory.
-- `scripts/check-main-app.mjs`: legacy release (`?dataset=zhouning-lower-reservoir-dam%400.6.2&backend=legacy`); desktop/narrow, layers, fast pose changes, devices/stations, persistence and exports.
+- `scripts/check-main-compiled-app.mjs`: main app; all four frozen scenarios, capability gates of the migration targets, recognition outlines (profile items, threshold, hover crossings, persistence), 3D feature layers (catalogue groups, defaults, persistence; toggles never change results), model coordinates, same-result updates, device settings, stations, persistence, exports, desktop and narrow screens. Screenshots go to a temporary directory.
 - `npm run test:browser:preview` (`scripts/check-compiled-preview.mjs`): standalone preview. Its finite-model reference step needs the derived assets in `dist/data/derived-interfaces/`, generated with the `manifold3d` Python package (see [geometry references](docs/specs/GEOMETRY_REFERENCES.md#offline-interface-construction)).
+
+## Batch runs
+
+A saved plan (导出方案) can be evaluated without the browser, on all cores:
+
+```bash
+npm run run-plan -- plan.json --out runs/study --compare material:concrete:0.15
+```
+
+This writes one result file per station, `summary.json` and `comparison.json`, which the app replays under 方案比较 → 重放比较. Options and formats: [plan format](docs/specs/PLAN_FORMAT.md#batch-runs).
 
 ## Selecting a release, backend and scenario
 
@@ -82,18 +90,17 @@ The main app opens on the default release `zhouning-lower-reservoir-dam@0.6.2+sc
 
 ```text
 /?dataset=zhouning-lower-reservoir-dam%400.6.2%2Bschema0.7.0&backend=compiled&scenario=low
-/?dataset=zhouning-lower-reservoir-dam%400.6.2&backend=legacy
 ```
 
-`+` must be encoded as `%2B`; the UI generates correct URLs. Release, backend and scenario are validated against each other; unknown combinations fail closed and never fall back to another backend or scenario. Switching configuration reloads the page, so an old calculation cannot update a new scene. Candidate stations are stored per full release ID; device settings are independent.
+`+` must be encoded as `%2B`; the UI generates correct URLs. Release, backend and scenario are validated against each other; `compiled` is the only backend, and unknown combinations fail closed and never fall back to another scenario. Switching configuration reloads the page, so an old calculation cannot update a new scene. Candidate stations are stored per full release ID; device settings are independent.
 
-On the compiled backend the main app provides station/pose and device editing, counts/transmission, material-contribution and response numeric layers, material-path hover, comparison and versioned snapshot export. Continuous water level, legacy target contours/source-entity significance, coloured internal proxies and the legacy flux cloud are disabled; counterfactual rules of the old geometry are never applied. Scene and calculation share the GLB model buffers; materials, camera and display toggles never enter physics.
+The main app provides a working station (position, pose, device; "在模型上点选位置" places it with one click on the model: inside a clicked gallery or other cavity, 1 m above its floor, otherwise 0.5 m off the clicked surface) with fixed candidates (存为新候选 / 更新候选; each candidate's totals computed in the background), counts/transmission (counts from the sky end of each detector line, front and back), recognition outlines with hover crossings, 3D feature layers, a coverage highlight on the subject (geometric field of view or expected counts per steradian; 环境图层 → 覆盖范围; 其他点位 adds up to 8 candidates, shading surfaces by the number of stations that see them; with 物理 and other stations, 多站物理 shows multi-view coverage (usable views with ≤ 10 % counting error, their angular spread, a good/limited/insufficient class), the dominant station or total counts; 视场棱线 and 实心视锥 under 探测器视锥与射线 show each station's field of view as edges or a translucent pyramid; 切面 adds a movable slice plane through the interior with the same coverage shading, and shown galleries carry it too; 多站总览 lists each recognition item for the shown stations: per station image share, counts and counting error, and the item's multi-view numbers (share with ≥ 3 usable views, median spread, weakest error), a station name, or another station's marker or name label in 3D, opening that station, and 并排查看各点位投影 shows their projections side by side on one colour scale from the cached results; 演示模式 (header) shows the 3D view alone with caption, legend, labels and a limitations footnote, view presets and saved views (← →), PNG screenshots and short WebM animations (guided tour or orbit, 30 fps) carrying the same; hover a covered surface for its slopes and counts, click it to open the matching projection pixel), statistical precision lines, an "专家诊断" drawer with the material-contribution and response numeric layers, a "方案比较" section comparing the candidates ticked 比较 in the list, named deployments (部署组合: tick candidates, compare a deployment's stations), and plan export/import: "导出方案 ▾" writes the whole current study, the current deployment or all deployments; the whole study (`muography-plan` 1.1.0: release, scenario, candidate stations with poses and notes, named deployments, detector settings; [format](docs/specs/PLAN_FORMAT.md)) and "导入方案" loads one as a new study, opening its release and scenario when they differ. The browser keeps several studies per release (候选部署点 → 工作方案: switch, new, rename, delete). Continuous water level, structural significance and the flux cloud are shown but disabled until they are migrated; counterfactual rules of the old geometry are never applied. Scene and calculation share the GLB model buffers; materials, camera and display toggles never enter physics.
 
-The legacy release keeps continuous water level and the compatibility features. The compiled backend's finite domain, aggregate source-entity attribution and lack of physical calibration remain; neither backend provides construction-grade results or certified physical domains. Current integration boundaries are described in [the architecture spec](docs/specs/ARCHITECTURE.md#current-geometry-backends-and-integration-boundaries); open work is in the [roadmap](docs/ROADMAP.md).
+The compiled backend's finite domain, aggregate source-entity attribution and lack of physical calibration remain; it does not provide construction-grade results or certified physical domains. Current integration boundaries are described in [the architecture spec](docs/specs/ARCHITECTURE.md#current-geometry-backends-and-integration-boundaries); open work is in the [roadmap](docs/ROADMAP.md).
 
 ## Standalone geometry preview
 
-`/geometry-preview.html` (over HTTP) shows the shared mesh/BVH backend: four published scenarios, reference-point ray material lengths, cavity/virtual geometry display and component picking. Display and calculation use the same model-coordinate buffers. The preview is independent of the main app and does not support continuous water level or full target significance. Asset verification also runs over LAN HTTP; there are no runtime external dependencies.
+`/geometry-preview.html` (over HTTP; the dataset workbench of ADR-030, opened from the main app's "数据集检查" link with the same `dataset`/`scenario` URL parameters, and linking back) shows the shared mesh/BVH backend: four published scenarios, reference-point ray material lengths, cavity/virtual geometry display and component picking. Display and calculation use the same model-coordinate buffers. The preview is independent of the main app and does not support continuous water level or full target significance. Asset verification also runs over LAN HTTP; there are no runtime external dependencies.
 
 - **Column-density maps** at 25×25 / 65×65 in detector-local slope space; clicking a pixel shows the same backend's ray path; JSON export carries release, scenario, pose, sampling and limitations. This map qualifies material paths only; it is not an acceptance-weighted count, transmission or ROI significance.
 - **Colour scale**: adaptive log scale robust to outliers (P98 of positive pixels) by default, with the legend listing the upper limit and saturated pixels; a fixed linear scale is available for cross-view comparison. Colour scaling never changes material paths, column densities or exported values.

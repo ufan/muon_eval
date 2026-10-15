@@ -5,17 +5,21 @@
 The project is a static web application without a build step:
 
 ```text
-app.js: release/backend/scenario selection and dependency assembly
+app.js: release/scenario selection and dependency assembly
   ├─ application-selection → application-backends → dataset-loader
-  │   ├─ compiled-mesh-runtime → compiled-glb / triangle-bvh          (default)
-  │   └─ legacy-geometry-adapter → geometry-kernel / dda-ray-tracer    (compatibility)
+  │   └─ compiled-mesh-runtime → compiled-glb / triangle-bvh
   ├─ deployment-state → device-configuration / detector-defaults
-  ├─ compiled-main-assessment or main-assessment → shared detector-projection / muon-response
-  ├─ assessment-controller: snapshots, cancellation, progress and result publication
-  └─ main-page → compiled- or legacy-scene-view / projection-canvas-view / main-pattern-view
+  ├─ compiled-main-assessment → shared detector-projection / muon-response
+  ├─ assessment-controller: snapshots, cancellation, progress and result publication over the
+  │   assessment port (open(input).evaluate(quality, {signal}) → Promise; local adapter today, ADR-006)
+  └─ main-page → compiled-scene-view / projection-canvas-view / main-pattern-view
+      ├─ recognition-panel-view → recognition-layers (pure; dataset feature catalogue + display profile)
+      └─ feature-layer-panel-view → feature-layers (pure; 3D feature groups)
 ```
 
 The application is served from `dist/`; dataset releases are served from the top-level `datasets/` directory at `/datasets/` (ADR-018). At runtime nothing contacts a CDN or backend API.
+
+The compiled GLB/BVH backend is the only scientific backend. The legacy DDA backend and its parametric geometry were retired (ADR-028); the features it had that the compiled backend lacks stay in the UI, gated by backend capabilities, as migration targets MT-1…MT-6 ([feature requirements](../FEATURE_REQUIREMENTS.md), section B).
 
 This document describes the current implementation and its target boundaries, not a log of completed tasks. Architecture decisions (including long-term geometry data principles) are in [ARCHITECTURE_DECISIONS](../ARCHITECTURE_DECISIONS.md); open work, requirements and priorities are kept only in the guideline documents at the top of `docs/`; other specs are listed in the [spec index](README.md).
 
@@ -25,19 +29,23 @@ This document describes the current implementation and its target boundaries, no
 dataset → computation-owned geometry adapter → view adapter → Three.js
 stations / device / environment → immutable deployment-state
                    → controller captures a snapshot
-                   → assessment session: (legacy: flux cloud / quick metrics) / 25² → 65²
+                   → assessment session: 25² → 65²
                    → same result → DOM / canvas / Three.js / export
 ```
 
 Dependency-direction rules are in the [module boundaries spec](MODULE_BOUNDARIES.md).
 
-Inputs are owned by deployment-state and published read-only; views own selection, colour, camera and layer state. Each assessment session copies the station, device, response and environment and binds one geometry context; the preview and final passes consume the same session. When inputs change, the controller cancels pending batches and invalidates the old generation, so stale results cannot be published. Flux/bin caches are owned by the assessment instance and cleared explicitly when device settings change.
+Inputs are owned by study-state (the study's fixed candidates and one working station; deployment-state only carries the dataset defaults) and published read-only; station placement inside a clicked cavity uses the calculation's trace through the backend (`station-placement.js`), never the display meshes; candidate results are computed in the background through the same assessment port and kept in a compact per-candidate cache (`candidate-results.js`); views own selection, colour, camera and layer state. Each assessment session copies the station, device, response and environment and binds one geometry context; the preview and final passes consume the same session. When inputs change, the controller cancels pending batches and invalidates the old generation, so stale results cannot be published. Native slope bins are cached per device; the flux integral has no cache (FR-C1).
 
-The procedural surfaces, coordinate display offsets and camera presets of the legacy scene are bounded compatibility adapters, not generic platform constants; the legacy default stations/poses and old plan JSON conventions belong to legacy-deployment-adapter. None of them is material or ray truth. The compiled main-app view reuses the computation-owned buffers of compiled-geometry-view; geometry-preview is standalone and not a main-app dependency.
+Recognition outlines (FR-M12, ADR-029) are view state over a finished result: `recognition-panel-view` lists the release's recognition items, keeps selection and threshold per release, and recomputes masks with the pure `recognition-layers` for each preview and final result; `projection-canvas-view` draws them in an SVG overlay and lists the items crossed by the hovered ray (length inside, entry distance). The 3D feature layer (FR-M11) draws the compiled components of the catalogue's direct features in class colours; `feature-layer-panel-view` keeps their visibility, compiled-scene-view does feature hover/pick and temporary emphasis, and main-page links both ways (pixel or item hover → features lit in 3D; feature hover → its outline emphasised; feature click → its outline toggled).
+
+The 3D view renders on demand: a frame is drawn only after a camera move (including damping), a resize or a call into the scene view, so an idle page uses no GPU time (FR-N5).
+
+The compiled main-app view reuses the computation-owned buffers of compiled-geometry-view and applies the display style of the former legacy scene (owner preference, 2026-10-12): dark background with fog and ground grid, translucent dam with edges, translucent rock and dark water, legacy lighting and perspective preset. The style replaces only the GLB display colours in the view; geometry-preview is standalone and not a main-app dependency.
 
 ## Current calculation strategy
 
-The spectrum, integrated flux, continuous energy loss and significance formulas are in `dist/modules/muon-response.js`; native strip-difference acceptance, pixel counts, batched projection and display-resolution convolution are in `detector-projection.js`. Neither depends on the DOM or Three.js; they support different geometry backends through injected directions and ray results. `dda-ray-tracer.js` provides pure DDA traversal; `legacy-geometry-adapter.js` binds the legacy dataset/environment; `deployment-state.js` manages inputs, `assessment-controller.js` manages cancellation/scheduling, and `main-page.js` and the separate views consume results. Quick preview and final projection both call the same `createProjectionPass`.
+The spectrum, integrated flux, continuous energy loss and significance formulas are in `dist/modules/muon-response.js`; native strip-difference acceptance, pixel counts, batched projection and display-resolution convolution are in `detector-projection.js`. Neither depends on the DOM or Three.js; geometry enters only through injected directions and ray results. `deployment-state.js` manages inputs, `assessment-controller.js` manages cancellation/scheduling, and `main-page.js` and the separate views consume results. Quick preview and final projection both call the same `createProjectionPass`.
 
 The formulas, parameters, UI outputs and limits of each step are in the [calculation model spec](CALCULATION_MODEL.md); the meaning and use of results are in the [result interpretation guide](../guides/RESULT_INTERPRETATION.md).
 
@@ -45,28 +53,21 @@ The formulas, parameters, UI outputs and limits of each step are in the [calcula
 - Projection computes a 25×25 quick preview, then the 65×65 final result.
 - The 65×65 pixels aggregate the device's native strip-readout slope grid.
 - Projection yields to the event loop between batches so the page does not freeze.
-- Flux integrals and native slope bins are cached in memory.
+- Native slope bins are cached in memory; flux integrals are evaluated exactly per call (FR-C1).
 - Device and candidate-station state is stored in `localStorage`, stations per full release ID.
-- `dist/modules/dataset-loader.js` loads releases by full release ID from `datasets/registry.json`; v0.7 releases go through `dataset-validation.js` and `dam-spec-v07.js` into a versioned IR. `coordinates.js` provides independent forward/inverse point and direction transforms.
+- `dist/modules/dataset-loader.js` loads releases by full release ID from `datasets/registry.json`; only native v0.7 releases are accepted. They go through `dataset-validation.js` and `dam-spec-v07.js` into a versioned IR. `coordinates.js` provides independent forward/inverse point and direction transforms.
 - `compiled-glb.js` decodes the GLB of a frozen scenario, `triangle-bvh.js` builds a pure-CPU spatial index over computation-owned model-coordinate buffers, and `compiled-mesh-runtime.js` provides point material classification, material segments and density integration. `compiled-geometry-view.js` uses the same position/index arrays directly; display toggles never enter calculation. `geometry-preview.html` is the standalone preview entry.
 - `geometry-v07-qualification.js` is an analytic qualification backend for native v0.7 (arch sweeps, structural clipping, filled scenarios, upstream seed connectivity), using compiled terrain sampling; it does not replace production geometry. The import schema gate is `scripts/check-dataset-release.py`; HTTP loading and failure-path tests are in `tests/data/dataset-v07.test.mjs`.
-- Legacy material point classification is provided by `dist/modules/geometry-kernel.js`, falling back to far-field terrain outside the near field. The control-point and 200-reference-ray regression entry is `scripts/check-geometry-conformance.mjs`; its targets are resolved from the dataset registry, not bound to a version directory.
+- The control-point and 200-reference-ray regression entry is `scripts/check-geometry-conformance.mjs` (analytic qualification or `--backend compiled`); its targets are resolved from the dataset registry, not bound to a version directory.
 
 ## Current geometry backends and integration boundaries
 
 | Entry / backend | Current use | Key limits |
 | --- | --- | --- |
-| Compiled mesh/BVH (default) | Default main app and standalone preview: frozen scenarios, model classification, material paths and shared device assessment | No continuous water level; aggregate source-entity attribution unresolved; the main app disables legacy targets/significance, internal proxies and the flux cloud |
-| Legacy DDA (compatibility) | Legacy-format release selected explicitly: continuous water-level UI, single-station response and compatible numeric layers | Dam-specific parametric interpreter; DDA and dataset adapter are pure modules; scheduling, state and display are separated; calculation keeps legacy semantics |
+| Compiled mesh/BVH | Main app and standalone preview: frozen scenarios, model classification, material paths and shared device assessment | No continuous water level; aggregate source-entity attribution unresolved; the main app gates the migration targets MT-1…MT-6 (water slider, target layers/significance, internal-feature layer, flux cloud) |
 | v0.7 analytic qualification | Loads spec and versioned IR by full release ID; validates analytic entities | Bounded dataset adapter, not a general v0.7 CSG executor; terrain approximation and water interval filling are not a full connectivity algorithm |
 
-`dda-ray-tracer.js` has no runtime imports and no dependency on the DOM, Three.js, projection or compiled geometry. `createDdaRayTracer` takes explicit coordinate bounds, `maxDistanceM`, ordered densities, target IDs and `classifyPoint(x,y,z,environment)`; the returned synchronous tracer takes plain `{x,y,z}` points, unit directions and `{cellM,refineM,environment}`. `legacy-geometry-adapter.js` keeps the old document-coordinate domain, elevation 150–600 m, the 500 m distance limit and the steel fallback; these are legacy compatibility settings, not platform defaults. The adapter depends only on the geometry kernel and tracer and copies the spec, identity and terrain buffers on creation; the coordinate swap and elevation offset come from the bounded supported declaration, and directions never take translation. `bindEnvironment` returns, per calculation, immutable identity, materials, environment, coordinate transforms, `traceDoc`/`traceModel` and `traceSettings`; it never reads the DOM or current UI.
-
-The legacy environment supports only a variable `upstream` and a dataset-fixed `downstream`; other environment fields, non-finite water levels, non-legacy datasets and unsupported coordinate conventions fail closed, without faking full hydraulic connectivity or continuous compiled scenarios. One preview/final calculation calls coordinates, classification/tracing, metadata and pattern adaptation through the same bound context; display controls never enter the tracer. Direction arithmetic in the pure detector-pose module keeps the old Vector3 operation order without a Three.js dependency; legacy scene geometry transforms belong to the view.
-
-Traversal keeps the entry offset, three-point sampling, up to eight subdivision levels, per-material cell merging and the 10,000-iteration guard. It therefore remains a legacy approximation, not exact interface tracing; missed thin structures, cell merging that ignores target labels and the historical guard behaviour were not changed in the extraction. `tests/integration/dda-ray-tracer.test.mjs` verifies real reference directions, boundary/reverse/parallel grids, different water levels, full 25/65 projections and dependency boundaries against frozen test baselines. Test baselines live only in `tests/fixtures` and are never referenced at runtime.
-
-The registry distinguishes different schemas of the same data version by full release ID. The loader verifies source/manifest/asset digests, scenarios and cross-references; the main app first resolves the full release/backend/scenario, then calls `loadDataset(releaseId)`. `loadDefaultDataset` is kept only for legacy compatibility calls and is not used for main-app assembly. Control points and reference rays are based on the dataset resolved from the registry.
+The registry distinguishes different schemas of the same data version by full release ID. The loader verifies source/manifest/asset digests, scenarios and cross-references; the main app first resolves the full release/backend/scenario, then calls `loadDataset(releaseId)`. Control points and reference rays are based on the dataset resolved from the registry.
 
 GLB decoding accepts only supported frozen static indexed triangles, handling node transforms, accessor layout and winding reversal; external buffers, sparse accessors, compression, animation/skinning and unregistered nodes fail closed. Physical components are checked against the manifest, materials and closure/winding/net volume; virtual geometry gets no physical BVH. Positions/indices are owned by computation; the view only uses the shared buffers and the Z-up → Y-up display transform, and owns normals and materials.
 
@@ -81,7 +82,6 @@ Reproduction entry points (no single-run scores or performance logs are kept her
 ```sh
 python3 scripts/check-dataset-release.py
 node --test tests/data/dataset-v07.test.mjs tests/data/compiled-mesh.test.mjs
-node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2
 node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0
 node scripts/check-geometry-conformance.mjs --dataset zhouning-lower-reservoir-dam@0.6.2+schema0.7.0 --backend compiled
 node scripts/check-semantic-mapping.mjs
@@ -97,10 +97,6 @@ Optional HTTP browser check: `node scripts/check-compiled-preview.mjs`, acceptin
 
 `compiled-assessment.js` is a pure adapter from the BVH to the shared `createProjectionPass`, using the model vertical direction cosine and material column density, providing counts/transmission, display smoothing, metadata and cancellation for the four frozen scenarios. The device/response defaults in `detector-defaults.js` are independent of the dataset and shared by the main app and preview. `createCompiledAssessmentPass` provides the same validation, direction sampling, batched advance and result adaptation; `evaluateCompiledAssessment` is the async wrapper for preview/batch calls, and compiled-main-assessment provides sessions for the main controller. The two paths duplicate neither formulas nor tracing. Source-entity ROI is not available yet.
 
-`legacy-target-interpretation.js` consumes the same legacy trace and bound material snapshot, independent of geometry backends, the DOM, Three.js and projection modules; it references only the shared muon-response maths. `createLegacyTargetInterpreter` copies ordered target IDs and water/concrete densities and derives `edgeProfile`, `targetMask` and `counterfactualMwe` without rewriting raw paths or cells. Whole cells with `t0 < 2 m` are excluded from target adjustment (not split at 2 m); the mask uses strictly greater than 0.15 m; the first dense/concrete entry still includes near cells; a missing entry keeps the legacy internal representation `Infinity`.
-
-`evaluateLegacyTargetSignificance` takes an explicit flux and systematic error; a miss or `dam` returns zero, other targets call the shared minimum-energy and significance formulas. Selection belongs to view state, the significance cache to the assessment session, the final-result gate to the controller and target-outline drawing to projection-canvas-view. Water removal, filling cavities with concrete, removing non-dam concrete and clamping at zero are old-model heuristics that prove neither source-entity ownership nor detectability; the module is not used for compiled entity ROI.
-
 `semantic-mapping.js` audits only explicit canonical source IDs and builds the direct-target index; runtime point/ray queries and render picking use the same IDs. Both projections record each ray's semantic volume intersection length for direct-target outlines; entity ownership of aggregate materials and counterfactual ROI significance remain unresolved.
 
 `projection-pattern-fields.js` turns the same calculation's native grid, material paths/column density and the pre-snapshotted geometry metadata into standardized fields, and maps the D3 numerical contours of `contribution-contours.js` onto each graph's own equal-width display cells. Detector-weighted slope centres are mapped piecewise, never aligned with the material graph by pixel index; the two graphs are extracted independently without resampling or a copied response formula. The preview adds independent material/quantity/level controls; `contribution-view.js` only consumes mapped line data to produce fixed-CSS-pixel-width SVG; caches scoped to results and extraction settings never modify scientific arrays. `contribution-export.js` provides a separate v1 contour export and offline replay validation; display styles do not enter scientific identity and old result exports are not migrated. Worst-case browser performance is still to be verified.
@@ -115,17 +111,17 @@ The [derived interface artifact](GEOMETRY_REFERENCE_CONTRACT.md#derived-interfac
 
 Decisions on the geometry data contract, Geometry IR, runtime artifacts and DD4hep/GDML backends are ADR-008…011 and ADR-016/017 in [ARCHITECTURE_DECISIONS](../ARCHITECTURE_DECISIONS.md); data-contract requirements are FR-D in the feature requirements.
 
-Finite-model operation and contracts are in the [projection workflow](../guides/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison): `finite-reference-worker.js` validates the separate derived assets and `finite-model-references.js` consumes finite-model boundaries (without granting real physical-interface qualification). Separate reference lines, response numeric contours, open-sky context, hover lineage and v1 layer/comparison export are connected. `response-patterns.js` uses the open-sky counts kept directly by the shared response; `pattern-comparison.js` defines common metrics and `pattern-comparison-batch.js` reuses the single-station scientific core for explicit small batches. `legacy-pattern-adapter.js` and `main-pattern-view.js` bring compatible numeric layers and comparison into the main app, keeping the legacy DDA identity on the legacy backend; compiled reference lines are still shown only in the standalone preview. Physics formulas and released geometry are unchanged.
+Finite-model operation and contracts are in the [projection workflow](../guides/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison): `finite-reference-worker.js` validates the separate derived assets and `finite-model-references.js` consumes finite-model boundaries (without granting real physical-interface qualification). Separate reference lines, response numeric contours, open-sky context, hover lineage and v1 layer/comparison export are connected. `response-patterns.js` uses the open-sky counts kept directly by the shared response; `pattern-comparison.js` defines common metrics and `pattern-comparison-batch.js` reuses the single-station scientific core for explicit small batches. `main-pattern-view.js` brings the numeric layers and comparison into the main app (previously exported legacy results can still be replayed); compiled reference lines are still shown only in the standalone preview. Physics formulas and released geometry are unchanged.
 
 ## Explicit main-app backend selection
 
-application-selection validates the full release ID and compatible backend against the registry; without an explicit selection it uses the registry default, which is the compiled v0.7 release (OQ-3, 2026-10-10). The backend follows from the release: compiled for `dam-spec-v07` releases, legacy otherwise. application-backends is bounded dependency assembly, not a plugin system: compiled binds one GLB/BVH runtime for a registered frozen scenario (the first scenario when none is given); legacy keeps the original coordinates/DDA/continuous-water behaviour. Wrong scenarios, unknown releases or incompatible backends fail closed without trying another backend.
+application-selection validates the full release ID against the registry; without an explicit selection it uses the registry default. Only `dam-spec-v07` releases and the `compiled` backend are accepted (ADR-028). application-backends is bounded dependency assembly, not a plugin system: it binds one GLB/BVH runtime for a registered frozen scenario (the first scenario when none is given) and declares the backend's capabilities. Wrong scenarios, unknown releases or any other backend fail closed.
 
 The main controller consumes only the createSession/projection/advance/complete ports. A compiled session captures the same station, device, response and frozen variables and rejects other environment values; 25² and 65² both reuse compiled-assessment. The ray length is the distance from the station to the farthest corner of the finite model bounds, enclosing all published meshes; exceeding the supported range is an error, never a silent truncation. Unknown material outside the domain can still lead to overestimated transmission.
 
-The UI disables, from capabilities, the unsupported continuous water level, legacy targets/significance, coloured internal proxies and flux cloud. Model coordinates and scientific results never use Three.js objects; views consume only buffers and same-result segments. Switching release/scenario reloads the full page, clearing old tasks; station storage is isolated per release ID and device configuration is independent. The legacy plan export format is kept; the compiled-deployment-snapshot v0.1 records source, assets, model domain, scenario, device and central ray, without claiming full plan save/load.
+The UI keeps the controls of the migration targets and disables them from capabilities: continuous water level, target layers and structural significance, the internal-feature layer and the flux cloud. The controller's optional session hooks (`cloud`, `quickMetrics`, `ensureTargetSignificance`) and the projection view's target drawing stay as the integration points for re-implementing them. Model coordinates and scientific results never use Three.js objects; views consume only buffers and same-result segments. Switching release/scenario reloads the full page, clearing old tasks; station storage is isolated per release ID and device configuration is independent. The compiled-deployment-snapshot v0.1 records source, assets, model domain, scenario, device and central ray, without claiming full plan save/load.
 
-Both backends, the four scenarios, rejection paths and numerical consistency are tested in `tests/integration/main-compiled-backend.test.mjs`; HTTP acceptance is `scripts/check-main-compiled-app.mjs` (default compiled app) and `scripts/check-main-app.mjs` (legacy release). Material points and reference rays keep using the release conformance thresholds; passing the P95 threshold does not mean zero maximum error or a certified physical domain.
+The four scenarios, rejection paths and numerical consistency are tested in `tests/integration/main-compiled-backend.test.mjs`; HTTP acceptance is `scripts/check-main-compiled-app.mjs`. Material points and reference rays keep using the release conformance thresholds; passing the P95 threshold does not mean zero maximum error or a certified physical domain.
 
 ## Main-app source entry points
 

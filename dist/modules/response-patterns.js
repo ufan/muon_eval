@@ -18,8 +18,8 @@ export function responseFieldFromProjection(result, quantity = 'transmission', r
       ? p[representation === 'raw' ? 'transmission' : 'displayTransmission']
       : p[representation === 'raw' ? 'count' : 'displayCount'];
     if (!Number.isFinite(value) || value < 0) throw new Error('Invalid response sample');
-    // The unchanged quantized quick model can produce T>1. Keep its raw
-    // result, but do not clamp it into a fabricated valid attenuation field.
+    // T>1 (possible from quick-response@1.0.0 results) keeps its raw
+    // value but is never clamped into a fabricated valid attenuation field.
     return quantity === 'transmission' && value > 1 ? null : value;
   });
   return createPatternField({ id: `response:${quantity}:${representation}:${context}`, snapshot, grid, quantity, representation,
@@ -27,7 +27,7 @@ export function responseFieldFromProjection(result, quantity = 'transmission', r
       invalidSampleCount: values.filter(v => v === null).length,
       limitations: [...result.limitations, 'Open-sky counts include acceptance, directional surface flux, exposure and efficiency.',
         'N/Nopen is an attenuation diagnostic only; zero open-sky support is invalid.',
-        'Out-of-range T>1 from the unchanged quantized quick model is invalid for attenuation interpretation, not clamped; raw exports retain it.',
+        'Out-of-range T>1 is invalid for attenuation interpretation, not clamped; raw exports retain it.',
         'Display smoothing is the existing uncalibrated approximation, not a detector response measurement.',
         'No counterfactual ownership, statistical significance or physical resolvability is inferred.'] } });
 }

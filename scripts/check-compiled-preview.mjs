@@ -50,6 +50,17 @@ try {
   assert.equal(await page.evaluate(() => Boolean(globalThis.crypto?.subtle)), false, 'LAN HTTP smoke must exercise portable SHA-256');
   await page.waitForFunction(() => document.getElementById('status').textContent.includes('upstream 288 m'), null, { timeout: 30000 });
   await page.waitForFunction(() => document.querySelectorAll('#paths tr').length === 5);
+  // ADR-030: same selection contract as the main app; the URL and the link back follow the selection.
+  const release = await page.locator('#release').inputValue(), expectedSearch = `?dataset=${encodeURIComponent(release)}&backend=compiled&scenario=low`;
+  assert.equal(new URL(page.url()).search, expectedSearch);
+  assert.equal(await page.locator('#mainAppLink').getAttribute('href'), './' + expectedSearch);
+  const linked = await browser.newPage();
+  await linked.goto(`${address}/geometry-preview.html?dataset=${encodeURIComponent(release)}&scenario=high`);
+  await linked.waitForFunction(() => document.getElementById('status').textContent.includes('upstream 298 m'), null, { timeout: 30000 });
+  assert.equal(await linked.locator('#scenario').inputValue(), 'high');
+  await linked.goto(`${address}/geometry-preview.html?dataset=${encodeURIComponent(release)}&scenario=missing`);
+  await linked.waitForFunction(() => document.getElementById('status').textContent.includes('Unknown compiled scenario missing'), null, { timeout: 30000 });
+  await linked.close();
   await page.waitForFunction(() => document.getElementById('projectionStatus').textContent.includes('complete · low'));
   await page.locator('#materialProjection').scrollIntoViewIfNeeded();
   const projection = await page.locator('#materialProjection').boundingBox();
@@ -80,7 +91,7 @@ try {
   const assessmentExport = JSON.parse(await readFile(await assessmentDownload.path(), 'utf8'));
   assert.equal(assessmentExport.kind, 'compiled-detector-assessment');
   assert.equal(assessmentExport.scenarioId, 'low'); assert.equal(assessmentExport.pixels.length, 625);
-  assert.equal(assessmentExport.modelVersion, 'legacy-quick-response@1.0.0');
+  assert.equal(assessmentExport.modelVersion, 'quick-response@4.0.0');
   assert.equal(assessmentExport.semanticAudit.targets.length, 22);
   assert.deepEqual(assessmentExport.semanticAudit.unresolvedComponents, ['concrete', 'rock', 'steel_gates']);
   assert.equal(await page.locator('#column').textContent(), `Column density: ${assessmentExport.pixels[312].mwe.toFixed(2)} m.w.e.`);
@@ -348,46 +359,45 @@ try {
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   });
   assert.equal(await page.locator('#comparisonSummary').textContent(), 'No saved assessments.', 'Clear must cancel pending comparison work');
-  const legacy = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  legacy.on('pageerror', error => errors.push(error.message));
-  await legacy.goto(`${address}/`);
-  await legacy.waitForFunction(() => document.getElementById('loading')?.style.display === 'none', null, { timeout: 30000 });
-  // Final assessment formats transmission with two decimals; the initial
-  // coarse estimate has one. Exercise the extracted core through the real UI.
-  await legacy.waitForFunction(() => /^\d+\.\d{2}%$/.test(document.getElementById('sky').textContent), null, { timeout: 30000 });
-  await legacy.locator('#mainPatternControls').evaluate(node => { node.open = true; });
-  await legacy.locator('#mainMaterialContours').check(); await legacy.locator('#mainResponseContours').check();
-  assert.ok(await legacy.locator('#mainPatternOverlay path').count() > 0);
-  assert.ok((await legacy.locator('#mainPatternLegend').textContent()).includes('legacy-dda@1.0.0'));
-  await legacy.locator('#mainCaptureComparison').click();
-  const mainDownloadPromise = legacy.waitForEvent('download'); await legacy.locator('#mainExportComparison').click();
+  const mainPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  mainPage.on('pageerror', error => errors.push(error.message));
+  await mainPage.goto(`${address}/`);
+  await mainPage.waitForFunction(() => document.getElementById('loading')?.style.display === 'none', null, { timeout: 30000 });
+  // The final assessment fills the side-panel metrics; exercise the shared core through the real UI.
+  await mainPage.waitForFunction(() => /^\d+\.\d{2}%$/.test(document.getElementById('sky').textContent), null, { timeout: 30000 });
+  await mainPage.locator('#mainPatternControls').evaluate(node => { node.open = true; });
+  await mainPage.locator('#mainMaterialContours').check(); await mainPage.locator('#mainResponseContours').check();
+  assert.ok(await mainPage.locator('#mainPatternOverlay path').count() > 0);
+  assert.ok((await mainPage.locator('#mainPatternLegend').textContent()).includes('compiled-triangle-bvh@0.1.0'));
+  await mainPage.locator('#mainCaptureComparison').click();
+  const mainDownloadPromise = mainPage.waitForEvent('download'); await mainPage.locator('#mainExportComparison').click();
   const mainDownload = await mainDownloadPromise, mainBytes = await readFile(await mainDownload.path());
   const mainExport = replayPatternComparison(JSON.parse(mainBytes));
-  assert.equal(mainExport.entries[0].result.backend, 'legacy-dda@1.0.0');
-  assert.equal(mainExport.entries[0].result.kind, 'legacy-detector-assessment');
-  await legacy.locator('#mainClearComparison').click();
-  await legacy.locator('#mainImportComparison').setInputFiles({ name: 'main.json', mimeType: 'application/json', buffer: mainBytes });
-  await legacy.waitForFunction(() => document.getElementById('mainComparisonSummary').textContent.includes('参数差异'));
-  const initialMainProjection = await legacy.locator('#projectionReadout').textContent();
+  assert.equal(mainExport.entries[0].result.backend, 'compiled-triangle-bvh@0.1.0');
+  assert.equal(mainExport.entries[0].result.kind, 'compiled-detector-assessment');
+  await mainPage.locator('#mainClearComparison').click();
+  await mainPage.locator('#mainImportComparison').setInputFiles({ name: 'main.json', mimeType: 'application/json', buffer: mainBytes });
+  await mainPage.waitForFunction(() => document.getElementById('mainComparisonSummary').textContent.includes('参数差异'));
+  const initialMainProjection = await mainPage.locator('#projectionReadout').textContent();
   assert.ok(initialMainProjection.includes('总计数'));
-  await legacy.locator('#elNumber').fill('45');
-  await legacy.waitForFunction(initial => {
+  await mainPage.locator('#elNumber').fill('45');
+  await mainPage.waitForFunction(initial => {
     const text = document.getElementById('projectionReadout').textContent;
     return text.includes('总计数') && text !== initial && /^\d+\.\d{2}%$/.test(document.getElementById('sky').textContent);
   }, initialMainProjection, { timeout: 30000 });
-  await legacy.setViewportSize({ width: 390, height: 844 });
-  await legacy.waitForFunction(() => {
+  await mainPage.setViewportSize({ width: 390, height: 844 });
+  await mainPage.waitForFunction(() => {
     const canvas = document.querySelector('#webgl canvas'), rect = canvas.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0 && Math.abs(canvas.width / canvas.height - rect.width / rect.height) < .01;
   });
-  const mainVectorBounds = await legacy.locator('#mainPatternOverlay').evaluate(svg => {
+  const mainVectorBounds = await mainPage.locator('#mainPatternOverlay').evaluate(svg => {
     const s = svg.getBoundingClientRect(), c = document.getElementById('projectionCanvas').getBoundingClientRect();
     return { svg: [s.width, s.height], canvas: [c.width, c.height] };
   });
   assert.deepEqual(mainVectorBounds.svg, mainVectorBounds.canvas);
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ preview: 'PASS', browser: browser.version(), scenarios: ['low', 'mid', 'high', 'extreme'], viewport_sizes: ['1440×900', '390×844'],
-    external_http_sha256: 'PASS', shared_display_state: 'PASS', picking: 'PASS', legacy_app: 'PASS', screenshots: artifacts }, null, 2));
+    external_http_sha256: 'PASS', shared_display_state: 'PASS', picking: 'PASS', main_app: 'PASS', screenshots: artifacts }, null, 2));
 } finally {
   await browser?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
 }

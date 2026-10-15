@@ -35,8 +35,11 @@ Last updated: 2026-10-10
 | 023 | Layered, lightweight test-driven development | Accepted |
 | 024 | Desktop distribution as a thin wrapper over the unchanged web app | Proposed |
 | 025 | Anomaly hypotheses in the physical scene; perturbative sensitivity evaluation | Accepted |
-| 026 | Coverage highlight by GPU projective texturing of acceptance and count maps | Proposed |
+| 026 | Coverage highlight by GPU projective texturing of acceptance and count maps | Accepted; single-station implemented (15a, 2026-10-14); multi-station with #15 |
 | 027 | Three.js for display only; geometry and physics in own framework-free modules | Accepted (retrospective) |
+| 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
+| 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; implemented (15b-1…15b-6; envelope overlay kept in the preview only); optional fill and sampled-pixel view open |
+| 030 | Two entry points: planning app and dataset workbench, one selection contract | Accepted (owner, 2026-10-14); links and drawer done (15c); 11b, W1 open |
 
 ---
 
@@ -71,7 +74,7 @@ Costs accepted: no shared plans or central results, compute bounded by one machi
 
 **Status:** Accepted
 
-**Context.** Calculation modules (`dist/modules/*` such as `muon-response.js`, `detector-projection.js`, `dda-ray-tracer.js`, `triangle-bvh.js`, `compiled-assessment.js`) have no DOM or Three.js dependency and already run under `node --test` and `scripts/`.
+**Context.** Calculation modules (`dist/modules/*` such as `muon-response.js`, `detector-projection.js`, `triangle-bvh.js`, `compiled-assessment.js`) have no DOM or Three.js dependency and already run under `node --test` and `scripts/`.
 
 **Decision.** Keep the calculation core as plain modules with no UI framework or rendering dependency. Every consumer (single-point evaluation, scans, ranking, comparison, export, batch runner, any future server worker) uses this one core; no second copy of formulas in another language or layer. Rendering is never a source of geometric truth.
 
@@ -97,6 +100,7 @@ Costs accepted: no shared plans or central results, compute bounded by one machi
 - Use the framework for new form/list/table screens only. The 3D scene and projection canvas stay framework-free. The old page is migrated piece by piece.
 - Framework state must not own calculation inputs or results; the existing deployment state and assessment controller remain the source. UI state (e.g. sidebar expansion) never enters scientific result files.
 - The switch supersedes ADR-013: source moves to `src/` with a built static output. In the same change, update hosting binding (`.openai/hosting.json`), Docker/nginx, `AGENTS.md` checks (`node --check dist/app.js`) and README.
+- **Caching until then (2026-10-14).** File names carry no content hash, so servers send `Cache-Control: no-cache` for scripts and stylesheets (`nginx.conf`, `scripts/serve.mjs`): browsers revalidate and get a 304 for unchanged files. Content-hashed file names with long-lived caching come with this build step; hand-maintained per-file stamps were tried and reverted (owner).
 
 ## ADR-005 Performance strategy: algorithm first, native code last
 
@@ -128,11 +132,11 @@ Any replacement tracer must pass the existing `conformance_rays.json` / `conform
 **Context.** Already server-friendly: framework-free core runnable in Node; `createSession(input)` takes a detached snapshot; versioned JSON results with identity/model version; SHA-256-verified dataset releases; message-passing Workers; `main-page.js` takes `storage` as a parameter.
 
 **Decision.** Close these gaps before any server work, since each is cheap now and expensive later:
-1. Plan / scan / result schemas, versioned with migrations; they become the future API contract.
-2. Asynchronous, cancellable assessment port (Promise + AbortSignal, as `evaluateCompiledAssessment` already does); only `assessment-controller.js` changes.
+1. Plan / scan / result schemas, versioned with migrations; they become the future API contract. *Plans done 2026-10-14* (`muography-plan` 1.0.0, PLAN_FORMAT.md); results record their source plan; the scan format is designed with P5.
+2. Asynchronous, cancellable assessment port (Promise + AbortSignal, as `evaluateCompiledAssessment` already does); only `assessment-controller.js` changes. *Done 2026-10-14:* `createLocalAssessmentPort` (`open(input)` → `evaluate(quality, { signal, onProgress })` → Promise, AbortError on cancel); the controller depends only on the port.
 3. Deterministic calculation: no result may depend on evaluation history (FR-C1).
-4. Traceable results for every backend: legacy results need equivalent identity and must record the actual ray cutoff, or server scans are compiled-backend only.
-5. Headless batch runner (Node CLI: plan in, results out) that later becomes the server worker unchanged.
+4. Traceable results for every backend (the legacy backend recorded its ray cutoff, FR-C2, before it was retired, ADR-028).
+5. Headless batch runner (Node CLI: plan in, results out) that later becomes the server worker unchanged. *Done 2026-10-14 for plans:* `scripts/run-plan.mjs` (worker threads) over the pure `plan-runner.js`; results, a clock-free run summary and an optional comparison the app replays.
 6. Server language: Node reusing the same modules. If Python is preferred for orchestration, it calls Node/WebAssembly workers; formulas are never reimplemented.
 
 ## ADR-007 Geant4 runs as an external job, not inside the app
@@ -184,7 +188,7 @@ DD4hep XML does not replace the strict JSON contract: Compact XML has no fixed s
 **Status:** Accepted (migrated from `GEOMETRY_SPEC_REFACTOR.md` §5)
 
 **Decision.**
-- Terrain: regular height field, bilinear sampling, 2D grid / DDA traversal.
+- Terrain: regular height field, bilinear sampling (the legacy 3D DDA tracer was retired with ADR-028).
 - Complex dam bodies: compiled closed triangle meshes + BVH.
 - Simple detectors and regular solids: analytic intersection.
 - Material overlaps are resolved by the compiler via priority, not by running full CSG inside the ray loop.
@@ -200,6 +204,7 @@ DD4hep XML does not replace the strict JSON contract: Compact XML has no fixed s
 - The main app resolves a full release ID, backend and scenario explicitly; unknown or incompatible combinations fail closed and never fall back to another backend or scenario.
 - Changing the default backend is an explicit migration: dataset, device semantics, environment, ROI, rays and response are validated separately before the default entry changes. A working standalone preview never replaces the production backend automatically.
 - **Default switched to compiled (OQ-3, owner decision 2026-10-10).** The registry default is the v0.7 release on the compiled GLB/BVH backend; the legacy DDA release stays selectable as a compatibility path. Validation: full test suite and browser acceptance of both apps. Accepted gaps on the default path, tracked as FR-B1: continuous water level (FR-E1), legacy target contours/significance and entity ROI (FR-M3, FR-GE4), coloured internal proxies and the flux cloud. New work targets the compiled path; legacy-only fixes are lower priority.
+- **Legacy backend retired (owner decision 2026-10-12, ADR-028).** The compiled backend is the only scientific backend; the gaps above are migration targets MT-1…MT-6.
 - Frozen scenarios and continuous environment resolution are different capabilities; finite snapshots must never be interpolated to fake continuous-water material geometry.
 - Source geometry, visuals, material classification and rays express the same facts. Camera transforms, visibility, normals, colours and display smoothing never change material paths.
 - Result snapshots bind the full effective input; asynchronous cancellation, caches and UI updates never let a stale result overwrite newer state.
@@ -304,7 +309,7 @@ Consequences:
 - The runtime contract for every subject kind is the compiled package: manifest (identity, frames, materials, variables/frozen variants, layers, targets, checksums) + GLB physics/display meshes + optional terrain heightfield + optional conformance baselines.
 - Source formats (dam parametric spec, CAD, survey, furnace drawings) are converted offline by kind-specific compilers. The browser never runs kind-specific CSG (consistent with ADR-009).
 - The contract is provisional: it is derived from one dam and is expected to change when a second kind arrives (ADR-016, limits of current evidence).
-- The legacy dam path remains a bounded compatibility adapter; the compiled path is the default (OQ-3) and new subject kinds go only through it.
+- The compiled path is the only runtime path; the legacy dam path was retired (ADR-028) and new subject kinds go only through the compiled package.
 - Continuous variables (e.g. water level, burden level) need explicit per-kind resolvers; frozen variants are supported first (ADR-011).
 
 ## ADR-018 Datasets move to a top-level `datasets/` directory
@@ -343,6 +348,29 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - Two UI modes over the same plan state: **detail** (today's single-station inspection) and **overview** (all selected stations at once).
 - **Priority (owner decision 2026-10-10):** the overview comes right after the plan format, ahead of scan performance work. It is built in the current page with existing modules: it is mostly 3D scene and projection canvases, which stay framework-free under ADR-004 anyway, so it does not trigger the build-step switch. Stations are computed sequentially through the async port until scan workers exist.
 - Computation for several stations goes through the async, cancellable assessment port and workers (ADR-006 item 2, ADR-005 step 3); a stale station result never appears in the overview.
+
+**Study workflow (owner, 2026-10-14).** A user typically (1) sketches stations roughly on a new release, (2) tunes one station in detail and saves more candidates than needed, (3) tries combinations, in the same or a later session, and (4) exports one deployment or several alternatives (FR-P5). Decisions:
+1. **Candidates are flat:** one position + pose + detector each; several poses at one site are several candidates, grouped by location in the UI. A deployment can therefore use two poses of one site (two detectors).
+2. **Saved candidates are fixed.** The user edits a separate working station and applies it with "update candidate" or "save as new". A candidate's cached result stays valid until it is explicitly changed.
+3. **A new release starts with a fresh study.** Copying candidates from another release's study is deferred.
+4. **Results are recomputed when a study is opened, into a compact in-memory cache;** persistent storage is deferred.
+
+A **study** is one plan file: candidate pool, named deployments and detector configurations (plan 1.1.0). Several studies per release live in browser storage. The working station, the active candidate and the active deployment are session state stored next to the study, not in the plan.
+
+**Measured costs behind decision 4** (2026-10-14; Node on one 2.1 GHz Xeon core, the same V8 engine as Chrome; Zhouning, 6 candidates):
+
+| | Preview 25² | Final 65² |
+|---|---|---|
+| Compute per candidate | 80–200 ms | 420–780 ms (≈ 0.6 s) |
+| 20 / 50 candidates, one after another | ≈ 2 s / 5 s | ≈ 12 s / 30 s |
+| Result file (JSON) / gzip | 0.5–0.6 MB / 0.1 MB | 3.1–3.8 MB / 0.6–0.9 MB |
+| Full in-app result held in memory | 2.2 MB | 13.8 MB (result document alone: 5.4 MB) |
+| Compact form (32-bit numbers, ≈ 4 path segments per pixel; estimated) | ≈ 0.1 MB | ≈ 0.5 MB |
+| Reading a stored result back | 5–13 ms | 20–110 ms |
+
+Loading the dataset and building the runtime takes ≈ 1.2 s on every page load anyway. Recomputing a 20-candidate study costs ≈ 12 s in the background while the active candidate appears within a second; storage would save at most that, but adds stale results after an app update (the key would need the app version), eviction under disk pressure and Safari's 7-day limit. IndexedDB quotas are not the constraint (Chrome/Edge ≈ 60 % of free disk per origin, Firefox 10 % of disk or 10 GiB; documented limits, not measured); `localStorage` (≈ 5 MB) holds plans only. Memory is the constraint: full in-app results for 20 / 50 candidates would hold ≈ 280 / 690 MB, so the cache keeps the compact form (≈ 10 / 25 MB). **Revisit** persistent storage (compact form, 13a encoding) when a session's recomputation exceeds about 30–60 s.
+
+*Implemented 2026-10-14 (14b):* the compact entry holds 32-bit per-pixel arrays (counts, transmission, display values, m.w.e., side), the comparison indicators and the snapshot inputs: ≈ 90 KB at 65² (checked < 150 KB in an L4 test). Path segments are not kept yet; they are added when a multi-station view needs hover crossings (the side-by-side projections of #16 show pixel values without crossings for now). *Since #15 (2026-10-14)* each entry also keeps, per recognition item, the ray length inside it for every pixel with any length (pixel index and 32-bit length, 6 bytes per pixel; the stretch the detector sits in excluded, as in the outlines), so masks at any threshold come from the cache; an item filling the whole image costs 25 KB, a gallery a few KB (measured entry ≈ 128 KB with the concrete item in full view). The background queue evaluates one candidate at a time through the assessment port and pauses while the working station computes.
 
 ## ADR-021 Simulated multi-projection reconstruction as a separate pipeline
 
@@ -410,7 +438,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **Evaluation.** Perturbative: trace the baseline scene once per station/pose; for each anomaly variant compute the column change from region ∩ host segments along each stored ray, then recompute counts with the shared response core. Outputs per pixel and per region footprint: baseline and perturbed counts, ΔN, significance with statistical and systematic terms, and exposure time needed to reach a chosen significance. Sweeps over size, density, position and development step give sensitivity curves and minimum detectable size/contrast. Exactness is checked against full retracing on analytic fixtures (L2).
 - **Systematics.** Nuisance variations come from declared uncertainties: dataset density ranges and unknowns, flux model, device efficiency, geometry approximations. Results report significance with and without them, so the final observation states what is detectable and under which assumptions.
 - **Uses.** Becomes the main objective for scan ranking (FR-S2), multi-station comparison (ADR-020) and the ground truth for simulated reconstruction (ADR-021). It also gives the compiled default an anomaly-based sensitivity that does not need entity attribution, replacing the legacy counterfactual heuristic over time.
-- **Prerequisite.** FR-C1 (history-independent flux) must be fixed first: the quantised flux cache can map small column changes to the same cached value, making ΔN artificially zero or noisy.
+- **Prerequisite.** FR-C1 (history-independent flux), done: the former quantised flux cache could map small column changes to the same cached value, making ΔN artificially zero or noisy.
 - **Labelling.** Every result based on an anomaly is labelled as a simulated hypothesis with its full definition in the snapshot identity.
 
 ## ADR-026 Coverage highlight by GPU projective texturing of acceptance and count maps
@@ -426,7 +454,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - **Multi-station.** Up to N projectors in one pass (texture array, uniforms per station). Geometric mode: colour per station, overlaps show blended colours or a "number of covering stations" mode. Physical mode: either per-station hue with brightness, or one combined brightness of summed counts per steradian.
 - **Consistency.** The JS mirror of the shader's direction→slope mapping is tested against the core's slope→direction mapping (`detector-pose.js`) at L1, so view and calculation agree on directions.
 - **Interior coverage later.** Surface highlighting shows where rays cross surfaces, not how deeply a volume is probed. Volume coverage (per-voxel counts, stations, angular diversity) comes from stored traces in a worker (FR-M6, ADR-021) and is a separate layer.
-- **Replaces the legacy flux cloud on the compiled default.** The physical highlight serves the same purpose from the shared result, closing that part of FR-B1 without copying the legacy heuristic.
+- **Replaces the legacy flux cloud** (migration target MT-4, owner decision 2026-10-12). The physical highlight serves the same purpose from the shared result, closing that part of FR-B1 without copying the legacy heuristic.
 
 **What is tested, what is highlighted and how users read it (clarified 2026-10-12).** Goal: a user recognises at a glance which part of the subject each deployed detector sees.
 
@@ -437,15 +465,37 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 - *Visual encoding.* (1) a tint over the full field of view (mixed into the surface colour, see Transparency); (2) optionally, a stronger tint over the core field of view (half the maximum slope per axis, the existing `coreFov` definition), off by default; (3) crisp outlines of the shown boundaries with constant screen width; (4) the detector marker and the pyramid edges in the same station colour, ending where they first enter the subject; (5) the part below the horizon shown hatched or desaturated as "no muon flux". In physical mode a log brightness ramp of counts per steradian replaces the flat tints; outlines stay.
 - *Interaction.* Hovering a tinted point shows which stations cover it, its slopes in each detector and (physical mode) the expected counts per steradian; clicking jumps to the matching projection pixel. This is the reverse of the existing pixel → ray link, so 3D view and projection image can be read together.
 - *Multi-station.* Each station keeps its colour for tint and outline; overlaps show blended colours, with an optional "number of covering stations" mode.
+- *Multi-station, as implemented (14d, 2026-10-14).* The geometric view of several stations uses the count mode: surfaces are shaded by how many stations probe them in one hue (owner, 2026-10-14): a sequential red ramp, light to deep (ColorBrewer Reds #fcbba1 … #a50f15, 1 to 5+ stations), so each extra station makes the tint darker and stronger; a ramp that only varied the strength of one red was too flat on the light concrete. Each station's field-of-view edge and position marker keep its own colour, and the station palette has no red. The first version used four hues (blue, teal, amber, red), which read as categories rather than an ordered count. Blended per-station tints were not built: beyond two or three stations they are unreadable. Up to 8 other stations in one pass (uniform arrays in the subject materials' shader, same per-point test as `coveringStations` in `coverage-map.js`). The physical brightness stays single-station until the overview (#15); its multi-station form is decided below (multi-view coverage).
+- *Physical multi-station coverage (owner, 2026-10-14).* Deployments have two intents: stations that divide the structure between them, and stations whose fields of view overlap on purpose so that a target is recorded from several angles (for reconstruction). Three modes, all computed per point from each station's own result (its compact cached counts, no new calculation):
+  1. **多视角覆盖 (multi-view coverage; default).** A station gives a *usable view* of a point when the counts of the projection pixel holding its line through the point reach N ≥ 100 (counting error 1/√N ≤ 10 %, the precision-line level; option 5 %, N ≥ 400). Main map: number of usable views in the geometric red ramp (1 … 5+); points seen geometrically but with no usable view in neutral grey ("looked at, too weakly"). Second map (视角张角): the largest angle between any two usable viewing directions through the point, in a separate blue ramp (< 10°, 10–30°, 30–60°, > 60°). Summary class: *good* (≥ 3 usable views and ≥ 30° spread), *insufficient* (< 2 usable views or < 10° spread), *limited* otherwise; thresholds adjustable and labelled as a planning heuristic, not a reconstruction guarantee (the real test is the simulated reconstruction, ADR-021).
+  2. **主导站点 (dominant station).** Each point takes the colour of the station with the most counts there, brightness from those counts; colours are never blended.
+  3. **总计数 (total).** One hue, brightness from the summed counts per steradian, labelled as an indicator of total statistics, not one measurement.
+  Where: on subject surfaces (as now), on target features (recognition items, galleries; later anomaly hypotheses) and on a movable **slice plane** through the interior, since a target is usually inside the structure; the per-point test holds for any point above a station. Numbers next to the map: per target, the share seen by ≥ k usable views, the median spread and the weakest view's error, in the overview table (FR-M1).
+  *Implemented on subject surfaces (15d, 2026-10-14):* `coverage-map.js` (`stationViewAt`, `multiViewCoverage`, `usableCounts`, `perSteradianMap`; L1) is the reference; the shader mirrors it in one loop over nine slots (working station + 8 others) reading a float texture of each station's counts and counts per steradian (the cached compact results, `entryCountsBottomFirst`). The maps are a separate shader variant (`COV_MULTI`), compiled only when physical coverage with other stations is shown: in the full shader, software GPUs (SwiftShader) stalled about 1.2 s on the first draw of a surface. Usable views are judged on the final 65² pixels, like the precision lines. Hover lists usable/seen stations, spread, weakest error, class and dominant station.
+  *Per-target numbers (#15, 2026-10-14):* the 多站总览 section lists each recognition item of the display profile for the working station and the stations of 其他点位 (one set for view and table). Per station, from its cached entry: whether the item is in view, its share of the image, the counts in its mask and the median counting error of the mask pixels (threshold T of the outlines). Per item, multi-view coverage (`multiViewCoverage`, same thresholds as the maps) at points inside the item: cell centres of about 4000 cells over the bounds of each compiled component the item owns, kept when the calculation geometry classifies them inside (`target-samples.js`; a thin gallery fills only a sliver of the box around all galleries, so parts are sampled one by one), at most 1500 points; sampled once per page after the first final result (≈ 1.3 s for the four Zhouning items, in chunks). Reported: the share of points with ≥ k usable views, the class shares, the median spread of points with ≥ 2 usable views and the median weakest error. A station is not a view of points in a feature it sits in (the first stretch of its rays), as in its own image; it still sees the other members of a grouped item (a station in the upper gallery sees the lower one). Material items are sampled coarsely (dam concrete ≈ 16 m cells). A station name in the table opens it as the working station; a button shows the class map in 3D. In 3D each other station's marker carries a name label in its colour; a click on the label, or within 12 px of the marker, opens that station. Heuristic, labelled as such.
+  *Slice plane and target features (15e, 2026-10-14):* the slice is a plane across one model axis (horizontal, or across X or Y) spanning the subject's box (concrete and steel parts, 5 % margin), drawn with the same coverage shader on both faces, so every coverage mode applies to interior points unchanged. Where the plane is shown is decided by the calculation geometry, not the display meshes: a 128² mask of `classifyModel` at cell centres (matter = density > 0.01 g/cm³, so galleries and cavities stay open), computed in chunks (`slice-plane.js`, L1; real model L4) once the slider has rested 250 ms and cancelled by the next move; until it arrives the plane is drawn faint and unmasked. Shown feature meshes (galleries and other recognition items) carry the same tint (构件表面着色, on by default). Both are views: the mask uses about 16 k point classifications (≈ 0.4 s) and never touches a result.
+- *Field-of-view edges (owner, 2026-10-14).* The four corner lines of each shown station's acceptance are drawn as lines of constant screen width (Three.js `LineSegments2`; WebGL ignores line widths, so the former 1-pixel lines were nearly invisible over the tint): solid where visible, dashed where hidden, the working station's in light pink with its backward edges fainter, other stations' in their colours. An option (视场棱线, on by default, remembered per release) hides them; the 探测器视锥与射线 layer hides them too. A second option (实心视锥, off by default, owner 2026-10-14) adds the acceptance pyramid as a translucent frustum in each station's colour, with its side edges and far rectangle outlined, drawn through the structure (no depth test). Its axial length reaches 20 m beyond the furthest point where the field of view (corners, edge midpoints, axis) leaves the subject, and at least 72 m like the former legacy cone, so it always stands clearly out of the concrete (owner: the first version, cut where the corners left the subject, looked too short).
 
 **Transparency (2026-10-12).** The subject can be made transparent (dam opacity slider; materials are double-sided, transparent below opacity 1 and stop writing depth below 0.72). An additive overlay pass would then stack the highlight on the front face, the back face and every internal surface, so brightness would show the number of layers rather than counts. Therefore:
 
-- *Tint inside the surface's own material, not an additive overlay.* The coverage term is injected into the subject materials' shaders (as the legacy view already does for clipping) and **mixes** the surface colour towards the highlight colour; the surface keeps its own opacity. Each surface is tinted at most once and composites exactly like the surface itself, so the existing transparency sorting applies unchanged. (This replaces the "overlay pass with additive blending" sketched above.)
-- *Which layers are tinted.* Outer shell: only its front-facing side (`gl_FrontFacing`), so a covered line of sight through a transparent dam shows one tinted shell, not two. Internal features (galleries, rooms, shafts, cavities): tinted on both sides when covered, so with a transparent shell the user sees directly which internal features lie in the field of view. This is the main payoff of transparency.
+- *Tint inside the surface's own material, not an additive overlay.* The coverage term is injected into the subject materials' shaders (as the retired legacy view did for clipping) and **mixes** the surface colour towards the highlight colour; the surface keeps its own opacity. Each surface is tinted at most once and composites exactly like the surface itself, so the existing transparency sorting applies unchanged. (This replaces the "overlay pass with additive blending" sketched above.)
+- *Which layers are tinted.* Outer shell: only its front-facing side (`gl_FrontFacing`), so a covered line of sight through a transparent dam shows one tinted shell, not two. Internal features (galleries, rooms, shafts, cavities): *revised by ADR-029 (2026-10-13)* — not tinted; they keep their class colour and are drawn full-opacity when in view of a selected station and faded otherwise, so with a transparent shell the user still sees directly which internal features lie in the field of view, without a second colour code on them.
 - *Readable at low opacity.* Covered regions keep a minimum opacity (e.g. 0.35) and the outline is drawn at full opacity, so the highlight does not vanish when the shell is almost transparent. Uncovered surfaces keep the user's opacity.
 - *Physical brightness is read on one layer.* Counts per steradian map to the tint's colour value, not to added light, so overlapping translucent layers do not brighten each other. The legend states that brightness refers to each tinted surface.
 - *Pyramid edges.* Drawn solid where visible and dashed where hidden behind opaque surfaces, instead of the current always-on-top lines.
 - *Water and terrain* (when toggled on) follow the same rules; water stays visually secondary (lower tint strength) so the subject reads first.
+
+**Back-side lines (2026-10-14, quick-response@4.0.0).** A pixel is a line through the detector and its muons come from the line's sky end (FR-C7). A surface point is therefore covered when its line lies inside the acceptance, *in front of or behind* the detector, and the point is above the detector (`p.z > origin.z`). Points in front below that height receive no flux and are shown grey; points behind below it are not covered. The slopes of a line are the same from either end, so one formula serves both sides. This replaces "directions below the horizon carry no flux" above.
+
+**As implemented, single station (15a, 2026-10-14).**
+- `coverage-map.js` (pure, L1-tested against `detector-pose.js`): line slopes of a point, the probed / no-flux / outside classification, the exact slope → projection-bin inverse of `nativeAxisBins` (`ceil((j+1)·n/(2N−1)) − 1`), counts per steradian from the core's `pixelSolidAngle` (extracted from `evaluateProjectionPixel`, unchanged numerically), and the brightness scale. `coverage-shader.js` is its GLSL mirror, injected into the subject materials (front-facing side, mixed into the colour, minimum opacity 0.35), so transparency works as decided above.
+- *Geometric* mode tests the device slope range (the acceptance weight is positive exactly there) and follows the pose as soon as the detector is redrawn; *physical* mode reads a per-result texture of counts per steradian (raw counts), set from each preview and final result and cleared when inputs change, so a stale map falls back to the geometric view. Brightness: fixed log scale 10³–10^7.5 per steradian (measured 0.5–99.5 % range over the Zhouning stations, default device, 30-day exposure: 10^2.7–10^7.3), ramp dark → station colour → white; it scales with exposure.
+- Crisp field-of-view and in-front horizon lines; optional core field of view and terrain/water; the back half of the viewing pyramid is drawn faintly. Off by default; mode and options remembered per release (view state).
+- *Hover and click (2026-10-14):* hovering a subject surface with coverage on shows the station, front/back side, slopes and (with a result) counts per steradian (`coverageReadout`, L1); a click selects the projection pixel holding that line (exact bin), marks it and shows its readout and ray. Feature hover and click keep priority over coverage.
+- *Pyramid edges (2026-10-14):* the four corner lines of the acceptance, in front and fainter behind, solid where visible and dashed where hidden. Deviation: an edge ends where it *last leaves* the subject within reach rather than where it first enters it, because from a station inside the subject (a gallery) the first entry is the gallery wall a metre away; edges that miss the subject keep a fixed length.
+- *On-demand rendering (2026-10-14):* frames are drawn only after a change (camera move and damping, resize, any call into the scene view); idle costs no GPU time (FR-N5).
+- *Features in view (2026-10-14):* with coverage on, subject features whose mask in the current result is non-empty (`featuresInView`, same rule and threshold as the outlines, detector space excluded) are drawn at full strength and the others faded (opacity 0.2); hover emphasis overrides; before a result exists nothing is faded (the approximate bounding-box test is not built).
+- *Not yet:* multi-station colours and overlap modes (#15); quality fallback and the FR-N5 measurement on an integrated-graphics laptop.
 
 **GPU cost on integrated graphics (2026-10-12).** The scene is small: 33 components with ~131k triangles (~65k vertices) plus two terrain grids (281×287 and 201×201, ~240k triangles), drawn at device pixel ratio ≤ 2 with antialiasing and on-demand rendering (no frames while idle). Per fragment and station the coverage test is a few dot products, two divisions, range checks and one 65×65 texture lookup (~30 operations), small next to the existing physically based lighting of `MeshStandardMaterial`. Estimate at 1920×1080, overdraw ~3 under transparency and 8 stations: of the order of 5–10 GFLOP per frame, i.e. ~0.3–0.6 TFLOPS for 60 fps. Intel Iris Xe (11th gen Core i5 and later, ~1.5–2 TFLOPS) has ample headroom; older UHD 620 (8th gen, ~0.4 TFLOPS) is expected to stay interactive (≥30 fps) with a few stations, with 60 fps not guaranteed at high pixel ratio. This is an estimate, not a measurement (the development container only has a software renderer), so FR-N5 requires measuring on reference hardware. Safeguards: on-demand rendering; pixel ratio capped lower (e.g. 1.25) during camera interaction; a cheaper subject material (Lambert) and outline-off quality setting when frame time exceeds budget; stations beyond the per-pass limit drawn in an extra pass.
 
@@ -453,7 +503,7 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 **Status:** Accepted, recorded retrospectively (2026-10-12)
 
-**Context.** The README called the project "a static Three.js web application", which suggests Three.js does the geometry work. It does not: only the view modules (`compiled-geometry-view`, `compiled-scene-view`, `legacy-scene-view`, `projection-canvas-view`, `geometry-preview`) import it. GLB decoding, closure/winding validation, the BVH, ray–mesh intervals, material classification, DDA tracing, response and projection are the project's own modules with no Three.js dependency (ADR-002; enforced by `tests/integration/main-architecture.test.mjs`). Heavy geometry construction (CSG of the parametric spec, terrain stitching) happens offline in the dataset compiler; Manifold and VTK are development-time references only (ADR-009, ADR-014).
+**Context.** The README called the project "a static Three.js web application", which suggests Three.js does the geometry work. It does not: only the view modules (`compiled-geometry-view`, `compiled-scene-view`, `projection-canvas-view`, `geometry-preview`; formerly also `legacy-scene-view`) import it. GLB decoding, closure/winding validation, the BVH, ray–mesh intervals, material classification, DDA tracing, response and projection are the project's own modules with no Three.js dependency (ADR-002; enforced by `tests/integration/main-architecture.test.mjs`). Heavy geometry construction (CSG of the parametric spec, terrain stitching) happens offline in the dataset compiler; Manifold and VTK are development-time references only (ADR-009, ADR-014).
 
 **Decision and rationale.**
 - *Display: Three.js (vendored, pinned, MIT).* Mature WebGL2 renderer with a very large user base, native glTF/GLB support matching the runtime package format (ADR-017), standard materials plus custom shaders (needed for the coverage highlight, ADR-026), orbit controls, and a modest size that can be vendored offline without a build step. It is a library, not an engine, so it does not impose an application structure.
@@ -472,6 +522,118 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 | opencascade.js (OCCT), Manifold in the browser | CAD/CSG at runtime | Large WebAssembly payloads; CSG belongs to the offline compiler (ADR-009). OCCT itself is useful offline, see ADR-009 |
 
 **Revisit when.** A display need that Three.js serves poorly appears (large georeferenced terrain, heavy volume rendering), or WebGPU compute becomes worthwhile for batch rays (ADR-005, ADR-010).
+
+---
+
+## ADR-028 Retire the legacy backend; keep its UI with gated migration targets
+
+**Status:** Accepted, implemented (owner decision 2026-10-12)
+
+**Context.** Since OQ-3 the compiled GLB/BVH backend is the default. The legacy backend interpreted the Zhouning parametric spec in the browser (analytic kernel, 3D DDA tracer, legacy adapters and scene view) on separate releases 0.6.1/0.6.2. It cannot generalise to other subjects (ADR-016, ADR-017), doubled test and maintenance effort, and carried legacy-only fixes (FR-C2, FR-C4). Some of its features have no compiled counterpart yet.
+
+**Decision.**
+- Remove the old geometry: releases 0.6.1/0.6.2, `geometry-kernel.js`, `dda-ray-tracer.js`, `legacy-geometry-adapter.js`, `main-assessment.js`, `legacy-scene-view.js` and the legacy-only interpretation, pattern and plan adapters. The compiled backend is the only scientific backend; selection fails closed for anything else.
+- Keep the main-app UI, styling and display unchanged. Features the compiled backend does not provide yet stay visible and gated by backend capabilities, together with the generic hooks they use (optional controller hooks, projection target drawing, capability gates).
+- Track those features as migration targets MT-1…MT-6 ([feature requirements](FEATURE_REQUIREMENTS.md), section B). Each is re-implemented on the compiled path from the shared core and compiled geometry, superseded, or explicitly dropped by the owner; legacy heuristics are not copied back. The last commit with the legacy implementation (`e938091`) is the reference.
+- Previously exported legacy results can still be replayed; their numbers are not comparable with current models (FR-C1…C3 revisions).
+
+**Consequences.** One geometry path to test and document; legacy-only requirements resolved (FR-C4) or dropped (FR-V6); continuous water level is unavailable until MT-1/FR-E1; stations saved under the legacy release IDs are no longer shown (FR-B2).
+
+---
+
+## ADR-029 One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI
+
+**Status:** Accepted (design settled with the owner in seven steps, 2026-10-13); catalogue (`feature-catalogue.js`, 15b-1) and display profile with recognition items (`display-profile.js`, `datasets/schemas/display-profile.schema.json`, 15b-2) implemented; the profile has its own registry hash outside the authored package integrity; consumers pending. Display profile is added to the existing release without changing its ID (owner, option a).
+
+**Context.** Two legacy features are needed on the compiled backend: coloured internal features in 3D (MT-5) and target outlines on projections (MT-2). Several existing requirements need the same underlying idea, a named part of the subject: dataset-declared layers and targets (FR-K3), the coverage highlight on subject surfaces and internal features (FR-M10, ADR-026), cross-view of targets across stations (FR-M1), anomaly footprints in 3D and projections (FR-H9), source-entity ROI significance (FR-M3) and reconstruction targets (FR-M8). What exists today:
+- The v0.7 spec gives every entity a semantic class (solids: dam body, piers, gates, platforms, …; voids: galleries, adits, observation rooms, elevator shaft, spillway bays/chutes, outlet conduits/tunnels/channels, gate chambers) and water bodies.
+- Compiled components carry `sourceEntityIds`; voids and water bodies are separate components (22 direct targets verified by `semantic-mapping.js`), while all concrete solids are merged into one aggregate component, so individual solids cannot be told apart yet (FR-GE4).
+- Every compiled ray already records its length per source entity (`entityLengths`, exported as `targetLengths`); the preview shows direct-target projection outlines; the main app shows none and hides void components.
+- The legacy implementation used hard-coded dam IDs (elevator, spillway, platform, water, dam, gallery), DDA-cell masks and edge heuristics; it is not reused (ADR-028).
+
+**Decision.**
+
+*Catalogue (data).*
+- A **feature catalogue** is built once per release by a generic builder in the dataset adapter from the release's own declarations: per entity and water body `semantics.class/system/imaging_role/names`; `vocabulary.classes` (colour, category); `vocabulary.systems` (group labels). One entry per entity or water body: ID, bilingual label, class, group (= system), colour (= class colour), imaging role, `direct` (own compiled component) or `aggregate` (merged; unavailable until FR-GE4). No new geometry data; generic code reads only these v0.7 fields, never dam IDs.
+- An optional **display profile** sidecar (`display_profile.json`, registered, schema-validated and hashed like other sidecars, outside the geometry spec and outside result identity) declares **recognition items**: id, bilingual label, members (IDs) or a semantic/material selection (e.g. system + category; `material: concrete`), default on/off. Without a profile, one item per class among features with imaging role `reference_void` or `target` is derived.
+- All consumers (3D feature layer, outlines, picking/hover, coverage emphasis, overview table, later ROI metrics FR-M3 and reconstruction targets FR-M8) read the catalogue; none keeps its own ID list.
+
+*3D view (FR-M11).*
+- Feature components are drawn from the compiled buffers in their class colours; the layer panel has one checkbox per feature group, expandable to individual features; aggregate features are not listed (the dam-concrete layer covers them); gallery, monitoring and vertical-transport groups visible by default. Context surfaces (dam, rock, water) keep the legacy-look palette.
+- Picking and hover are per feature ("Upper gallery · gallery · reference void").
+
+*Projection outlines (FR-M12).*
+- Users choose **recognition items**, not catalogue entries. Only items with a non-empty mask in the current projection are listed, sorted by image coverage; default-on items are outlined at once; an "all features…" search reaches direct features. Choices are view state, remembered per release, later saved with the plan (FR-P1).
+- **Mask** of an item: pixels whose central ray's length inside the item (sum over members, `L`) exceeds **T**, a display setting with default 0.1 m (`conformance_length_m.concrete`), named in the legend, adjustable, independent of pixel size, never changing results.
+- **Outline** = contour of `L` at level `T`, extracted with the existing contour pipeline (d3-contour on the native grid, display mapping, constant-width SVG, contour export v1), closed at the image border; optional "show sampled pixels" staircase; legend states edges are accurate to about half a pixel (FR-V12).
+- **Overlaps**: masks are independent and may overlap; outlines only by default, in item colour; same-colour items distinguished by line pattern and labels; nearer items drawn on top; optional translucent fill. Hover lists recognition items crossed by the pixel's ray in ray order with the length inside each item (the physically relevant number: material traversed, or for a void the material missing from the path) and the distance from the detector to its entry (a locating aid for order and near/far), expandable to all features. No point markers in 3D (owner, 2026-10-13: they add nothing to the drawn ray and pile up at the detector); the 3D answer is emphasising the crossed features themselves (two-way link, 15b-4).
+- **Merged solids**: material items (`concrete` → "Dam concrete", `steel` → "Gates") use the same rule and are labelled as material outlines; the material envelope overlay stays in the geometry preview (see *As implemented (15b-6)*); per-solid outlines arrive with FR-GE4 without design change.
+
+*Contours (policy).* The contour mechanism is kept (outlines, anomaly footprints FR-H9, significance FR-H6). Existing material-contribution and response contour layers move to "Expert diagnostics", off by default, no new features (FR-M14). Decision-oriented lines take priority: outlines (FR-M12), statistical precision contour 1/√N at 5 %/10 % (FR-M13), anomaly significance (FR-H6).
+
+*Several stations (FR-M1, FR-M4).* One shared selection for all stations; each station's projection draws its own outlines; an overview table lists item × station (in view, image coverage, counts in mask, median counting error, "seen by *n* stations"); outlines from different stations are never merged into one projection.
+
+*Coverage and linking (FR-M10).*
+- Linked selection both ways: hovering an outline or hover-list entry emphasises the same features in 3D; clicking a feature in 3D toggles its item's outline.
+- With coverage on, the coverage tint applies to context surfaces only; feature meshes keep their class colour and are full-opacity when in view of a selected station, faded otherwise; items seen by ≥ 2 stations get a marker.
+- **"In view"** has one definition: the item's mask in that station's result is non-empty; before a result exists, a geometric bounding-box test inside the field of view, labelled approximate. The projection list, the overview table and the 3D emphasis all use it.
+
+*Identity.* Masks, outlines and table values are derived from a result and bound to its snapshot key; selections, threshold and styles are view state.
+
+*As implemented (15b-3, 15b-5, 2026-10-13).* Three deliberate differences from the text above, kept unless review says otherwise:
+- **List.** All profile items are listed in a fixed order (profile order, then added features) instead of only in-view items sorted by coverage; out-of-view items are greyed and marked "out of view", so the list does not jump while the user changes pose. The "all features…" search is a selector of the direct features not already an item. `visibleRecognitionLayers` keeps the in-view ordering for the overview table.
+- **Outline.** The outline is the boundary of the mask itself: the 0/1 mask, padded with one empty pixel on every side, contoured by d3-contour at level 0.5 (`recognition-layers.js`). It therefore agrees exactly with the strict `L > T` mask (a contour of `L` at `T` would lean towards the long side of each edge and use `≥`), and padding closes regions that touch the image border along it. It does not go through the sampled-contour overlay contract, which deliberately leaves segments at the image border open; outline export with contour export v1 is deferred.
+- **Not yet built.** Optional translucent fill, the sampled-pixel staircase, nearer-on-top ordering (outlines draw in list order), the hover list's expansion to all features and the two-way 3D link (with 15b-4).
+
+*As implemented (15b-4, 2026-10-13).*
+- **Which features.** The 3D feature layer holds the direct features whose category is not `water` (`feature-layers.js`); water bodies stay context surfaces with their own layers. A component of such a feature is drawn only by the feature layer, never by a material layer, so a water-filled conduit appears in its class colour rather than as reservoir water.
+- **Default visibility.** Generic rule instead of named groups: a group is shown by default when every feature in it is a reference void or imaging target. For Zhouning this gives the groups named above (galleries, vertical transport, monitoring) and leaves flood release off. Visibility is view state, remembered per release.
+- **Linking.** Hovering a projection pixel emphasises (lights, and shows even if hidden) the features its ray runs through by more than T; hovering a recognition item or a layer row emphasises its features; hovering a feature in 3D shows "label · class · imaging role" and thickens its item's outline; clicking a feature toggles its item's outline, or adds the feature as an item when no item lists it.
+- **Not yet.** Full opacity when in view of a selected station is part of the coverage work (FR-M10, 15a). Features inside an opaque dam are only visible with the dam made translucent (dam opacity slider).
+
+*As implemented (15b-6, 2026-10-14).*
+- **Material items** use the 15b-3 mechanism unchanged. The Zhouning profile keeps only "Dam concrete"; a steel ("Gates") item was left out by the owner, as gates are not observation targets.
+- **Material envelope overlay: not in the main app (owner, 2026-10-14).** Built in 15b-6, then removed after review: its silhouette edges duplicate the material item outline ("Dam concrete" is exactly the concrete silhouette), and what remains are unlabelled air-interface depth edges ("some surface at a different depth here") that users could not attribute to any object, densest where they matter least. Identified outlines (profile items plus any direct feature from "其他构件…") carry the useful part. The overlay stays an expert diagnostic in the geometry preview; a main-app version would come back only under expert diagnostics (FR-M14), depth edges only, in a neutral colour, and after its material semantics are generalised (FR-K11).
+- **Colour rule.** Hues are reserved for named features and items (their dataset class colours); overlays without identity (horizon, diagnostics) use neutral greys/white, so they can never be confused with a feature.
+
+**The detector's own space (owner, 2026-10-14).** For a feature item, the connected stretch of a ray that starts at the detector inside the item is not counted: a detector in a gallery would otherwise see that gallery in every upward pixel (68–100 % of the image), which is correct but carries no information. Only a re-entry further out counts, for the mask, the hover crossings (entry distance measured to the re-entry) and the 3D emphasis. The readout names the items containing the detector instead. Material items are unaffected; counts are unaffected.
+
+**Consequences.** One mechanism replaces legacy MT-2/MT-5 and serves later anomaly footprints and multi-station evaluation; a small display-profile schema is added; FR-GE4 later upgrades merged solids without redesign.
+
+## ADR-030 Two entry points: planning app and dataset workbench, one selection contract
+
+**Status.** Accepted (owner, 2026-10-14).
+
+**Context.** `geometry-preview.html` grew as a developer page next to the main app. It is reachable only by URL, has its own release picker, uses only the dataset's built-in candidates and the default device, is in English, and shares code but no state with the main app. It mixes four jobs: dataset checks (scenario switch, component picking, cavity/virtual display, reference-ray material lengths, semantic audit), detector-independent and detector calculations, expert overlays (finite-model reference outlines, sampled envelope, contribution and response contours), and seven export buttons plus a comparison table. The main app already duplicates part of the overlays and the comparison ("数值图案与方案比较").
+
+**Decision.**
+- **Two pages, two jobs.** The main app (`index.html`) plans deployments on a trusted release. The **dataset workbench** (today `geometry-preview.html`, later named "数据集检查") checks a release before anyone trusts it: the `AGENTS.md` dataset checklist (control points, material points, reference rays, display = classification = ray paths) as a pass/fail screen, plus picking, scenario switch and semantic audit (FR-D10). They stay separate pages: different audience and moment, the workbench's heavy diagnostics stay out of the planning app, and a static site needs no router. Merging is reconsidered only if the UI framework (OQ-2) brings routing anyway.
+- **One selection contract.** Both pages read the same URL parameters (`dataset`, `scenario`) through `application-selection.js`, and link to each other with the current selection ("数据集检查" / "打开主应用").
+- **No hidden shared state.** The workbench never reads the main app's stations, device or view state from browser storage. When the versioned plan/result format exists (#11) it can open an exported plan or result file as an explicit input.
+- **Each feature in one place.**
+  - Expert overlays for the current station and result move into a "专家诊断" section of the main app, off by default (FR-M14): contribution and response contours now; finite-model reference outlines and a detector-independent column view when they can be served for the main app; the sampled envelope only after FR-K11, in a neutral colour.
+  - Exports become one "导出" menu in the main app on the versioned result format (FR-P4): plan, full result of the current station (result plus pattern layers), comparison of saved stations or poses.
+  - After both, the workbench loses its own station, comparison and export paths and keeps only the dataset-check job, in the main app's style and language.
+
+**Consequences.** Users get one planning tool and one dataset-acceptance tool that open the same release from each other; no feature or calculation path exists twice; the dataset checklist for a second subject kind becomes a screen rather than a document.
+
+## ADR-031 Evaluation aims are user input; the app supplies metrics, regions and optimisation
+
+**Status.** Principle accepted (owner, 2026-10-14); the exact specification (storage, metric list, combination of terms, resolution parameter) is deferred by the owner. Open points: aims in the plan format (1.2), the first metric list, side-by-side terms vs weights/constraints, resolution in metres at the point vs native pixels.
+
+**Context.** Deployments serve different aims: recording one target from several angles (for reconstruction), covering as much as possible of the whole subject or a part of it (e.g. the upper dam body from the upper gallery), detecting a hypothesised anomaly, or anything else a project needs. The first versions built aims into the app: the 15d summary class (good = ≥ 3 usable views and ≥ 30°) and a proposed "extent coverage" requirement each fixed one aim and its thresholds. Measurements on the Zhouning layouts showed the ranking of poses changes with the region, the resolution the question needs and the exposure (e.g. two upper stations: vertical best at native pixels, outward 60° best when 4×4 pixels are merged). Which of these matters is the user's decision, not the app's.
+
+**Decision.**
+- **The aim is user input.** An *evaluation aim* is defined by the user and stored in the study plan: one or more regions, a metric per region, how it is aggregated over the region, its parameters (counting-error level, required resolution, exposure assumptions, thresholds) and, for several terms, how they combine (weights or constraints). Nothing in the app assumes one aim.
+- **The app supplies building blocks, all subject-neutral:**
+  - *Regions:* recognition items, optionally limited by model-frame bounds (e.g. Z ≥ 57 m); later anomaly-hypothesis regions (ADR-025) and drawn boxes.
+  - *Per-point metrics* from each station's cached result, evaluated at target points of the region: in a field of view, counts and counting error of the cell holding the line (at the required resolution, native pixels by default), number of usable views, angular spread, counts per steradian, which stations see the point and which see it alone (unique contribution).
+  - *Aggregations over a region:* share of points meeting a condition, median, percentiles, minimum.
+- **Evaluation and optimisation use the same definition.** 多站总览 shows the aim's numbers for any station set; the scanning phase (FR-S1, FR-S2) uses the same aim as its objective to rank or optimise poses and stations. No separate formula path.
+- **Presets are templates, not defaults.** "Multi-view overlap of a target" (today's 15d class) and "extent of a region" ship as editable templates that fill in an aim; the app never ranks by a template the user did not choose. Their numbers carry the parameters they used.
+- **Resolution is a parameter of the aim.** The usable-view test is evaluated at the resolution the aim states (in metres at the point, or native pixels), never silently at the display binning; legends and exports show it.
+
+**Consequences.** The plan format gains aims and regions (data format, migration from 1.1). The 15d class thresholds move from view settings into an aim template; the 3D maps stay as they are and show the selected aim's metric where it is a per-point quantity. Scans can be compared across projects only through the aims stored with them.
 
 ---
 
@@ -496,6 +658,22 @@ A server becomes relevant only if loaded geometry must be shared across a team (
 
 ## Change log
 
+- 2026-10-14: ADR-031 principle accepted, specification deferred (owner).
+- 2026-10-14: ADR-031 proposed: evaluation aims are user input; the app supplies regions, per-point metrics, aggregations and optimisation on the same definition (owner principle).
+- 2026-10-14: ADR-026 accepted for single station; back-side coverage under quick-response@4.0.0; implementation notes.
+- 2026-10-14: ADR-006 item 1: plan format implemented; scan format deferred to P5.
+- 2026-10-14: ADR-006 item 2 implemented (assessment port).
+- 2026-10-14: ADR-004: caching rule until the build step (no-cache revalidation; content hashing deferred to the build).
+- 2026-10-14: ADR-030 accepted: planning app and dataset workbench as two entry points with one selection contract (owner).
+- 2026-10-14: ADR-029: material envelope overlay removed from the main app (owner); colour rule: hues only for named features.
+- 2026-10-14: ADR-029: the detector's own space is excluded from feature masks and crossings (owner).
+- 2026-10-14: ADR-029 implementation notes for 15b-6 (material envelope overlay in the main app).
+- 2026-10-13: ADR-029 implementation notes for 15b-4 (feature-layer rule, default visibility, linking).
+- 2026-10-13: ADR-029: numbered 3D entry markers dropped (owner); hover list leads with length.
+- 2026-10-13: ADR-029 implementation notes for 15b-3/15b-5 (fixed list order, outline = mask boundary, items not yet built).
+- 2026-10-13: ADR-029 accepted after seven-step discussion; consolidated decision text replaces the question list.
+- 2026-10-13: ADR-029 proposed (subject-feature catalogue for MT-2/MT-5 and related requirements), open for discussion.
+- 2026-10-12: ADR-028 legacy backend retired (owner); ADR-010, ADR-011, ADR-017, ADR-027 and ADR-006 item 4 updated.
 - 2026-10-12: VTK.js and OpenCascade assessed: reconstruction display in Three.js first (VTK.js fallback); OCCT as offline CAD front end of compilers and the converter (ADR-009, ADR-021, ADR-027).
 - 2026-10-12: ADR-001 rationale for "static" recorded; ADR-027 Three.js for display only (retrospective); README wording corrected.
 - 2026-10-12: ADR-026 GPU cost estimate for integrated graphics and safeguards.

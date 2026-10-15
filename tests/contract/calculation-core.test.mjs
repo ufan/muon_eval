@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
-import { legacyCalculationBaseline } from '../fixtures/legacy-calculation-baseline.mjs';
+import { frozenCalculationBaseline } from '../fixtures/frozen-calculation-baseline.mjs';
 import { cosThetaStar, gaisserFlux, integratedSurfaceFlux, minimumMuonEnergy, countSignificance } from '../../dist/modules/muon-response.js';
 import { nativeAxisBins, applyProjectionResolution, createProjectionPass } from '../../dist/modules/detector-projection.js';
 
@@ -13,9 +13,11 @@ const response = { layerEfficiency: .95, deadLiveFraction: .98, angularResolutio
 const sampleRay = (sx, sy) => ({ dir: { x: sx, y: sy, z: .55 / Math.sqrt(1 + sx * sx + sy * sy) },
   q: { mwe: 100 + 50 * (sx + 1.4) + 300 * (sy + 1.4), totals: { concrete: 20 } } });
 
-// Frozen orchestration formula from app.js before extraction. Test-only.
+// Frozen orchestration formula (app.js before extraction, revised by
+// quick-response@3.0.0: projected area, no edge factor; 4.0.0: adapters pass the
+// sky end of each line, so this sky-only sampler is unchanged). Test-only.
 function referencePass(n, device, response, sampleRay) {
-  const baseline = legacyCalculationBaseline(device, response), bins = baseline.nativeAxisBins(n);
+  const baseline = frozenCalculationBaseline(device, response), bins = baseline.nativeAxisBins(n);
   const areaCm2 = device.width * device.height * 1e4, seconds = response.exposureDays * 86400;
   const response0 = response.layerEfficiency ** 3 * response.deadLiveFraction, values = [];
   let total = 0, openTotal = 0;
@@ -23,50 +25,48 @@ function referencePass(n, device, response, sampleRay) {
     const bx = bins[col], by = bins[row], sx = bx.slope, sy = by.slope;
     const acceptanceWeight = bx.sumWeight * by.sumWeight, { dir, q } = sampleRay(sx, sy);
     const open = baseline.integratedSurfaceFlux(dir.z, 1), through = baseline.integratedSurfaceFlux(dir.z, baseline.minimumMuonEnergy(q.mwe));
-    const dOmega = device.nativeSlopeStep ** 2 * acceptanceWeight / (1 + sx * sx + sy * sy) ** 1.5;
-    const edge = .85 + .15 * Math.sqrt(Math.max(0, acceptanceWeight / (device.stripsX * device.stripsY)));
-    const factor = areaCm2 * seconds * dOmega * response0 * edge;
+    const cosTheta = 1 / Math.sqrt(1 + sx * sx + sy * sy), dOmega = device.nativeSlopeStep ** 2 * acceptanceWeight * cosTheta ** 3;
+    const factor = areaCm2 * cosTheta * seconds * dOmega * response0;
     const count = through * factor, openCount = open * factor, transmission = open > 0 ? through / open : 0;
     total += count; openTotal += openCount;
-    values.push({ sx, sy, dir, q, count, transmission, factor, sigByTarget: {},
+    values.push({ sx, sy, dir, side: 'front', q, count, transmission, factor, sigByTarget: {},
       nativeRangeX: [bx.first, bx.last], nativeRangeY: [by.first, by.last] });
   }
   baseline.applyProjectionResolution(values, n);
   return { n, values, total, weightedTransmission: openTotal > 0 ? total / openTotal : 0 };
 }
 
-test('spectrum, energy loss and ordered quantized flux calls exactly match the frozen formulas', () => {
+test('spectrum, energy loss and integrated flux exactly match the frozen formulas', () => {
   for (const angularModel of ['gaisser', 'cos2']) {
-    const baseline = legacyCalculationBaseline(device, { ...response, angularModel }), cache = new Map();
+    const baseline = frozenCalculationBaseline(device, { ...response, angularModel });
     for (const cosZ of [0, .01, .101, .102, .5, .99, 1]) {
       assert.equal(cosThetaStar(cosZ), baseline.cosThetaStar(cosZ));
       for (const energy of [1, 10, 100, 10000]) assert.equal(gaisserFlux(energy, cosZ), baseline.gaisserFlux(energy, cosZ));
       for (const mwe of [-1, 0, 50, 500, 2000]) {
         const energy = minimumMuonEnergy(mwe);
         assert.equal(energy, baseline.minimumMuonEnergy(mwe));
-        assert.equal(integratedSurfaceFlux(cosZ, energy, angularModel, cache), baseline.integratedSurfaceFlux(cosZ, energy));
+        assert.equal(integratedSurfaceFlux(cosZ, energy, angularModel), baseline.integratedSurfaceFlux(cosZ, energy));
       }
     }
-    assert.deepEqual(cache, baseline.fluxCache);
   }
 });
 
 test('native strip bins and Gaussian smoothing exactly match the baseline', () => {
   for (const n of [25, 65]) {
-    const baseline = legacyCalculationBaseline(device, response);
+    const baseline = frozenCalculationBaseline(device, response);
     assert.deepEqual(nativeAxisBins(n, device), baseline.nativeAxisBins(n));
     for (const angularResolutionDeg of [.01, .3, 3, 20]) {
       const settings = { ...response, angularResolutionDeg };
       const values = Array.from({ length: n * n }, (_, i) => ({ count: i % 13, transmission: (i % 5) / 5 }));
       const expected = structuredClone(values);
-      legacyCalculationBaseline(device, settings).applyProjectionResolution(expected, n);
+      frozenCalculationBaseline(device, settings).applyProjectionResolution(expected, n);
       applyProjectionResolution(values, n, device, settings);
       assert.deepEqual(values, expected);
     }
   }
 });
 
-test('complete 25/65-bin count projections exactly match legacy results with both flux models', () => {
+test('complete 25/65-bin count projections exactly match the frozen formulas with both flux models', () => {
   for (const n of [25, 65]) for (const angularModel of ['gaisser', 'cos2']) {
     const settings = { ...response, angularModel };
     const expected = referencePass(n, device, settings, sampleRay);
@@ -74,13 +74,13 @@ test('complete 25/65-bin count projections exactly match legacy results with bot
     let state;
     do { state = pass.advance(3); } while (!state.done);
     const { modelVersion, ...actual } = state.result;
-    assert.equal(modelVersion, 'legacy-quick-response@1.0.0');
+    assert.equal(modelVersion, 'quick-response@4.0.0');
     assert.deepEqual(actual, expected);
     assert.strictEqual(pass.advance(3).result, state.result);
   }
 });
 
-test('exposure/area/efficiency scaling, open sky, horizon and significance retain existing behavior', () => {
+test('exposure/area/efficiency scaling, open sky, horizon and significance', () => {
   const evaluate = (d = device, r = response, z = 1) => createProjectionPass({ n: 25, device: d, response: r,
     sampleRay: () => ({ dir: { z }, q: { mwe: 0 } }) }).advance(25).result;
   const base = evaluate();
@@ -89,7 +89,8 @@ test('exposure/area/efficiency scaling, open sky, horizon and significance retai
   assert.equal(evaluate({ ...device, width: device.width * 2 }).total, base.total * 2);
   assert.equal(evaluate(device, { ...response, layerEfficiency: 0 }).total, 0);
   assert.equal(evaluate(device, response, 0).total, 0);
-  assert.equal(evaluate(device, response, -1).weightedTransmission, 0);
+  // Since quick-response@4.0.0 adapters pass the sky end of each line; a ray below the horizon is an adapter error.
+  assert.throws(() => evaluate(device, response, -1), /sky side/);
   assert.equal(countSignificance(100, 80, .03), 20 / Math.sqrt(100 + 3 ** 2));
 });
 

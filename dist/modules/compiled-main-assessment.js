@@ -18,7 +18,7 @@ export function createCompiledMainAssessment({ runtime }) {
     && Object.entries(variables).every(([key, value]) => input[key] === value);
   return Object.freeze({
     createSession(input) {
-      const { station, device, response, environment } = structuredClone(input);
+      const { station, device, response, environment, plan = null } = structuredClone(input);
       if (!sameEnvironment(environment)) throw new Error('Compiled assessment only accepts the selected frozen scenario variables');
       const origin = [station.x, station.y, station.z], length = enclosingCompiledRayLength(origin, runtime.bounds);
       const config = { origin, azimuthDeg: station.az, elevationDeg: station.el, length };
@@ -28,12 +28,12 @@ export function createCompiledMainAssessment({ runtime }) {
         centralRay: () => runtime.traceRayModel(origin, slopeDirection(basis, 0, 0), length),
         projection(quality) {
           if (!['preview', 'final'].includes(quality)) throw new Error('Unknown assessment quality');
-          const work = createCompiledAssessmentPass(runtime, { ...config, bins: quality === 'preview' ? 25 : 65 }, device, response);
+          const work = createCompiledAssessmentPass(runtime, { ...config, bins: quality === 'preview' ? 25 : 65 }, device, response, { plan });
           return { advance: work.advance, complete: result => ({ ...result, quality, patternResult: work.complete(result) }) };
         },
         ensureTargetSignificance() { throw new Error('Source-entity significance is unavailable for the compiled backend'); },
       });
     },
-    clearCaches() {}, // Existing compiled response caches are scoped to each pass.
+    clearCaches() {}, // No compiled response state outlives a pass.
   });
 }

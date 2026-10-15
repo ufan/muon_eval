@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { loadRegisteredDataset, readJson, registryUrl } from '../../scripts/dataset-fixture.mjs';
 import { resolveApplicationSelection, applicationSelectionSearch } from '../../dist/modules/application-selection.js';
+import { planFromState, stateFromPlan, parsePlan, serializePlan } from '../../dist/modules/plan-format.js';
+import { deviceSettingsData } from '../../dist/modules/device-configuration.js';
 import { createApplicationBackend } from '../../dist/modules/application-backends.js';
 import { createDeploymentState } from '../../dist/modules/deployment-state.js';
 import { createCompiledMainAssessment, enclosingCompiledRayLength } from '../../dist/modules/compiled-main-assessment.js';
@@ -13,11 +15,10 @@ const registry=await readJson(registryUrl),release='zhouning-lower-reservoir-dam
 const dataset=await loadRegisteredDataset(release),configuration=defaultDeviceConfiguration();
 test('release/backend/scenario selection is explicit, compatible and round-trippable',()=>{
  const byDefault=resolveApplicationSelection(registry);assert.equal(byDefault.backend,'compiled');assert.equal(byDefault.datasetId,registry.default_dataset);assert.equal(byDefault.datasetId,release);
- const legacy=resolveApplicationSelection(registry,'?dataset=zhouning-lower-reservoir-dam%400.6.2&backend=legacy');assert.equal(legacy.backend,'legacy');assert.equal(legacy.datasetId,'zhouning-lower-reservoir-dam@0.6.2');
  const compiled=resolveApplicationSelection(registry,'?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=high');
  assert.deepEqual(resolveApplicationSelection(registry,applicationSelectionSearch(compiled)),compiled);
  assert.equal(resolveApplicationSelection(registry,'?scenario=low').scenarioId,'low');
- for(const search of ['?dataset=missing','?backend=legacy','?dataset=zhouning-lower-reservoir-dam%400.6.2&scenario=low','?dataset=zhouning-lower-reservoir-dam%400.6.2&backend=compiled','?backend=unknown','?dataset=','?backend=legacy&backend=compiled',`?dataset=${encodeURIComponent(release)}&backend=legacy`])assert.throws(()=>resolveApplicationSelection(registry,search));
+ for(const search of ['?dataset=missing','?backend=legacy','?dataset=zhouning-lower-reservoir-dam%400.6.2&backend=legacy','?dataset=zhouning-lower-reservoir-dam%400.6.2&scenario=low','?dataset=zhouning-lower-reservoir-dam%400.6.2&backend=compiled','?backend=unknown','?dataset=','?backend=legacy&backend=compiled',`?dataset=${encodeURIComponent(release)}&backend=legacy`])assert.throws(()=>resolveApplicationSelection(registry,search));
 });
 
 test('main backend binds all published frozen scenarios to the existing exact assessment',async()=>{
@@ -38,21 +39,20 @@ test('main backend binds all published frozen scenarios to the existing exact as
    assert.ok(actual.values[0].dir.z!==undefined);assert.ok(actual.values[0].q.segments);assert.ok(actual.values.every(pixel=>!pixel.q.counterfactualMwe));
    assert.throws(()=>session.ensureTargetSignificance(actual,'dam'),/unavailable/);
   }
-  const ray=session.centralRay(),plan=backend.exportPlan(state.snapshot(),ray,state.candidates);
-  assert.equal(plan.schemaVersion,'0.1.0');assert.equal(plan.scenarioId,scenarioId);assert.equal(plan.activeRay.mwe,ray.mwe);assert.deepEqual(plan.variables,backend.runtime.variables);
-  assert.deepEqual(plan.activeRay.station,state.snapshot().station);assert.equal(plan.trace.maximumDistanceM,length);
+  // The release's candidates become a valid plan that round-trips (PLAN_FORMAT.md).
+  const plan=planFromState({release,scenario:scenarioId,model:state.device.model,stations:state.candidates,settings:deviceSettingsData(state.configuration)});
+  assert.ok(plan.stations.every(s=>s.candidateId===s.id));assert.equal(serializePlan(parsePlan(serializePlan(plan))),serializePlan(plan));
+  assert.deepEqual(stateFromPlan(plan).stations.map(s=>[s.x,s.y,s.z]),state.candidates.map(s=>[s.x,s.y,s.z]));
   const changed=state.snapshot();changed.environment.water_up_level+=1;assert.throws(()=>backend.assessment.createSession(changed),/frozen/);
   changed.environment={...state.environment,upstream:295};assert.throws(()=>backend.assessment.createSession(changed),/frozen/);
   assert.equal(session.cloud(),null);assert.equal(session.quickMetrics(),null);
  }
 });
 
-test('invalid scenario/backend combinations cannot fall back to legacy or another scenario',async()=>{
- await assert.rejects(createApplicationBackend(dataset,{datasetId:release,backend:'legacy',scenarioId:null}),/legacy/);
+test('invalid scenario/backend combinations cannot fall back to another backend or scenario',async()=>{
+ await assert.rejects(createApplicationBackend(dataset,{datasetId:release,backend:'legacy',scenarioId:null}),/Unsupported/);
  await assert.rejects(createApplicationBackend(dataset,{datasetId:release,backend:'compiled',scenarioId:'not-published'}),/Unknown compiled scenario/);
  await assert.rejects(createApplicationBackend(dataset,{datasetId:'wrong',backend:'compiled',scenarioId:'low'}),/differs/);
- const legacyDataset=await loadRegisteredDataset('zhouning-lower-reservoir-dam@0.6.2');await assert.rejects(createApplicationBackend(legacyDataset,{datasetId:legacyDataset.id,backend:'compiled',scenarioId:'low'}),/compiled/);
- const legacy=await createApplicationBackend(legacyDataset,resolveApplicationSelection(registry,'?dataset=zhouning-lower-reservoir-dam%400.6.2&backend=legacy'));assert.equal(legacy.capabilities.continuousWater,true);assert.equal(legacy.capabilities.targetSignificance,true);
 });
 
 test('finite mesh ray extent encloses every corner and fails instead of truncating an oversized domain',()=>{

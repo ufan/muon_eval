@@ -1,6 +1,14 @@
-// Existing quick-assessment formulas, extracted without recalibration.
+// Quick-assessment formulas. 4.0.0: each pixel is a line through the detector,
+// evaluated along its sky end, so lines pointing below the horizon in front
+// count muons arriving from behind (no time-of-flight; upward-going muons from
+// neutrinos, ~1e-5 of the flux, are neglected). 3.0.0: pixel counts use the projected detector
+// area (cos^4 per slope cell) and drop the undeclared 'edge' factor (FR-C3).
+// 2.0.0 evaluates the flux integral exactly for every input (FR-C1); 1.0.0
+// returned the first value computed in a quantised (cosZ, log10 Emin) bucket.
 // Flux units: cm^-2 s^-1 sr^-1 (integrated); energy: GeV; column: m.w.e.
-export const RESPONSE_MODEL_VERSION = 'legacy-quick-response@1.0.0';
+// Model identifier; versions 1.0.0-3.0.0 were first published as
+// 'legacy-quick-response@<version>' (same physics per version).
+export const RESPONSE_MODEL_VERSION = 'quick-response@4.0.0';
 
 export function cosThetaStar(c) {
   c = Math.max(0, Math.min(1, c));
@@ -19,21 +27,16 @@ export function surfaceSpectrum(E, cosZ, angularModel = 'gaisser') {
   return angularModel === 'cos2' ? gaisserFlux(E, 1) * cosZ * cosZ : gaisserFlux(E, cosZ);
 }
 
-export function integratedSurfaceFlux(cosZ, emin, angularModel = 'gaisser', cache = new Map()) {
+export function integratedSurfaceFlux(cosZ, emin, angularModel = 'gaisser') {
   if (cosZ <= 0) return 0;
   emin = Math.max(1, emin);
-  // Preserve legacy quantization and first-sample cache behavior exactly.
-  const key = angularModel + '/' + Math.round(cosZ * 100) + '/' + Math.round(Math.log10(emin) * 40);
-  if (cache.has(key)) return cache.get(key);
   const emax = 1e5, n = 44, lo = Math.log(emin), hi = Math.log(emax), step = (hi - lo) / n;
   let sum = 0;
   for (let i = 0; i <= n; i++) {
     const E = Math.exp(lo + i * step), w = i === 0 || i === n ? .5 : 1;
     sum += w * surfaceSpectrum(E, cosZ, angularModel) * E;
   }
-  const result = sum * step;
-  cache.set(key, result);
-  return result;
+  return sum * step;
 }
 
 export function minimumMuonEnergy(mwe) {

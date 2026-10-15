@@ -1,9 +1,7 @@
 import { loadDataset } from './modules/dataset-loader.js';
-import { resolveApplicationSelection } from './modules/application-selection.js';
+import { resolveApplicationSelection, selectionHref, APP_PAGES } from './modules/application-selection.js';
 import { createApplicationBackend } from './modules/application-backends.js';
-import { createAssessmentController } from './modules/assessment-controller.js';
-import { MAIN_TRACE_SETTINGS } from './modules/main-assessment.js';
-import { createLegacySceneView } from './modules/legacy-scene-view.js';
+import { createAssessmentController, createLocalAssessmentPort } from './modules/assessment-controller.js';
 import { createCompiledSceneView } from './modules/compiled-scene-view.js';
 import { createProjectionCanvasView } from './modules/projection-canvas-view.js';
 import { createApplicationSelectionView } from './modules/application-selection-view.js';
@@ -15,14 +13,13 @@ async function main(){
  const registry=await response.json(),selection=resolveApplicationSelection(registry,location.search);
  const dataset=await loadDataset(selection.datasetId),backend=await createApplicationBackend(dataset,selection);
  const state=createDeploymentState({stations:backend.stations,environment:backend.environment});let page;
- const viewPorts={dataset,geometry:backend.geometry,runtime:backend.runtime,waterLayers:backend.waterLayers,traceCellM:MAIN_TRACE_SETTINGS.mainCell,onResize:()=>page?.constrainProjectionPanel()};
- const sceneView=selection.backend==='legacy'?createLegacySceneView(viewPorts):createCompiledSceneView(viewPorts);
- const projectionView=createProjectionCanvasView({onHover:(data,x,y)=>sceneView.showProjectionPixel(data,x,y),onLeave:()=>sceneView.clearProjection()});
- createApplicationSelectionView({registry,selection:backend.selection,scenarios:backend.scenarios,backendLabel:selection.backend,description:backend.environmentDescription,title:dataset.identity.title??dataset.spec.title,frame:dataset.geometry?.source.frames.model_frame});
- page=createMainPage({datasetId:dataset.id,datasetVersion:dataset.identity.dataset_version,state,sceneView,projectionView,capabilities:backend.capabilities,
-  backendLabel:selection.backend,environmentDescription:backend.environmentDescription,exportFileName:backend.exportFileName,exportPlan:backend.exportPlan,createController:ports=>{
+ const sceneView=createCompiledSceneView({dataset,runtime:backend.runtime,waterLayers:backend.waterLayers,features:dataset.features,onResize:()=>page?.constrainProjectionPanel(),onFeatureHover:id=>page?.hoverFeature(id),onFeaturePick:id=>page?.pickFeature(id),onCoveragePick:(ix,iy)=>page?.pickCoverage(ix,iy),onPlacePick:surface=>page?.placeStation(surface),onStationPick:id=>page?.pickStation(id),onPlaceCancel:()=>page?.placeCancelled()});
+ const projectionView=createProjectionCanvasView({onHover:(data,x,y,options)=>sceneView.showProjectionPixel(data,x,y,options),onLeave:()=>sceneView.clearProjection()});
+ createApplicationSelectionView({registry,selection:backend.selection,scenarios:backend.scenarios,backendLabel:selection.backend,description:backend.environmentDescription,title:dataset.identity.title,frame:dataset.geometry?.source.frames.model_frame});
+ page=createMainPage({workbenchHref:selectionHref(APP_PAGES.workbench,backend.selection),datasetId:dataset.id,datasetVersion:dataset.identity.dataset_version,features:dataset.features,recognitionItems:dataset.recognitionItems,state,sceneView,projectionView,capabilities:backend.capabilities,
+  backendLabel:selection.backend,environmentDescription:backend.environmentDescription,scenarioId:backend.selection.scenarioId,releases:Object.keys(registry.datasets),candidateIds:dataset.candidates.candidates.map(c=>c.id),createPort:()=>createLocalAssessmentPort(backend.assessment),placeInCavity:backend.placeInCavity,sliceMask:backend.sliceMask,targetSamples:backend.targetSamples,createController:ports=>{
    const controller=createAssessmentController({assessment:backend.assessment,...ports});
-   return {...controller,clearCaches:()=>backend.assessment.clearCaches(),centralRay:input=>backend.assessment.createSession(input).centralRay()};
+   return {...controller,clearCaches:()=>backend.assessment.clearCaches()};
   }});
  page.start();
 }

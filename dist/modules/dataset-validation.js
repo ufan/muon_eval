@@ -13,8 +13,7 @@ export function validateBundle(spec, registryId, { candidates, siteConditions, c
     const ref = name === 'compiled manifest' ? document : document?.dataset_ref;
     if (!ref) throw new Error(`${name} has no dataset reference`);
     for (const key of ['dataset_id', 'dataset_version', 'schema_version', 'release_id']) {
-      // Legacy sidecars predate full release references. v0.7 references are mandatory.
-      if ((spec.dataset || ref[key] !== undefined) && ref[key] !== identity[key]) throw new Error(`${name}: ${key} does not match release`);
+      if (ref[key] !== identity[key]) throw new Error(`${name}: ${key} does not match release`);
     }
   }
   return identity;

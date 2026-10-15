@@ -50,9 +50,14 @@ Help users explore, filter and compare muography detector deployment plans for a
 | Assessment | One station evaluated in a scene: the scene combined with a detector configuration, a station and a pose | Calculation settings; produces a projection result |
 | Deployment plan | A scene combined with one or more stations, each with a pose and a detector configuration; distinguishes candidate stations from the selected deployment | Scene (release + environment), stations, poses, devices, calculation settings |
 | Anomaly (hypothesis) | A structural problem of the subject that the deployment is meant to investigate (voids, loosened or densified zones, seepage, furnace cohesive zone, hearth wall thinning, …), modelled as a parameterised change of the subject's physical state (proposed, ADR-025) | Region, density model (void, loosening, densification, saturation, replacement), host materials, size/position/density/development parameters |
+| Usable view / multi-view coverage | A station whose line through a point has enough counts (≤ 10 % counting error) is a usable view of that point; multi-view coverage counts the usable views of each point and measures how far apart their directions are | Planning heuristic for overlapping deployments, not a reconstruction guarantee |
 | Geometric / physical acceptance | Geometric: which directions the detector can register at all (device geometry only). Physical: expected muon counts per direction, including flux, transmission and response | Used for the coverage highlight (FR-M10) |
 | Sensitivity | How well a plan would detect an anomaly: change in counts and its significance against statistical and systematic uncertainty | ΔN, significance, exposure to reach a threshold, minimum detectable size/contrast |
 | Scan | Batch calculation and comparison over a constrained parameter space | Ranges, steps, constraints, metrics, ranking, robustness |
+| Study (工作方案) | One observation task on one release: the candidate pool, named deployments and detector configurations, saved as one plan file; several per release | Plan file `muography-plan` 1.1.0 |
+| Working station | The station being tuned in detail; it becomes a candidate only when saved, and saved candidates change only by explicit update | Position, pose, detector |
+| Deployment (部署组合) | A named subset of a study's candidates evaluated together; a study can hold several alternatives | Member candidates |
+| Plan run | A headless evaluation of a saved plan's stations outside the browser, with the same calculation core | One result per station, a reproducible run summary, optional comparison |
 
 Note: "scenario" means a frozen environment variant, never the subject itself; the subject is a dataset of some kind.
 
@@ -71,7 +76,29 @@ How these objects relate, their identities, invariants and lifecycles are modell
 - **Environment volume**: media that change between scenes or lie outside the subject: reservoir and tail water, furnace burden, overburden, air, surrounding rock.
 - **Visual proxy**: auxiliary geometry drawn for recognition or interaction; it never takes part in material calculation implicitly.
 - **Target / ROI**: a structure or region the user wants to identify, cover or compare in projections or scans.
+- **Subject feature**: a named part of the subject declared by the dataset; see §3.1.
 - **Boundary / contour**: the boundary of a material or semantic region in 3D space, ray space or the projection plane.
+
+### 3.1 Subject features and how they are referenced
+
+How the app names and finds parts of the subject (design in ADR-029). Example values are from the Zhouning dam.
+
+| Term | Meaning | Example |
+| --- | --- | --- |
+| Entity | One part of the subject as written in the dataset spec, with a stable ID. Solid, void or virtual | `gallery_upper`, `dam_standard`, `spillway_piers_and_chute_walls_C` |
+| Water body | A body of water declared by the dataset; treated like an entity for naming | `reservoir`, `tailwater` |
+| Semantic class | What kind of thing an entity is, from the dataset's vocabulary; carries a display colour | `gallery` (`#185FA5`), `elevator_shaft`, `pier` |
+| System | The dataset's grouping of classes by engineering function | gallery, monitoring, vertical transport, flood release, dam, water |
+| Imaging role | What an entity means for imaging, declared by the dataset: `target`, `reference_void` (a known void, useful to check a plan), `time_varying_mass`, `background`, `detector_site` | Galleries and rooms are `reference_void`; water is `time_varying_mass` |
+| Component | One closed mesh in a compiled scenario, with one material; what the ray tracer and the 3D view actually use | `gallery_upper` (air), `concrete` (all concrete solids merged), `rock` |
+| Direct / aggregate | A *direct* entity has its own component, so it can be drawn and measured on its own; an *aggregate* entity is merged into a shared component (e.g. every concrete solid is inside `concrete`) and cannot be singled out until FR-GE4 | 22 direct (voids, water); 22 aggregate (dam body, piers, gates, …) |
+| Subject feature | A named part of the subject that the app can show, select or measure: one entry per entity or water body, with label, class, group, colour, imaging role and direct/aggregate | "Upper gallery" |
+| Feature catalogue | The list of all subject features of one release, built once by the dataset adapter from the dataset's own declarations. Every consumer (3D layer, projection outlines, picking, coverage, metrics) reads it; none keeps its own list | 44 features for the Zhouning release (virtual placeholders excluded) |
+| Dataset workbench | The second page of the app (today `geometry-preview.html`, later "数据集检查") for checking a dataset release before it is trusted: control points, material points and reference rays with pass/fail, picking, scenario switch. The main app plans deployments; both open the same release through the same `dataset`/`scenario` link (ADR-030) | — |
+| Feature group | The catalogue's grouping for display, equal to the dataset's system | "Gallery" group = both galleries, the link gallery, two adits |
+| Internal feature | A subject feature inside the subject with engineering meaning (galleries, rooms, shafts, tapholes) | "Lower observation room" |
+| Display profile | An optional sidecar file of a release with presentation choices, separate from the geometry spec and never part of result identity (proposed, ADR-029) | `display_profile.json` |
+| Recognition item | One entry of the short list offered for outlining on projections: one subject feature or several merged into one outline, declared in the display profile | "Galleries" = upper, lower and link gallery |
 
 ### Geometric truth
 
@@ -122,6 +149,39 @@ Flux model, attenuation model, count units, exposure time and statistical assump
 
 The current calculation chain, formulas, parameters and UI outputs are specified in `docs/specs/CALCULATION_MODEL.md`; their interpretation is in `docs/guides/RESULT_INTERPRETATION.md`.
 
+### 5.1 Display terms: what is drawn where
+
+The app has two pictures: the **3D view** of the subject and the **projection** (the detector's image). These terms say which picture something belongs to.
+
+| Term | Picture | Meaning |
+| --- | --- | --- |
+| Projection | 2D | The image a detector at one station and pose would record: one value per direction, laid out by local slopes `sx` (right) and `sy` (up). Not a map or plan of the subject. Shown as expected counts or transmission |
+| Pixel | 2D | One cell of the displayed projection (25 × 25 preview, 65 × 65 final); each pixel combines several native projection bins. A pixel is a *line* through the detector: its counts come from the end of the line that points to the sky, in front of or behind the detector (`quick-response@4.0.0`) |
+| Front / back side | 2D | Whether a pixel's sky end lies in front of the detector plane ("前方来向") or behind it ("后方来向"); the boundary is the horizon line on the projection |
+| Layer (3D) | 3D | A group of things in the 3D view that one checkbox shows or hides: terrain, dam concrete, water, detector cone, a feature group. Hiding a layer never changes a result |
+| Overlay / numeric layer | 2D | Lines or shapes drawn on top of a projection from the same result: material contribution contours, response contours, feature outlines, later anomaly footprints |
+| Feature mask | 2D | For one recognition item (or subject feature) and one result: the set of projection pixels whose central ray passes through it by more than the threshold length T (default 0.1 m, display setting). The stretch of ray that starts inside the item, i.e. the space the detector sits in, is not counted |
+| Outline | 2D | The boundary of a feature mask drawn on the projection in the feature's colour, so users see *where in the image* a gallery appears; it follows the mask pixels (about half a pixel accuracy) and closes along the image border |
+| Contour | 2D | A line of equal value of a numerical field on the projection, like a height contour on a map (e.g. 10 m of concrete, transmission 0.1, 10 % counting error). Levels are *physical* (explicit, comparable between stations) or *adaptive* (chosen per image, not comparable). An outline is the contour of a recognition item's length field at level T |
+| Material envelope | 2D | The sampled edge where a material starts or ends along neighbouring rays (e.g. concrete vs air); a display diagnostic, not a CAD edge |
+| Picking / hover | both | Pointing at something to identify it: a feature in 3D, or a pixel in the projection, which also draws that pixel's ray in 3D |
+| Coverage highlight | 3D | Tinting the parts of the subject inside a detector's field of view (FR-M10) |
+| Demonstration mode (演示模式) | 3D | The 3D view alone for presenting a deployment: caption, legend, station labels, camera presets and saved views; screenshots always carry the release, inputs and the limitations of the numbers (FR-M5) |
+| Evaluation aim | both | What the user wants a deployment to achieve, stated as regions, metrics, aggregations and parameters (e.g. "≥ 2 usable views at 5 m resolution over 80 % of the upper dam body"). The user's input; the app measures it and later optimises towards it (ADR-031) |
+| Multi-station overview (多站总览) | both | The table of each recognition item over the shown stations: per station whether and how it images the item, and how well points inside the item are seen from several angles (FR-M1, FR-M15). Opening a station from it makes it the working station |
+| Target points | 3D | Points inside a recognition item, found with the calculation geometry, at which multi-view coverage is evaluated for the overview |
+| Slice plane (切面) | 3D | A movable plane through the subject's interior, shown only where it cuts matter, carrying the same coverage tint so interior targets can be judged (FR-M16). A view only |
+
+### 5.2 Words with several meanings
+
+| Word | Meanings in this project | Prefer |
+| --- | --- | --- |
+| Target | (1) what a user wants to find or check (glossary "Target / ROI"); (2) a subject feature selected for outlining on the projection; (3) the dataset imaging role `target`; (4) "semantic targets": direct features verified in the preview; (5) legacy hard-coded target structures (retired) | (1) *target / ROI*; (2) *projection target* or *outlined feature*; (3) *imaging role `target`*; (4) *direct feature* |
+| Feature | (1) subject feature (§3.1); (2) a capability of the app | Say *subject feature* for (1), *capability* for (2) |
+| Layer | (1) 3D layer (checkbox); (2) numeric layer / overlay on the projection; (3) detector layer (a physical plane of the device) | *3D layer*, *overlay*, *detector layer* |
+| Projection | (1) the detector image (§5.1); (2) a map projection or coordinate projection | (1) only; for geometry say *transform* |
+| Contour / outline / envelope / boundary | All are lines; they differ in source (§5.1). *Boundary* is the general word for any of them in 3D or 2D | Use the specific term |
+
 ## 6. Evaluation semantics
 
 Keep these dimensions separate rather than collapsing them into one absolute score:
@@ -155,7 +215,7 @@ A reproducible calculation or export records at least:
 The bundled Zhouning lower-reservoir dam dataset is the first validation case, not the platform's default semantics.
 
 - Dataset registry: `datasets/registry.json`. The default release is `zhouning-lower-reservoir-dam@0.6.2+schema0.7.0` on the compiled GLB/BVH backend, with frozen scenarios low/mid/high/extreme.
-- The legacy release `zhouning-lower-reservoir-dam@0.6.2` (directory `datasets/zhouning-lower-reservoir-dam/0.6.2/`) remains selectable as a compatibility path with the legacy DDA backend and continuous water level.
+- The earlier legacy releases 0.6.1 and 0.6.2 (parametric format, legacy DDA backend with continuous water level) were retired (ADR-028); continuous water level is a migration target (MT-1).
 - Continuous water level on compiled geometry and aggregate source-entity attribution are unresolved.
 - Coordinates and geometry rules: `datasets/zhouning-lower-reservoir-dam/README.md`.
 - Dataset ID, data version, schema version and release ID are recorded separately; one data version may have release packages in different formats, so caches and plan references always use the full release ID.

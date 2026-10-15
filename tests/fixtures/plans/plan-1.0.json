@@ -1,0 +1,75 @@
+{
+  "format": "muography-plan",
+  "schemaVersion": "1.0.0",
+  "title": "Synthetic study",
+  "scene": {
+    "release": "subject@1.0.0",
+    "contentHash": null,
+    "scenario": "low"
+  },
+  "units": {
+    "length": "m",
+    "angle": "deg",
+    "frame": "model_frame"
+  },
+  "detectors": {
+    "default": {
+      "device": {
+        "model": "test-telescope",
+        "layers": 3,
+        "width": 0.4096,
+        "height": 0.4096,
+        "stripPitch": 0.0016,
+        "strips": 256,
+        "spacing": 0.15
+      },
+      "response": {
+        "layerEfficiency": 0.95,
+        "deadLiveFraction": 0.98,
+        "angularResolutionDeg": 0.3,
+        "systematicFraction": 0.03,
+        "exposureDays": 30,
+        "angularModel": "gaisser"
+      }
+    }
+  },
+  "stations": [
+    {
+      "id": "north",
+      "name": "北侧点位",
+      "position": [
+        12.5,
+        122,
+        57
+      ],
+      "pose": {
+        "azimuthDeg": 0,
+        "elevationDeg": 25
+      },
+      "candidateId": "north",
+      "detector": "default"
+    },
+    {
+      "id": "station-2",
+      "name": "新候选点 2",
+      "position": [
+        80,
+        101.25,
+        55
+      ],
+      "pose": {
+        "azimuthDeg": 180,
+        "elevationDeg": 35
+      },
+      "candidateId": null,
+      "detector": "default"
+    }
+  ],
+  "deployment": {
+    "selected": [
+      "north"
+    ],
+    "active": "station-2"
+  },
+  "anomalies": []
+}

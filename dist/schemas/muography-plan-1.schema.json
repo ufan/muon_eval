@@ -1,0 +1,480 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "muography-plan-1.schema.json",
+  "title": "muography-plan 1.x",
+  "description": "Saved deployment plan, versions 1.0 and 1.1 (docs/specs/PLAN_FORMAT.md). Apps read both and write 1.1. Cross-member rules (unique station and deployment IDs, references to stations and detectors) are checked by plan-format.js.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/plan-1.1"
+    },
+    {
+      "$ref": "#/$defs/plan-1.0"
+    }
+  ],
+  "$defs": {
+    "plan-1.1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "schemaVersion",
+        "title",
+        "scene",
+        "units",
+        "detectors",
+        "stations",
+        "deployments",
+        "anomalies"
+      ],
+      "properties": {
+        "format": {
+          "$ref": "#/$defs/format"
+        },
+        "title": {
+          "$ref": "#/$defs/title"
+        },
+        "scene": {
+          "$ref": "#/$defs/scene"
+        },
+        "units": {
+          "$ref": "#/$defs/units"
+        },
+        "detectors": {
+          "$ref": "#/$defs/detectors"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "pattern": "^1\\.1\\.[0-9]+$"
+        },
+        "stations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/station-1.1"
+          }
+        },
+        "deployments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/deployment"
+          }
+        },
+        "anomalies": {
+          "type": "array",
+          "maxItems": 0
+        }
+      }
+    },
+    "plan-1.0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "schemaVersion",
+        "title",
+        "scene",
+        "units",
+        "detectors",
+        "stations",
+        "deployment",
+        "anomalies"
+      ],
+      "properties": {
+        "format": {
+          "$ref": "#/$defs/format"
+        },
+        "title": {
+          "$ref": "#/$defs/title"
+        },
+        "scene": {
+          "$ref": "#/$defs/scene"
+        },
+        "units": {
+          "$ref": "#/$defs/units"
+        },
+        "detectors": {
+          "$ref": "#/$defs/detectors"
+        },
+        "schemaVersion": {
+          "type": "string",
+          "pattern": "^1\\.0\\.[0-9]+$"
+        },
+        "stations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/station-1.0"
+          }
+        },
+        "deployment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "selected",
+            "active"
+          ],
+          "properties": {
+            "selected": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/id"
+              }
+            },
+            "active": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        "anomalies": {
+          "type": "array",
+          "maxItems": 0
+        }
+      }
+    },
+    "format": {
+      "const": "muography-plan"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "release",
+        "contentHash",
+        "scenario"
+      ],
+      "properties": {
+        "release": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "contentHash": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          ]
+        },
+        "scenario": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          ]
+        }
+      }
+    },
+    "units": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "length",
+        "angle",
+        "frame"
+      ],
+      "properties": {
+        "length": {
+          "const": "m"
+        },
+        "angle": {
+          "const": "deg"
+        },
+        "frame": {
+          "const": "model_frame"
+        }
+      }
+    },
+    "detectors": {
+      "type": "object",
+      "required": [
+        "default"
+      ],
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/detector"
+      }
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "stations"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "stations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "station-1.1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "position",
+        "pose",
+        "candidateId",
+        "detector",
+        "note"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "position": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number"
+          }
+        },
+        "pose": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "azimuthDeg",
+            "elevationDeg"
+          ],
+          "properties": {
+            "azimuthDeg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 359
+            },
+            "elevationDeg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 90
+            }
+          }
+        },
+        "candidateId": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          ]
+        },
+        "detector": {
+          "$ref": "#/$defs/id"
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      }
+    },
+    "station-1.0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "position",
+        "pose",
+        "candidateId",
+        "detector"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "position": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number"
+          }
+        },
+        "pose": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "azimuthDeg",
+            "elevationDeg"
+          ],
+          "properties": {
+            "azimuthDeg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 359
+            },
+            "elevationDeg": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 90
+            }
+          }
+        },
+        "candidateId": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          ]
+        },
+        "detector": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "detector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "device",
+        "response"
+      ],
+      "properties": {
+        "device": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "model",
+            "layers",
+            "width",
+            "height",
+            "stripPitch",
+            "strips",
+            "spacing"
+          ],
+          "properties": {
+            "model": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "layers": {
+              "const": 3
+            },
+            "width": {
+              "type": "number",
+              "minimum": 0.01,
+              "maximum": 5
+            },
+            "height": {
+              "type": "number",
+              "minimum": 0.01,
+              "maximum": 5
+            },
+            "stripPitch": {
+              "type": "number",
+              "minimum": 5e-05,
+              "maximum": 0.1
+            },
+            "strips": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 4096
+            },
+            "spacing": {
+              "type": "number",
+              "minimum": 0.01,
+              "maximum": 5
+            }
+          }
+        },
+        "response": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "layerEfficiency",
+            "deadLiveFraction",
+            "angularResolutionDeg",
+            "systematicFraction",
+            "exposureDays",
+            "angularModel"
+          ],
+          "properties": {
+            "layerEfficiency": {
+              "type": "number",
+              "minimum": 0.01,
+              "maximum": 1
+            },
+            "deadLiveFraction": {
+              "type": "number",
+              "minimum": 0.01,
+              "maximum": 1
+            },
+            "angularResolutionDeg": {
+              "type": "number",
+              "minimum": 0.01,
+              "maximum": 20
+            },
+            "systematicFraction": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "exposureDays": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650
+            },
+            "angularModel": {
+              "enum": [
+                "gaisser",
+                "cos2"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
