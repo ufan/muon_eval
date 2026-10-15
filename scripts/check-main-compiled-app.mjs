@@ -33,12 +33,14 @@ try{
  const accept=(text)=>page.once('dialog',dialog=>dialog.accept(text));
  const exportPlan=async kind=>{const pending=page.waitForEvent('download');await click('#export');await click(`[data-export="${kind}"]`);const file=await pending;return {name:file.suggestedFilename(),plan:parsePlan(await readFile(await file.path(),'utf8'))};};
  const openCandidates=async()=>{if(await page.locator('#candidateSection').evaluate(e=>e.classList.contains('collapsed')))await click('#candidateSection .section-toggle');};
+ // Dataset controls sit in the header "数据配置" menu; open it before choosing (selectOption needs a visible select).
+ const selectData=async(selector,value)=>{if(await page.locator('#dataMenu').isHidden())await click('#dataMenuButton');await page.locator(selector).selectOption(value);};
  async function loadSelected(){const navigation=page.waitForEvent('load');await click('#loadSelection');await navigation;await ready();}
  await page.goto(base);await ready();
  // An idle scene draws nothing; a view change draws again.
  await page.waitForTimeout(1500);const idleStart=await drawCalls();await page.waitForTimeout(1000);assert.equal(await drawCalls(),idleStart,'idle scene keeps drawing');
  await setInput('#viewSelect','top','change');await page.waitForTimeout(300);assert.ok(await drawCalls()>idleStart);await setInput('#viewSelect','perspective','change');assert.equal(await page.locator('#backendSelect').inputValue(),'compiled');assert.equal(await page.locator('#datasetSelect').inputValue(),release);
- await page.locator('#datasetSelect').selectOption(release);assert.equal(await page.locator('#backendSelect').inputValue(),'compiled');await loadSelected();
+ await selectData('#datasetSelect',release);assert.equal(await page.locator('#backendSelect').inputValue(),'compiled');await loadSelected();
  assert.equal(await page.locator('#datasetSelect').inputValue(),release);assert.equal(await page.locator('#scenarioSelect').inputValue(),'low');
  // ADR-030: the dataset workbench opens on the same release and scenario.
  for(const link of ['#workbenchLink','#workbenchLinkDiagnostics'])assert.equal(await page.locator(link).getAttribute('href'),'./geometry-preview.html?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=low');
@@ -194,7 +196,7 @@ try{
  await ready();await setInput('#viewSelect','perspective','change');
  accept();await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();
  const artifacts=await mkdtemp(join(tmpdir(),'muon-main-compiled-'));await page.screenshot({path:join(artifacts,'desktop.png')});
- for(const [scenarioId,waterLevel] of [['mid',293],['high',298],['extreme',305]]){await page.locator('#scenarioSelect').selectOption(scenarioId);await loadSelected();result=await currentResult();assert.equal(result.scenarioId,scenarioId);assert.equal(result.variables.water_up_level,waterLevel);assert.equal(result.variables.gate_state,'closed');assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);}
+ for(const [scenarioId,waterLevel] of [['mid',293],['high',298],['extreme',305]]){await selectData('#scenarioSelect',scenarioId);await loadSelected();result=await currentResult();assert.equal(result.scenarioId,scenarioId);assert.equal(result.variables.water_up_level,waterLevel);assert.equal(result.variables.gate_state,'closed');assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);}
  await page.setViewportSize({width:390,height:844});for(const selector of ['#toggleLeft','#toggleRight'])await click(selector);await page.waitForFunction(()=>{const canvas=document.querySelector('#webgl canvas'),rect=canvas?.getBoundingClientRect();return rect?.width>0&&rect.height>0&&Math.abs(canvas.width/canvas.height-rect.width/rect.height)<.01;},null,{timeout:10000});await page.screenshot({path:join(artifacts,'narrow.png'),fullPage:true});
  // Device settings and edited stations persist across a reload.
  await page.reload();await ready();await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');assert.equal(await page.locator('#azNumber').inputValue(),'25');

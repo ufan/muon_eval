@@ -1,9 +1,15 @@
 import { applicationSelectionSearch } from './application-selection.js';
 
 export function createApplicationSelectionView({ registry, selection, scenarios, backendLabel, description, title, frame, root=document, navigate=search=>{location.search=search;} }) {
-  const panel=root.createElement('section');panel.className='application-selection';
-  panel.innerHTML='<h2>数据集与计算后端</h2><label>发布版本<select id="datasetSelect"></select></label><label>几何后端<select id="backendSelect"></select></label><label id="scenarioSelectLabel">冻结工况<select id="scenarioSelect"></select></label><button id="loadSelection" type="button">载入所选配置</button><p id="applicationBackendInfo" class="hint"></p>';
-  root.querySelector('.left').prepend(panel);const $=id=>panel.querySelector('#'+id);
+  // Data configuration lives in a header menu ("数据配置 ▾"), not the sidebar: it is chosen rarely and reloads the page.
+  const menu=root.createElement('div');menu.className='data-menu';
+  menu.innerHTML='<button id="dataMenuButton" class="header-secondary" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="dataMenu">数据配置 ▾</button><section id="dataMenu" class="application-selection data-options" aria-label="数据集与计算后端" hidden><h2>数据集与计算后端</h2><label>发布版本<select id="datasetSelect"></select></label><label>几何后端<select id="backendSelect"></select></label><label id="scenarioSelectLabel">冻结工况<select id="scenarioSelect"></select></label><button id="loadSelection" type="button">载入所选配置</button><p id="applicationBackendInfo" class="hint"></p></section>';
+  root.querySelector('.header-actions').prepend(menu);
+  const panel=menu.querySelector('#dataMenu'),button=menu.querySelector('#dataMenuButton'),$=id=>panel.querySelector('#'+id);
+  const setOpen=open=>{panel.hidden=!open;button.setAttribute('aria-expanded',String(open));};
+  button.onclick=event=>{event.stopPropagation();setOpen(panel.hidden);};
+  root.addEventListener('click',event=>{if(!panel.hidden&&!event.target.closest('.data-menu'))setOpen(false);});
+  root.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden){setOpen(false);button.focus();}});
   const option=(select,value,label)=>{const node=root.createElement('option');node.value=value;node.textContent=label;select.append(node);};
   for(const [id,entry] of Object.entries(registry.datasets))if(entry.adapter==='dam-spec-v07')option($('datasetSelect'),id,id);
   $('datasetSelect').value=selection.datasetId;
@@ -13,7 +19,7 @@ export function createApplicationSelectionView({ registry, selection, scenarios,
   if(selection.scenarioId)$('scenarioSelect').value=selection.scenarioId;
   configureBackend();$('datasetSelect').onchange=configureBackend;
   $('loadSelection').onclick=()=>navigate(applicationSelectionSearch({datasetId:$('datasetSelect').value,backend:$('backendSelect').value,scenarioId:$('scenarioSelect').disabled?null:$('scenarioSelect').value}));
-  $('applicationBackendInfo').textContent=`${selection.datasetId} · ${backendLabel} · ${description}`;
+  $('applicationBackendInfo').textContent=button.title=`${selection.datasetId} · ${backendLabel} · ${description}`;
   if(title){root.querySelector('.title').textContent=title+' · 缪子部署评估';root.title=title+' · 缪子部署评估';}
   if(frame){
     for(const [index,axis] of ['X','Y','Z'].entries()){
