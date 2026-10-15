@@ -145,19 +145,26 @@ try{
  await (await reveal('#sliceAxis')).selectOption('y');assert.match(await page.locator('#sliceOut').innerText(),/^Y = /);
  await setInput('#slicePos','300','input');await sliceDone();await page.locator('#sliceOn').uncheck();
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
- // Multi-station overview (#15): the same station set as 其他点位, one entry per recognition item; a station name opens it.
+ // Multi-station overview (#15) lives in 多站评估 (ADR-032): entering it swaps the right sidebar and shows the stations'
+ // multi-view coverage in 3D; leaving it restores the coverage settings. Same station set as 其他点位; a station name opens it.
+ const coverageBefore=await (await reveal('#coverageMode')).inputValue();await click('#modeMulti');
+ assert.ok(await page.locator('#multiPanel').isVisible());assert.ok(await page.locator('#singlePanel').isHidden());assert.equal(await (await reveal('#coverageMode')).inputValue(),'physical');
  await page.locator('#overviewStations').selectOption('all');assert.equal(await (await reveal('#coverageStations')).inputValue(),'all');
  await page.waitForFunction(()=>/^\d+ 个点位$/.test(document.querySelector('#overviewStatus').textContent),null,{timeout:60000});
  assert.equal(await page.locator('.overview-item').count(),await page.locator('#recognitionItems input:not([data-recognition^="feature:"])').count());assert.match(await page.locator('.overview-item summary').first().innerText(),/站[\s\S]*视角/);
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
- // Projections side by side (#16): one tile per overview station from the cache, same colour scale; views never change results.
- await click('#overviewTiles');assert.ok(await page.locator('#tilesDialog').evaluate(d=>d.open));
+ // Projections side by side (#16): one card per overview station from the cache, same colour scale; views never change results.
+ assert.ok(await page.locator('#tilesPanel').isVisible());
  assert.equal(await page.locator('.tile').count(),1+await page.locator('#candidateList .cov-swatch').count());assert.equal(await page.locator('.tile canvas').count(),await page.locator('.tile').count());
  {const box=await page.locator('.tile canvas').first().boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);assert.match(await page.locator('#tilesReadout').innerText(),/像素 \(\d+,\d+\) · \d+ 事件/);}
  await page.locator('[data-tiles-mode="transmission"]').click();assert.match(await page.locator('#tilesLegend').innerText(),/透射率/);await page.locator('[data-tiles-mode="counts"]').click();
- await click('#tilesClose');assert.equal(await page.locator('#tilesDialog').evaluate(d=>d.open),false);assert.deepEqual(await currentResult(),before);
- await click('#overviewTiles');{const button=page.locator('[data-tile-station]').first(),name=await button.innerText();await button.click();await ready();
-  assert.equal(await page.locator('#tilesDialog').evaluate(d=>d.open),false);assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));}
+ assert.deepEqual(await currentResult(),before);
+ // A card's 比较 box adds its station to the comparison and removes it again.
+ {const count=async()=>page.locator('#mainComparisonCount').innerText(),start=await count(),id=await page.locator('[data-tile-compare]:not(:checked)').first().getAttribute('data-tile-compare'),box=()=>page.locator(`[data-tile-compare="${id}"]`);
+  await box().check();await page.waitForFunction(text=>document.querySelector('#mainComparisonCount').textContent!==text,start);await box().uncheck();
+  await page.waitForFunction(text=>document.querySelector('#mainComparisonCount').textContent===text,start);}
+ {const button=page.locator('[data-tile-station]').first(),name=await button.innerText();await button.click();await ready();
+  assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));}
  await page.locator('.overview-item summary').first().click();const target=page.locator('[data-overview-station]').first(),targetName=await target.innerText();await target.click();await ready();
  assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${targetName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));
  // Other stations' markers in 3D carry name labels; a click on a label or on the marker itself opens that station.
@@ -169,9 +176,10 @@ try{
   await page.mouse.move(...anchor);await page.waitForTimeout(200);assert.match(await page.locator('.feature-tip').innerText(),/点击设为工作点位/);await page.mouse.down();await page.mouse.up();await ready();await opened(name);}
  await page.locator('#overviewShow3d').click();assert.equal(await (await reveal('#coverageMode')).inputValue(),'physical');assert.equal(await (await reveal('#coverageMulti')).inputValue(),'class');
  await (await reveal('#coverageMulti')).selectOption('views');await page.locator('#overviewStations').selectOption('none');
+ await click('#modeSingle');assert.ok(await page.locator('#singlePanel').isVisible());assert.equal(await (await reveal('#coverageMode')).inputValue(),coverageBefore);
  // Demonstration mode (#17): the 3D view alone with caption, legend and limitations; presets and saved views stepped with ← →;
  // the screenshot is a PNG; Esc leaves. Views never change results; the camera keeps the container's aspect ratio.
- {const unchanged=await currentResult();await page.locator('#overviewStations').selectOption('all');await click('#demoMode');
+ {const unchanged=await currentResult();await setInput('#overviewStations','all','change');await click('#demoMode');
   assert.ok(await page.locator('.app').evaluate(e=>e.classList.contains('demo')));assert.ok(await page.locator('aside.left').isHidden());assert.ok(await page.locator('#projectionPanel').isHidden());
   assert.match(await page.locator('#demoCaption').innerText(),/\d+ 个点位/);assert.match(await page.locator('#demoFootnote').innerText(),/非施工或安全结论[\s\S]*曝光 \d+ 天/);
   assert.ok(await page.locator('#demoLegend div').count()>=2);await page.waitForFunction(()=>!document.querySelector('.station-labels .working-label').hidden);
@@ -188,7 +196,7 @@ try{
    assert.equal(downloaded,false);page.off('download',onDownload);assert.ok(await page.locator('.app').evaluate(e=>e.classList.contains('demo')));assert.equal(await page.locator('#demoBar').evaluate(e=>e.classList.contains('recording')),false);}
   await click('#demoSaved [data-demo-remove]');assert.equal(await page.locator('#demoSaved button').count(),0);
   await page.keyboard.press('Escape');assert.equal(await page.locator('.app').evaluate(e=>e.classList.contains('demo')),false);assert.ok(await page.locator('aside.left').isVisible());
-  assert.ok(await page.locator('.station-labels .working-label').isHidden());await page.locator('#overviewStations').selectOption('none');await page.waitForTimeout(300);assert.deepEqual(await currentResult(),unchanged);}
+  assert.ok(await page.locator('.station-labels .working-label').isHidden());await setInput('#overviewStations','none','change');await page.waitForTimeout(300);assert.deepEqual(await currentResult(),unchanged);}
  // Placing: one click on the model moves the working station there; Esc cancels.
  await click('#placeStation');assert.ok(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')));await page.keyboard.press('Escape');assert.equal(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')),false);
  const xyz=async()=>Promise.all(['#x','#y','#z'].map(id=>page.locator(id).inputValue())),start=await xyz();await click('#placeStation');

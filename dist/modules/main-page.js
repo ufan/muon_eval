@@ -10,6 +10,7 @@ import { overviewTable } from './overview-table.js';
 import { createOverviewPanel } from './overview-panel-view.js';
 import { createProjectionTiles } from './projection-tiles-view.js';
 import { createDemoView } from './demo-view.js';
+import { createTaskMode } from './task-mode.js';
 import { demoFootnote } from './demo-snapshot.js';
 import { openStudies, saveStudy, saveSession, createStudy, switchStudy, listStudies, deleteStudy } from './plan-store.js';
 import { selectionHref, APP_PAGES } from './application-selection.js';
@@ -23,7 +24,7 @@ export function createMainPage({workbenchHref='./geometry-preview.html',datasetI
  // detector and deployments. The active station is session state stored next to the plan, never inside it.
  let studyId='study-1',datasetStations=[],study=null,workingKey=null,workingBusy=false;
  const escapeHtml=text=>String(text).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};`);
- const mainPatterns=createMainPatternView({canvas:$('#projectionCanvas'),host:$('aside.right'),backendLabel,onExportComparison:()=>fullResults(study.compared)});
+ const mainPatterns=createMainPatternView({canvas:$('#projectionCanvas'),host:$('#multiPanel'),diagnosticsHost:$('#singlePanel'),backendLabel,onExportComparison:()=>fullResults(study.compared)});
  const recognition=createRecognitionPanel({root,features,items:recognitionItems,storage,storageKey:`muon-recognition:${datasetId}`,onChange:()=>{projection.recognition=recognition.state();drawProjection();renderOverview();},onHoverItem:item=>sceneView.emphasiseFeatures(item?.kind==='features'?[...item.featureIds]:[])});
  const layerFeatureIds=featureLayerGroups(features,featureLayerOptions).filter(group=>group.listed).flatMap(group=>group.featureIds);
  const featureLayers=createFeatureLayerPanel({root,features,featureLayers:featureLayerOptions,storage,storageKey:`muon-feature-layers:${datasetId}`,onVisibility:(id,visible)=>sceneView.setFeatureVisible(id,visible),onHoverFeatures:ids=>sceneView.emphasiseFeatures(ids)});projection.recognition=recognition.state();
@@ -77,10 +78,10 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  function overviewStations(){const input=inputs(),entry=workingBusy?null:results.get(workingKey)??null,source=study.working.from===null?null:study.candidate(study.working.from),{x,y,z,az,el}=input.station;
   return[{id:'working',name:source&&!study.modified?`工作点位（${source.name}）`:'工作点位',x,y,z,az,el,device:input.device,n:entry?.n,counts:entryCountsBottomFirst(entry),entry},...coverageExtras($('#overviewStations')?.value??'none')];}
  // Per-station projections side by side (#16): the overview's stations, redrawn while open when they, their results or the outline settings change.
- const tiles=createProjectionTiles({root,onOpenStation:id=>selectCandidate(id)});let tilesSignature='';
- function tilesState(stations){const r=recognition.state(),known=new Set(recognitionItems.map(i=>i.id));return{stations:stations.map(s=>({...s,color:s.color??'#ff4fb3'})),items:r.items.filter(i=>r.selected.has(i.id)&&known.has(i.id)),threshold:r.threshold,precision:projection.precision,exposureDays:study.configuration.response.exposureDays};}
+ let taskMode=null;const tiles=createProjectionTiles({root,onOpenStation:id=>selectCandidate(id),onToggleCompare:(id,on)=>{study.setCompared(id,on);persistSession();renderList();showComparison();refreshCandidates();renderOverview();}});let tilesSignature='';
+ function tilesState(stations){const r=recognition.state(),known=new Set(recognitionItems.map(i=>i.id));return{stations:stations.map(s=>({...s,color:s.color??'#ff4fb3',compared:study.compared.includes(s.id)})),items:r.items.filter(i=>r.selected.has(i.id)&&known.has(i.id)),threshold:r.threshold,precision:projection.precision,exposureDays:study.configuration.response.exposureDays};}
  function renderOverview(){if(!study||!$('#overviewTable'))return;const stations=overviewStations(),threshold=recognition.state().threshold;
-  if(tiles.isOpen){const state=tilesState(stations),signature=JSON.stringify([state.stations.map(s=>[s.id,s.name,s.entry?s.entry.totalCount:null]),state.items.map(i=>i.id),threshold,state.precision]);if(signature!==tilesSignature){tilesSignature=signature;tiles.update(state);}}
+  if(tiles.isOpen){const state=tilesState(stations),signature=JSON.stringify([state.stations.map(s=>[s.id,s.name,s.entry?s.entry.totalCount:null,s.compared]),state.items.map(i=>i.id),threshold,state.precision]);if(signature!==tilesSignature){tilesSignature=signature;tiles.update(state);}}
   if(!samples&&!sampling&&targetSamples&&!workingBusy&&results.has(workingKey))sampling=targetSamples({items:recognitionItems}).catch(error=>{console.error(error);return new Map();}).then(s=>{samples=s;overviewSignature='';renderOverview();});
   const signature=JSON.stringify([stations.map(s=>[s.id,s.name,s.x,s.y,s.z,s.az,s.el,s.n??0,s.entry?s.entry.totalCount:null]),threshold,multiOptions,!!samples]);if(signature===overviewSignature)return;overviewSignature=signature;
   const rows=overviewTable({items:recognitionItems,stations,samples:samples??new Map(),threshold,options:multiOptions}),pending=stations.filter(s=>!s.entry).length;
@@ -94,8 +95,16 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
    footnote:[...demoFootnote({release:datasetId,scenario:scenarioId??'—',exposureDays:study.configuration.response.exposureDays,detector:study.configuration.device.model,date:new Date()}),...(multi?['多视角覆盖与综合等级为规划参考，不是重建质量保证。']:[])]};}
  const demo=createDemoView({root,sceneView,storage,storageKey:`muon-demo-views:${datasetId}`,datasetId,describe:describeDemo});
  function bindOverview(){const select=$('#overviewStations'),stations=$('#coverageStations');select.value=stations.value;select.onchange=()=>{stations.value=select.value;stations.onchange();};
-  $('#overviewTiles').onclick=()=>{const state=tilesState(overviewStations());tilesSignature='';tiles.open(state);};
-  $('#overviewShow3d').onclick=()=>{$('#coverageMode').value='physical';$('#coverageMulti').value='class';stations.onchange();};}
+
+  $('#overviewShow3d').onclick=()=>{$('#coverageMode').value='physical';$('#coverageMulti').value='class';stations.onchange();};
+  // Task modes (ADR-032): 多站评估 shows the multi-station panel and the stations' multi-view coverage in 3D; leaving it
+  // restores the coverage settings from before. View state only.
+  let coverageBeforeMulti=null;
+  taskMode=createTaskMode({root,storage,storageKey:`muon-task-mode:${datasetId}`,onChange:mode=>{const coverage=$('#coverageMode'),multi=$('#coverageMulti');
+   if(mode==='multi'){coverageBeforeMulti={mode:coverage.value,multi:multi.value,stations:stations.value};if(stations.value==='none')stations.value=study.compared.length?'compared':'all';
+    select.value=stations.value;coverage.value='physical';multi.value='class';stations.onchange();tilesSignature='';tiles.open(tilesState(overviewStations()));}
+   else if(coverageBeforeMulti){coverage.value=coverageBeforeMulti.mode;multi.value=coverageBeforeMulti.multi;stations.value=select.value=coverageBeforeMulti.stations;stations.onchange();coverageBeforeMulti=null;}
+   requestAnimationFrame(resize);}});}
  // Named deployments (FR-P7): a subset of the candidates, chosen by ticking; several alternatives per study.
  function renderDeployments(){const select=$('#deploymentSelect');if(!select||!study)return;const active=study.activeDeployment,deployment=study.plan.deployments.find(d=>d.id===active)??null;
   select.replaceChildren(...(study.plan.deployments.length?study.plan.deployments.map(d=>new Option(d.name,d.id,false,d.id===active)):[new Option('（无组合）','',true,true)]));select.disabled=!deployment;
@@ -209,7 +218,7 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
   // Backend limitations are configuration context, shown in the 数据配置 menu (which already names the frozen scenario), not in the layer panel.
   if(!continuous){const note=root.createElement('p');note.className='hint';note.id='backendLimitations';note.textContent='此后端未提供：连续水位、结构显著度；模型范围外的材料未知。';($('#dataMenu')??$('#environmentSection')).append(note);}
  }
- return Object.freeze({start(){$('#specVersion').textContent=datasetVersion;configureCapabilities();if(capabilities.continuousWater){$('#upLevel').value=state.environment.upstream;$('#upOut').textContent='▽'+$('#upLevel').value+' m';}else $('#upOut').textContent='冻结工况';datasetStations=state.candidates;const loaded=openStudies({storage,release:datasetId,scenario:scenarioId,model:state.configuration.device.model,candidateIds,defaultStations:datasetStations,defaultSettings:serializeDeviceSettings(state.configuration)});studyId=loaded.active;applyPlan(loaded.plan,loaded.session);if(loaded.warning)console.warn(loaded.warning);renderStudies();bindStudies();bindDeployments();renderList();sync();showComparison();for(const link of [$('#workbenchLink'),$('#workbenchLinkDiagnostics')])if(link)link.href=workbenchHref;sceneView.build();featureLayers.apply();bindCoverage();bindOverview();$('#precisionContours').checked=projection.precision;$('#precisionContours').onchange=e=>{projection.precision=e.target.checked;try{storage.setItem(precisionKey,projection.precision?'1':'0');}catch{}renderOverview();drawProjection();};bind();bindPlacement();bindSlice();bindFovEdges();bindFovSolid();bindDeviceSettings();makeProjectionDraggable();controller.run();refreshCandidates();},constrainProjectionPanel,hoverFeature(id){sceneView.emphasiseFeatures(id?[id]:[]);projectionView.emphasiseItem(id?recognition.itemForFeature(id)?.id??null:null);},pickFeature(id){recognition.toggleFeature(id);},pickCoverage(ix,iy){projectionView.selectPixel(ix,iy);},
+ return Object.freeze({start(){$('#specVersion').textContent=datasetVersion;configureCapabilities();if(capabilities.continuousWater){$('#upLevel').value=state.environment.upstream;$('#upOut').textContent='▽'+$('#upLevel').value+' m';}else $('#upOut').textContent='冻结工况';datasetStations=state.candidates;const loaded=openStudies({storage,release:datasetId,scenario:scenarioId,model:state.configuration.device.model,candidateIds,defaultStations:datasetStations,defaultSettings:serializeDeviceSettings(state.configuration)});studyId=loaded.active;applyPlan(loaded.plan,loaded.session);if(loaded.warning)console.warn(loaded.warning);renderStudies();bindStudies();bindDeployments();renderList();sync();showComparison();for(const link of [$('#workbenchLink'),$('#workbenchLinkDiagnostics')])if(link)link.href=workbenchHref;sceneView.build();featureLayers.apply();bindCoverage();bindOverview();$('#precisionContours').checked=projection.precision;$('#precisionContours').onchange=e=>{projection.precision=e.target.checked;try{storage.setItem(precisionKey,projection.precision?'1':'0');}catch{}renderOverview();drawProjection();};bind();bindPlacement();bindSlice();bindFovEdges();bindFovSolid();bindDeviceSettings();makeProjectionDraggable();controller.run();refreshCandidates();taskMode.restore();},constrainProjectionPanel,hoverFeature(id){sceneView.emphasiseFeatures(id?[id]:[]);projectionView.emphasiseItem(id?recognition.itemForFeature(id)?.id??null:null);},pickFeature(id){recognition.toggleFeature(id);},pickCoverage(ix,iy){projectionView.selectPixel(ix,iy);},
   // A click on a cavity (gallery, room, shaft) places the station inside it, on its floor plus the mounting height;
   // elsewhere 0.5 m off the clicked surface. Cavity geometry comes from the calculation (station-placement.js).
   placeStation({point,normal,direction,featureId=null}){setPlacingButton(false);const cavity=featureId?placeInCavity({point,direction,featureId}):null,note=$('#placeNote');

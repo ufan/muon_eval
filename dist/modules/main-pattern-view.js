@@ -4,7 +4,7 @@ import { responsePattern } from './response-patterns.js';
 import { drawContributionPaths } from './contribution-view.js';
 import { comparePatternResults, createPatternComparisonExport, replayPatternComparison } from './pattern-comparison.js';
 
-export function createMainPatternView({ canvas, host, backendLabel = 'compiled', onExportComparison = () => {}, onExportResult = () => {} }) {
+export function createMainPatternView({ canvas, host, diagnosticsHost = host, backendLabel = 'compiled', onExportComparison = () => {}, onExportResult = () => {} }) {
   const wrapper = document.createElement('div'); wrapper.style.cssText = 'grid-column:2;grid-row:1;position:relative;min-width:0';
   canvas.before(wrapper); wrapper.append(canvas); canvas.style.width = '100%'; canvas.style.display = 'block';
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.id = 'mainPatternOverlay';
@@ -15,7 +15,8 @@ export function createMainPatternView({ canvas, host, backendLabel = 'compiled',
   // Comparison of candidates ticked "比较" in the candidate list (FR-P6); rows come from their cached results.
   const controls = document.createElement('details'); controls.id = 'mainPatternControls'; controls.className = 'target-layers sidebar-details';
   controls.innerHTML = '<summary>方案比较 <span id="mainComparisonCount">—</span></summary><div style="padding:6px;font-size:11px"><p class="hint">在候选部署点列表中勾选“比较”。</p><div id="mainComparisonSummary"></div><button id="mainExportComparison" type="button" disabled>导出比较 v1</button><label>重放比较<input id="mainImportComparison" type="file" accept=".json,application/json"></label><div id="mainReplaySummary"></div><p>后端身份见当前计算记录。</p></div>';
-  host.append(controls, diagnostics);
+  // 方案比较 goes with the multi-station panel; 专家诊断 overlays the working projection, so it stays with it (ADR-032).
+  host.append(controls); diagnosticsHost.append(diagnostics);
   // The current-result export button lives with the station metrics in the page (#exportResult).
   const $ = id => controls.querySelector(`#${id}`) ?? diagnostics.querySelector(`#${id}`) ?? document.getElementById(id); let current = null, lastMode = 'counts', lastObject, lastSettings;
   const selection = { kind: 'material', id: 'concrete', minimumPathM: .15 };
