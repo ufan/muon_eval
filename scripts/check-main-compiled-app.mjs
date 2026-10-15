@@ -197,6 +197,12 @@ try{
   await click('#demoSaved [data-demo-remove]');assert.equal(await page.locator('#demoSaved button').count(),0);
   await page.keyboard.press('Escape');assert.equal(await page.locator('.app').evaluate(e=>e.classList.contains('demo')),false);assert.ok(await page.locator('aside.left').isVisible());
   assert.ok(await page.locator('.station-labels .working-label').isHidden());await setInput('#overviewStations','none','change');await page.waitForTimeout(300);assert.deepEqual(await currentResult(),unchanged);}
+ // 瞄准此处 (ADR-032): right-click on the model, aim the working detector at that point; arrow keys nudge the pose.
+ {const box=await page.locator('#webgl canvas').boundingBox(),pose=async()=>[+await page.locator('#azNumber').inputValue(),+await page.locator('#elNumber').inputValue()],start=await pose();
+  await page.mouse.click(box.x+box.width*.45,box.y+box.height*.45,{button:'right'});await page.locator('.scene-menu button').first().click();await ready();
+  assert.notDeepEqual(await pose(),start);assert.match(await page.locator('#placeNote').innerText(),/已瞄准所点位置/);assert.ok(await page.locator('.scene-menu').isHidden());
+  const [az,el]=await pose();await page.locator('#webgl canvas').hover();await page.keyboard.press('Shift+ArrowUp');await page.keyboard.press('ArrowLeft');await ready();
+  assert.deepEqual(await pose(),[(az+359)%360,Math.min(90,el+5)]);}
  // Placing: one click on the model moves the working station there; Esc cancels.
  await click('#placeStation');assert.ok(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')));await page.keyboard.press('Escape');assert.equal(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')),false);
  const xyz=async()=>Promise.all(['#x','#y','#z'].map(id=>page.locator(id).inputValue())),start=await xyz();await click('#placeStation');

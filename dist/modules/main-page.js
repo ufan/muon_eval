@@ -11,6 +11,8 @@ import { createOverviewPanel } from './overview-panel-view.js';
 import { createProjectionTiles } from './projection-tiles-view.js';
 import { createDemoView } from './demo-view.js';
 import { createTaskMode } from './task-mode.js';
+import { aimAt as aimPose } from './detector-pose.js';
+import { shortcutFor } from './view-shortcuts.js';
 import { demoFootnote } from './demo-snapshot.js';
 import { openStudies, saveStudy, saveSession, createStudy, switchStudy, listStudies, deleteStudy } from './plan-store.js';
 import { selectionHref, APP_PAGES } from './application-selection.js';
@@ -94,6 +96,13 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
    legend:[...stations.map(s=>({color:s.color??'#ff4fb3',text:`${s.name}${s.entry?'':'（计算中）'}`})),...(coverage?[{text:coverage}]:[])],
    footnote:[...demoFootnote({release:datasetId,scenario:scenarioId??'—',exposureDays:study.configuration.response.exposureDays,detector:study.configuration.device.model,date:new Date()}),...(multi?['多视角覆盖与综合等级为规划参考，不是重建质量保证。']:[])]};}
  const demo=createDemoView({root,sceneView,storage,storageKey:`muon-demo-views:${datasetId}`,datasetId,describe:describeDemo});
+ // Pose changes from 瞄准此处 and the arrow-key shortcuts go through the plan like typed values.
+ function setPose(az,el){study.update('az',az);study.update('el',el);persistSession();sync();renderList();scheduleDetectorUpdate();}
+ // Shortcuts (ADR-032, view-shortcuts.js); off in demonstration mode, whose arrow keys step through the views.
+ function bindShortcuts(){let lastCoverage='geometric';window.addEventListener('keydown',event=>{if($('.app').classList.contains('demo'))return;const action=shortcutFor(event);if(!action)return;
+  if(action.toggle==='coverage'){const mode=$('#coverageMode');if(mode.value!=='off'){lastCoverage=mode.value;mode.value='off';}else mode.value=lastCoverage;mode.dispatchEvent(new Event('change',{bubbles:true}));}
+  else if(action.toggle){$(`[data-layer="${action.toggle}"]`).click();}
+  else{event.preventDefault();const {az,el}=inputs().station;setPose(action.nudge==='az'?(((az+action.by)%360)+360)%360:az,action.nudge==='el'?Math.min(90,Math.max(0,el+action.by)):el);}});}
  function bindOverview(){const select=$('#overviewStations'),stations=$('#coverageStations');select.value=stations.value;select.onchange=()=>{stations.value=select.value;stations.onchange();};
 
   $('#overviewShow3d').onclick=()=>{$('#coverageMode').value='physical';$('#coverageMulti').value='class';stations.onchange();};
@@ -218,13 +227,16 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
   // Backend limitations are configuration context, shown in the 数据配置 menu (which already names the frozen scenario), not in the layer panel.
   if(!continuous){const note=root.createElement('p');note.className='hint';note.id='backendLimitations';note.textContent='此后端未提供：连续水位、结构显著度；模型范围外的材料未知。';($('#dataMenu')??$('#environmentSection')).append(note);}
  }
- return Object.freeze({start(){$('#specVersion').textContent=datasetVersion;configureCapabilities();if(capabilities.continuousWater){$('#upLevel').value=state.environment.upstream;$('#upOut').textContent='▽'+$('#upLevel').value+' m';}else $('#upOut').textContent='冻结工况';datasetStations=state.candidates;const loaded=openStudies({storage,release:datasetId,scenario:scenarioId,model:state.configuration.device.model,candidateIds,defaultStations:datasetStations,defaultSettings:serializeDeviceSettings(state.configuration)});studyId=loaded.active;applyPlan(loaded.plan,loaded.session);if(loaded.warning)console.warn(loaded.warning);renderStudies();bindStudies();bindDeployments();renderList();sync();showComparison();for(const link of [$('#workbenchLink'),$('#workbenchLinkDiagnostics')])if(link)link.href=workbenchHref;sceneView.build();featureLayers.apply();bindCoverage();bindOverview();$('#precisionContours').checked=projection.precision;$('#precisionContours').onchange=e=>{projection.precision=e.target.checked;try{storage.setItem(precisionKey,projection.precision?'1':'0');}catch{}renderOverview();drawProjection();};bind();bindPlacement();bindSlice();bindFovEdges();bindFovSolid();bindDeviceSettings();makeProjectionDraggable();controller.run();refreshCandidates();taskMode.restore();},constrainProjectionPanel,hoverFeature(id){sceneView.emphasiseFeatures(id?[id]:[]);projectionView.emphasiseItem(id?recognition.itemForFeature(id)?.id??null:null);},pickFeature(id){recognition.toggleFeature(id);},pickCoverage(ix,iy){projectionView.selectPixel(ix,iy);},
+ return Object.freeze({start(){$('#specVersion').textContent=datasetVersion;configureCapabilities();if(capabilities.continuousWater){$('#upLevel').value=state.environment.upstream;$('#upOut').textContent='▽'+$('#upLevel').value+' m';}else $('#upOut').textContent='冻结工况';datasetStations=state.candidates;const loaded=openStudies({storage,release:datasetId,scenario:scenarioId,model:state.configuration.device.model,candidateIds,defaultStations:datasetStations,defaultSettings:serializeDeviceSettings(state.configuration)});studyId=loaded.active;applyPlan(loaded.plan,loaded.session);if(loaded.warning)console.warn(loaded.warning);renderStudies();bindStudies();bindDeployments();renderList();sync();showComparison();for(const link of [$('#workbenchLink'),$('#workbenchLinkDiagnostics')])if(link)link.href=workbenchHref;sceneView.build();featureLayers.apply();bindCoverage();bindOverview();$('#precisionContours').checked=projection.precision;$('#precisionContours').onchange=e=>{projection.precision=e.target.checked;try{storage.setItem(precisionKey,projection.precision?'1':'0');}catch{}renderOverview();drawProjection();};bind();bindPlacement();bindSlice();bindFovEdges();bindFovSolid();bindDeviceSettings();makeProjectionDraggable();controller.run();refreshCandidates();taskMode.restore();bindShortcuts();},constrainProjectionPanel,hoverFeature(id){sceneView.emphasiseFeatures(id?[id]:[]);projectionView.emphasiseItem(id?recognition.itemForFeature(id)?.id??null:null);},pickFeature(id){recognition.toggleFeature(id);},pickCoverage(ix,iy){projectionView.selectPixel(ix,iy);},
   // A click on a cavity (gallery, room, shaft) places the station inside it, on its floor plus the mounting height;
   // elsewhere 0.5 m off the clicked surface. Cavity geometry comes from the calculation (station-placement.js).
   placeStation({point,normal,direction,featureId=null}){setPlacingButton(false);const cavity=featureId?placeInCavity({point,direction,featureId}):null,note=$('#placeNote');
    const placed=(cavity?cavity.position:placementPoint(point,normal,direction)).map(v=>Math.round(v*100)/100);
    note.hidden=false;note.textContent=cavity?`已放入「${features.get(featureId).label.zh}」：底板 Z ${cavity.floorZ.toFixed(2)} m，离底板 ${(placed[2]-cavity.floorZ).toFixed(2)} m（空腔净高 ${(cavity.ceilingZ-cavity.floorZ).toFixed(2)} m）`:'已放在所点表面外 0.5 m（未点到空腔）';['x','y','z'].forEach((key,i)=>study.update(key,placed[i]));persistSession();sync();renderList();scheduleDetectorUpdate();},
   placeCancelled(){setPlacingButton(false);},
+  // 瞄准此处 (ADR-032): point the working detector at a model point picked in 3D.
+  aimAt(point){const {x,y,z}=inputs().station,pose=aimPose([x,y,z],point),note=$('#placeNote');if(!pose)return;setPose(pose.az,pose.el);
+   note.hidden=false;note.textContent=`已瞄准所点位置：方位 ${pose.az}° · 仰角 ${pose.el}°${pose.clamped?'（目标低于探测器，仰角限为 0°）':''}`;},
   // A station marker or its label in 3D opens that station as the working station (#15, FR-M4).
   pickStation(id){selectCandidate(id);},dispose(){queue.dispose();controller.dispose();mainPatterns.dispose?.();projectionView.dispose();sceneView.dispose();}});
 }

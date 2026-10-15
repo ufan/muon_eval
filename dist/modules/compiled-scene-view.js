@@ -24,7 +24,7 @@ function clear(group) {
   group.clear();
 }
 
-export function createCompiledSceneView({ runtime, waterLayers, features=null, featureLayers={}, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{}, onCoveragePick=()=>{}, onPlacePick=()=>{}, onPlaceCancel=()=>{}, onStationPick=()=>{} }) {
+export function createCompiledSceneView({ runtime, waterLayers, features=null, featureLayers={}, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{}, onCoveragePick=()=>{}, onPlacePick=()=>{}, onPlaceCancel=()=>{}, onStationPick=()=>{}, onAimPick=()=>{} }) {
   const $=selector=>root.querySelector(selector),container=$('#webgl');
   const geometryView=createCompiledGeometryView(runtime),detectorGroup=new THREE.Group(),axisGroup=new THREE.Group(),projectionGroup=new THREE.Group(),extraGroup=new THREE.Group();
   const scene=new THREE.Scene();scene.background=new THREE.Color(LOOK.background);scene.fog=new THREE.FogExp2(LOOK.background,LOOK.fogDensity);
@@ -215,7 +215,17 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     const cavity=hits.findIndex(h=>features?.get(featureOfComponent.get(h.object.name))?.category==='void'),hit=cavity>=0&&hits.slice(0,cavity).every(h=>h.object.material.transparent)?hits[cavity]:hits[0];if(!hit)return null;
     const normal=hit.face.normal.clone().transformDirection(hit.object.matrixWorld),model=v=>[v.x,-v.z,v.y],featureId=featureOfComponent.get(hit.object.name)??null;
     return{point:model(hit.point),normal:model(normal),direction:model(raycaster.ray.direction),featureId:features?.get(featureId)?.category==='void'?featureId:null};}
-  function cancelPlacing(event){if(event.key==='Escape'&&placing){setPlacing(false);onPlaceCancel();requestRender();}}
+  function cancelPlacing(event){if(event.key==='Escape'&&placing){setPlacing(false);onPlaceCancel();requestRender();}if(event.key==='Escape')closeSceneMenu();}
+  // Right-click menu (ADR-032): aim the working detector at the surface point under the pointer, or place it there.
+  const sceneMenu=document.createElement('div');sceneMenu.className='scene-menu';sceneMenu.setAttribute('role','menu');sceneMenu.hidden=true;container.after(sceneMenu);
+  function closeSceneMenu(){sceneMenu.hidden=true;sceneMenu.replaceChildren();}
+  function closeSceneMenuOutside(event){if(!sceneMenu.hidden&&!sceneMenu.contains(event.target))closeSceneMenu();}
+  window.addEventListener('pointerdown',closeSceneMenuOutside,true);
+  function openSceneMenu(event){event.preventDefault();if(placing)return;const surface=surfaceAt(event);closeSceneMenu();if(!surface)return;
+    const item=(text,title,action)=>Object.assign(document.createElement('button'),{type:'button',textContent:text,title,onclick:()=>{closeSceneMenu();action();}});
+    const aim=item('瞄准此处','把当前探测器的方位角和仰角设为指向这一点',()=>onAimPick(surface.point)),place=item('放到此处','把当前探测器放到这一点（点在空腔上时放入空腔）',()=>onPlacePick(surface));
+    aim.setAttribute('role','menuitem');place.setAttribute('role','menuitem');sceneMenu.append(aim,place);
+    const bounds=container.getBoundingClientRect();sceneMenu.style.left=`${event.clientX-bounds.left}px`;sceneMenu.style.top=`${event.clientY-bounds.top}px`;sceneMenu.hidden=false;aim.focus();}
   function hoverFeature(event){if(placing){const bounds=container.getBoundingClientRect();tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;tip.textContent='点击模型表面放置当前点位 · Esc 取消';tip.hidden=false;return;}
     if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;const station=markerAt(event);renderer.domElement.style.cursor=station?'pointer':'';
     if(station){const bounds=container.getBoundingClientRect();tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;tip.textContent=`${extraStations.find(s=>s.id===station).name} · 点击设为工作点位`;tip.hidden=false;return;}
@@ -224,7 +234,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     if(id){const feature=features.get(id);tip.textContent=`${feature.label.zh} · ${features.classes[feature.class].label.zh} · ${features.imagingRoles[feature.imagingRole]}`;tip.hidden=false;return;}
     const readout=coverageAt();if(!readout){tip.hidden=true;return;}tip.textContent=coverageText(readout);tip.hidden=false;});}
   function leaveFeature(){tip.hidden=true;if(hovered){hovered=null;onFeatureHover(null);}}
-  function pressFeature(event){pressed=[event.clientX,event.clientY];}
+  function pressFeature(event){pressed=event.button===0?[event.clientX,event.clientY]:null;}
   function releaseFeature(event){if(!pressed||Math.hypot(event.clientX-pressed[0],event.clientY-pressed[1])>4){pressed=null;return;}pressed=null;
     if(placing){const surface=surfaceAt(event);if(!surface)return;setPlacing(false);onPlacePick(surface);requestRender();return;}const station=markerAt(event);if(station){onStationPick(station);return;}const id=featureAt(event);if(id){onFeaturePick(id);return;}const readout=coverageAt();if(readout?.ix!==null&&readout?.ix!==undefined)onCoveragePick(readout.ix,readout.iy);}
   // Hovered ray: a lit tube per material interval, depth-tested, so it is solid where nothing hides it; a ghost copy drawn
@@ -267,7 +277,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
   function renderFrame(){frame=null;if(recording)return;const easing=stepCameraMove(),moving=controls.update();updateScale();scaleRay();renderer.render(scene,camera);updateLabels();if(moving||easing)requestRender();}
   let recording=false;
   const api={
-    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);controls.addEventListener('start',()=>{cameraMove=null;});requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
+    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);controls.addEventListener('start',()=>{cameraMove=null;});requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);renderer.domElement.addEventListener('contextmenu',openSceneMenu);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
     resize,setView,setLayer,setDamOpacity,drawDetector,setSlice,setSliceMask,subjectExtent,setFovEdges,setFovSolid,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
     // Demonstration mode (#17): labels, camera views as view state (model frame, z up) and a capture of the
     // current frame with every station's label position (CSS pixels within the image).
@@ -287,7 +297,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     viewRaySideOn,
     clearProjection(){clearRay();emphasiseFeatures([]);},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},
-    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);sliceMesh.geometry.dispose();sliceMaterial.alphaMap?.dispose();sliceMaterial.dispose();tip.remove();labels.remove();rayLabelLayer.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(axisGroup);clearRay();geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
+    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);sliceMesh.geometry.dispose();sliceMaterial.alphaMap?.dispose();sliceMaterial.dispose();tip.remove();labels.remove();rayLabelLayer.remove();sceneMenu.remove();window.removeEventListener('pointerdown',closeSceneMenuOutside,true);observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(axisGroup);clearRay();geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
   };
   // Every public call may change what is shown: request a frame after it.
   for(const [name,fn] of Object.entries(api))if(name!=='dispose')api[name]=(...args)=>{const value=fn(...args);requestRender();return value;};

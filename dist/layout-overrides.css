@@ -340,3 +340,8 @@
 #multiPanel .tile figcaption > b, #multiPanel .tile figcaption > button.link { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
 #multiPanel .tile figcaption small { display: none; }
 #multiPanel .tile .tile-stats { display: block; margin: 0 0 4px; color: var(--muted); font-size: 11px; }
+/* Right-click menu in the 3D view (瞄准此处 / 放到此处). */
+.scene-menu { position: absolute; z-index: 10; display: grid; min-width: 120px; padding: 4px; border: 1px solid #294553; border-radius: 7px; background: #0b1720f5; box-shadow: 0 10px 24px #000a; }
+.scene-menu button { margin: 0; padding: 6px 10px; border: 0; background: transparent; color: #e1edf1; font-size: 12px; text-align: left; }
+.scene-menu button:hover, .scene-menu button:focus-visible { background: #10534f; }
+.scene-menu[hidden] { display: none; }

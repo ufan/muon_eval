@@ -51,6 +51,7 @@ Open `http://127.0.0.1:8765/`. Any other static HTTP server also works once the 
 - 25×25 quick preview and 65×65 final projection.
 - Expected counts, transmission, material-contribution and response numeric layers.
 - Hovering a projection pixel shows its ray in 3D (material-colored tubes, solid where visible and ghosted where hidden, rings at surface crossings) and a depth profile in the readout; a click pins the pixel and "侧视射线" views its ray side-on.
+- Layout (ADR-032): deployment configuration in the left sidebar, the working station in the right sidebar; geometry layers (图层) and viewing aids (视锥 / 射线 / 覆盖 / 切面) float over the 3D view and fade when idle; 单站考察 / 多站评估 modes, the latter with the multi-station overview, per-station projection cards and the comparison. Right-click in 3D to aim the detector at a point (瞄准此处) or place it there; C / R / V toggle the viewing aids and the arrow keys nudge azimuth and elevation (Shift for 5°).
 - Station metrics, comparison, versioned plan export and import.
 - Headless batch runs of a plan from the command line (see below).
 - Docker/Nginx and static-hosting deployment.
