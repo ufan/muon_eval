@@ -17,7 +17,7 @@ export const compiledPointToScene = ([x,y,z]) => new THREE.Vector3(x,z,-y);
 // Display style of the main app (owner preference: the former legacy scene's look).
 // View-only: it replaces the GLB display colours and never touches the shared buffers.
 const LOOK = { fovEdge:0xffb8e0, background:0x071018, fogDensity:.00155, dam:0xaaa79c, steel:0x73808b, edge:0x3f5159, rock:0x6e756f,
-  upwater:0x176b9d, downwater:0x2584ad, gridMajor:0x35505d, gridMinor:0x1d3038 };
+  upwater:0x176b9d, downwater:0x2584ad };
 const lookMaterial = (color, options = {}) => new THREE.MeshStandardMaterial({ color, roughness:.78, metalness:.02, ...options });
 function clear(group) {
   group.traverse(object => { object.geometry?.dispose(); for (const material of Array.isArray(object.material) ? object.material : [object.material]) { material?.map?.dispose(); material?.dispose(); } });
@@ -26,9 +26,9 @@ function clear(group) {
 
 export function createCompiledSceneView({ runtime, waterLayers, features=null, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{}, onCoveragePick=()=>{}, onPlacePick=()=>{}, onPlaceCancel=()=>{}, onStationPick=()=>{} }) {
   const $=selector=>root.querySelector(selector),container=$('#webgl');
-  const geometryView=createCompiledGeometryView(runtime),detectorGroup=new THREE.Group(),projectionGroup=new THREE.Group(),extraGroup=new THREE.Group();
+  const geometryView=createCompiledGeometryView(runtime),detectorGroup=new THREE.Group(),axisGroup=new THREE.Group(),projectionGroup=new THREE.Group(),extraGroup=new THREE.Group();
   const scene=new THREE.Scene();scene.background=new THREE.Color(LOOK.background);scene.fog=new THREE.FogExp2(LOOK.background,LOOK.fogDensity);
-  scene.add(geometryView.group,detectorGroup,projectionGroup,extraGroup,new THREE.HemisphereLight(0xbfe3ff,0x17221b,2.4));
+  scene.add(geometryView.group,detectorGroup,axisGroup,projectionGroup,extraGroup,new THREE.HemisphereLight(0xbfe3ff,0x17221b,2.4));
   const light=new THREE.DirectionalLight(0xfff0d6,3.1);light.position.set(160,260,150);scene.add(light);
   const box=new THREE.Box3(),wholeBox=new THREE.Box3();geometryView.group.updateMatrixWorld(true);
   for(const component of runtime.components) {
@@ -46,9 +46,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   const coverage=createCoverageUniforms(),subjectCoverage={value:1},contextCoverage={value:0},featureCoverage={value:1},coverageMaterials=[];let coverageResult=null;
   applyLook();
   const subjectMeshes=runtime.components.filter(c=>materialLayer(c)==='dam').map(c=>geometryView.meshes.get(c.componentId)),edgeRay=new THREE.Raycaster();
-  // Ground grid at the base of the structure, sized from its footprint (former legacy view: 520 m, 20 m cells).
-  const footprint=box.getSize(new THREE.Vector3()),gridSize=Math.max(100,Math.ceil(2.25*Math.max(footprint.x,footprint.z)/20)*20);
-  const ground=new THREE.GridHelper(gridSize,gridSize/20,LOOK.gridMajor,LOOK.gridMinor);ground.position.set(box.getCenter(new THREE.Vector3()).x,box.min.y+.05,box.getCenter(new THREE.Vector3()).z);scene.add(ground);
+  // No ground grid (removed, owner 2026-10-15): it sat at the dam's lowest point, mostly buried in the terrain, and the scale bar gives the scale.
   const target=box.getCenter(new THREE.Vector3()),radius=Math.max(1,box.getSize(new THREE.Vector3()).length()/2);
   const camera=new THREE.PerspectiveCamera(40,1,.1,Math.max(2000,wholeBox.getSize(new THREE.Vector3()).length()*5));
   let renderer,controls,observer,currentStation=null,currentDevice=null;
@@ -68,14 +66,19 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     return{position:target.clone().add(compiledPointToScene(axes[mode]).normalize().multiplyScalar(distance)),target:target.clone()};}
   function setView(mode){if(!controls)return;const view=presetCamera(mode);camera.position.copy(view.position);controls.target.copy(view.target);controls.update();$('#viewSelect').value=mode;}
   function updateScale(){const height=Math.max(1,container.clientHeight),distance=camera.position.distanceTo(controls.target),mpp=2*distance*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/height;
-    const power=10**Math.floor(Math.log10(mpp*90)),length=power*([1,2,5,10].find(value=>value>=mpp*90/power)||10);$('#scaleBar').style.width=(length/mpp).toFixed(0)+'px';$('#scaleLabel').textContent=length.toPrecision(2)+' m';}
+    const power=10**Math.floor(Math.log10(mpp*90)),length=power*([1,2,5,10].find(value=>value>=mpp*90/power)||10);$('#scaleBar').style.width=(length/mpp).toFixed(0)+'px';$('#scaleLabel').textContent=length.toPrecision(2)+' m';
+    // Fog is a depth cue at the default view distance; zoomed further out it thins in proportion, so the subject does
+    // not fade into the background (a fixed density blacked out the view beyond about 1 km).
+    const preset=presetCamera('perspective'),reference=preset.position.distanceTo(preset.target);scene.fog.density=LOOK.fogDensity*Math.min(1,reference/Math.max(distance,1e-6));}
   function materialLayer(component){const material=component.metadata.material_id;
     if(featureOfComponent.has(component.componentId))return null;
     if(material==='concrete'||material==='steel')return'dam';if(material==='rock')return'terrain';
     if(material==='water')for(const [layer,ids] of Object.entries(waterLayers))if(component.sourceEntityIds.some(id=>ids.includes(id)))return layer;
     return null;
   }
-  function setLayer(name,visible){layerState.set(name,visible);if(name==='cone'){detectorGroup.visible=projectionGroup.visible=visible;fovGroup.visible=visible&&fovEdges;solidGroup.visible=visible&&fovSolid;return;}
+  function setLayer(name,visible){layerState.set(name,visible);// The detector body is always drawn; the cone layer is its pointing axis and field of view, the ray layer the projection pixel's ray.
+    if(name==='cone'){axisGroup.visible=visible;fovGroup.visible=visible&&fovEdges;solidGroup.visible=visible&&fovSolid;return;}
+    if(name==='ray'){projectionGroup.visible=visible;updateLabels();return;}
     for(const component of runtime.components)if(materialLayer(component)===name){const mesh=geometryView.meshes.get(component.componentId);mesh.visible=visible&&component.metadata.flags.display&&component.metadata.realization!=='virtual';}}
   function setDamOpacity(opacity){for(const component of runtime.components)if(materialLayer(component)==='dam'){const material=geometryView.meshes.get(component.componentId).material;material.transparent=opacity<1;material.opacity=opacity;material.depthWrite=opacity>.72;material.needsUpdate=true;}}
   let multiOptions={map:'views',errorLevel:.1,minViews:3,goodSpreadDeg:30,minSpreadDeg:10};
@@ -93,7 +96,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
   // width (WebGL ignores line widths), solid where visible and dashed where hidden. Each ends where it last leaves the
   // subject within reach, so it spans the probed stretch even from a station inside the subject, or at a fixed length when
   // it misses the subject.
-  const fovGroup=new THREE.Group(),solidGroup=new THREE.Group(),lineMaterials=new Set();scene.add(fovGroup,solidGroup);let fovEdges=true,fovSolid=false;
+  const fovGroup=new THREE.Group(),solidGroup=new THREE.Group(),lineMaterials=new Set();scene.add(fovGroup,solidGroup);let fovEdges=false,fovSolid=true;
   function fatLines(points,{color,width,opacity,dashed=false,depthTest=!dashed}){const geometry=new LineSegmentsGeometry().setPositions(points),material=new LineMaterial({color,linewidth:width,transparent:true,opacity,dashed,
       dashSize:radius*.025,gapSize:radius*.018,depthTest,depthWrite:false});if(container.clientWidth)material.resolution.set(container.clientWidth,container.clientHeight);lineMaterials.add(material);
     const line=new LineSegments2(geometry,material);if(dashed){line.computeLineDistances();line.renderOrder=5;}return line;}
@@ -121,10 +124,10 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
     const mesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.18,side:THREE.DoubleSide,depthTest:false,depthWrite:false}));mesh.renderOrder=4;
     solidGroup.add(mesh,fatLines(outline,{color,width:1.5,opacity:.6,depthTest:false}));}
-  function drawFovEdges(){for(const child of [...fovGroup.children,...solidGroup.children]){lineMaterials.delete(child.material);}clear(fovGroup);clear(solidGroup);const shown=layerState.get('cone')??true;fovGroup.visible=fovEdges&&shown;solidGroup.visible=fovSolid&&shown;
+  function drawFovEdges(){for(const child of [...fovGroup.children,...solidGroup.children]){lineMaterials.delete(child.material);}clear(fovGroup);clear(solidGroup);const shown=layerState.get('cone')??false;fovGroup.visible=fovEdges&&shown;solidGroup.visible=fovSolid&&shown;
     if(currentStation&&currentDevice&&fovSolid){addFovSolid(currentStation,currentDevice,0xff65bd);for(const s of extraStations)addFovSolid(s,s.device,s.color);}
     if(!currentStation||!currentDevice)return;addFovEdges(currentStation,currentDevice,LOOK.fovEdge);for(const s of extraStations)addFovEdges(s,s.device,s.color,{width:2,back:false});}
-  function setFovEdges(on){fovEdges=Boolean(on);fovGroup.visible=fovEdges&&(layerState.get('cone')??true);}
+  function setFovEdges(on){fovEdges=Boolean(on);fovGroup.visible=fovEdges&&(layerState.get('cone')??false);}
   function setFovSolid(on){fovSolid=Boolean(on);drawFovEdges();}
   // Physical maps of all shown stations (15d) in one float texture: slot 0 the working station, slots 1–8 the others;
   // R = counts, G = counts per steradian, bottom row first. A slot without a result yet has 0 bins (pending).
@@ -171,11 +174,11 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
       coverage.covExtraMax.value[i].set(s.device.maxSlopeX,s.device.maxSlopeY);coverage.covExtraColor.value[i].set(s.color);setSlot(i+1,{origin:coverage.covExtraOrigin.value[i],forward:coverage.covExtraForward.value[i],right:coverage.covExtraRight.value[i],up:coverage.covExtraUp.value[i],device:s.device,color:coverage.covExtraColor.value[i]});
       const marker=new THREE.Mesh(new THREE.OctahedronGeometry(radius*.025),new THREE.MeshBasicMaterial({color:s.color,depthTest:false,transparent:true,opacity:.9}));marker.position.copy(origin);marker.renderOrder=5;extraGroup.add(marker);});buildAtlas();updateVariant();drawFovEdges();updateLabels();requestRender();}
   function updateVariant(){setCoverageVariant(coverageMaterials,coverage.covMode.value===2&&coverage.covExtraCount.value>0);}
-  function drawDetector(station,device){currentStation={...station};currentDevice={...device};setCoveragePose(station,device);clear(detectorGroup);clearRay();
+  function drawDetector(station,device){currentStation={...station};currentDevice={...device};setCoveragePose(station,device);clear(detectorGroup);clear(axisGroup);clearRay();
     const origin=compiledPointToScene([station.x,station.y,station.z]),basis=detectorBasis(station.az,station.el),forward=compiledPointToScene(basis.forward).normalize(),right=compiledPointToScene(basis.right),up=compiledPointToScene(basis.up);
     const orientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),forward);
     for(let i=0;i<device.layers;i++){const mesh=new THREE.Mesh(new THREE.PlaneGeometry(device.width,device.height),new THREE.MeshBasicMaterial({color:0xff65bd,side:THREE.DoubleSide}));mesh.position.copy(origin).addScaledVector(forward,(i-(device.layers-1)/2)*device.spacing);mesh.quaternion.copy(orientation);detectorGroup.add(mesh);}
-    const length=radius*.45;detectorGroup.add(new THREE.ArrowHelper(forward,origin,length,0xff65bd));drawFovEdges();
+    const length=radius*.45;axisGroup.add(new THREE.ArrowHelper(forward,origin,length,0xff65bd));drawFovEdges();
   }
   // With coverage on, features the station sees (ADR-029 "in view") are drawn at full strength and the others faded.
   function showFeature(id){const visible=featureVisible.get(id)||emphasised.has(id),faded=coverage.covMode.value>0&&featuresSeen!==null&&!featuresSeen.has(id)&&!emphasised.has(id);
@@ -281,9 +284,9 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, r
       renderer.render(scene,camera);ctx.drawImage(renderer.domElement,0,0,width,height);return frameLabels();},
     showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayRay(pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
     viewRaySideOn,
-    clearProjection(){clearRay();emphasiseFeatures([]);},showFlux(){},drawFluxCloud(){},
+    clearProjection(){clearRay();emphasiseFeatures([]);},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},
-    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);sliceMesh.geometry.dispose();sliceMaterial.alphaMap?.dispose();sliceMaterial.dispose();tip.remove();labels.remove();rayLabelLayer.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clearRay();geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
+    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);sliceMesh.geometry.dispose();sliceMaterial.alphaMap?.dispose();sliceMaterial.dispose();tip.remove();labels.remove();rayLabelLayer.remove();observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(axisGroup);clearRay();geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
   };
   // Every public call may change what is shown: request a frame after it.
   for(const [name,fn] of Object.entries(api))if(name!=='dispose')api[name]=(...args)=>{const value=fn(...args);requestRender();return value;};

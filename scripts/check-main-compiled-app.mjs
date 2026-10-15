@@ -47,7 +47,7 @@ try{
  let result=await currentResult();assert.equal(result.backend,'compiled-triangle-bvh@0.1.0');assert.equal(result.identity.release_id,release);assert.equal(result.scenarioId,'low');assert.equal(result.frame,'model_frame');assert.deepEqual(result.config.origin,[12.5,122,57]);
  const initial=structuredClone(result);
  // Features not yet migrated from the retired legacy backend stay visible but gated.
- for(const selector of ['#upLevel','[data-projection="significance"]','[data-layer="flux"]'])assert.ok(await page.locator(selector).isDisabled(),selector);
+ for(const selector of ['#upLevel','[data-projection="significance"]'])assert.ok(await page.locator(selector).isDisabled(),selector);
  await setInput('#upLevel','299');await click('[data-projection="significance"]');
  // Recognition items come from the release's display profile, all off by default (FR-M12); outlines never change results.
  assert.equal(await page.locator('[data-recognition]').count(),4);assert.equal(await page.locator('[data-recognition]:checked').count(),0);assert.equal(await page.locator('#projectionOutlines path[data-item]').count(),0);
@@ -122,9 +122,12 @@ try{
  const before=await currentResult();await page.locator('#coverageMode').selectOption('geometric');assert.equal(await page.locator('.cov-swatch').count(),0);
  await page.locator('#coverageStations').selectOption('compared');assert.equal(await page.locator('#candidateList .cov-swatch').count(),1);assert.ok(await page.locator('#coverageCountLegend').isVisible());
  await page.locator('#coverageStations').selectOption('all');assert.equal(await page.locator('#candidateList .cov-swatch').count(),count-1);
- assert.ok(await page.locator('#fovEdges').isChecked());await page.locator('#fovEdges').uncheck();
- await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovEdges').check();
- assert.equal(await page.locator('#fovSolid').isChecked(),false);await page.locator('#fovSolid').check();await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovSolid').uncheck();
+ // Defaults (owner 2026-10-15): cone layer off with edges off and solid frustum on; the projection ray layer on.
+ assert.equal(await page.locator('[data-layer="cone"]').isChecked(),false);assert.ok(await page.locator('[data-layer="ray"]').isChecked());
+ assert.equal(await page.locator('#fovEdges').isChecked(),false);await page.locator('#fovEdges').check();
+ await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovEdges').uncheck();
+ assert.ok(await page.locator('#fovSolid').isChecked());await page.locator('#fovSolid').uncheck();await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovSolid').check();
+ for(const layer of ['cone','ray']){const box=page.locator(`[data-layer="${layer}"]`),was=await box.isChecked();await box.setChecked(!was);await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before,layer);await box.setChecked(was);}
  // Physical multi-station maps (15d): 多视角覆盖 by default, legend per map, thresholds only for the class map; views never change results.
  await page.locator('#coverageMode').selectOption('physical');assert.ok(await page.locator('#multiControls').isVisible());assert.equal(await page.locator('#coverageMulti').inputValue(),'views');
  assert.ok(await page.locator('#coverageCountLegend').isHidden());assert.match(await page.locator('#multiLegend').innerText(),/可用视角数/);assert.ok(await page.locator('#classThresholds').isHidden());

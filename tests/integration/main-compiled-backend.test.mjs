@@ -45,7 +45,7 @@ test('main backend binds all published frozen scenarios to the existing exact as
   assert.deepEqual(stateFromPlan(plan).stations.map(s=>[s.x,s.y,s.z]),state.candidates.map(s=>[s.x,s.y,s.z]));
   const changed=state.snapshot();changed.environment.water_up_level+=1;assert.throws(()=>backend.assessment.createSession(changed),/frozen/);
   changed.environment={...state.environment,upstream:295};assert.throws(()=>backend.assessment.createSession(changed),/frozen/);
-  assert.equal(session.cloud(),null);assert.equal(session.quickMetrics(),null);
+  assert.equal(session.quickMetrics(),null);
  }
 });
 

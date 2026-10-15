@@ -12,7 +12,7 @@ export function createLocalAssessmentPort(assessment, { scheduler = { set: (fn, 
     open(input) {
       const session = assessment.createSession(input);
       return Object.freeze({
-        cloud: () => session.cloud?.() ?? null, quickMetrics: () => session.quickMetrics?.() ?? null,
+        quickMetrics: () => session.quickMetrics?.() ?? null,
         ensureTargetSignificance: (data, id) => session.ensureTargetSignificance?.(data, id),
         evaluate(quality, { signal, onProgress = () => {} } = {}) {
           if (!['preview', 'final'].includes(quality)) throw new Error(`Unknown assessment quality ${quality}`);
@@ -57,7 +57,7 @@ export function createAssessmentController({ assessment, port, readInputs, onSta
     try {
       input = structuredClone(readInputs()); session = port.open(input); onStart(input);
       if (!current()) return;
-      onQuick({ cloud: session.cloud(), metrics: session.quickMetrics() }, input);
+      onQuick({ metrics: session.quickMetrics() }, input);
       if (!current()) return;
     } catch (error) { invalidate(); onError(error); return; }
     const opened = session;

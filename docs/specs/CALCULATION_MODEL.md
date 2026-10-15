@@ -34,7 +34,7 @@ transmission, solid angle, area, exposure and detection efficiency
         ↓
 expected counts per direction
         ↓
-projections, structure outlines, significance, flux cloud and side-panel metrics
+projections, structure outlines, significance, coverage highlight and side-panel metrics
 ```
 
 The calculation entry is `compiled-main-assessment.js` over `compiled-assessment.js`, which takes station, device, response and environment snapshots and the compiled runtime. Direction arithmetic is in `detector-pose.js` and rays come from the compiled runtime. `dist/app.js` only assembles dependencies. The legacy DDA backend was retired (ADR-028); §5, §6, §12 and §13 record what it did.
@@ -434,7 +434,7 @@ This combination assumes statistically independent pixels, whereas angular smoot
 
 ## 13. Legacy 3D flux cloud
 
-Retired with the legacy backend (ADR-028). Kept as the description of migration target MT-4; the physical coverage highlight (ADR-026) is planned to serve the same purpose.
+Retired with the legacy backend (ADR-028); its remaining UI controls were removed on 2026-10-15 (owner). Kept as the description of migration target MT-4; the physical coverage highlight (ADR-026) serves the same purpose.
 
 The flux cloud uses 17×17 regular local slope directions, sparser than the final projection. It has two display quantities:
 

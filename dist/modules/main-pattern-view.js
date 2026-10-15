@@ -10,13 +10,14 @@ export function createMainPatternView({ canvas, host, backendLabel = 'compiled',
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.id = 'mainPatternOverlay';
   svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:hidden'; wrapper.append(svg);
   // Expert diagnostics (FR-M14, ADR-030): numeric contour layers, off by default.
-  const diagnostics = document.createElement('details'); diagnostics.id = 'expertDiagnostics'; diagnostics.className = 'target-layers';
+  const diagnostics = document.createElement('details'); diagnostics.id = 'expertDiagnostics'; diagnostics.className = 'target-layers sidebar-details';
   diagnostics.innerHTML = '<summary>专家诊断 <span>默认关闭</span></summary><div style="padding:6px;font-size:11px"><label><input id="mainMaterialContours" type="checkbox">材料贡献（自适应检查，不可跨图比较）</label><label><input id="mainResponseContours" type="checkbox">原始透射率等值线 .01/.1/.5/.9</label><p id="mainPatternLegend"></p><p>有限模型参考线与采样包络仅在<a id="workbenchLinkDiagnostics" href="./geometry-preview.html">数据集检查</a>中提供，不授予真实物理界面资格。接受度/开天通量影响计数，采样加密不等于物理分辨率。无安全、可达性或实测标定结论。</p></div>';
   // Comparison of candidates ticked "比较" in the candidate list (FR-P6); rows come from their cached results.
-  const controls = document.createElement('details'); controls.id = 'mainPatternControls'; controls.className = 'target-layers';
-  controls.innerHTML = '<summary>方案比较 <span id="mainComparisonCount">—</span></summary><div style="padding:6px;font-size:11px"><p class="hint">在候选部署点列表中勾选“比较”。</p><div id="mainComparisonSummary"></div><button id="mainExportComparison" type="button" disabled>导出比较 v1</button><button id="exportResult" type="button" disabled>导出当前结果</button><label>重放比较<input id="mainImportComparison" type="file" accept=".json,application/json"></label><div id="mainReplaySummary"></div><p>后端身份见当前计算记录。</p></div>';
+  const controls = document.createElement('details'); controls.id = 'mainPatternControls'; controls.className = 'target-layers sidebar-details';
+  controls.innerHTML = '<summary>方案比较 <span id="mainComparisonCount">—</span></summary><div style="padding:6px;font-size:11px"><p class="hint">在候选部署点列表中勾选“比较”。</p><div id="mainComparisonSummary"></div><button id="mainExportComparison" type="button" disabled>导出比较 v1</button><label>重放比较<input id="mainImportComparison" type="file" accept=".json,application/json"></label><div id="mainReplaySummary"></div><p>后端身份见当前计算记录。</p></div>';
   host.append(controls, diagnostics);
-  const $ = id => controls.querySelector(`#${id}`) ?? diagnostics.querySelector(`#${id}`); let current = null, lastMode = 'counts', lastObject, lastSettings;
+  // The current-result export button lives with the station metrics in the page (#exportResult).
+  const $ = id => controls.querySelector(`#${id}`) ?? diagnostics.querySelector(`#${id}`) ?? document.getElementById(id); let current = null, lastMode = 'counts', lastObject, lastSettings;
   const selection = { kind: 'material', id: 'concrete', minimumPathM: .15 };
   const indicatorText = (m, fields) => m ? `混凝土覆盖 ${(100 * m.targetFieldCoverage).toFixed(1)}%采样格 · 计数支持 ${m.targetExpectedCount.toPrecision(4)} · ΔT ${m.transmissionContrast?.toPrecision(3) ?? '未定义'} · 方向质心间距 ${m.targetBackgroundAngularSeparationDeg?.toPrecision(3) ?? '未定义'}° · 参数差异 ${fields.join(', ') || '无'}` : '指标不可用';
   // rows: [{ label, state: 'ready' | 'running' | 'queued' | 'failed' | 'pending' }]; comparison from compareEntries over the ready ones.
