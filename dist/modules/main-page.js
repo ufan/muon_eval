@@ -163,7 +163,7 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
     dominant:'每点取计数/sr 最高的点位颜色，亮度为该点位的计数/sr（颜色不混合）',total:`各点位计数/sr 之和（总统计量的参考指标，不是一次测量）：暗→橙→白，10³–3×10⁷ /sr · ${grey}`}[value.map];};
   const apply=()=>{const value={mode:mode.value,core:core.checked,context:context.checked,stations:stations.value,features:featureTint.checked,
     multi:{map:multi.value,errorLevel:+error.value,minViews:clampInput(views,2,9,3),goodSpreadDeg:clampInput(good,1,179,30),minSpreadDeg:clampInput(minimum,0,179,10)}};
-   $('#coverageOptions').hidden=value.mode==='off';$('#classThresholds').hidden=value.multi.map!=='class';$('#multiLegend').innerHTML=legend(value.multi);
+   $('#coverageOptions').hidden=value.mode==='off';$('#coverageMode').dispatchEvent(new Event('coverage-applied'));$('#classThresholds').hidden=value.multi.map!=='class';$('#multiLegend').innerHTML=legend(value.multi);
    sceneView.setCoverage(value);coverageStationsMode=value.mode==='off'?'none':value.stations;coverageSignature='';multiOptions={errorLevel:value.multi.errorLevel,minViews:value.multi.minViews,goodSpreadDeg:value.multi.goodSpreadDeg,minSpreadDeg:value.multi.minSpreadDeg};if($('#overviewStations'))$('#overviewStations').value=value.stations;renderList();try{storage.setItem(key,JSON.stringify(value));}catch{}};
   for(const input of [mode,core,context,stations,multi,error,views,good,minimum,featureTint])input.onchange=apply;apply();}
  // Placing the working station on the model (14d): one click on a visible surface, 0.5 m off it on the viewer's side.

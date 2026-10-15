@@ -5,6 +5,7 @@ import { createAssessmentController, createLocalAssessmentPort } from './modules
 import { createCompiledSceneView } from './modules/compiled-scene-view.js';
 import { createProjectionCanvasView } from './modules/projection-canvas-view.js';
 import { createApplicationSelectionView } from './modules/application-selection-view.js';
+import { createViewportTools } from './modules/viewport-tools.js';
 import { createMainPage } from './modules/main-page.js';
 import { createDeploymentState } from './modules/deployment-state.js';
 
@@ -22,5 +23,6 @@ async function main(){
    return {...controller,clearCaches:()=>backend.assessment.clearCaches()};
   }});
  page.start();
+ createViewportTools();
 }
 main().catch(error=>{console.error(error);const loading=document.querySelector('#loading');loading.textContent='应用配置或数据集加载失败：'+error.message;loading.classList.add('error');});

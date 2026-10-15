@@ -295,3 +295,25 @@
 .right > details.sidebar-details input[type="file"] { min-width: 0; max-width: 100%; font-size: 11px; }
 .station-actions { display: flex; gap: 8px; margin-top: 10px; }
 .station-actions button { flex: 1; padding: 6px 10px; font-size: 12px; }
+/* Floating viewport controls (ADR-032): 图层 popover top-left, display chip bar top-centre; they fade while the
+   pointer is away from the 3D view (viewport-tools.js) and are hidden in demonstration mode. */
+.vt-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 7; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: calc(100% - 28px); }
+.vt-group { position: relative; display: flex; }
+.vt-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; margin: 0; padding: 0 10px; border: 1px solid #31505e; border-radius: 7px; background: #0b1720e6; color: #c4d5dc; font-size: 12px; white-space: nowrap; cursor: pointer; }
+.vt-chip input { margin: 0; }
+.vt-chip:hover, .vt-more:hover { border-color: #4b7384; color: #fff; }
+.vt-chip:has(input:checked), .vt-chip.active, .vt-chip[aria-expanded="true"] { border-color: var(--cyan); color: #fff; }
+.vt-chip.vt-split { border-radius: 7px 0 0 7px; }
+.vt-more { height: 28px; width: 22px; padding: 0; border: 1px solid #31505e; border-left: 0; border-radius: 0 7px 7px 0; background: #0b1720e6; color: #9fb6c0; font-size: 10px; cursor: pointer; }
+.vt-more[aria-expanded="true"] { border-color: var(--cyan); color: #fff; }
+.vt-popover { position: absolute; top: calc(100% + 6px); left: 0; z-index: 9; width: min(280px, calc(100vw - 32px)); max-height: min(70vh, 540px); overflow: auto; padding: 8px 12px; background: #0b1720f5; border: 1px solid #294553; border-radius: 9px; box-shadow: 0 12px 28px #000a; font-size: 12px; text-align: left; }
+.vt-popover.vt-wide { width: min(330px, calc(100vw - 32px)); }
+.vt-bar .vt-popover { left: 50%; transform: translateX(-50%); }
+.vt-popover label { margin: 6px 0; }
+.vt-popover .hint { font-size: 11px; color: #8ea5b2; line-height: 1.5; margin: 6px 0 2px; }
+.vt-popover .coverage-options { margin-left: 0; }
+#layersTool { order: -1; }
+#viewport .vt-bar, #viewport #layersTool { transition: opacity .35s ease; }
+#viewport.tools-idle .vt-bar, #viewport.tools-idle #layersTool { opacity: .22; }
+@media (prefers-reduced-motion: reduce) { #viewport .vt-bar, #viewport #layersTool { transition: none; } }
+.app.demo .vt-bar, .app.demo #layersTool { display: none; }

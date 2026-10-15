@@ -35,6 +35,8 @@ try{
  const openCandidates=async()=>{if(await page.locator('#candidateSection').evaluate(e=>e.classList.contains('collapsed')))await click('#candidateSection .section-toggle');};
  // Dataset controls sit in the header "数据配置" menu; open it before choosing (selectOption needs a visible select).
  const selectData=async(selector,value)=>{if(await page.locator('#dataMenu').isHidden())await click('#dataMenuButton');await page.locator(selector).selectOption(value);};
+ // Layer and display controls live in popovers over the 3D view (ADR-032): open the one holding a control before using it.
+ const reveal=async selector=>{await page.locator(selector).evaluate(element=>{const popover=element.closest('.vt-popover');if(popover?.hidden)document.querySelector(`[aria-controls="${popover.id}"]`).click();});return page.locator(selector);};
  async function loadSelected(){const navigation=page.waitForEvent('load');await click('#loadSelection');await navigation;await ready();}
  await page.goto(base);await ready();
  // An idle scene draws nothing; a view change draws again.
@@ -68,8 +70,8 @@ try{
  assert.equal(await page.locator('[data-feature="elevator_shaft"]').isChecked(),false);assert.ok(await page.locator('[data-feature="gallery_upper"]').isChecked());
  for(const selector of ['[data-layer="dam"]','[data-layer="terrain"]','[data-layer="upwater"]','[data-layer="downwater"]'])await page.locator(selector).evaluate(element=>{element.checked=false;element.dispatchEvent(new Event('change',{bubbles:true}));});
  // Coverage highlight (FR-M10): off by default; a view option only, so the result below is unchanged.
- assert.equal(await page.locator('#coverageMode').inputValue(),'off');assert.ok(await page.locator('#coverageOptions').isHidden());
- for(const mode of ['geometric','physical'])await page.locator('#coverageMode').selectOption(mode);await page.locator('#coverageContext').check();
+ assert.equal(await (await reveal('#coverageMode')).inputValue(),'off');assert.ok(await page.locator('#coverageOptions').isHidden());
+ for(const mode of ['geometric','physical'])await (await reveal('#coverageMode')).selectOption(mode);await (await reveal('#coverageContext')).check();
  for(const mode of ['front','cross','top','perspective'])await setInput('#viewSelect',mode,'change');
  result=await currentResult();assert.deepEqual(result,initial);
  for(const selector of ['[data-layer="dam"]','[data-layer="terrain"]','[data-layer="upwater"]','[data-layer="downwater"]'])await page.locator(selector).evaluate(element=>{element.checked=true;element.dispatchEvent(new Event('change',{bubbles:true}));});
@@ -121,30 +123,30 @@ try{
  assert.deepEqual(await page.locator('#candidateList [data-compare]').evaluateAll(inputs=>inputs.map(i=>i.checked)).then(v=>v.slice(0,3)),[true,true,false]);
  accept();await click('#deleteDeployment');assert.equal(await page.locator('#deploymentSelect option').count(),1);assert.equal(await page.locator('#deploymentSelect').inputValue(),'deployment-1');
  // Sketching (14d): other candidates in the coverage view, each with its colour; views never change results.
- const before=await currentResult();await page.locator('#coverageMode').selectOption('geometric');assert.equal(await page.locator('.cov-swatch').count(),0);
- await page.locator('#coverageStations').selectOption('compared');assert.equal(await page.locator('#candidateList .cov-swatch').count(),1);assert.ok(await page.locator('#coverageCountLegend').isVisible());
- await page.locator('#coverageStations').selectOption('all');assert.equal(await page.locator('#candidateList .cov-swatch').count(),count-1);
+ const before=await currentResult();await (await reveal('#coverageMode')).selectOption('geometric');assert.equal(await page.locator('.cov-swatch').count(),0);
+ await (await reveal('#coverageStations')).selectOption('compared');assert.equal(await page.locator('#candidateList .cov-swatch').count(),1);assert.ok(await (await reveal('#coverageCountLegend')).isVisible());
+ await (await reveal('#coverageStations')).selectOption('all');assert.equal(await page.locator('#candidateList .cov-swatch').count(),count-1);
  // Defaults (owner 2026-10-15): cone layer off with edges off and solid frustum on; the projection ray layer on.
  assert.equal(await page.locator('[data-layer="cone"]').isChecked(),false);assert.ok(await page.locator('[data-layer="ray"]').isChecked());
- assert.equal(await page.locator('#fovEdges').isChecked(),false);await page.locator('#fovEdges').check();
- await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovEdges').uncheck();
- assert.ok(await page.locator('#fovSolid').isChecked());await page.locator('#fovSolid').uncheck();await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovSolid').check();
+ assert.equal(await (await reveal('#fovEdges')).isChecked(),false);await (await reveal('#fovEdges')).check();
+ await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await (await reveal('#fovEdges')).uncheck();
+ assert.ok(await (await reveal('#fovSolid')).isChecked());await (await reveal('#fovSolid')).uncheck();await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await (await reveal('#fovSolid')).check();
  for(const layer of ['cone','ray']){const box=page.locator(`[data-layer="${layer}"]`),was=await box.isChecked();await box.setChecked(!was);await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before,layer);await box.setChecked(was);}
  // Physical multi-station maps (15d): 多视角覆盖 by default, legend per map, thresholds only for the class map; views never change results.
- await page.locator('#coverageMode').selectOption('physical');assert.ok(await page.locator('#multiControls').isVisible());assert.equal(await page.locator('#coverageMulti').inputValue(),'views');
- assert.ok(await page.locator('#coverageCountLegend').isHidden());assert.match(await page.locator('#multiLegend').innerText(),/可用视角数/);assert.ok(await page.locator('#classThresholds').isHidden());
- for(const map of ['spread','class','dominant','total','views'])await page.locator('#coverageMulti').selectOption(map);
- await page.locator('#coverageMulti').selectOption('class');assert.ok(await page.locator('#classThresholds').isVisible());await page.locator('#classViews').fill('4');await page.locator('#classViews').dispatchEvent('change');assert.match(await page.locator('#multiLegend').innerText(),/≥4 视角/);
- await page.locator('#classViews').fill('3');await page.locator('#classViews').dispatchEvent('change');await page.locator('#coverageMulti').selectOption('views');
+ await (await reveal('#coverageMode')).selectOption('physical');assert.ok(await page.locator('#multiControls').isVisible());assert.equal(await (await reveal('#coverageMulti')).inputValue(),'views');
+ assert.ok(await (await reveal('#coverageCountLegend')).isHidden());assert.match(await page.locator('#multiLegend').innerText(),/可用视角数/);assert.ok(await page.locator('#classThresholds').isHidden());
+ for(const map of ['spread','class','dominant','total','views'])await (await reveal('#coverageMulti')).selectOption(map);
+ await (await reveal('#coverageMulti')).selectOption('class');assert.ok(await page.locator('#classThresholds').isVisible());await (await reveal('#classViews')).fill('4');await (await reveal('#classViews')).dispatchEvent('change');assert.match(await page.locator('#multiLegend').innerText(),/≥4 视角/);
+ await (await reveal('#classViews')).fill('3');await (await reveal('#classViews')).dispatchEvent('change');await (await reveal('#coverageMulti')).selectOption('views');
  // Slice plane and feature tint (15e): the mask comes from the calculation geometry; views never change results.
- await page.locator('#coverageFeatures').uncheck();await page.locator('#coverageFeatures').check();
+ await (await reveal('#coverageFeatures')).uncheck();await (await reveal('#coverageFeatures')).check();
  assert.equal(await page.locator('#sliceOn').isChecked(),false);await page.locator('#sliceOn').check();assert.match(await page.locator('#sliceOut').innerText(),/^Z = -?\d+\.\d m$/);
  const sliceDone=()=>page.waitForFunction(()=>document.querySelector('#sliceHint').textContent.startsWith('切面只显示'),null,{timeout:30000});
- await page.locator('#sliceAxis').selectOption('y');assert.match(await page.locator('#sliceOut').innerText(),/^Y = /);
+ await (await reveal('#sliceAxis')).selectOption('y');assert.match(await page.locator('#sliceOut').innerText(),/^Y = /);
  await setInput('#slicePos','300','input');await sliceDone();await page.locator('#sliceOn').uncheck();
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
  // Multi-station overview (#15): the same station set as 其他点位, one entry per recognition item; a station name opens it.
- await page.locator('#overviewStations').selectOption('all');assert.equal(await page.locator('#coverageStations').inputValue(),'all');
+ await page.locator('#overviewStations').selectOption('all');assert.equal(await (await reveal('#coverageStations')).inputValue(),'all');
  await page.waitForFunction(()=>/^\d+ 个点位$/.test(document.querySelector('#overviewStatus').textContent),null,{timeout:60000});
  assert.equal(await page.locator('.overview-item').count(),await page.locator('#recognitionItems input:not([data-recognition^="feature:"])').count());assert.match(await page.locator('.overview-item summary').first().innerText(),/站[\s\S]*视角/);
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
@@ -165,8 +167,8 @@ try{
  {await page.waitForFunction(()=>document.querySelectorAll('.station-labels button:not([hidden])').length>0);const label=labels.first(),name=await label.innerText();
   const anchor=await label.evaluate(e=>{const box=document.querySelector('#webgl').getBoundingClientRect();return[box.left+parseFloat(e.style.left),box.top+parseFloat(e.style.top)];});
   await page.mouse.move(...anchor);await page.waitForTimeout(200);assert.match(await page.locator('.feature-tip').innerText(),/点击设为工作点位/);await page.mouse.down();await page.mouse.up();await ready();await opened(name);}
- await page.locator('#overviewShow3d').click();assert.equal(await page.locator('#coverageMode').inputValue(),'physical');assert.equal(await page.locator('#coverageMulti').inputValue(),'class');
- await page.locator('#coverageMulti').selectOption('views');await page.locator('#overviewStations').selectOption('none');
+ await page.locator('#overviewShow3d').click();assert.equal(await (await reveal('#coverageMode')).inputValue(),'physical');assert.equal(await (await reveal('#coverageMulti')).inputValue(),'class');
+ await (await reveal('#coverageMulti')).selectOption('views');await page.locator('#overviewStations').selectOption('none');
  // Demonstration mode (#17): the 3D view alone with caption, legend and limitations; presets and saved views stepped with ← →;
  // the screenshot is a PNG; Esc leaves. Views never change results; the camera keeps the container's aspect ratio.
  {const unchanged=await currentResult();await page.locator('#overviewStations').selectOption('all');await click('#demoMode');
@@ -206,7 +208,7 @@ try{
  await page.setViewportSize({width:390,height:844});for(const selector of ['#toggleLeft','#toggleRight'])await click(selector);await page.waitForFunction(()=>{const canvas=document.querySelector('#webgl canvas'),rect=canvas?.getBoundingClientRect();return rect?.width>0&&rect.height>0&&Math.abs(canvas.width/canvas.height-rect.width/rect.height)<.01;},null,{timeout:10000});await page.screenshot({path:join(artifacts,'narrow.png'),fullPage:true});
  // Device settings and edited stations persist across a reload.
  await page.reload();await ready();await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');assert.equal(await page.locator('#azNumber').inputValue(),'25');
- assert.equal(await page.locator('#recognitionThreshold').inputValue(),'0.5');assert.ok(await page.locator('#precisionContours').isChecked());assert.equal(await page.locator('#coverageMode').inputValue(),'physical');assert.ok(await page.locator('#coverageContext').isChecked());assert.ok(await page.locator(`[data-recognition="${shown}"]`).isChecked());
+ assert.equal(await page.locator('#recognitionThreshold').inputValue(),'0.5');assert.ok(await page.locator('#precisionContours').isChecked());assert.equal(await (await reveal('#coverageMode')).inputValue(),'physical');assert.ok(await (await reveal('#coverageContext')).isChecked());assert.ok(await page.locator(`[data-recognition="${shown}"]`).isChecked());
  assert.equal(await page.locator('[data-feature-group="monitoring"]').isChecked(),false);assert.equal(await page.locator('[data-feature-group="vertical_transport"]').isChecked(),false);
  // An imported plan becomes a new study (FR-P8): in place for the current release and scenario; another scenario opens that scenario.
  const studies=async()=>page.locator('#studySelect option').evaluateAll(options=>options.map(o=>[o.value,o.selected]));
