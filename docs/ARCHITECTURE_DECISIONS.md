@@ -40,6 +40,9 @@ Last updated: 2026-10-10
 | 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
 | 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; implemented (15b-1…15b-6; envelope overlay kept in the preview only); optional fill and sampled-pixel view open |
 | 030 | Two entry points: planning app and dataset workbench, one selection contract | Accepted (owner, 2026-10-14); links and drawer done (15c); 11b, W1 open |
+| 031 | Evaluation aims are user input; the app supplies metrics, regions and optimisation | Principle accepted (owner, 2026-10-14); specification deferred |
+| 032 | Main-view layout: deployment left, station right, one display state, floating viewport controls | Accepted (owner, 2026-10-15; revised 2026-10-16); implemented |
+| 033 | Playground-first workflow on a flat, shareable workspace (plan model 2.0) | Proposed (2026-10-16); owner decisions settled 2026-10-17; not implemented |
 
 ---
 
@@ -655,7 +658,93 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 
 **Consequences.** Every layout change is view state only and never changes results; element IDs stay so the browser test keeps its selectors. The browser test drives the floating controls, the 其他点位 chip and the tabs. Saved coverage settings migrate once (former station set shown while coverage was on → other stations shown). Tablet layouts are checked at 1024 × 768 and 820 × 1180. Demonstration mode shows the 3D view alone (the 投影图 toggle was removed, owner 2026-10-16).
 
----
+## ADR-033 Playground-first workflow on a flat, shareable workspace (plan model 2.0)
+
+**Status.** Proposed (owner direction 2026-10-16: playground-first flow on a flat shared workspace; sharing of any selection between people and hosts; carriers and time-varying observation deferred to real cases; the four open decisions settled 2026-10-17). The format is specified in [WORKSPACE_FORMAT.md](specs/WORKSPACE_FORMAT.md). The open owner decisions are listed at the end; nothing is implemented yet.
+
+**Context.**
+- **Bundling in plan 1.1:** a study bundles everything. Each 1.x station carries position, pose and detector, and lives inside exactly one study. As a result:
+  - two poses at one place are two unrelated positions;
+  - studies cannot share stations or deployments;
+  - a 比较 set grew next to 部署组合;
+  - exposure sits inside the detector response, although it describes how long one observes, not the device.
+- **External review (2026-10-16):** a review of the data model proposed a full 2.0 model: a reusable site and mount library, carriers (TBM), observation configurations, deployments referenced by studies, scene states, trajectories, observation periods, revisions and snapshots, self-contained bundles, and migration without automatic site merging.
+- **What the owner accepted and changed:**
+  - Accepted: the separation of where, how and what together, and shareable bundles.
+  - Too early: carriers and time integration differ too much from fixed sites to design without a real case.
+  - Workflow: users start in a playground and accumulate configurations, so a strict top-down hierarchy is unintuitive. Studies, however, differ in their scenes and optimisation goals.
+  - Sharing: any saved list or bundle must be exportable and importable by another person on another host.
+
+**Decision.**
+- **Workflow: playground first.**
+  - The app opens to the working draft (today's working station) with nothing to set up.
+  - Saving keeps things: 存为新点位 adds a station to 我的点位, and a saved selection becomes a deployment.
+  - A study is opt-in, composed later from saved deployments, one or more scenes and an aim (ADR-031).
+  - The left sidebar shows studies only once one exists; mock-ups follow before any UI work.
+- **Storage: one flat workspace per release** (`muography-workspace` 2.0).
+  - Items: detectors, sites, stations (site + pose + detector), deployments and studies. Each is stored once and referenced by global ID.
+  - Sharing between studies needs no extra machinery.
+  - There is no visible "project" level and no cross-release workspace.
+  - Sites are created implicitly: a saved draft reuses its site while its position is unchanged. Sites are never matched by position.
+- **A study is one question.** It holds:
+  - its scenes (release scenarios now; anomaly hypotheses later);
+  - its exposure: how long the stations observe (constant days in 2.0; an observation schedule later). Exposure is configured on its own, not with the device, and not per station (owner, 2026-10-17). In the playground, without a study, the session holds one exposure;
+  - the deployments it compares;
+  - an aim (reserved until ADR-031 is specified, together with the rule that combines several scenes);
+  - an optional `basis`: the item hashes recorded when the user writes down a conclusion, so a later change shows as 已变更，需重新评估.
+
+  There are **no revisions or snapshots** of items: items are edited in place, and the basis is the only memory of what a conclusion used.
+- **Sharing: every export is self-contained,** in the same format:
+  - Granularity: selected stations, deployments, a study, or the whole workspace, each with the full closure of what it references.
+  - Global random IDs and computed item hashes make re-imports recognisable.
+  - Import always merges into the workspace of the open release, through a preview. A file from another release of the same dataset imports with a warning, positions taken unchanged (owner, 2026-10-17); a file of another dataset is refused. New, identical and conflicting items are listed; conflicts default to keeping both. The import is atomic, and nothing is ever merged by position.
+  - Transport is file or copy-paste text. There is no server and no live collaboration (FR-P3).
+- **Seams for later cases** (cheap now, invisible to users):
+  - `placement` and `exposure` are tagged objects, with only `site` and `constant` in 2.0;
+  - every position names its frame;
+  - exposure moves from the detector response to the study, as a tagged value;
+  - the scene is a value with an ID inside a study;
+  - newer versions are refused, never guessed.
+
+  A separate `requires` list was considered and dropped: the version check and the tagged kinds already make unsupported content fail closed.
+- **Migration:** 1.x studies and plan files convert without loss (WORKSPACE_FORMAT.md):
+  - fresh IDs;
+  - sites merged only for exactly equal position and candidate within one study (owner, 2026-10-17);
+  - a 候选池 deployment that keeps each study's grouping (owner, 2026-10-17);
+  - the study's exposure taken from its `default` detector, with differing detector exposures recorded in the study note and the migration report.
+
+  The 1.x storage stays as a backup.
+
+**Paper cases (not implemented; they test the seams).**
+
+| Case | Carried by | New work when it arrives |
+|---|---|---|
+| **Staged water levels** (dam, now) | A study with several scenes (`low`, `mid`, …) and a constant study exposure | The aim's scene-combination rule (worst case, weighted, all must pass), with ADR-031 as 2.1. The calculation core already evaluates each scenario separately; results are cached per scene by the assessment key. |
+| **Blast-furnace campaign** | Fixed sites around the furnace (`placement: site`). The scene states are the campaign stages: burden level as environment variables, wall wear as anomaly hypotheses (ADR-025). The new study exposure kind is `periods`: a list of (scene, days) whose counts add up. | Exposure-period kind and summation over cached per-scene results. Continuous environment variables (FR-K2). High-Z energy loss (FR-K4). Near-horizontal poses (FR-K6). A furnace kind profile (FR-K10). Frames may stay `model_frame`. |
+| **TBM-mounted detector** | Placement kind `carrier-mount`: a carrier ID plus a mounting pose in the carrier frame. A carrier is a new item with a trajectory (time, position, orientation, interpolation) in `model_frame`. The study exposure kind is `trajectory`: counts integrated over time. Excavation stages are scene states. | Carrier item and carrier frame (device pose = carrier pose × mounting pose). Trajectory sampling and its static approximation rule (piecewise constant, always labelled). Time-integrated counts over many pose samples (scan-like batches, FR-S5). Changing geometry per excavation stage. Deep overburden (FR-K5). A tunnel dataset with a kind profile. |
+
+Each case adds kinds and items; none changes the meaning of existing 2.0 members. So 2.0 files stay valid, and the generic calculation core only gains a sum over cached results.
+
+**Consequences.**
+- **Data format (major version):** `muography-workspace` 2.0.0 replaces `muography-plan` 1.1 for storage and exchange. 1.x stays readable, both for stored data and for imported files.
+- **Physics-semantics label:** exposure moves out of the detector response into the study (the session in the playground). For one constant exposure the counts are unchanged. A station's cached result depends on the exposure in force, through the assessment key as today.
+- **New pure modules:** `workspace-format.js`, `workspace-store.js` and `workspace-import.js`, test-first, replacing `plan-format.js`, `plan-store.js` and the study parts of `study-state.js`.
+- **UI:** 我的点位 with sites grouped automatically; 保存为组合; 新建工作方案 as a composer; export of any selection; an import preview; 粘贴导入. The 比较 boxes become the session's shown set over saved stations.
+- **Runner:** the batch runner accepts workspace files (study, deployment or stations), with the scene recorded per result.
+- **Docs:** DOMAIN_MODEL, CONTEXT, PLAN_FORMAT (marked superseded on implementation) and the FR-P items are updated with each step.
+- **Order of work:**
+  1. These documents.
+  2. The format and migration modules.
+  3. Storage switch-over.
+  4. The 我的点位 and deployment sidebar.
+  5. Export of selections and the import preview.
+  6. The study composer, with scenes; aims follow with ADR-031.
+
+**Owner decisions (2026-10-17).**
+1. Exposure belongs to the study, configured separately from the device and the stations; the playground has one session exposure.
+2. Migration merges sites within one study on exactly equal position and candidate.
+3. Each migrated study gets a `<study title> · 候选池` deployment.
+4. A file from another release of the same dataset imports with a warning; positions are taken unchanged, missing scenarios are mapped or the study is skipped.
 
 ## Open questions
 
@@ -678,6 +767,8 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 
 ## Change log
 
+- 2026-10-17: ADR-033 owner decisions: exposure on the study (session in the playground), exact-equality site merge within a study, 候选池 deployment on migration, other-release import with a warning.
+- 2026-10-16: ADR-033 proposed: playground-first workflow, flat per-release workspace (`muography-workspace` 2.0), self-contained selection exports with merge-on-import, seams for carriers and time-varying observation (owner direction; four decisions open). Index rows for ADR-031 and ADR-032 added.
 - 2026-10-16: ADR-032 revised (owner choice R): one display state, 其他点位 chip, compare boxes as the only station set, right-sidebar tabs instead of the header mode switch.
 - 2026-10-15: ADR-032 accepted: main-view layout with deployment left, station right, task modes and floating viewport controls (owner).
 - 2026-10-14: ADR-031 principle accepted, specification deferred (owner).

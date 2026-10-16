@@ -1,0 +1,100 @@
+{
+  "format": "muography-workspace",
+  "schemaVersion": "2.0.0",
+  "contents": "selection",
+  "roots": [
+    "dep-4vq8m2k7x1c9n5tb"
+  ],
+  "release": {
+    "id": "zhouning-lower-reservoir-dam@0.6.2+schema0.7.0",
+    "contentHash": null
+  },
+  "units": {
+    "length": "m",
+    "angle": "deg"
+  },
+  "provenance": {
+    "app": "muography-deployment-evaluation",
+    "exportedAt": "2026-10-20T08:30:00Z",
+    "author": "",
+    "workspace": "ws-9d3f1k8m2q7x4c6v"
+  },
+  "detectors": [
+    {
+      "id": "det-2m7k9x4q1c8v5n3b",
+      "name": "JW-S400-10B",
+      "device": {
+        "model": "JW-S400-10B",
+        "layers": 3,
+        "width": 0.4096,
+        "height": 0.4096,
+        "stripPitch": 0.0016,
+        "strips": 256,
+        "spacing": 0.15
+      },
+      "response": {
+        "layerEfficiency": 0.95,
+        "deadLiveFraction": 0.98,
+        "angularResolutionDeg": 0.3,
+        "systematicFraction": 0.03,
+        "angularModel": "gaisser"
+      }
+    }
+  ],
+  "sites": [
+    {
+      "id": "site-7k2m9q4x1c8v5n3b",
+      "name": "上层廊道观测室",
+      "position": [
+        12.5,
+        122,
+        57
+      ],
+      "frame": "model_frame",
+      "candidateId": "obs_upper",
+      "note": ""
+    }
+  ],
+  "stations": [
+    {
+      "id": "sta-1c8v5n3b7k2m9q4x",
+      "name": "上层廊道 · 仰角 25°",
+      "placement": {
+        "kind": "site",
+        "site": "site-7k2m9q4x1c8v5n3b"
+      },
+      "pose": {
+        "azimuthDeg": 0,
+        "elevationDeg": 25
+      },
+      "detector": "det-2m7k9x4q1c8v5n3b",
+      "note": ""
+    },
+    {
+      "id": "sta-5n3b7k2m9q4x1c8v",
+      "name": "上层廊道 · 仰角 45°",
+      "placement": {
+        "kind": "site",
+        "site": "site-7k2m9q4x1c8v5n3b"
+      },
+      "pose": {
+        "azimuthDeg": 0,
+        "elevationDeg": 45
+      },
+      "detector": "det-2m7k9x4q1c8v5n3b",
+      "note": "Second pose at the same site"
+    }
+  ],
+  "deployments": [
+    {
+      "id": "dep-4vq8m2k7x1c9n5tb",
+      "name": "上层廊道两个仰角",
+      "stations": [
+        "sta-1c8v5n3b7k2m9q4x",
+        "sta-5n3b7k2m9q4x1c8v"
+      ],
+      "note": ""
+    }
+  ],
+  "studies": []
+}

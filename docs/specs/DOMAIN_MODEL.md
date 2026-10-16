@@ -10,7 +10,7 @@ How this relates to other documents:
 
 Each element below is marked **Current** (exists in code), **Partial** (exists implicitly or incompletely) or **Target** (decided, not built).
 
-Last updated: 2026-10-12
+Last updated: 2026-10-16
 
 ## 1. Bounded contexts
 
@@ -139,6 +139,49 @@ Scene composition (Target): **scene = release + environment state + active anoma
 | DeploymentPlan (study) | Aggregate root | One observation task on one release: scene (release reference + content hash for user-loaded datasets, scenario), named detector configurations (`default` required), candidate pool (stations), named deployments, reserved anomalies, schema version; `muography-plan` 1.1.0 ([PLAN_FORMAT](PLAN_FORMAT.md)). Session state (working station, active candidate, active deployment) is stored next to it, never inside | Current: plan 1.1.0, several studies per release (switch, new; import creates a study) |
 | Selection | Value | The active deployment (session state); the overview shows it | Current as session state (14c); overview Target (FR-M4, #15) |
 
+### 2.3a Workspace model (Target, ADR-033)
+
+Proposed replacement for §2.3, specified in [WORKSPACE_FORMAT](WORKSPACE_FORMAT.md) (`muography-workspace` 2.0). Not implemented; §2.3 remains the current model until the storage switch-over.
+
+```mermaid
+classDiagram
+  direction LR
+  class Workspace { release; contents; provenance }
+  class Detector { id; name; device; response }
+  class Site { id; name; position; frame; candidateId }
+  class Station { id; name; placement; pose; detector }
+  class Deployment { id; name; stations }
+  class Study { id; title; scenes; deployments; exposure; aim; basis }
+  class SceneRef { id; label; scenario; anomalies }
+  class WorkingDraft { site?; station?; position; pose; detector settings }
+  Workspace "1" --> "*" Detector
+  Workspace "1" --> "*" Site
+  Workspace "1" --> "*" Station
+  Workspace "1" --> "*" Deployment
+  Workspace "1" --> "*" Study
+  Station "*" --> "1" Site : placement kind site
+  Station "*" --> "1" Detector
+  Deployment "*" --> "*" Station : members
+  Study "*" --> "*" Deployment : compares
+  Study "1" --> "1..*" SceneRef
+  WorkingDraft ..> Station : saved as, never part of the workspace
+```
+
+| Concept | Kind | Identity | Notes |
+|---|---|---|---|
+| Workspace | Aggregate root, one per release | Release ID (+ content hash); `ws-…` ID for provenance | Flat store of everything saved for a release; the same format is a full export or, with `contents: selection` and `roots`, the export of a selection with its closure. Session and view state are stored next to it, never inside |
+| Site | Entity | Global ID `site-…` | Where a detector can stand: a point in a named frame (`model_frame` in 2.0), optional dataset candidate. Created implicitly when a draft is saved at a new position; never matched by position |
+| Station | Entity | Global ID `sta-…` | Site + pose + detector: one saved way of observing (UI 我的点位). `placement` is a tagged value (`site` in 2.0) so carrier mounts can be added as a kind. No exposure: the same station may be observed for different durations in different studies |
+| Detector | Entity | Global ID `det-…`; equal content is treated as the same detector on import | Device and response without exposure |
+| Deployment | Entity | Global ID `dep-…` | Ordered set of stations evaluated together; shared by any number of studies |
+| Study | Entity, opt-in | Global ID `study-…` | One question: scenes (release scenarios now, anomaly hypotheses later), the deployments it compares, its exposure (tagged: `constant` days in 2.0, an observation schedule later), an aim (ADR-031, reserved) and an optional basis (item hashes recorded with a conclusion) |
+| Item hash | Value | `sha256:` of the item's canonical text without its ID | Same ID + same hash: same item; same ID + different hash: conflict on import |
+| Working draft | Session state | — | Today's working station, remembering the site and station it came from |
+| Playground exposure | Session state | — | The exposure used while no study is active (default 30 days); set on its own, not in the device dialog |
+| Import | Process | — | Classify (new / identical / conflict) → preview → apply atomically; conflicts keep both by default |
+
+Invariants (Target): (a) every reference resolves inside the document and a selection file holds exactly the closure of its roots; (b) items are never merged by position, only by explicit user action; (c) an import never writes before the user confirms and applies completely or not at all; (d) deleting an item with dependants lists them and never cascades silently; (e) exposure belongs to the study (or the playground session), never to a detector or station, so a detector means the same device everywhere (consistent with invariant 5).
+
 ### 2.4 Assessment and results
 
 | Concept | Kind | Notes | Status |
@@ -188,6 +231,7 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 - **Release**: imported byte for byte → validated (schemas, hashes, conformance) → registered with a `status` → may become the registry default (current default: `zhouning-lower-reservoir-dam@0.6.2+schema0.7.0`). Releases are immutable; changes produce a new release.
 - **Assessment**: input change → debounce → snapshot → session → preview (25²) → final (65²) → published; any newer input cancels and invalidates the old generation.
 - **Study** (FR-P5): created for a release (fresh, or imported) → candidates sketched and tuned (working station → saved candidates) → named deployments composed and evaluated from per-candidate cached results → one or several deployments exported; schema-versioned with migrations.
+- **Workspace** (Target, ADR-033): created empty for a release (or migrated once from 1.x studies) → draft explored and saved as stations (sites implicit) → stations grouped into deployments → optional studies compose deployments, scenes and an aim; a recorded conclusion stores the basis → any selection exported as a self-contained file → merged into another workspace of the same release through the import preview.
 - **Reconstruction** (Target): plan → simulated measurements → column estimates → voxel reconstruction → quality metrics; always labelled simulated.
 
 ## 6. Gaps between the current code and this model
@@ -200,6 +244,7 @@ These must always hold; code and tests enforce them where noted. Each invariant 
 | One rock-like energy loss for all materials | Material | FR-K4 |
 | Generic modules name material IDs (`air`, `concrete`, `rock`, `steel`) instead of dataset-declared material roles | Material | FR-K11 |
 | Scene is not one value in code (release and environment passed separately) | Scene | FR-P1 (plan schema) |
+| Stations bundle position, pose and detector inside one study; exposure sits in the detector response; studies cannot share stations or deployments; the 比较 set duplicates deployments | Workspace model §2.3a | ADR-033 |
 | No direct test that toggling every display layer leaves the projection result and snapshot key unchanged | Invariant 3 | FR-Q11 |
 
 ## 7. Open modelling questions
@@ -226,6 +271,8 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-17: §2.3a: exposure moved from the station to the study (playground exposure as session state), owner decision.
+- 2026-10-16: Added §2.3a workspace model (Target, ADR-033): Workspace, Site, Station (site + pose + detector + exposure), Detector, Deployment, Study (scenes, aim, basis), item hash, import; gap row; workspace lifecycle.
 - 2026-10-14: Coverage (view) current for a single station; back-side lines included.
 - 2026-10-14: ProjectionResult records its source plan (hash + station ID).
 - 2026-10-14: DeploymentPlan and Station current (`muography-plan` 1.0.0); plan hash identity; two open questions answered (per-plan named detector configurations; plans own stations with a candidate reference).

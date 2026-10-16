@@ -55,11 +55,16 @@ Help users explore, filter and compare muography detector deployment plans for a
 | Sensitivity | How well a plan would detect an anomaly: change in counts and its significance against statistical and systematic uncertainty | ΔN, significance, exposure to reach a threshold, minimum detectable size/contrast |
 | Scan | Batch calculation and comparison over a constrained parameter space | Ranges, steps, constraints, metrics, ranking, robustness |
 | Study (工作方案) | One observation task on one release: the candidate pool, named deployments and detector configurations, saved as one plan file; several per release | Plan file `muography-plan` 1.1.0 |
+| Workspace (proposed, ADR-033) | Everything saved for one dataset release, stored flat: detectors, sites, stations, deployments and opt-in studies, each once, referenced by global ID. The same format exports any selection (with everything it references) for another person or host | `muography-workspace` 2.0.0 ([WORKSPACE_FORMAT](docs/specs/WORKSPACE_FORMAT.md)) |
+| Site (站址, proposed, ADR-033) | Where a detector can stand: a point in a named frame; several stations (poses, detectors) can share it. Created implicitly when a station is saved at a new position, never matched by position | ID, name, position, frame, dataset candidate |
+| Exposure | How long the stations observe (days). Today part of the detector response; decided to belong to the study, set on its own (ADR-033), with one session exposure in the playground, so a detector configuration describes the device only and a station can be observed for different durations in different studies | Constant days; later an observation schedule |
 | Working station | The station being tuned in detail; it becomes a candidate only when saved, and saved candidates change only by explicit update | Position, pose, detector |
 | Deployment (部署组合) | A named subset of a study's candidates evaluated together; a study can hold several alternatives | Member candidates |
 | Plan run | A headless evaluation of a saved plan's stations outside the browser, with the same calculation core | One result per station, a reproducible run summary, optional comparison |
 
 Note: "scenario" means a frozen environment variant, never the subject itself; the subject is a dataset of some kind.
+
+Proposed composition (ADR-033): **station** = site + pose + detector configuration; **deployment** = a set of stations; **study** = scenes + deployments compared + exposure + aim. Until implemented, the plan composition below applies.
 
 Composition: **scene** = dataset release + environment state (+ active anomaly hypotheses, proposed ADR-025); **assessment** = scene + detector configuration + station + pose; **deployment plan** = scene + stations (each with pose and detector configuration). Display options belong to the **view state**, which is never part of any of these.
 
