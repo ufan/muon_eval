@@ -250,6 +250,8 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
    const placed=(cavity?cavity.position:placementPoint(point,normal,direction)).map(v=>Math.round(v*100)/100);
    note.hidden=false;note.textContent=cavity?`已放入「${features.get(featureId).label.zh}」：底板 Z ${cavity.floorZ.toFixed(2)} m，离底板 ${(placed[2]-cavity.floorZ).toFixed(2)} m（空腔净高 ${(cavity.ceilingZ-cavity.floorZ).toFixed(2)} m）`:'已放在所点表面外 0.5 m（未点到空腔）';['x','y','z'].forEach((key,i)=>study.update(key,placed[i]));persistSession();sync();renderList();scheduleDetectorUpdate();},
   placeCancelled(){setPlacingButton(false);},
+  // Drag handles (ADR-032 step 7): the dragged position or pose goes through the plan like typed values.
+  dragStation(station){if(!workingActive)return;const current=inputs().station;for(const key of ['x','y','z','az','el'])if(station[key]!==current[key])study.update(key,station[key]);persistSession();sync();renderList();scheduleDetectorUpdate();},
   // 瞄准此处 (ADR-032): point the working detector at a model point picked in 3D.
   aimAt(point){if(!workingActive)return;const {x,y,z}=inputs().station,pose=aimPose([x,y,z],point),note=$('#placeNote');if(!pose)return;setPose(pose.az,pose.el);
    note.hidden=false;note.textContent=`已瞄准所点位置：方位 ${pose.az}° · 仰角 ${pose.el}°${pose.clamped?'（目标低于探测器，仰角限为 0°）':''}`;},

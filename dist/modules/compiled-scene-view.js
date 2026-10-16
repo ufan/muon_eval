@@ -5,7 +5,8 @@ import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { createCompiledGeometryView } from './compiled-geometry-view.js';
-import { detectorBasis } from './detector-pose.js';
+import { aimAt, detectorBasis } from './detector-pose.js';
+import { dragAimPoint, dragMove } from './station-drag.js';
 import { featureLayerGroups, featuresAlongRay } from './feature-layers.js';
 import { slicePoint } from './slice-plane.js';
 import { displayedRaySegments, rayExitStub, rayMarkers, rayMaterialColor, rayProfile, sideViewPose } from './ray-display.js';
@@ -24,7 +25,7 @@ function clear(group) {
   group.clear();
 }
 
-export function createCompiledSceneView({ runtime, waterLayers, features=null, featureLayers={}, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{}, onCoveragePick=()=>{}, onPlacePick=()=>{}, onPlaceCancel=()=>{}, onStationPick=()=>{}, onAimPick=()=>{} }) {
+export function createCompiledSceneView({ runtime, waterLayers, features=null, featureLayers={}, root=document, onResize=()=>{}, onFeatureHover=()=>{}, onFeaturePick=()=>{}, onCoveragePick=()=>{}, onPlacePick=()=>{}, onPlaceCancel=()=>{}, onStationPick=()=>{}, onAimPick=()=>{}, onStationDrag=()=>{} }) {
   const $=selector=>root.querySelector(selector),container=$('#webgl');
   const geometryView=createCompiledGeometryView(runtime),detectorGroup=new THREE.Group(),axisGroup=new THREE.Group(),projectionGroup=new THREE.Group(),extraGroup=new THREE.Group();
   const scene=new THREE.Scene();scene.background=new THREE.Color(LOOK.background);scene.fog=new THREE.FogExp2(LOOK.background,LOOK.fogDensity);
@@ -92,7 +93,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
   // coverage slot gets an empty field of view, so the shader and readouts see only the other stations.
   let workingShown=true;
   function collapseWorkingCoverage(){coverage.covMax.value.set(1e-6,1e-6);coverage.covSlotMax.value[0].set(1e-6,1e-6);}
-  function setWorkingVisible(on){workingShown=Boolean(on);detectorGroup.visible=workingShown;axisGroup.visible=workingShown&&(layerState.get('cone')??false);
+  function setWorkingVisible(on){workingShown=Boolean(on);handleGroup.visible=workingShown&&!demo;detectorGroup.visible=workingShown;axisGroup.visible=workingShown&&(layerState.get('cone')??false);
     if(!workingShown){clearRay();emphasiseFeatures([]);collapseWorkingCoverage();}else if(currentStation&&currentDevice)setCoveragePose(currentStation,currentDevice);drawFovEdges();updateLabels();}
   function setCoveragePose(station,device){const basis=detectorBasis(station.az,station.el);coverage.covOrigin.value.copy(compiledPointToScene([station.x,station.y,station.z]));
     coverage.covForward.value.copy(compiledPointToScene(basis.forward));coverage.covRight.value.copy(compiledPointToScene(basis.right));coverage.covUp.value.copy(compiledPointToScene(basis.up));
@@ -173,7 +174,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     return[...(working?.visible?[{text:currentStation.name||'工作点位',color:'#ff4fb3',...at(working)}]:[]),...extraStations.map((s,i)=>screen[i].visible?{text:s.name,color:s.color,...at(screen[i])}:null).filter(Boolean)];}
   function workingScreen(){if(!renderer||!currentStation||!workingShown)return null;return screenOf(compiledPointToScene([currentStation.x,currentStation.y,currentStation.z]),renderer.domElement.getBoundingClientRect());}
   function updateLabels(){const box=container.getBoundingClientRect(),screen=markerScreen(),place=(label,p)=>{label.hidden=!p?.visible;if(p?.visible){label.style.left=`${p.x-box.left}px`;label.style.top=`${p.y-box.top}px`;}};
-    [...labels.querySelectorAll('[data-station]')].forEach((label,i)=>place(label,screen[i]));workingLabel.textContent=currentStation?.name||'工作点位';place(workingLabel,demo?workingScreen():null);placeRayLabels();}
+    [...labels.querySelectorAll('[data-station]')].forEach((label,i)=>place(label,screen[i]));workingLabel.textContent=currentStation?.name||'工作点位';place(workingLabel,demo?workingScreen():null);placeRayLabels();placeHandleAnchors();}
   const markerAt=event=>nearestScreenPoint(markerScreen(),[event.clientX,event.clientY],12);
   function setCoverageStations(list=[]){extraStations=list.slice(0,coverage.covExtraOrigin.value.length).map(s=>({...s,origin:compiledPointToScene([s.x,s.y,s.z])}));clear(extraGroup);coverage.covExtraCount.value=extraStations.length;
     labels.replaceChildren(workingLabel,...extraStations.map(s=>{const label=document.createElement('button');label.type='button';label.textContent=s.name;label.dataset.station=s.id;label.title='设为工作点位';label.style.setProperty('--c',s.color);label.hidden=true;label.onclick=()=>onStationPick(s.id);return label;}));
@@ -186,7 +187,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     const origin=compiledPointToScene([station.x,station.y,station.z]),basis=detectorBasis(station.az,station.el),forward=compiledPointToScene(basis.forward).normalize(),right=compiledPointToScene(basis.right),up=compiledPointToScene(basis.up);
     const orientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),forward);
     for(let i=0;i<device.layers;i++){const mesh=new THREE.Mesh(new THREE.PlaneGeometry(device.width,device.height),new THREE.MeshBasicMaterial({color:0xff65bd,side:THREE.DoubleSide}));mesh.position.copy(origin).addScaledVector(forward,(i-(device.layers-1)/2)*device.spacing);mesh.quaternion.copy(orientation);detectorGroup.add(mesh);}
-    const length=radius*.45;axisGroup.add(new THREE.ArrowHelper(forward,origin,length,0xff65bd));drawFovEdges();
+    const length=radius*.45;axisGroup.add(new THREE.ArrowHelper(forward,origin,length,0xff65bd));drawFovEdges();drawHandles();
   }
   // With coverage on, features the station sees (ADR-029 "in view") are drawn at full strength and the others faded.
   function showFeature(id){const visible=featureVisible.get(id)||emphasised.has(id),faded=coverage.covMode.value>0&&featuresSeen!==null&&!featuresSeen.has(id)&&!emphasised.has(id);
@@ -233,7 +234,36 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     const aim=item('瞄准此处','把当前探测器的方位角和仰角设为指向这一点',()=>onAimPick(surface.point)),place=item('放到此处','把当前探测器放到这一点（点在空腔上时放入空腔）',()=>onPlacePick(surface));
     aim.setAttribute('role','menuitem');place.setAttribute('role','menuitem');sceneMenu.append(aim,place);
     const bounds=container.getBoundingClientRect();sceneMenu.style.left=`${event.clientX-bounds.left}px`;sceneMenu.style.top=`${event.clientY-bounds.top}px`;sceneMenu.hidden=false;aim.focus();}
-  function hoverFeature(event){if(placing){const bounds=container.getBoundingClientRect();tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;tip.textContent='点击模型表面放置当前点位 · Esc 取消';tip.hidden=false;return;}
+  // Drag handles (ADR-032 step 7): the white centre moves the working detector (horizontally; Shift: vertically), the pink
+  // tip of its axis aims it. Both keep a constant screen size; the view previews while dragging and the station is
+  // updated on release (onStationDrag), like a typed value. Hidden in demonstration mode and without a working station.
+  const handleGroup=new THREE.Group();scene.add(handleGroup);const HANDLE_PX={move:8,aim:7};let handles=null,dragging=null;
+  const aimRadius=()=>radius*.12,modelOf=v=>[v.x,-v.z,v.y];
+  function drawHandles(){clear(handleGroup);handles=null;if(!currentStation||!currentDevice)return;
+    const origin=compiledPointToScene([currentStation.x,currentStation.y,currentStation.z]),forward=compiledPointToScene(detectorBasis(currentStation.az,currentStation.el).forward).normalize(),tipPoint=origin.clone().addScaledVector(forward,aimRadius());
+    const sphere=color=>{const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.9,depthTest:false,depthWrite:false,toneMapped:false}));mesh.renderOrder=12;return mesh;};
+    const move=sphere(0xffffff),aim=sphere(0xff65bd);move.position.copy(origin);aim.position.copy(tipPoint);
+    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([origin,tipPoint]),new THREE.LineBasicMaterial({color:0xff65bd,transparent:true,opacity:.75,depthTest:false,depthWrite:false,toneMapped:false}));line.renderOrder=11;
+    handleGroup.add(line,move,aim);handles={move,aim};scaleHandles();}
+  function scaleHandles(){if(!handles)return;const perPixel=2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/Math.max(1,container.clientHeight);
+    for(const kind of ['move','aim'])handles[kind].scale.setScalar(HANDLE_PX[kind]*perPixel*camera.position.distanceTo(handles[kind].position));}
+  function pointerRay(event){const bounds=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-bounds.left)/bounds.width*2-1,-(event.clientY-bounds.top)/bounds.height*2+1);raycaster.setFromCamera(pointer,camera);return{origin:modelOf(raycaster.ray.origin),dir:modelOf(raycaster.ray.direction)};}
+  function handleAt(event){if(!handles||!handleGroup.visible||placing||!renderer)return null;pointerRay(event);const hit=raycaster.intersectObjects([handles.move,handles.aim],false)[0];return hit?(hit.object===handles.move?'move':'aim'):null;}
+  // Invisible screen anchors of the handles (data-handle), kept in place with the labels; they let tests and scripts find them.
+  const handleAnchors=document.createElement('div');handleAnchors.className='handle-anchors';handleAnchors.setAttribute('aria-hidden','true');container.after(handleAnchors);
+  const anchorOf=Object.fromEntries(['move','aim'].map(kind=>{const span=document.createElement('span');span.dataset.handle=kind;handleAnchors.append(span);return[kind,span];}));
+  function placeHandleAnchors(){const canvas=renderer?.domElement.getBoundingClientRect(),box=container.getBoundingClientRect();for(const kind of ['move','aim']){const span=anchorOf[kind],p=canvas&&handles&&handleGroup.visible?screenOf(handles[kind].position,canvas):null;span.hidden=!p?.visible;if(p?.visible){span.style.left=`${p.x-box.left}px`;span.style.top=`${p.y-box.top}px`;}}}
+  const HANDLE_TIP={move:'拖动移动探测器（按住 Shift 竖直移动）',aim:'拖动调整探测器指向'};
+  function showHandleTip(event,text){const bounds=container.getBoundingClientRect();tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;tip.textContent=text;tip.hidden=false;}
+  function startHandleDrag(event){if(event.button!==0)return;const kind=handleAt(event);if(!kind)return;event.stopPropagation();event.preventDefault();controls.enabled=false;dragging={kind,station:{...currentStation},preview:null};renderer.domElement.style.cursor='grabbing';}
+  function moveHandleDrag(event){if(!dragging)return;const ray=pointerRay(event),s=dragging.preview??dragging.station,round=v=>Math.round(v*10)/10;
+    if(dragging.kind==='move'){const p=dragMove({anchor:[s.x,s.y,s.z],rayOrigin:ray.origin,rayDir:ray.dir,vertical:event.shiftKey});if(!p)return;dragging.preview={...s,x:round(p[0]),y:round(p[1]),z:round(p[2])};
+      showHandleTip(event,`X ${dragging.preview.x.toFixed(1)} · Y ${dragging.preview.y.toFixed(1)} · Z ${dragging.preview.z.toFixed(1)} m`);}
+    else{const o=[s.x,s.y,s.z],point=dragAimPoint({origin:o,radius:aimRadius(),rayOrigin:ray.origin,rayDir:ray.dir}),pose=point&&aimAt(o,point);if(!pose)return;dragging.preview={...s,az:pose.az,el:pose.el};
+      showHandleTip(event,`方位 ${pose.az}° · 仰角 ${pose.el}°${pose.clamped?'（不低于水平）':''}`);}
+    drawDetector(dragging.preview,currentDevice);requestRender();}
+  function endHandleDrag(){if(!dragging)return;const done=dragging;dragging=null;controls.enabled=true;tip.hidden=true;if(renderer)renderer.domElement.style.cursor='';if(done.preview)onStationDrag(done.preview);requestRender();}
+  function hoverFeature(event){if(dragging)return;{const kind=handleAt(event);if(kind){renderer.domElement.style.cursor='grab';showHandleTip(event,HANDLE_TIP[kind]);return;}}if(placing){const bounds=container.getBoundingClientRect();tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;tip.textContent='点击模型表面放置当前点位 · Esc 取消';tip.hidden=false;return;}
     if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;const station=markerAt(event);renderer.domElement.style.cursor=station?'pointer':'';
     if(station){const bounds=container.getBoundingClientRect();tip.style.left=`${event.clientX-bounds.left+14}px`;tip.style.top=`${event.clientY-bounds.top+14}px`;tip.textContent=`${extraStations.find(s=>s.id===station).name} · 点击设为工作点位`;tip.hidden=false;return;}
     const id=featureAt(event);if(id!==hovered){hovered=id;onFeatureHover(id);}
@@ -263,7 +293,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     for(const marker of rayMarkers(trace)){const point=at(marker.distanceM);addRayPair(new THREE.TorusGeometry(1,.16,10,40),0xffffff,point,across,'ring');
       const label=document.createElement('span');label.textContent=marker.label;label.dataset.kind=marker.kind;label.hidden=true;rayLabelLayer.append(label);rayLabels.push({label,point});}
     updateLabels();}
-  function scaleRay(){if(!rayParts.length)return;const height=Math.max(1,container.clientHeight),perPixel=2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/height;
+  function scaleRay(){scaleHandles();if(!rayParts.length)return;const height=Math.max(1,container.clientHeight),perPixel=2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/height;
     for(const {mesh,kind,length} of rayParts){const pixel=perPixel*camera.position.distanceTo(mesh.position);if(kind==='tube'||kind==='stub'){const r=(kind==='tube'?RAY_TUBE_PX:RAY_STUB_PX)*pixel;mesh.scale.set(r,length,r);}else mesh.scale.setScalar(RAY_RING_PX*pixel);}}
   function placeRayLabels(){const canvas=renderer?.domElement.getBoundingClientRect(),box=container.getBoundingClientRect(),shown=projectionGroup.visible;
     for(const {label,point} of rayLabels){const p=canvas&&shown?screenOf(point,canvas):null;label.hidden=!p?.visible;if(p?.visible){label.style.left=`${p.x-box.left}px`;label.style.top=`${p.y-box.top}px`;}}}
@@ -284,11 +314,11 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
   function renderFrame(){frame=null;if(recording)return;const easing=stepCameraMove(),moving=controls.update();updateScale();scaleRay();renderer.render(scene,camera);updateLabels();if(moving||easing)requestRender();}
   let recording=false;
   const api={
-    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);controls.addEventListener('start',()=>{cameraMove=null;});requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);renderer.domElement.addEventListener('pointerup',releaseFeature);renderer.domElement.addEventListener('contextmenu',openSceneMenu);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
+    build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);controls.addEventListener('start',()=>{cameraMove=null;});requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);container.addEventListener('pointerdown',startHandleDrag,{capture:true});window.addEventListener('pointermove',moveHandleDrag);window.addEventListener('pointerup',endHandleDrag);window.addEventListener('pointercancel',endHandleDrag);renderer.domElement.addEventListener('pointerup',releaseFeature);renderer.domElement.addEventListener('contextmenu',openSceneMenu);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
     resize,setView,setLayer,setDamOpacity,drawDetector,setSlice,setSliceMask,subjectExtent,setFovEdges,setFovSolid,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
     // Demonstration mode (#17): labels, camera views as view state (model frame, z up) and a capture of the
     // current frame with every station's label position (CSS pixels within the image).
-    setDemo(on){demo=Boolean(on);updateLabels();requestRender();},
+    setDemo(on){demo=Boolean(on);handleGroup.visible=workingShown&&!demo;updateLabels();requestRender();},
     cameraView(){if(!controls)return null;const model=v=>[v.x,-v.z,v.y];return{position:model(camera.position),target:model(controls.target)};},
     setCameraView({position,target}){if(!controls||![...position,...target].every(Number.isFinite))return;camera.position.copy(compiledPointToScene(position));controls.target.copy(compiledPointToScene(target));controls.update();requestRender();},
     capture(){if(!renderer)return null;controls.update();scaleRay();renderer.render(scene,camera);const box=renderer.domElement.getBoundingClientRect(),image=document.createElement('canvas');
@@ -306,7 +336,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     viewRaySideOn,
     clearProjection(){clearRay();emphasiseFeatures([]);},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},
-    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);sliceMesh.geometry.dispose();sliceMaterial.alphaMap?.dispose();sliceMaterial.dispose();tip.remove();labels.remove();rayLabelLayer.remove();sceneMenu.remove();window.removeEventListener('pointerdown',closeSceneMenuOutside,true);observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(axisGroup);clearRay();geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
+    dispose(){if(frame!==null)cancelAnimationFrame(frame);frame=null;window.removeEventListener('pointermove',moveHandleDrag);window.removeEventListener('pointerup',endHandleDrag);window.removeEventListener('pointercancel',endHandleDrag);clear(handleGroup);window.removeEventListener('keydown',cancelPlacing);clear(extraGroup);clear(fovGroup);clear(solidGroup);sliceMesh.geometry.dispose();sliceMaterial.alphaMap?.dispose();sliceMaterial.dispose();tip.remove();labels.remove();rayLabelLayer.remove();sceneMenu.remove();window.removeEventListener('pointerdown',closeSceneMenuOutside,true);observer?.disconnect();controls?.dispose();clear(detectorGroup);clear(axisGroup);clearRay();geometryView.group.traverse(object=>{if(object.isLineSegments){object.geometry.dispose();object.material.dispose();}});geometryView.dispose();renderer?.dispose();renderer?.domElement.remove();},
   };
   // Every public call may change what is shown: request a frame after it.
   for(const [name,fn] of Object.entries(api))if(name!=='dispose')api[name]=(...args)=>{const value=fn(...args);requestRender();return value;};

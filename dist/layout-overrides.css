@@ -371,3 +371,6 @@
    where screenshots and recordings need them (owner, 2026-10-16). */
 .app:not(.demo) .station-labels button { display: none; }
 .vt-more:disabled { opacity: .4; cursor: not-allowed; }
+/* Detector drag handles: invisible screen anchors (for scripts and tests only). */
+.handle-anchors { position: absolute; inset: 0; pointer-events: none; visibility: hidden; }
+.handle-anchors span { position: absolute; width: 1px; height: 1px; }

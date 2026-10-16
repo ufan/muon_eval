@@ -212,6 +212,11 @@ try{
   assert.notDeepEqual(await pose(),start);assert.match(await page.locator('#placeNote').innerText(),/已瞄准所点位置/);assert.ok(await page.locator('.scene-menu').isHidden());
   const [az,el]=await pose();await page.locator('#webgl canvas').hover();await page.keyboard.press('Shift+ArrowUp');await page.keyboard.press('ArrowLeft');await ready();
   assert.deepEqual(await pose(),[(az+359)%360,Math.min(90,el+5)]);}
+ // Drag handles (ADR-032 step 7): the centre moves the working detector, the axis tip aims it; the view never orbits meanwhile.
+ {const handle=async kind=>page.locator(`[data-handle="${kind}"]`).evaluate(a=>{const b=document.querySelector('#webgl').getBoundingClientRect();return[b.left+parseFloat(a.style.left),b.top+parseFloat(a.style.top)];});
+  const values=async()=>Promise.all(['#x','#y','#z','#azNumber','#elNumber'].map(id=>page.locator(id).inputValue())),drag=async(kind,dx,dy)=>{const [x,y]=await handle(kind);await page.mouse.move(x,y);await page.mouse.down();for(let i=1;i<=8;i++)await page.mouse.move(x+dx*i/8,y+dy*i/8);await page.mouse.up();await ready();};
+  const start=await values();await drag('move',40,12);const moved=await values();assert.notDeepEqual(moved.slice(0,2),start.slice(0,2));assert.equal(moved[2],start[2],'a horizontal drag keeps the height');assert.deepEqual(moved.slice(3),start.slice(3));
+  await drag('aim',-30,-40);const aimed=await values();assert.deepEqual(aimed.slice(0,3),moved.slice(0,3));assert.notDeepEqual(aimed.slice(3),moved.slice(3));assert.match(await page.locator('#workingStatus').innerText(),/已修改|未保存/);}
  // Placing: one click on the model moves the working station there; Esc cancels.
  await click('#placeStation');assert.ok(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')));await page.keyboard.press('Escape');assert.equal(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')),false);
  const xyz=async()=>Promise.all(['#x','#y','#z'].map(id=>page.locator(id).inputValue())),start=await xyz();await click('#placeStation');
