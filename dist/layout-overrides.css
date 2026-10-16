@@ -345,3 +345,13 @@
 .scene-menu button { margin: 0; padding: 6px 10px; border: 0; background: transparent; color: #e1edf1; font-size: 12px; text-align: left; }
 .scene-menu button:hover, .scene-menu button:focus-visible { background: #10534f; }
 .scene-menu[hidden] { display: none; }
+/* No working station: the right sidebar shows only a short prompt. */
+#singlePanel.inactive > :not(#noWorking) { display: none; }
+.no-working { padding: 20px 16px; border-bottom: 1px solid var(--line); }
+.no-working p { margin: 0; color: #a9bdc6; font-size: 13px; line-height: 1.6; }
+/* In-page confirmation (replaces window.confirm, which embedded viewers block). */
+.confirm-dialog { width: min(380px, calc(100vw - 32px)); padding: 0; border: 1px solid #31505e; border-radius: 10px; background: #09151e; color: #e9f2f5; }
+.confirm-dialog::backdrop { background: #02070bb8; }
+.confirm-dialog p { margin: 0; padding: 18px 18px 12px; font-size: 14px; line-height: 1.6; }
+.confirm-dialog footer { display: flex; justify-content: flex-end; gap: 8px; padding: 0 18px 16px; }
+.confirm-dialog button { padding: 6px 14px; }

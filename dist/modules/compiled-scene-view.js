@@ -78,7 +78,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     return null;
   }
   function setLayer(name,visible){layerState.set(name,visible);// The detector body is always drawn; the cone layer is its pointing axis and field of view, the ray layer the projection pixel's ray.
-    if(name==='cone'){axisGroup.visible=visible;fovGroup.visible=visible&&fovEdges;solidGroup.visible=visible&&fovSolid;return;}
+    if(name==='cone'){axisGroup.visible=visible&&workingShown;fovGroup.visible=visible&&fovEdges;solidGroup.visible=visible&&fovSolid;return;}
     if(name==='ray'){projectionGroup.visible=visible;updateLabels();return;}
     for(const component of runtime.components)if(materialLayer(component)===name){const mesh=geometryView.meshes.get(component.componentId);mesh.visible=visible&&component.metadata.flags.display&&component.metadata.realization!=='virtual';}}
   function setDamOpacity(opacity){for(const component of runtime.components)if(materialLayer(component)==='dam'){const material=geometryView.meshes.get(component.componentId).material;material.transparent=opacity<1;material.opacity=opacity;material.depthWrite=opacity>.72;material.needsUpdate=true;}}
@@ -88,9 +88,15 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
   function setCoverageResult(data,device){coverage.covMap.value?.dispose();coverage.covMap.value=null;coverage.covHasMap.value=0;coverageResult=data&&device?{n:data.n,values:data.values}:null;workingCounts=data&&device?{n:data.n,counts:Float32Array.from(data.values,v=>v.count),device:{...device}}:null;buildAtlas();if(!data||!device)return;
     const perSr=countsPerSteradian(data.values,data.n,device),bytes=new Uint8Array(data.n*data.n*4);perSr.forEach((v,i)=>{bytes[4*i]=Math.round(255*coverageBrightness(v));bytes[4*i+3]=255;});
     const texture=new THREE.DataTexture(bytes,data.n,data.n,THREE.RGBAFormat);texture.magFilter=texture.minFilter=THREE.NearestFilter;texture.needsUpdate=true;coverage.covMap.value=texture;coverage.covBins.value=data.n;coverage.covHasMap.value=1;}
+  // No working station (the candidate list's toggle): its detector, axis, field of view and ray are hidden, and its
+  // coverage slot gets an empty field of view, so the shader and readouts see only the other stations.
+  let workingShown=true;
+  function collapseWorkingCoverage(){coverage.covMax.value.set(1e-6,1e-6);coverage.covSlotMax.value[0].set(1e-6,1e-6);}
+  function setWorkingVisible(on){workingShown=Boolean(on);detectorGroup.visible=workingShown;axisGroup.visible=workingShown&&(layerState.get('cone')??false);
+    if(!workingShown){clearRay();emphasiseFeatures([]);collapseWorkingCoverage();}else if(currentStation&&currentDevice)setCoveragePose(currentStation,currentDevice);drawFovEdges();updateLabels();}
   function setCoveragePose(station,device){const basis=detectorBasis(station.az,station.el);coverage.covOrigin.value.copy(compiledPointToScene([station.x,station.y,station.z]));
     coverage.covForward.value.copy(compiledPointToScene(basis.forward));coverage.covRight.value.copy(compiledPointToScene(basis.right));coverage.covUp.value.copy(compiledPointToScene(basis.up));
-    coverage.covMax.value.set(device.maxSlopeX,device.maxSlopeY);coverage.covStep.value=device.nativeSlopeStep;coverage.covStrips.value=device.stripsX;setSlot(0,{origin:coverage.covOrigin.value,forward:coverage.covForward.value,right:coverage.covRight.value,up:coverage.covUp.value,device,color:coverage.covColor.value});}
+    coverage.covMax.value.set(device.maxSlopeX,device.maxSlopeY);coverage.covStep.value=device.nativeSlopeStep;coverage.covStrips.value=device.stripsX;setSlot(0,{origin:coverage.covOrigin.value,forward:coverage.covForward.value,right:coverage.covRight.value,up:coverage.covUp.value,device,color:coverage.covColor.value});if(!workingShown)collapseWorkingCoverage();}
   function setSlot(i,{origin,forward,right,up,device,color}){coverage.covSlotOrigin.value[i].copy(origin);coverage.covSlotForward.value[i].copy(forward);coverage.covSlotRight.value[i].copy(right);coverage.covSlotUp.value[i].copy(up);
     coverage.covSlotMax.value[i].set(device.maxSlopeX,device.maxSlopeY);coverage.covSlotStep.value[i]=device.nativeSlopeStep;coverage.covSlotStrips.value[i]=device.stripsX;coverage.covSlotColor.value[i].copy(color);}
   // Field-of-view edges (option 视场棱线): the four corner lines of a station's acceptance as lines of constant screen
@@ -126,8 +132,9 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     const mesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.18,side:THREE.DoubleSide,depthTest:false,depthWrite:false}));mesh.renderOrder=4;
     solidGroup.add(mesh,fatLines(outline,{color,width:1.5,opacity:.6,depthTest:false}));}
   function drawFovEdges(){for(const child of [...fovGroup.children,...solidGroup.children]){lineMaterials.delete(child.material);}clear(fovGroup);clear(solidGroup);const shown=layerState.get('cone')??false;fovGroup.visible=fovEdges&&shown;solidGroup.visible=fovSolid&&shown;
-    if(currentStation&&currentDevice&&fovSolid){addFovSolid(currentStation,currentDevice,0xff65bd);for(const s of extraStations)addFovSolid(s,s.device,s.color);}
-    if(!currentStation||!currentDevice)return;addFovEdges(currentStation,currentDevice,LOOK.fovEdge);for(const s of extraStations)addFovEdges(s,s.device,s.color,{width:2,back:false});}
+    const working=currentStation&&currentDevice&&workingShown;
+    if(fovSolid){if(working)addFovSolid(currentStation,currentDevice,0xff65bd);for(const s of extraStations)addFovSolid(s,s.device,s.color);}
+    if(working)addFovEdges(currentStation,currentDevice,LOOK.fovEdge);for(const s of extraStations)addFovEdges(s,s.device,s.color,{width:2,back:false});}
   function setFovEdges(on){fovEdges=Boolean(on);fovGroup.visible=fovEdges&&(layerState.get('cone')??false);}
   function setFovSolid(on){fovSolid=Boolean(on);drawFovEdges();}
   // Physical maps of all shown stations (15d) in one float texture: slot 0 the working station, slots 1–8 the others;
@@ -164,7 +171,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
   // Every shown station's label at its marker (CSS pixels within the canvas), for screenshots and animation frames.
   function frameLabels(){const box=renderer.domElement.getBoundingClientRect(),at=p=>({x:p.x-box.left,y:p.y-box.top}),screen=markerScreen(),working=workingScreen();
     return[...(working?.visible?[{text:currentStation.name||'工作点位',color:'#ff4fb3',...at(working)}]:[]),...extraStations.map((s,i)=>screen[i].visible?{text:s.name,color:s.color,...at(screen[i])}:null).filter(Boolean)];}
-  function workingScreen(){if(!renderer||!currentStation)return null;return screenOf(compiledPointToScene([currentStation.x,currentStation.y,currentStation.z]),renderer.domElement.getBoundingClientRect());}
+  function workingScreen(){if(!renderer||!currentStation||!workingShown)return null;return screenOf(compiledPointToScene([currentStation.x,currentStation.y,currentStation.z]),renderer.domElement.getBoundingClientRect());}
   function updateLabels(){const box=container.getBoundingClientRect(),screen=markerScreen(),place=(label,p)=>{label.hidden=!p?.visible;if(p?.visible){label.style.left=`${p.x-box.left}px`;label.style.top=`${p.y-box.top}px`;}};
     [...labels.querySelectorAll('[data-station]')].forEach((label,i)=>place(label,screen[i]));workingLabel.textContent=currentStation?.name||'工作点位';place(workingLabel,demo?workingScreen():null);placeRayLabels();}
   const markerAt=event=>nearestScreenPoint(markerScreen(),[event.clientX,event.clientY],12);
@@ -194,7 +201,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
   function featureAt(event){const bounds=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-bounds.left)/bounds.width*2-1,-(event.clientY-bounds.top)/bounds.height*2+1);raycaster.setFromCamera(pointer,camera);
     const visible=[...featureMeshes.values()].flat().filter(mesh=>mesh.visible&&pickableFeatures.has(featureOfComponent.get(mesh.name)));return featureOfComponent.get(raycaster.intersectObjects(visible,false)[0]?.object.name)??null;}
   // Coverage at the subject surface under the pointer (FR-M10): what the station sees there (model frame z up; scene y up).
-  function coverageAt(){if(!coverage.covMode.value||!currentStation||!currentDevice)return null;
+  function coverageAt(){if(!coverage.covMode.value||!currentStation||!currentDevice||!workingShown)return null;
     const targets=[...subjectMeshes.filter(mesh=>mesh.visible),...(sliceMesh.visible?[sliceMesh]:[]),...(featureCoverage.value?[...featureMeshes.values()].flat().filter(mesh=>mesh.visible):[])];
     const hit=raycaster.intersectObjects(targets,false).find(h=>h.object!==sliceMesh||sliceMatter(h));
     if(!hit)return null;const point=[hit.point.x,-hit.point.z,hit.point.y],readout=coverageReadout(point,currentStation,currentDevice,coverageResult);
@@ -293,7 +300,8 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     setRecording(on){recording=Boolean(on);if(!recording)requestRender();},
     drawFrame(view,ctx,width,height){if(!renderer)return null;camera.position.copy(compiledPointToScene(view.position));controls.target.copy(compiledPointToScene(view.target));camera.lookAt(controls.target);updateScale();scaleRay();
       renderer.render(scene,camera);ctx.drawImage(renderer.domElement,0,0,width,height);return frameLabels();},
-    showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice)return;const pixel=data.values[y*data.n+x];displayRay(pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
+    setWorkingVisible,
+    showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice||!workingShown)return;const pixel=data.values[y*data.n+x];displayRay(pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
     viewRaySideOn,
     clearProjection(){clearRay();emphasiseFeatures([]);},
     setWater(){throw new Error('Compiled geometry uses frozen scenarios; select another published scenario');},

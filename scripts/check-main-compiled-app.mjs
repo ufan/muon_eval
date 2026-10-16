@@ -37,6 +37,9 @@ try{
  const selectData=async(selector,value)=>{if(await page.locator('#dataMenu').isHidden())await click('#dataMenuButton');await page.locator(selector).selectOption(value);};
  // Layer and display controls live in popovers over the 3D view (ADR-032): open the one holding a control before using it.
  const reveal=async selector=>{await page.locator(selector).evaluate(element=>{const popover=element.closest('.vt-popover');if(popover?.hidden)document.querySelector(`[aria-controls="${popover.id}"]`).click();});return page.locator(selector);};
+ // Opens a candidate whatever the state: confirms discarding edits, and reselects if the click deselected it.
+ const openCandidate=async n=>{const item=page.locator('#candidateList .candidate').nth(n);await item.evaluate(e=>e.click());if(await page.locator('#confirmDialog').evaluate(d=>d.open))await page.locator('#confirmOk').click();
+  if(await page.locator('#singlePanel').evaluate(e=>e.classList.contains('inactive')))await item.evaluate(e=>e.click());};
  async function loadSelected(){const navigation=page.waitForEvent('load');await click('#loadSelection');await navigation;await ready();}
  await page.goto(base);await ready();
  // An idle scene draws nothing; a view change draws again.
@@ -101,9 +104,12 @@ try{
  const count=await page.locator('#candidateList .candidate').count();await setInput('#elNumber','36');await click('#saveCandidate');await ready();
  assert.equal(await page.locator('#candidateList .candidate').count(),count+1);assert.equal(await page.locator('#candidateList .candidate.active').getAttribute('data-candidate'),'station-'+(count+1));
  accept();await click('#remove');await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count);assert.match(await page.locator('#workingStatus').innerText(),/未保存/);
- // Leaving unsaved edits asks first.
- accept();await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());await ready();assert.notDeepEqual((await currentResult()).config.origin,result.config.origin);
+ // Leaving unsaved edits asks first, in the page (window.confirm is blocked in embedded viewers).
+ await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());assert.ok(await page.locator('#confirmDialog').evaluate(d=>d.open));await page.locator('#confirmOk').click();await ready();assert.notDeepEqual((await currentResult()).config.origin,result.config.origin);
  await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');
+ // Clicking the highlighted candidate again deselects it: no working station until one is chosen (owner, 2026-10-16).
+ {const active=page.locator('#candidateList .candidate.active');await active.evaluate(element=>element.click());assert.equal(await active.count(),0);assert.ok(await page.locator('#noWorking').isVisible());
+  assert.ok(await page.locator('#remove').isDisabled());await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();assert.equal(await active.count(),1);assert.ok(await page.locator('#noWorking').isHidden());}
  // Every candidate gets a cached result in the background (FR-P10); ticked candidates are compared from the cache,
  // and the exported comparison holds their full, recomputed results.
  await page.waitForFunction(n=>document.querySelectorAll('#candidateList .result-status[data-state="ready"]').length===n,count,{timeout:120000});
@@ -216,7 +222,7 @@ try{
   const note=await page.locator('#placeNote').innerText();if(note.startsWith('已放入'))cavityNote=note;else if(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')))await page.keyboard.press('Escape');}
  assert.ok(cavityNote,'no cavity found under the top-view grid');const [,floor]=/底板 Z ([\d.]+) m，离底板 1\.00 m/.exec(cavityNote);assert.ok(Math.abs(+await page.locator('#z').inputValue()-(+floor+1))<.011,cavityNote);
  await ready();await setInput('#viewSelect','perspective','change');
- accept();await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();
+ await openCandidate(0);await ready();
  const artifacts=await mkdtemp(join(tmpdir(),'muon-main-compiled-'));await page.screenshot({path:join(artifacts,'desktop.png')});
  for(const [scenarioId,waterLevel] of [['mid',293],['high',298],['extreme',305]]){await selectData('#scenarioSelect',scenarioId);await loadSelected();result=await currentResult();assert.equal(result.scenarioId,scenarioId);assert.equal(result.variables.water_up_level,waterLevel);assert.equal(result.variables.gate_state,'closed');assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);}
  await page.setViewportSize({width:390,height:844});for(const selector of ['#toggleLeft','#toggleRight'])await click(selector);await page.waitForFunction(()=>{const canvas=document.querySelector('#webgl canvas'),rect=canvas?.getBoundingClientRect();return rect?.width>0&&rect.height>0&&Math.abs(canvas.width/canvas.height-rect.width/rect.height)<.01;},null,{timeout:10000});await page.screenshot({path:join(artifacts,'narrow.png'),fullPage:true});
