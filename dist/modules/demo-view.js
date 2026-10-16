@@ -20,7 +20,15 @@ const videoType = () => typeof MediaRecorder === 'undefined' ? null : VIDEO_TYPE
 
 export function createDemoView({ root = document, sceneView, storage, storageKey, datasetId, describe, onToggle = () => {} }) {
   const $ = s => root.querySelector(s), app = $('.app'), bar = $('#demoBar');
-  let on = false, current = null, saved = [], projectionHome = null;
+  let on = false, current = null, saved = [], projectionHome = null, panels = { legend: true, note: true };
+  // 图例 and 说明 are the user's choice (owner, 2026-10-16), remembered in this browser; exports follow what is shown, except
+  // that a hidden 说明 still leaves its first line ("not a construction or safety conclusion") in screenshots and animations.
+  const panelsKey = `${storageKey}:panels`;
+  try { const p = JSON.parse(storage.getItem(panelsKey)); if (p && typeof p === 'object') panels = { legend: p.legend !== false, note: p.note !== false }; } catch {}
+  const exported = ({ caption, legend, footnote }) => ({ caption, legend: panels.legend ? legend : [], footnote: panels.note ? footnote : footnote.slice(0, 1) });
+  function syncPanels() { $('#demoLegend').hidden = !on || !panels.legend; $('#demoFootnote').hidden = !on || !panels.note;
+    $('#demoLegendToggle').setAttribute('aria-pressed', String(panels.legend)); $('#demoNoteToggle').setAttribute('aria-pressed', String(panels.note)); }
+  const togglePanel = key => { panels = { ...panels, [key]: !panels[key] }; try { storage.setItem(panelsKey, JSON.stringify(panels)); } catch {} syncPanels(); };
   const projection = $('#projectionPanel');
   try { saved = (JSON.parse(storage.getItem(storageKey)) ?? []).filter(v => typeof v?.id === 'string' && Array.isArray(v.position) && Array.isArray(v.target)); } catch {}
   const persist = () => { try { storage.setItem(storageKey, JSON.stringify(saved)); } catch {} };
@@ -57,13 +65,13 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
     // The projection sits in the right sidebar (ADR-032); in demonstration mode it floats over the 3D view again.
     if (on) { projectionHome = { parent: projection.parentElement, next: projection.nextElementSibling }; $('#viewport').append(projection); }
     else if (projectionHome) { projectionHome.parent.insertBefore(projection, projectionHome.next); projectionHome = null; } if (on) current = $('#viewSelect').value;
-    for (const id of ['#demoBar', '#demoCaption', '#demoLegend', '#demoFootnote']) $(id).hidden = !on;
+    for (const id of ['#demoBar', '#demoCaption']) $(id).hidden = !on; syncPanels();
     $('#demoProjection').setAttribute('aria-pressed', 'false');
     sceneView.setDemo(on); renderViews(); render(); onToggle(on);
   }
   function screenshot() {
     const shot = sceneView.capture(); if (!shot) return;
-    const { caption, legend, footnote } = describe(), ratio = shot.image.width / shot.width, out = document.createElement('canvas');
+    const { caption, legend, footnote } = exported(describe()), ratio = shot.image.width / shot.width, out = document.createElement('canvas');
     out.width = shot.image.width; out.height = shot.image.height;
     const ctx = out.getContext('2d'); ctx.drawImage(shot.image, 0, 0); ctx.scale(ratio, ratio);
     drawOps(ctx, snapshotLayout({ width: shot.width, height: shot.height, caption, legend, footnote, labels: shot.labels }));
@@ -89,7 +97,7 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
       : tourFrames([...presets().map(p => sceneView.presetView(p.id)), ...saved.map(v => ({ position: v.position, target: v.target }))], { fps, moveSeconds: 2, holdSeconds: 1 });
     const box = $('#webgl').getBoundingClientRect(), width = Math.round(box.width / 2) * 2, height = Math.round(box.height / 2) * 2;
     const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
-    const ctx = canvas.getContext('2d'), text = describe(), button = $('#demoRecord'), state = recording = { cancelled: false, stop: null };
+    const ctx = canvas.getContext('2d'), text = exported(describe()), button = $('#demoRecord'), state = recording = { cancelled: false, stop: null };
     const draw = index => { drawOps(ctx, snapshotLayout({ width, height, ...text, labels: sceneView.drawFrame(frames[index], ctx, width, height) })); };
     const finish = () => { recording = null; sceneView.setRecording(false); sceneView.setCameraView(start); button.textContent = '录制动画'; bar.classList.remove('recording'); };
     sceneView.setRecording(true); bar.classList.add('recording'); button.textContent = '准备录制…';
@@ -135,6 +143,7 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
   $('#demoShot').onclick = screenshot;
   $('#demoRecord').onclick = record;
   if (!videoType() && typeof VideoEncoder === 'undefined') { $('#demoRecord').disabled = true; $('#demoRecord').title = '此浏览器不支持录制视频'; }
+  $('#demoLegendToggle').onclick = () => togglePanel('legend'); $('#demoNoteToggle').onclick = () => togglePanel('note');
   $('#demoProjection').onclick = () => { const shown = app.classList.toggle('demo-projection'); $('#demoProjection').setAttribute('aria-pressed', String(shown)); };
   $('#demoSaveView').onclick = () => {
     const view = sceneView.cameraView(); if (!view) return;

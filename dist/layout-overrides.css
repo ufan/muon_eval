@@ -409,3 +409,4 @@
   .header-actions { gap: 5px; }
   .header-actions > button, .header-actions .header-link, .data-menu > button, .export-menu > button { padding: 5px 8px; font-size: 12px; white-space: nowrap; }
 }
+.demo-bar button[aria-pressed="true"] { border-color: var(--cyan); color: #fff; }
