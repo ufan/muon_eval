@@ -18,6 +18,7 @@ import { openStudies, saveStudy, saveSession, createStudy, switchStudy, listStud
 import { selectionHref, APP_PAGES } from './application-selection.js';
 import { placementPoint } from './coverage-map.js';
 import { readDisplayState, shownStations } from './display-state.js';
+import { pageConfirm, pagePrompt, pageAlert, pageText, downloadText } from './page-dialog.js';
 export function createMainPage({workbenchHref='./geometry-preview.html',datasetId,datasetVersion,features,featureLayerOptions={},recognitionItems,state,sceneView,projectionView,createController,createPort,placeInCavity=()=>null,sliceMask=null,targetSamples=null,scenarioId=null,releases=[],candidateIds=[],capabilities,environmentDescription,backendLabel,root=document,storage=localStorage}){
  const $=s=>root.querySelector(s),$$=s=>[...root.querySelectorAll(s)];
 
@@ -105,7 +106,7 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  // Pose changes from 瞄准此处 and the arrow-key shortcuts go through the plan like typed values.
  function setPose(az,el){study.update('az',az);study.update('el',el);persistSession();sync();renderList();scheduleDetectorUpdate();}
  // Shortcuts (ADR-032, view-shortcuts.js); off in demonstration mode, whose arrow keys step through the views.
- function bindShortcuts(){let lastCoverage='geometric';window.addEventListener('keydown',event=>{if($('.app').classList.contains('demo'))return;const action=shortcutFor(event);if(!action)return;
+ function bindShortcuts(){let lastCoverage='geometric';window.addEventListener('keydown',event=>{if($('.app').classList.contains('demo')||document.querySelector('dialog[open]'))return;const action=shortcutFor(event);if(!action)return;
   if(action.toggle==='coverage'){const mode=$('#coverageMode');if(mode.value!=='off'){lastCoverage=mode.value;mode.value='off';}else mode.value=lastCoverage;mode.dispatchEvent(new Event('change',{bubbles:true}));}
   else if(action.toggle){$(`[data-layer="${action.toggle}"]`).click();}
   else{if(!workingActive)return;event.preventDefault();const {az,el}=inputs().station;setPose(action.nudge==='az'?(((az+action.by)%360)+360)%360:az,action.nudge==='el'?Math.min(90,Math.max(0,el+action.by)):el);}});}
@@ -124,13 +125,13 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
    label.querySelector('input').onchange=e=>{study.setMember(deployment.id,s.id,e.target.checked);persistPlan();renderDeployments();};return label;}):[]));
   $('#deploymentSummary').textContent=deployment?`${members.size} 个点位${[...members].every(id=>candidateState(id)==='ready')?'，均已计算':'，计算中'}。多站联合指标见“多站总览”（选择“当前部署组合”）。`:'新建一个部署组合，再勾选其中的候选点位。';
   $('#compareDeployment').disabled=!members.size;}
- const askName=(message,value)=>{const name=prompt(message,value);return name===null?null:name.trim().slice(0,200)||value;};
+ const askName=(message,value)=>pagePrompt(message,value);
  function bindDeployments(){
   $('#deploymentSelect').onchange=e=>{study.selectDeployment(e.target.value);persistSession();renderDeployments();};
-  $('#newDeployment').onclick=()=>{const name=askName('部署组合名称',`部署组合 ${study.plan.deployments.length+1}`);if(name===null)return;study.createDeployment(name);persistPlan();renderDeployments();};
-  $('#copyDeployment').onclick=()=>{const d=study.plan.deployments.find(x=>x.id===study.activeDeployment),name=askName('复制为',`${d.name} 副本`);if(name===null)return;study.copyDeployment(d.id,name);persistPlan();renderDeployments();};
-  $('#renameDeployment').onclick=()=>{const d=study.plan.deployments.find(x=>x.id===study.activeDeployment),name=askName('部署组合名称',d.name);if(name===null)return;study.renameDeployment(d.id,name);persistPlan();renderDeployments();};
-  $('#deleteDeployment').onclick=()=>{const d=study.plan.deployments.find(x=>x.id===study.activeDeployment);if(!confirm(`删除部署组合「${d.name}」？候选点位不受影响。`))return;study.deleteDeployment(d.id);persistPlan();renderDeployments();};
+  $('#newDeployment').onclick=async()=>{const name=await askName('部署组合名称',`部署组合 ${study.plan.deployments.length+1}`);if(name===null)return;study.createDeployment(name);persistPlan();renderDeployments();};
+  $('#copyDeployment').onclick=async()=>{const d=study.plan.deployments.find(x=>x.id===study.activeDeployment),name=await askName('复制为',`${d.name} 副本`);if(name===null)return;study.copyDeployment(d.id,name);persistPlan();renderDeployments();};
+  $('#renameDeployment').onclick=async()=>{const d=study.plan.deployments.find(x=>x.id===study.activeDeployment),name=await askName('部署组合名称',d.name);if(name===null)return;study.renameDeployment(d.id,name);persistPlan();renderDeployments();};
+  $('#deleteDeployment').onclick=async()=>{const d=study.plan.deployments.find(x=>x.id===study.activeDeployment);if(!await pageConfirm(`删除部署组合「${d.name}」？候选点位不受影响。`,{ok:'删除',danger:true}))return;study.deleteDeployment(d.id);persistPlan();renderDeployments();};
   // Compare exactly this deployment's stations.
   $('#compareDeployment').onclick=()=>{const members=new Set(study.plan.deployments.find(x=>x.id===study.activeDeployment)?.stations??[]);for(const s of study.plan.stations)study.setCompared(s.id,members.has(s.id));persistSession();renderList();showComparison();refreshCandidates();$('#mainPatternControls').open=true;};}
  function showComparison(){if(!study)return;const rows=study.compared.map(id=>({id,label:study.candidate(id).name,state:candidateState(id)})),ready=rows.filter(r=>r.state==='ready');
@@ -140,11 +141,9 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  let workingActive=true;
  function setWorkingActive(on){workingActive=Boolean(on);$('#singlePanel').classList.toggle('inactive',!workingActive);$('#noWorking').hidden=workingActive;sceneView.setWorkingVisible(workingActive);renderList();renderOverview();}
  function deactivateWorking(){study.select(study.working.from??study.plan.stations[0].id);persistSession();sync();setWorkingActive(false);}
- // In-page confirmation: the artifact viewer and some embeds block window.confirm.
- function confirmInPage(message){const dialog=$('#confirmDialog');$('#confirmText').textContent=message;dialog.returnValue='';dialog.showModal();return new Promise(resolve=>dialog.addEventListener('close',()=>resolve(dialog.returnValue==='ok'),{once:true}));}
  function toggleCandidate(id){if(workingActive&&id===study.working.from)deactivateWorking();else selectCandidate(id);}
  async function selectCandidate(id){if(!workingActive){study.select(id);persistSession();sync();setWorkingActive(true);scheduleDetectorUpdate();return;}
-  if(study.modified&&!await confirmInPage('当前编辑点位有未保存的修改，切换会放弃这些修改。继续吗？'))return;study.select(id);persistSession();sync();renderList();scheduleDetectorUpdate();}
+  if(study.modified&&!await pageConfirm('当前编辑点位有未保存的修改，切换会放弃这些修改。继续吗？',{ok:'放弃修改'}))return;study.select(id);persistSession();sync();renderList();scheduleDetectorUpdate();}
  function syncDeviceStatus(){const {device:DEVICE,response:RESPONSE}=study.configuration,pct=v=>(100*v).toFixed(1).replace(/\.0$/,'')+'%',slope=v=>v.toFixed(2);$('#areaOut').textContent=`${(DEVICE.width*1000).toFixed(1)} × ${(DEVICE.height*1000).toFixed(1)} mm`;$('#pitchOut').textContent=(DEVICE.stripPitch*1000).toFixed(2).replace(/0$/,'')+' mm';$('#stripsOut').textContent=DEVICE.stripsX;$('#spacingOut').textContent=DEVICE.spacing.toFixed(2)+' m';$('#baselineOut').textContent=DEVICE.baseline.toFixed(2)+' m';$('#fovOut').textContent=DEVICE.fovH.toFixed(1)+'° / '+DEVICE.fovV.toFixed(1)+'°';$('#coreFovOut').textContent=`${2*DEVICE.stripsX-1} × ${2*DEVICE.stripsY-1}`;$('#efficiencyOut').textContent=pct(RESPONSE.layerEfficiency);$('#coincidenceOut').textContent=pct(RESPONSE.layerEfficiency**DEVICE.layers*RESPONSE.deadLiveFraction);$('#deadOut').textContent=pct(1-RESPONSE.deadLiveFraction);$('#resolutionOut').textContent=RESPONSE.angularResolutionDeg.toFixed(2).replace(/0$/,'')+'°';$('#exposureLabel').textContent=RESPONSE.exposureDays+'天预计计数';$('#sxMin').textContent='−'+slope(DEVICE.maxSlopeX);$('#sxMax').textContent='+'+slope(DEVICE.maxSlopeX);$('#syMin').textContent='−'+slope(DEVICE.maxSlopeY);$('#syMax').textContent='+'+slope(DEVICE.maxSlopeY)}
  function sync(){const w=study.working;for(const k of ['name','x','y','z','az','el'])$('#'+k).value=w[k];$('#azNumber').value=w.az;$('#elNumber').value=w.el;syncDeviceStatus()}
  // The study's plan always follows the scenario chosen in the app.
@@ -155,12 +154,11 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  const studyLabel=({id,title})=>title||`工作方案 ${id.replace(/^study-/,'')}`;
  function renderStudies(){const select=$('#studySelect');if(!select)return;const studies=listStudies(storage,datasetId);if(!studies.some(s=>s.id===studyId))studies.push({id:studyId,title:study.plan.title});select.replaceChildren(...studies.map(s=>new Option(studyLabel(s),s.id,false,s.id===studyId)));}
  function openStudy(id,{plan,session}){studyId=id;applyPlan(plan,session);renderStudies();renderList();sync();showComparison();refreshCandidates();scheduleDetectorUpdate();}
- function bindStudies(){$('#studySelect').onchange=e=>{persistPlan();try{openStudy(e.target.value,switchStudy(storage,datasetId,e.target.value));}catch(error){alert('工作方案无法打开：'+error.message);renderStudies();}};
-  $('#renameStudy').onclick=()=>{const name=askName('工作方案名称',studyLabel({id:studyId,title:study.plan.title}));if(name===null)return;study.setTitle(name);persistPlan();renderStudies();};
-  $('#deleteStudy').onclick=()=>{if(!confirm(`删除工作方案「${studyLabel({id:studyId,title:study.plan.title})}」？此操作不可撤销，需要时请先导出。`))return;deleteStudy(storage,datasetId,studyId);const next=listStudies(storage,datasetId)[0];
+ function bindStudies(){$('#studySelect').onchange=e=>{persistPlan();try{openStudy(e.target.value,switchStudy(storage,datasetId,e.target.value));}catch(error){pageAlert('工作方案无法打开：'+error.message);renderStudies();}};
+  $('#renameStudy').onclick=async()=>{const name=await askName('工作方案名称',studyLabel({id:studyId,title:study.plan.title}));if(name===null)return;study.setTitle(name);persistPlan();renderStudies();};
+  $('#deleteStudy').onclick=async()=>{if(!await pageConfirm(`删除工作方案「${studyLabel({id:studyId,title:study.plan.title})}」？此操作不可撤销，需要时请先导出。`,{ok:'删除',danger:true}))return;deleteStudy(storage,datasetId,studyId);const next=listStudies(storage,datasetId)[0];
    if(next){openStudy(next.id,switchStudy(storage,datasetId,next.id));return;}const plan=planFromState({release:datasetId,scenario:scenarioId,model:state.configuration.device.model,stations:datasetStations,settings:serializeDeviceSettings(state.configuration)});openStudy(createStudy(storage,datasetId,plan),{plan,session:null});};
   $('#newStudy').onclick=()=>{persistPlan();const plan=planFromState({release:datasetId,scenario:scenarioId,model:state.configuration.device.model,stations:datasetStations,settings:serializeDeviceSettings(state.configuration)});openStudy(createStudy(storage,datasetId,plan),{plan,session:null});};}
- function download(text,name){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=name;a.click();URL.revokeObjectURL(a.href);}
  function fillDeviceForm(){const s=deviceSettingsData();$('#cfgWidth').value=(s.width*1000).toFixed(1);$('#cfgHeight').value=(s.height*1000).toFixed(1);$('#cfgPitch').value=(s.stripPitch*1000).toFixed(2);$('#cfgStrips').value=s.strips;$('#cfgSpacing').value=s.spacing;$('#cfgEfficiency').value=(s.layerEfficiency*100).toFixed(1);$('#cfgDead').value=((1-s.deadLiveFraction)*100).toFixed(1);$('#cfgResolution').value=s.angularResolutionDeg;$('#cfgSystematic').value=(s.systematicFraction*100).toFixed(1);$('#cfgExposure').value=s.exposureDays;$('#cfgAngular').value=s.angularModel}
  function bindDeviceSettings(){const dialog=$('#deviceDialog');$('#deviceSettings').onclick=()=>{fillDeviceForm();dialog.showModal()};$('#deviceClose').onclick=$('#deviceCancel').onclick=()=>dialog.close();const formSettings=()=>({width:+$('#cfgWidth').value/1000,height:+$('#cfgHeight').value/1000,stripPitch:+$('#cfgPitch').value/1000,strips:+$('#cfgStrips').value,spacing:+$('#cfgSpacing').value,layerEfficiency:+$('#cfgEfficiency').value/100,deadLiveFraction:1-+$('#cfgDead').value/100,angularResolutionDeg:+$('#cfgResolution').value,systematicFraction:+$('#cfgSystematic').value/100,exposureDays:+$('#cfgExposure').value,angularModel:$('#cfgAngular').value});
   // The form edits the working station's detector; "应用到全部候选" also sets it on every candidate (explicit update, FR-P6).
@@ -175,7 +173,7 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
    if(plan.scene.contentHash!==null)throw new Error('用户加载的数据集尚不支持');if(!releases.includes(plan.scene.release))throw new Error(`未登记的数据集版本 ${plan.scene.release}`);
    if(plan.scene.release===datasetId&&(plan.scene.scenario??scenarioId)===scenarioId){persistPlan();openStudy(createStudy(storage,datasetId,plan),{plan,session:null});return;}
    persistPlan();createStudy(storage,plan.scene.release,plan);location.assign(selectionHref(APP_PAGES.main,{datasetId:plan.scene.release,scenarioId:plan.scene.scenario}));
-  }catch(error){alert('方案导入失败：'+error.message);}}
+  }catch(error){pageAlert('方案导入失败：'+error.message);}}
  // Coverage highlight (FR-M10): view state, remembered per release; never changes results.
  function bindCoverage(){const key=`muon-coverage:${datasetId}`;let saved=null;try{saved=JSON.parse(storage.getItem(key));}catch{}displayState=readDisplayState(saved);const c=displayState.coverage;
   const mode=$('#coverageMode'),core=$('#coverageCore'),context=$('#coverageContext'),featureTint=$('#coverageFeatures');featureTint.checked=c.features;mode.value=c.mode;core.checked=c.core;context.checked=c.context;
@@ -228,13 +226,15 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
   document.addEventListener('click',e=>{if(!menu.hidden&&!e.target.closest('.export-menu'))close();});
   menu.onclick=e=>{const kind=e.target.closest('[data-export]')?.dataset.export;if(!kind)return;close();
    try{const all=study.plan.deployments.filter(d=>d.stations.length).map(d=>d.id);
-    if(kind==='study')download(serializePlan(study.plan),`${base()}.json`);
-    else if(kind==='deployment')download(serializePlan(extractDeployments(study.plan,[study.activeDeployment])),`${base()}-${slug(study.activeDeployment)}.json`);
-    else download(serializePlan(extractDeployments(study.plan,all)),`${base()}-deployments.json`);
-   }catch(error){alert('导出失败：'+error.message);}};}
+    if(kind==='study')downloadText(serializePlan(study.plan),`${base()}.json`);
+    else if(kind==='deployment')downloadText(serializePlan(extractDeployments(study.plan,[study.activeDeployment])),`${base()}-${slug(study.activeDeployment)}.json`);
+    else if(kind==='deployments')downloadText(serializePlan(extractDeployments(study.plan,all)),`${base()}-deployments.json`);
+    // Where the viewer blocks downloads (embedded artifact pages), the same file can be copied as text.
+    else pageText('整个工作方案（muography-plan JSON）。可复制后保存为 .json 文件，再用“导入方案”载入。',serializePlan(study.plan),{filename:`${base()}.json`});
+   }catch(error){pageAlert('导出失败：'+error.message);}};}
  function bind(){document.querySelectorAll('.section-toggle').forEach(button=>button.onclick=()=>{const section=button.closest('.collapsible-section'),collapsed=section.classList.toggle('collapsed');button.textContent=collapsed?'▸':'▾';button.setAttribute('aria-expanded',String(!collapsed));button.title=(collapsed?'展开':'收起')+section.querySelector('h2').childNodes[0].textContent.trim()});const updateField=(k,value)=>{try{study.update(k,value);}catch{return;}persistSession();sync();renderList();scheduleDetectorUpdate()};for(const k of ['name','x','y','z','az','el'])$('#'+k).addEventListener('input',e=>updateField(k,e.target.value));$('#azNumber').addEventListener('input',e=>updateField('az',e.target.value));$('#elNumber').addEventListener('input',e=>updateField('el',e.target.value));const toggleSidebar=side=>{const app=$('.app'),collapsed=app.classList.toggle(side+'-collapsed'),button=$(side==='left'?'#toggleLeft':'#toggleRight'),action=(collapsed?'展开':'收起')+(side==='left'?'左侧栏':'右侧栏');// Edge tabs on the sidebars: the triangle points the way the sidebar will move.
   button.textContent=(side==='left')===collapsed?'▶':'◀';button.setAttribute('aria-expanded',String(!collapsed));button.setAttribute('aria-label',action);button.title=action;requestAnimationFrame(resize)};$('#toggleLeft').onclick=()=>toggleSidebar('left');$('#toggleRight').onclick=()=>toggleSidebar('right');$('#viewSelect').onchange=e=>setView(e.target.value);$$('[data-layer]').forEach(e=>{sceneView.setLayer(e.dataset.layer,e.checked);e.onchange=()=>sceneView.setLayer(e.dataset.layer,e.checked);});$('#damOpacity').oninput=setDamOpacity;setDamOpacity();$('#upLevel').oninput=updateWater;$('#gridSize').disabled=true;$('#gridSize').closest('.field').style.display='none';// The plan changed, so the working result's plan reference is recomputed too (provenance, not physics).
- const changed=()=>{persistPlan();sync();renderList();refreshCandidates();showComparison();scheduleDetectorUpdate();};$('#saveCandidate').onclick=()=>{study.saveAsNew();changed();};$('#updateCandidate').onclick=()=>{if(study.modified&&study.working.from!==null){study.updateCandidate();changed();}};$('#remove').onclick=()=>{const id=study.working.from;if(id===null||study.plan.stations.length<2||!confirm(`删除候选「${study.candidate(id).name}」？它也会从所有部署组合中移除。`))return;study.removeCandidate(id);changed();};bindExportMenu();$('#importPlan').onclick=()=>$('#importPlanFile').click();$('#importPlanFile').onchange=importPlan;window.addEventListener('resize',resize)}
+ const changed=()=>{persistPlan();sync();renderList();refreshCandidates();showComparison();scheduleDetectorUpdate();};$('#saveCandidate').onclick=()=>{study.saveAsNew();changed();};$('#updateCandidate').onclick=()=>{if(study.modified&&study.working.from!==null){study.updateCandidate();changed();}};$('#remove').onclick=async()=>{const id=study.working.from;if(id===null||study.plan.stations.length<2||!await pageConfirm(`删除候选「${study.candidate(id).name}」？它也会从所有部署组合中移除。`,{ok:'删除',danger:true})||study.working.from!==id)return;study.removeCandidate(id);changed();};bindExportMenu();$('#importPlan').onclick=()=>$('#importPlanFile').click();$('#importPlanFile').onchange=importPlan;window.addEventListener('resize',resize)}
  function configureCapabilities(){
   const continuous=capabilities.continuousWater;$('#upLevel').disabled=!continuous;$('#upLevel').title=continuous?'连续上游水位':'由已发布冻结工况决定，不支持连续水位';
   const significance=$('[data-projection="significance"]');significance.disabled=!capabilities.targetSignificance;significance.title=significance.disabled?'聚合材料尚无源实体归属；显著度未实现':'';

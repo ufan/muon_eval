@@ -344,11 +344,22 @@
 .no-working { padding: 20px 16px; border-bottom: 1px solid var(--line); }
 .no-working p { margin: 0; color: #a9bdc6; font-size: 13px; line-height: 1.6; }
 /* In-page confirmation (replaces window.confirm, which embedded viewers block). */
-.confirm-dialog { width: min(380px, calc(100vw - 32px)); padding: 0; border: 1px solid #31505e; border-radius: 10px; background: #09151e; color: #e9f2f5; }
-.confirm-dialog::backdrop { background: #02070bb8; }
-.confirm-dialog p { margin: 0; padding: 18px 18px 12px; font-size: 14px; line-height: 1.6; }
-.confirm-dialog footer { display: flex; justify-content: flex-end; gap: 8px; padding: 0 18px 16px; }
-.confirm-dialog button { padding: 6px 14px; }
+/* In-page dialogs (page-dialog.js): browser prompt/confirm/alert are blocked in embedded viewers. */
+.page-dialog { inset: 0; margin: auto; max-height: calc(100vh - 32px); width: min(400px, calc(100vw - 32px)); padding: 0; border: 1px solid #31505e; border-radius: 10px; background: #09151e; color: #e9f2f5; }
+.page-dialog.wide { width: min(720px, calc(100vw - 32px)); }
+.page-dialog::backdrop { background: #02070bb8; }
+.page-dialog p { margin: 0; padding: 18px 18px 12px; font-size: 14px; line-height: 1.6; white-space: pre-line; }
+.page-dialog-body { padding: 0 18px; }
+.page-dialog-body:empty { display: none; }
+.page-dialog-body input { width: 100%; box-sizing: border-box; margin-bottom: 14px; padding: 7px 9px; background: #050d13; color: #e9f2f5; border: 1px solid #31505e; border-radius: 6px; font: inherit; }
+.page-dialog-body input:focus { outline: 2px solid #3fb6a0; outline-offset: 1px; }
+.page-dialog-body textarea { width: 100%; box-sizing: border-box; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; background: #050d13; color: #cfe3ea; border: 1px solid #284452; border-radius: 6px; padding: 8px; resize: vertical; }
+.page-dialog-actions { display: flex; gap: 8px; margin: 8px 0 14px; }
+.page-dialog footer { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 0 18px 16px; }
+.page-dialog-status { margin-right: auto; font-size: 12px; color: #8fd3b0; }
+.page-dialog button { padding: 6px 14px; }
+.page-dialog.danger #pageDialogOk { background: #8f2f2f; border-color: #b24a4a; color: #fff; }
+@media (pointer: coarse) { .page-dialog button { min-height: 40px; } }
 /* 其他点位 chip (display-state.js) and the candidate list's compare tools. */
 .vt-count { min-width: 16px; padding: 0 4px; border-radius: 8px; background: #1b3442; color: #d3e2e8; font-size: 11px; text-align: center; }
 .vt-chip[aria-pressed="true"] { border-color: var(--cyan); color: #fff; }

@@ -30,7 +30,9 @@ try{
  const setInput=(selector,value,event='input')=>page.locator(selector).evaluate((element,{value,event})=>{element.value=value;element.dispatchEvent(new Event(event,{bubbles:true}));},{value,event});
  // The working station's full result, through "导出当前结果".
  async function currentResult(){await page.locator('#mainPatternControls').evaluate(element=>element.open=true);const pending=page.waitForEvent('download');await click('#exportResult');const download=await pending;return JSON.parse(await readFile(await download.path(),'utf8'));}
- const accept=(text)=>page.once('dialog',dialog=>dialog.accept(text));
+ // In-page dialogs (page-dialog.js) replace window.prompt/confirm/alert; a native dialog anywhere fails the run.
+ const nativeDialogs=[];page.on('dialog',dialog=>{nativeDialogs.push(dialog.message());dialog.dismiss().catch(()=>{});});
+ const answer=async text=>{await page.waitForSelector('#pageDialog[open]');if(text!==undefined)await page.locator('#pageDialog input').fill(text);await page.locator('#pageDialogOk').click();await page.waitForFunction(()=>!document.querySelector('#pageDialog')?.open);await page.evaluate(()=>new Promise(r=>setTimeout(r,50)));};// the close event and the caller's continuation run after .open turns false
  const exportPlan=async kind=>{const pending=page.waitForEvent('download');await click('#export');await click(`[data-export="${kind}"]`);const file=await pending;return {name:file.suggestedFilename(),plan:parsePlan(await readFile(await file.path(),'utf8'))};};
  const openCandidates=async()=>{if(await page.locator('#candidateSection').evaluate(e=>e.classList.contains('collapsed')))await click('#candidateSection .section-toggle');};
  // Dataset controls sit in the header "数据配置" menu; open it before choosing (selectOption needs a visible select).
@@ -38,7 +40,7 @@ try{
  // Layer and display controls live in popovers over the 3D view (ADR-032): open the one holding a control before using it.
  const reveal=async selector=>{await page.locator(selector).evaluate(element=>{const popover=element.closest('.vt-popover');if(popover?.hidden)document.querySelector(`[aria-controls="${popover.id}"]`).click();});return page.locator(selector);};
  // Opens a candidate whatever the state: confirms discarding edits, and reselects if the click deselected it.
- const openCandidate=async n=>{const item=page.locator('#candidateList .candidate').nth(n);await item.evaluate(e=>e.click());if(await page.locator('#confirmDialog').evaluate(d=>d.open)){await page.locator('#confirmOk').click();await page.waitForFunction(()=>!document.querySelector('#confirmDialog').open);}
+ const openCandidate=async n=>{const item=page.locator('#candidateList .candidate').nth(n);await item.evaluate(e=>e.click());if(await page.evaluate(()=>Boolean(document.querySelector('#pageDialog')?.open))){await page.locator('#pageDialogOk').click();await page.waitForFunction(()=>!document.querySelector('#pageDialog')?.open);}
   if(await page.locator('#singlePanel').evaluate(e=>e.classList.contains('inactive')))await item.evaluate(e=>e.click());};
  const setOthers=async on=>{if(await page.locator('#othersButton').getAttribute('aria-pressed')!==String(on))await click('#othersButton');};
  async function loadSelected(){const navigation=page.waitForEvent('load');await click('#loadSelection');await navigation;await ready();}
@@ -91,7 +93,7 @@ try{
  await click('#updateCandidate');await ready();assert.match(await page.locator('#workingStatus').innerText(),/一致/);assert.ok(await page.locator('#updateCandidate').isDisabled());result=await currentResult();
  // "导出部署方案" writes a muography-plan 1.1.0 file that loads back byte-identically (PLAN_FORMAT.md).
  const planPending=page.waitForEvent('download');await click('#export');assert.equal(await page.locator('#exportMenu').isVisible(),true);assert.ok(await page.locator('[data-export="deployment"]').isDisabled());await click('[data-export="study"]');const download=await planPending,planText=await readFile(await download.path(),'utf8'),plan=parsePlan(planText);
- assert.equal(serializePlan(plan),planText);assert.equal(plan.scene.release,release);assert.equal(plan.scene.scenario,'low');assert.ok(plan.stations.every(s=>s.candidateId===s.id));
+ assert.equal(serializePlan(plan),planText);await click('#export');await click('[data-export="text"]');await page.waitForSelector('#pageDialog[open] textarea');assert.equal(await page.locator('#pageDialog textarea').inputValue(),planText);await answer();assert.equal(plan.scene.release,release);assert.equal(plan.scene.scenario,'low');assert.ok(plan.stations.every(s=>s.candidateId===s.id));
  assert.equal(plan.schemaVersion,'1.1.0');assert.deepEqual(plan.deployments,[]);assert.ok(plan.stations.every(s=>s.note===''));
  // The plan holds no active station (session state); the edited station is the first, active one.
  assert.deepEqual(plan.stations[0].pose,{azimuthDeg:25,elevationDeg:35});
@@ -104,9 +106,9 @@ try{
  // Save as new adds a candidate and makes it the source; deleting it leaves an unsaved working station.
  const count=await page.locator('#candidateList .candidate').count();await setInput('#elNumber','36');await click('#saveCandidate');await ready();
  assert.equal(await page.locator('#candidateList .candidate').count(),count+1);assert.equal(await page.locator('#candidateList .candidate.active').getAttribute('data-candidate'),'station-'+(count+1));
- accept();await click('#remove');await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count);assert.match(await page.locator('#workingStatus').innerText(),/未保存/);
+ await click('#remove');await answer();await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count);assert.match(await page.locator('#workingStatus').innerText(),/未保存/);
  // Leaving unsaved edits asks first, in the page (window.confirm is blocked in embedded viewers).
- await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());assert.ok(await page.locator('#confirmDialog').evaluate(d=>d.open));await page.locator('#confirmOk').click();await page.waitForFunction(()=>/一致/.test(document.querySelector('#workingStatus').textContent));await ready();assert.notDeepEqual((await currentResult()).config.origin,result.config.origin);
+ await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());assert.ok(await page.locator('#pageDialog').evaluate(d=>d.open));await page.locator('#pageDialogOk').click();await page.waitForFunction(()=>/一致/.test(document.querySelector('#workingStatus').textContent));await ready();assert.notDeepEqual((await currentResult()).config.origin,result.config.origin);
  await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');
  // Clicking the highlighted candidate again deselects it: no working station until one is chosen (owner, 2026-10-16).
  {const active=page.locator('#candidateList .candidate.active');await active.evaluate(element=>element.click());assert.equal(await active.count(),0);assert.ok(await page.locator('#noWorking').isVisible());
@@ -121,14 +123,14 @@ try{
  assert.equal(exported.entries.length,2);assert.equal(exported.entries[0].result.config.elevationDeg,35);assert.equal(exported.entries[0].result.plan.stationId,result.plan.stationId);
  // Named deployments (FR-P7): created, filled by ticking, copied, exported alone or together, deleted; "比较本组合的点位" sets the comparison.
  assert.match(await page.locator('#deploymentSummary').innerText(),/新建/);
- accept('Plan A');await click('#newDeployment');for(const i of [0,2])await page.locator('#deploymentMembers [data-member]').nth(i).check();
+ await click('#newDeployment');await answer('Plan A');for(const i of [0,2])await page.locator('#deploymentMembers [data-member]').nth(i).check();
  assert.match(await page.locator('#deploymentSummary').innerText(),/^2 个点位/);
  let file=await exportPlan('deployment');assert.match(file.name,/-study-1-deployment-1\.json$/);assert.equal(file.plan.stations.length,2);assert.deepEqual(file.plan.deployments.map(d=>d.name),['Plan A']);
- accept('Plan B');await click('#copyDeployment');assert.equal(await page.locator('#deploymentSelect option').count(),2);await page.locator('#deploymentMembers [data-member]').nth(2).uncheck();await page.locator('#deploymentMembers [data-member]').nth(1).check();
+ await click('#copyDeployment');await answer('Plan B');assert.equal(await page.locator('#deploymentSelect option').count(),2);await page.locator('#deploymentMembers [data-member]').nth(2).uncheck();await page.locator('#deploymentMembers [data-member]').nth(1).check();
  file=await exportPlan('deployments');assert.deepEqual(file.plan.deployments.map(d=>[d.name,d.stations.length]),[['Plan A',2],['Plan B',2]]);assert.equal(file.plan.stations.length,3);
  await click('#compareDeployment');await page.waitForFunction(()=>document.querySelectorAll('#mainComparisonSummary p').length===2);
  assert.deepEqual(await page.locator('#candidateList [data-compare]').evaluateAll(inputs=>inputs.map(i=>i.checked)).then(v=>v.slice(0,3)),[true,true,false]);
- accept();await click('#deleteDeployment');assert.equal(await page.locator('#deploymentSelect option').count(),1);assert.equal(await page.locator('#deploymentSelect').inputValue(),'deployment-1');
+ await click('#deleteDeployment');await answer();assert.equal(await page.locator('#deploymentSelect option').count(),1);assert.equal(await page.locator('#deploymentSelect').inputValue(),'deployment-1');
  // Sketching (14d): other candidates in the coverage view, each with its colour; views never change results.
  const before=await currentResult();await (await reveal('#coverageMode')).selectOption('geometric');assert.equal(await page.locator('.cov-swatch').count(),0);
  // The 比较 boxes are the only membership; the 其他点位 chip shows the compared candidates (display-state.js).
@@ -194,7 +196,7 @@ try{
   assert.ok(await page.locator('#demoLegend div').count()>=2);await page.waitForFunction(()=>!document.querySelector('.station-labels .working-label').hidden);
   await page.waitForFunction(()=>{const canvas=document.querySelector('#webgl canvas'),box=document.querySelector('#webgl').getBoundingClientRect();return Math.abs(canvas.width/canvas.height-box.width/box.height)<.01&&box.width>window.innerWidth*.95;});
   const view=await page.locator('#viewSelect').inputValue();await page.keyboard.press('ArrowRight');assert.notEqual(await page.locator('#viewSelect').inputValue(),view);
-  accept('演示视角');await click('#demoSaveView');assert.equal(await page.locator('#demoSaved [data-demo-view]').innerText(),'演示视角');
+  await click('#demoSaveView');await answer('演示视角');assert.equal(await page.locator('#demoSaved [data-demo-view]').innerText(),'演示视角');
   // 图例 and 说明 are optional (owner 2026-10-16).
   for(const [toggle,box] of [['#demoLegendToggle','#demoLegend'],['#demoNoteToggle','#demoFootnote']]){assert.ok(await page.locator(box).isVisible());await click(toggle);assert.ok(await page.locator(box).isHidden());await click(toggle);assert.ok(await page.locator(box).isVisible());}
   const download=page.waitForEvent('download');await click('#demoShot');assert.match((await download).suggestedFilename(),/^muography-demo-.+-\d{8}-\d{4}\.png$/);
@@ -251,8 +253,8 @@ try{
  assert.equal(await page.locator('#scenarioSelect').inputValue(),'mid');assert.equal(await page.locator('#elNumber').inputValue(),'41');assert.deepEqual(await studies(),[['study-1',false],['study-2',false],['study-3',true]]);
  assert.deepEqual(errors,[]);
  // A plan for an unregistered release is refused with a message; nothing changes.
- const refusal=page.waitForEvent('dialog');const bad=join(artifacts,'bad-plan.json');await writeFile(bad,planText.replace(release,'unknown@0'));
- await page.locator('#importPlanFile').setInputFiles(bad);const dialog=await refusal;assert.match(dialog.message(),/未登记/);await dialog.dismiss();
+ const bad=join(artifacts,'bad-plan.json');await writeFile(bad,planText.replace(release,'unknown@0'));
+ await page.locator('#importPlanFile').setInputFiles(bad);await page.waitForSelector('#pageDialog[open]');assert.match(await page.locator('#pageDialogText').innerText(),/未登记/);await answer();
  assert.equal(await page.locator('#elNumber').inputValue(),'41');assert.equal((await studies()).length,3);
  // Switching studies restores each one's stations and device; a new study starts from the dataset candidates; the choice survives a reload.
  await openCandidates();await page.locator('#studySelect').selectOption('study-1');await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');
@@ -261,12 +263,13 @@ try{
  await page.reload();await ready();assert.equal((await studies()).find(([,on])=>on)[0],'study-4');
  await openCandidates();await page.locator('#studySelect').selectOption('study-3');await ready();assert.equal(await page.locator('#elNumber').inputValue(),'41');
  // Studies can be renamed and deleted; deleting the active study opens the first remaining one.
- accept('Gallery study');await click('#renameStudy');assert.equal(await page.locator('#studySelect option:checked').innerText(),'Gallery study');
- accept();await click('#deleteStudy');await ready();assert.deepEqual((await studies()).map(([id])=>id),['study-1','study-2','study-4']);assert.equal(await page.locator('#studySelect').inputValue(),'study-1');
+ await click('#renameStudy');await answer('Gallery study');assert.equal(await page.locator('#studySelect option:checked').innerText(),'Gallery study');
+ await click('#deleteStudy');await answer();await ready();assert.deepEqual((await studies()).map(([id])=>id),['study-1','study-2','study-4']);assert.equal(await page.locator('#studySelect').inputValue(),'study-1');
  assert.equal(await page.locator('#deploymentSelect option').count(),1);
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
  // Last, so the pan cannot disturb the steps above: a right-drag pans the view and does not open the right-click menu.
  {await page.setViewportSize({width:1440,height:900});await page.waitForTimeout(500);const box=await page.locator('#webgl canvas').boundingBox();await page.mouse.move(box.x+box.width*.5,box.y+box.height*.6);await page.mouse.down({button:'right'});
   for(let i=1;i<=6;i++)await page.mouse.move(box.x+box.width*.5+i*10,box.y+box.height*.6+i*4);await page.mouse.up({button:'right'});assert.ok(await page.locator('.scene-menu').isHidden(),'no menu after a pan');}
- console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, studies (rename, delete), working station and candidates, deployments and plan export menu, multi-station coverage, overview, demonstration mode with animation and placement, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
+ assert.deepEqual(nativeDialogs,[],'no native browser dialogs');
+ console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import (download and copyable text), in-page dialogs, studies (rename, delete), working station and candidates, deployments and plan export menu, multi-station coverage, overview, demonstration mode with animation and placement, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

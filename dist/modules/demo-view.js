@@ -4,6 +4,7 @@
 // View state only: nothing here changes a result. Saved views are kept per release.
 import { snapshotLayout, demoFileName, cycleView, tourFrames, orbitFrames } from './demo-snapshot.js';
 import { muxWebm } from './webm-muxer.js';
+import { pageAlert, pagePrompt } from './page-dialog.js';
 
 // Text, boxes and dots of a screenshot or animation frame (demo-snapshot.js layout), in CSS pixels.
 function drawOps(ctx, ops) {
@@ -113,7 +114,7 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
       }
       if (!failure) await encoder.flush().catch(error => { failure = error; });
       encoder.close(); finish();
-      if (failure) { console.error(failure); alert('动画编码失败：' + failure.message); return; }
+      if (failure) { console.error(failure); pageAlert('动画编码失败：' + failure.message); return; }
       if (!state.cancelled) download(new Blob([muxWebm({ codec: encoding.id, width, height, frames: chunks, durationUs: frames.length * 1e6 / fps })], { type: 'video/webm' }), demoFileName(datasetId, new Date(), 'webm'));
       return;
     }
@@ -141,11 +142,11 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
   $('#demoRecord').onclick = record;
   if (!videoType() && typeof VideoEncoder === 'undefined') { $('#demoRecord').disabled = true; $('#demoRecord').title = '此浏览器不支持录制视频'; }
   $('#demoLegendToggle').onclick = () => togglePanel('legend'); $('#demoNoteToggle').onclick = () => togglePanel('note');
-  $('#demoSaveView').onclick = () => {
+  $('#demoSaveView').onclick = async () => {
     const view = sceneView.cameraView(); if (!view) return;
-    const number = saved.reduce((max, v) => Math.max(max, +v.id.replace(/^view-/, '') || 0), 0) + 1, name = prompt('视角名称', `视角 ${number}`);
+    const number = saved.reduce((max, v) => Math.max(max, +v.id.replace(/^view-/, '') || 0), 0) + 1, name = await pagePrompt('视角名称', `视角 ${number}`, { maxLength: 40 });
     if (name === null) return;
-    saved.push({ id: `view-${number}`, name: name.trim().slice(0, 40) || `视角 ${number}`, ...view }); current = `view-${number}`; persist(); renderViews();
+    saved.push({ id: `view-${number}`, name, ...view }); current = `view-${number}`; persist(); renderViews();
   };
   root.addEventListener('keydown', event => {
     if (!on || event.target.closest?.('input, select, textarea') || (recording && event.key !== 'Escape')) return;
