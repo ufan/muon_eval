@@ -299,7 +299,8 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     presetView(mode){const model=v=>[v.x,-v.z,v.y],view=presetCamera(mode);return{position:model(view.position),target:model(view.target)};},
     setRecording(on){recording=Boolean(on);if(!recording)requestRender();},
     drawFrame(view,ctx,width,height){if(!renderer)return null;camera.position.copy(compiledPointToScene(view.position));controls.target.copy(compiledPointToScene(view.target));camera.lookAt(controls.target);updateScale();scaleRay();
-      renderer.render(scene,camera);ctx.drawImage(renderer.domElement,0,0,width,height);return frameLabels();},
+      // The render loop is paused while recording, so the on-screen labels follow each recorded frame here.
+      renderer.render(scene,camera);updateLabels();ctx.drawImage(renderer.domElement,0,0,width,height);return frameLabels();},
     setWorkingVisible,
     showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice||!workingShown)return;const pixel=data.values[y*data.n+x];displayRay(pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
     viewRaySideOn,
