@@ -16,7 +16,8 @@ import { shortcutFor } from './view-shortcuts.js';
 import { demoFootnote } from './demo-snapshot.js';
 import { openStudies, saveStudy, saveSession, createStudy, switchStudy, listStudies, deleteStudy } from './plan-store.js';
 import { selectionHref, APP_PAGES } from './application-selection.js';
-import { placementPoint, coverageStationSet } from './coverage-map.js';
+import { placementPoint } from './coverage-map.js';
+import { readDisplayState, shownStations } from './display-state.js';
 export function createMainPage({workbenchHref='./geometry-preview.html',datasetId,datasetVersion,features,featureLayerOptions={},recognitionItems,state,sceneView,projectionView,createController,createPort,placeInCavity=()=>null,sliceMask=null,targetSamples=null,scenarioId=null,releases=[],candidateIds=[],capabilities,environmentDescription,backendLabel,root=document,storage=localStorage}){
  const $=s=>root.querySelector(s),$$=s=>[...root.querySelectorAll(s)];
 
@@ -59,17 +60,19 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  const STATE_TEXT={running:'计算中…',queued:'排队计算',failed:'计算失败',pending:'待计算'};
  // Other stations in the coverage view (14d sketching): a stable colour per candidate, shown as a swatch in the list.
  // No red: red is the geometric count tint.
- const EXTRA_COLORS=['#4fc3f7','#ffd54f','#81c784','#ba68c8','#4db6ac','#9fa8da','#90a4ae','#dce775'];let coverageStationsMode='none',coverageSignature='';
- function coverageExtras(mode=coverageStationsMode){const pool=study.plan.stations.map(s=>s.id),deployment=study.plan.deployments.find(d=>d.id===study.activeDeployment)?.stations??[];
-  return coverageStationSet(mode,{pool,compared:study.compared,deployment,exclude:study.modified?null:study.working.from}).map(id=>{const s=study.candidate(id),input=study.candidateInput(id);
+ const EXTRA_COLORS=['#4fc3f7','#ffd54f','#81c784','#ba68c8','#4db6ac','#9fa8da','#90a4ae','#dce775'];let coverageSignature='',displayState=readDisplayState(null);
+ // The other stations shown in 3D and summarised in 多站 (display-state.js): the compared candidates while 其他点位 is on.
+ function shownSet(){return shownStations(displayState,{pool:study.plan.stations.map(s=>s.id),compared:study.compared,working:workingActive&&!study.modified?study.working.from:null});}
+ function coverageExtras(){const pool=study.plan.stations.map(s=>s.id);
+  return shownSet().ids.map(id=>{const s=study.candidate(id),input=study.candidateInput(id);
    const entry=results.get(assessmentKey(input));
    return{id,name:s.name,x:s.position[0],y:s.position[1],z:s.position[2],az:s.pose.azimuthDeg,el:s.pose.elevationDeg,device:input.device,color:EXTRA_COLORS[pool.indexOf(id)%EXTRA_COLORS.length],n:entry?.n,counts:entryCountsBottomFirst(entry),entry:entry??null};});}
  function syncCoverageStations(extras=coverageExtras()){const signature=JSON.stringify(extras.map(s=>[s.id,s.x,s.y,s.z,s.az,s.el,s.device.maxSlopeX,s.device.maxSlopeY,s.color,s.n??0,s.counts?s.counts[0]+s.counts[s.counts.length>>1]:null]));$('#coverageCountLegend').hidden=!extras.length||$('#coverageMode').value==='physical';$('#multiControls').hidden=!extras.length||$('#coverageMode').value!=='physical';if(signature===coverageSignature)return;coverageSignature=signature;sceneView.setCoverageStations(extras);}
- function renderList(){const h=$('#candidateList');if(!h||!study)return;const extras=coverageExtras(),swatch=new Map(extras.map(s=>[s.id,s.color]));syncCoverageStations(extras);const w=study.working,compared=new Set(study.compared),modified=study.modified;
+ function renderList(){const h=$('#candidateList');if(!h||!study)return;syncOthersChip();const extras=coverageExtras(),swatch=new Map(extras.map(s=>[s.id,s.color]));syncCoverageStations(extras);const w=study.working,compared=new Set(study.compared),modified=study.modified;
   h.replaceChildren(...study.plan.stations.map(s=>{const state=candidateState(s.id),entry=results.get(candidateKey(s.id)),d=document.createElement('div');d.className='candidate'+(workingActive&&s.id===w.from?' active':'');d.dataset.candidate=s.id;
    d.innerHTML=`<label class="compare"><input type="checkbox" data-compare="${escapeHtml(s.id)}"${compared.has(s.id)?' checked':''}>比较</label><b>${swatch.has(s.id)?`<i class="cov-swatch" style="--c:${swatch.get(s.id)}" title="覆盖视图中的颜色"></i>`:''}${escapeHtml(s.name)}${s.id===w.from&&modified?' <em>· 编辑中</em>':''}</b><span>X ${s.position[0].toFixed(1)} · Y ${s.position[1].toFixed(1)} · Z ${s.position[2].toFixed(1)}</span><span>方位 ${s.pose.azimuthDeg}° · 仰角 ${s.pose.elevationDeg}°</span><span class="result-status" data-state="${state}">${state==='ready'?`${formatCount(entry.totalCount)} 计数 · 透射 ${(100*entry.weightedTransmission).toFixed(2)}%`:STATE_TEXT[state]}</span>`;
    d.onclick=e=>{if(!e.target.closest('.compare'))toggleCandidate(s.id);};
-   d.querySelector('[data-compare]').onchange=e=>{study.setCompared(s.id,e.target.checked);persistSession();refreshCandidates();showComparison();};return d;}));
+   d.querySelector('[data-compare]').onchange=e=>{study.setCompared(s.id,e.target.checked);persistSession();refreshCandidates();showComparison();renderList();renderOverview();};return d;}));
   const source=w.from===null?null:study.candidate(w.from);$('#workingStatus').textContent=source===null?'未保存的新点位':modified?`来自「${source.name}」· 已修改，未保存`:`与候选「${source.name}」一致`;
   $('#updateCandidate').disabled=source===null||!modified;$('#remove').disabled=!workingActive||source===null||study.plan.stations.length<2;renderDeployments();renderOverview();demo.render();}
  // Multi-station overview (#15, FR-M4, FR-M15): per recognition item, the working station and the stations chosen in the overview
@@ -79,7 +82,7 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  const overview=createOverviewPanel({root,onSelectStation:id=>selectCandidate(id),onHoverItem:id=>{const item=recognitionItems.find(i=>i.id===id);sceneView.emphasiseFeatures(item?.kind==='features'?[...item.featureIds]:[]);}});
  function overviewStations(){const all=overviewStationsAll();return workingActive?all:all.filter(s=>s.id!=='working');}
  function overviewStationsAll(){const input=inputs(),entry=workingBusy?null:results.get(workingKey)??null,source=study.working.from===null?null:study.candidate(study.working.from),{x,y,z,az,el}=input.station;
-  return[{id:'working',name:source&&!study.modified?`工作点位（${source.name}）`:'工作点位',x,y,z,az,el,device:input.device,n:entry?.n,counts:entryCountsBottomFirst(entry),entry},...coverageExtras($('#overviewStations')?.value??'none')];}
+  return[{id:'working',name:source&&!study.modified?`工作点位（${source.name}）`:'工作点位',x,y,z,az,el,device:input.device,n:entry?.n,counts:entryCountsBottomFirst(entry),entry},...coverageExtras()];}
  // Per-station projections side by side (#16): the overview's stations, redrawn while open when they, their results or the outline settings change.
  let taskMode=null;const tiles=createProjectionTiles({root,onOpenStation:id=>selectCandidate(id),onToggleCompare:(id,on)=>{study.setCompared(id,on);persistSession();renderList();showComparison();refreshCandidates();renderOverview();}});let tilesSignature='';
  function tilesState(stations){const r=recognition.state(),known=new Set(recognitionItems.map(i=>i.id));return{stations:stations.map(s=>({...s,color:s.color??'#ff4fb3',compared:study.compared.includes(s.id)})),items:r.items.filter(i=>r.selected.has(i.id)&&known.has(i.id)),threshold:r.threshold,precision:projection.precision,exposureDays:study.configuration.response.exposureDays};}
@@ -91,9 +94,9 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
   overview.render({rows,minViews:multiOptions.minViews,message:`${stations.length} 个点位${pending?`（${pending} 个计算中）`:''}${samples?'':' · 目标内部采样待第一个结果完成后进行…'}`});}
  // Demonstration mode (#17, FR-M5): the overview's stations in a clean view; caption, legend and footnote say what is shown
  // and what the numbers are not, on screen and in every screenshot.
- function describeDemo(){const stations=overviewStations(),set=$('#overviewStations').value,deployment=study.plan.deployments.find(d=>d.id===study.activeDeployment),mode=$('#coverageMode').value,multi=!$('#multiControls').hidden,count=!$('#coverageCountLegend').hidden;
+ function describeDemo(){const stations=overviewStations(),deployment=study.plan.deployments.find(d=>d.id===study.activeDeployment),compared=new Set(study.compared),asDeployment=displayState.others&&deployment&&deployment.stations.length===compared.size&&deployment.stations.every(id=>compared.has(id)),mode=$('#coverageMode').value,multi=!$('#multiControls').hidden,count=!$('#coverageCountLegend').hidden;
   const coverage=mode==='off'?null:multi?$('#multiLegend').textContent:count?$('#coverageCountLegend').textContent:mode==='physical'?'覆盖：物理（计数/sr，对数亮度）':'覆盖：几何视场';
-  return{caption:{title:$('.title').textContent,subtitle:`${studyLabel({id:studyId,title:study.plan.title})}${set==='deployment'&&deployment?` · ${deployment.name}`:''} · ${stations.length} 个点位`},
+  return{caption:{title:$('.title').textContent,subtitle:`${studyLabel({id:studyId,title:study.plan.title})}${asDeployment?` · ${deployment.name}`:''} · ${stations.length} 个点位`},
    legend:[...stations.map(s=>({color:s.color??'#ff4fb3',text:`${s.name}${s.entry?'':'（计算中）'}`})),...(coverage?[{text:coverage}]:[])],
    footnote:[...demoFootnote({release:datasetId,scenario:scenarioId??'—',exposureDays:study.configuration.response.exposureDays,detector:study.configuration.device.model,date:new Date()}),...(multi?['多视角覆盖与综合等级为规划参考，不是重建质量保证。']:[])]};}
  const demo=createDemoView({root,sceneView,storage,storageKey:`muon-demo-views:${datasetId}`,datasetId,describe:describeDemo});
@@ -104,17 +107,12 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
   if(action.toggle==='coverage'){const mode=$('#coverageMode');if(mode.value!=='off'){lastCoverage=mode.value;mode.value='off';}else mode.value=lastCoverage;mode.dispatchEvent(new Event('change',{bubbles:true}));}
   else if(action.toggle){$(`[data-layer="${action.toggle}"]`).click();}
   else{if(!workingActive)return;event.preventDefault();const {az,el}=inputs().station;setPose(action.nudge==='az'?(((az+action.by)%360)+360)%360:az,action.nudge==='el'?Math.min(90,Math.max(0,el+action.by)):el);}});}
- function bindOverview(){const select=$('#overviewStations'),stations=$('#coverageStations');select.value=stations.value;select.onchange=()=>{stations.value=select.value;stations.onchange();};
+ // 全选 / 清空 in the candidate list header: the compare boxes are the only membership of the station set.
+ function setAllCompared(on){for(const s of study.plan.stations)study.setCompared(s.id,on);persistSession();renderList();showComparison();refreshCandidates();renderOverview();}
+ function bindOverview(){$('#compareAll').onclick=()=>setAllCompared(true);$('#compareNone').onclick=()=>setAllCompared(false);
 
-  $('#overviewShow3d').onclick=()=>{$('#coverageMode').value='physical';$('#coverageMulti').value='class';stations.onchange();};
-  // Task modes (ADR-032): 多站评估 shows the multi-station panel and the stations' multi-view coverage in 3D; leaving it
-  // restores the coverage settings from before. View state only.
-  let coverageBeforeMulti=null;
-  taskMode=createTaskMode({root,storage,storageKey:`muon-task-mode:${datasetId}`,onChange:mode=>{const coverage=$('#coverageMode'),multi=$('#coverageMulti');
-   if(mode==='multi'){coverageBeforeMulti={mode:coverage.value,multi:multi.value,stations:stations.value};if(stations.value==='none')stations.value=study.compared.length?'compared':'all';
-    select.value=stations.value;coverage.value='physical';multi.value='class';stations.onchange();tilesSignature='';tiles.open(tilesState(overviewStations()));}
-   else if(coverageBeforeMulti){coverage.value=coverageBeforeMulti.mode;multi.value=coverageBeforeMulti.multi;stations.value=select.value=coverageBeforeMulti.stations;stations.onchange();coverageBeforeMulti=null;}
-   requestAnimationFrame(resize);}});}
+  // 多站评估 shows the summary of the stations shown in 3D (display-state.js); it no longer changes the 3D view.
+  taskMode=createTaskMode({root,storage,storageKey:`muon-task-mode:${datasetId}`,onChange:mode=>{if(mode==='multi'){tilesSignature='';tiles.open(tilesState(overviewStations()));}requestAnimationFrame(resize);}});}
  // Named deployments (FR-P7): a subset of the candidates, chosen by ticking; several alternatives per study.
  function renderDeployments(){const select=$('#deploymentSelect');if(!select||!study)return;const active=study.activeDeployment,deployment=study.plan.deployments.find(d=>d.id===active)??null;
   select.replaceChildren(...(study.plan.deployments.length?study.plan.deployments.map(d=>new Option(d.name,d.id,false,d.id===active)):[new Option('（无组合）','',true,true)]));select.disabled=!deployment;
@@ -177,23 +175,26 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
    persistPlan();createStudy(storage,plan.scene.release,plan);location.assign(selectionHref(APP_PAGES.main,{datasetId:plan.scene.release,scenarioId:plan.scene.scenario}));
   }catch(error){alert('方案导入失败：'+error.message);}}
  // Coverage highlight (FR-M10): view state, remembered per release; never changes results.
- function bindCoverage(){const key=`muon-coverage:${datasetId}`;let saved={};try{saved=JSON.parse(storage.getItem(key))??{};}catch{}
-  const mode=$('#coverageMode'),core=$('#coverageCore'),context=$('#coverageContext'),stations=$('#coverageStations'),featureTint=$('#coverageFeatures');featureTint.checked=saved.features!==false;mode.value=['off','geometric','physical'].includes(saved.mode)?saved.mode:'off';core.checked=saved.core===true;context.checked=saved.context===true;
-  stations.value=['none','compared','deployment','all'].includes(saved.stations)?saved.stations:'none';
+ function bindCoverage(){const key=`muon-coverage:${datasetId}`;let saved=null;try{saved=JSON.parse(storage.getItem(key));}catch{}displayState=readDisplayState(saved);const c=displayState.coverage;
+  const mode=$('#coverageMode'),core=$('#coverageCore'),context=$('#coverageContext'),featureTint=$('#coverageFeatures');featureTint.checked=c.features;mode.value=c.mode;core.checked=c.core;context.checked=c.context;
   // Physical multi-station maps (15d, FR-M15): 多视角覆盖 by default; thresholds as decided (10 %, ≥ 3 views and ≥ 30°, < 10°).
-  const multi=$('#coverageMulti'),error=$('#coverageError'),views=$('#classViews'),good=$('#classGoodSpread'),minimum=$('#classMinSpread'),m=saved.multi??{};
-  multi.value=['views','spread','class','dominant','total'].includes(m.map)?m.map:'views';error.value=m.errorLevel===.05?'0.05':'0.1';views.value=m.minViews??3;good.value=m.goodSpreadDeg??30;minimum.value=m.minSpreadDeg??10;
+  const multi=$('#coverageMulti'),error=$('#coverageError'),views=$('#classViews'),good=$('#classGoodSpread'),minimum=$('#classMinSpread'),m=c.multi;
+  multi.value=m.map;error.value=String(m.errorLevel);views.value=m.minViews;good.value=m.goodSpreadDeg;minimum.value=m.minSpreadDeg;
   const clampInput=(input,low,high,fallback)=>{const v=Math.round(+input.value);input.value=Number.isFinite(v)?Math.min(high,Math.max(low,v)):fallback;return +input.value;};
   const legend=value=>{const sw=(c,t)=>`<i style="--c:${c}"></i>${t}`,grey=sw('#3c3c3c','有视场但无可用视角（深灰）');
    return{views:`可用视角数（计数误差 ≤ ${value.errorLevel*100}%）：${['#fcbba1','#fc9272','#fb6a4a','#de2d26','#a50f15'].map((c,i)=>sw(c,i<4?String(i+1):'5+')).join(' ')} · ${grey}`,
     spread:`可用视角的最大张角：${sw('#c6dbef','<10°')} ${sw('#6baed6','10–30°')} ${sw('#2171b5','30–60°')} ${sw('#08306b','>60°')} · ${grey}`,
     class:`综合等级（规划参考，非重建质量保证）：${sw('#1a9850',`良好 ≥${value.minViews} 视角且 ≥${value.goodSpreadDeg}°`)} ${sw('#fdae61','有限')} ${sw('#d73027',`不足 <2 视角或 <${value.minSpreadDeg}°`)}`,
     dominant:'每点取计数/sr 最高的点位颜色，亮度为该点位的计数/sr（颜色不混合）',total:`各点位计数/sr 之和（总统计量的参考指标，不是一次测量）：暗→橙→白，10³–3×10⁷ /sr · ${grey}`}[value.map];};
-  const apply=()=>{const value={mode:mode.value,core:core.checked,context:context.checked,stations:stations.value,features:featureTint.checked,
+  const apply=()=>{const value={mode:mode.value,core:core.checked,context:context.checked,features:featureTint.checked,
     multi:{map:multi.value,errorLevel:+error.value,minViews:clampInput(views,2,9,3),goodSpreadDeg:clampInput(good,1,179,30),minSpreadDeg:clampInput(minimum,0,179,10)}};
    $('#coverageOptions').hidden=value.mode==='off';$('#coverageMode').dispatchEvent(new Event('coverage-applied'));$('#classThresholds').hidden=value.multi.map!=='class';$('#multiLegend').innerHTML=legend(value.multi);
-   sceneView.setCoverage(value);coverageStationsMode=value.mode==='off'?'none':value.stations;coverageSignature='';multiOptions={errorLevel:value.multi.errorLevel,minViews:value.multi.minViews,goodSpreadDeg:value.multi.goodSpreadDeg,minSpreadDeg:value.multi.minSpreadDeg};if($('#overviewStations'))$('#overviewStations').value=value.stations;renderList();try{storage.setItem(key,JSON.stringify(value));}catch{}};
-  for(const input of [mode,core,context,stations,multi,error,views,good,minimum,featureTint])input.onchange=apply;apply();}
+   sceneView.setCoverage(value);displayState={...displayState,coverage:value};coverageSignature='';multiOptions={errorLevel:value.multi.errorLevel,minViews:value.multi.minViews,goodSpreadDeg:value.multi.goodSpreadDeg,minSpreadDeg:value.multi.minSpreadDeg};renderList();renderOverview();try{storage.setItem(key,JSON.stringify(displayState));}catch{}};
+  for(const input of [mode,core,context,multi,error,views,good,minimum,featureTint])input.onchange=apply;
+  // 其他点位 chip: shows or hides the compared candidates in 3D; the count is the number compared.
+  $('#othersButton').onclick=()=>{displayState={...displayState,others:!displayState.others};apply();};apply();}
+ function syncOthersChip(){const chip=$('#othersButton');if(!chip||!study)return;const set=shownSet(),on=displayState.others;chip.setAttribute('aria-pressed',String(on));chip.classList.toggle('active',on);$('#othersCount').textContent=String(set.compared);
+  chip.disabled=!on&&set.compared===0;chip.title=set.compared===0?'先在候选部署点列表中勾选“比较”':set.hiddenCount?`三维中只显示前 8 个（另有 ${set.hiddenCount} 个未显示）`:on?'隐藏勾选比较的候选点位':'在三维中显示勾选比较的候选点位';}
  // Placing the working station on the model (14d): one click on a visible surface, 0.5 m off it on the viewer's side.
  function setPlacingButton(on){const button=$('#placeStation');button.classList.toggle('active',on);button.textContent=on?'在模型上点击…（Esc 取消）':'在模型上点选位置';}
  // Field-of-view edges (视场棱线): a view option, on by default, remembered per release.

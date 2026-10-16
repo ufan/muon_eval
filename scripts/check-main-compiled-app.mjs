@@ -38,8 +38,9 @@ try{
  // Layer and display controls live in popovers over the 3D view (ADR-032): open the one holding a control before using it.
  const reveal=async selector=>{await page.locator(selector).evaluate(element=>{const popover=element.closest('.vt-popover');if(popover?.hidden)document.querySelector(`[aria-controls="${popover.id}"]`).click();});return page.locator(selector);};
  // Opens a candidate whatever the state: confirms discarding edits, and reselects if the click deselected it.
- const openCandidate=async n=>{const item=page.locator('#candidateList .candidate').nth(n);await item.evaluate(e=>e.click());if(await page.locator('#confirmDialog').evaluate(d=>d.open))await page.locator('#confirmOk').click();
+ const openCandidate=async n=>{const item=page.locator('#candidateList .candidate').nth(n);await item.evaluate(e=>e.click());if(await page.locator('#confirmDialog').evaluate(d=>d.open)){await page.locator('#confirmOk').click();await page.waitForFunction(()=>!document.querySelector('#confirmDialog').open);}
   if(await page.locator('#singlePanel').evaluate(e=>e.classList.contains('inactive')))await item.evaluate(e=>e.click());};
+ const setOthers=async on=>{if(await page.locator('#othersButton').getAttribute('aria-pressed')!==String(on))await click('#othersButton');};
  async function loadSelected(){const navigation=page.waitForEvent('load');await click('#loadSelection');await navigation;await ready();}
  await page.goto(base);await ready();
  // An idle scene draws nothing; a view change draws again.
@@ -105,7 +106,7 @@ try{
  assert.equal(await page.locator('#candidateList .candidate').count(),count+1);assert.equal(await page.locator('#candidateList .candidate.active').getAttribute('data-candidate'),'station-'+(count+1));
  accept();await click('#remove');await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count);assert.match(await page.locator('#workingStatus').innerText(),/未保存/);
  // Leaving unsaved edits asks first, in the page (window.confirm is blocked in embedded viewers).
- await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());assert.ok(await page.locator('#confirmDialog').evaluate(d=>d.open));await page.locator('#confirmOk').click();await ready();assert.notDeepEqual((await currentResult()).config.origin,result.config.origin);
+ await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());assert.ok(await page.locator('#confirmDialog').evaluate(d=>d.open));await page.locator('#confirmOk').click();await page.waitForFunction(()=>/一致/.test(document.querySelector('#workingStatus').textContent));await ready();assert.notDeepEqual((await currentResult()).config.origin,result.config.origin);
  await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');
  // Clicking the highlighted candidate again deselects it: no working station until one is chosen (owner, 2026-10-16).
  {const active=page.locator('#candidateList .candidate.active');await active.evaluate(element=>element.click());assert.equal(await active.count(),0);assert.ok(await page.locator('#noWorking').isVisible());
@@ -130,8 +131,10 @@ try{
  accept();await click('#deleteDeployment');assert.equal(await page.locator('#deploymentSelect option').count(),1);assert.equal(await page.locator('#deploymentSelect').inputValue(),'deployment-1');
  // Sketching (14d): other candidates in the coverage view, each with its colour; views never change results.
  const before=await currentResult();await (await reveal('#coverageMode')).selectOption('geometric');assert.equal(await page.locator('.cov-swatch').count(),0);
- await (await reveal('#coverageStations')).selectOption('compared');assert.equal(await page.locator('#candidateList .cov-swatch').count(),1);assert.ok(await (await reveal('#coverageCountLegend')).isVisible());
- await (await reveal('#coverageStations')).selectOption('all');assert.equal(await page.locator('#candidateList .cov-swatch').count(),count-1);
+ // The 比较 boxes are the only membership; the 其他点位 chip shows the compared candidates (display-state.js).
+ await setOthers(true);assert.equal(await page.locator('#candidateList .cov-swatch').count(),1);assert.ok(await (await reveal('#coverageCountLegend')).isVisible());
+ {const was=await page.locator('#candidateList [data-compare]').evaluateAll(inputs=>inputs.map(i=>i.checked));await click('#compareAll');assert.equal(await page.locator('#candidateList .cov-swatch').count(),count-1);
+  await page.evaluate(was=>was.forEach((checked,i)=>{const input=document.querySelectorAll('#candidateList [data-compare]')[i];if(input.checked!==checked)input.click();}),was);assert.equal(await page.locator('#candidateList .cov-swatch').count(),1);}
  // Defaults (owner 2026-10-15): cone layer off with edges off and solid frustum on; the projection ray layer on.
  assert.equal(await page.locator('[data-layer="cone"]').isChecked(),false);assert.ok(await page.locator('[data-layer="ray"]').isChecked());
  assert.equal(await (await reveal('#fovEdges')).isChecked(),false);await (await reveal('#fovEdges')).check();
@@ -154,8 +157,7 @@ try{
  // Multi-station overview (#15) lives in 多站评估 (ADR-032): entering it swaps the right sidebar and shows the stations'
  // multi-view coverage in 3D; leaving it restores the coverage settings. Same station set as 其他点位; a station name opens it.
  const coverageBefore=await (await reveal('#coverageMode')).inputValue();await click('#modeMulti');
- assert.ok(await page.locator('#multiPanel').isVisible());assert.ok(await page.locator('#singlePanel').isHidden());assert.equal(await (await reveal('#coverageMode')).inputValue(),'physical');
- await page.locator('#overviewStations').selectOption('all');assert.equal(await (await reveal('#coverageStations')).inputValue(),'all');
+ assert.ok(await page.locator('#multiPanel').isVisible());assert.ok(await page.locator('#singlePanel').isHidden());assert.equal(await (await reveal('#coverageMode')).inputValue(),coverageBefore,'the mode does not change the 3D view');
  await page.waitForFunction(()=>/^\d+ 个点位$/.test(document.querySelector('#overviewStatus').textContent),null,{timeout:60000});
  assert.equal(await page.locator('.overview-item').count(),await page.locator('#recognitionItems input:not([data-recognition^="feature:"])').count());assert.match(await page.locator('.overview-item summary').first().innerText(),/站[\s\S]*视角/);
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
@@ -165,10 +167,10 @@ try{
  {const box=await page.locator('.tile canvas').first().boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);assert.match(await page.locator('#tilesReadout').innerText(),/像素 \(\d+,\d+\) · \d+ 事件/);}
  await page.locator('[data-tiles-mode="transmission"]').click();assert.match(await page.locator('#tilesLegend').innerText(),/透射率/);await page.locator('[data-tiles-mode="counts"]').click();
  assert.deepEqual(await currentResult(),before);
- // A card's 比较 box adds its station to the comparison and removes it again.
- {const count=async()=>page.locator('#mainComparisonCount').innerText(),start=await count(),id=await page.locator('[data-tile-compare]:not(:checked)').first().getAttribute('data-tile-compare'),box=()=>page.locator(`[data-tile-compare="${id}"]`);
-  await box().check();await page.waitForFunction(text=>document.querySelector('#mainComparisonCount').textContent!==text,start);await box().uncheck();
-  await page.waitForFunction(text=>document.querySelector('#mainComparisonCount').textContent===text,start);}
+ // The cards are the compared stations: a card's 比较 box removes its station; the list's box brings it back.
+ {const start=await page.locator('#mainComparisonCount').innerText(),id=await page.locator('[data-tile-compare]:checked').first().getAttribute('data-tile-compare');
+  await page.locator(`[data-tile-compare="${id}"]`).evaluate(box=>box.click());await page.waitForFunction(text=>document.querySelector('#mainComparisonCount').textContent!==text,start);assert.equal(await page.locator(`[data-tile-compare="${id}"]`).count(),0);
+  await page.locator(`#candidateList [data-compare="${id}"]`).evaluate(box=>box.click());await page.waitForFunction(text=>document.querySelector('#mainComparisonCount').textContent===text,start);await page.waitForFunction(id=>document.querySelector(`[data-tile-compare="${id}"]`),id);}
  {const button=page.locator('[data-tile-station]').first(),name=await button.innerText();await button.click();await ready();
   assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));}
  await page.locator('.overview-item summary').first().click();const target=page.locator('[data-overview-station]').first(),targetName=await target.innerText();await target.click();await ready();
@@ -180,12 +182,11 @@ try{
  {await page.waitForFunction(()=>document.querySelectorAll('.station-labels button:not([hidden])').length>0);const label=labels.first(),name=await label.innerText();
   const anchor=await label.evaluate(e=>{const box=document.querySelector('#webgl').getBoundingClientRect();return[box.left+parseFloat(e.style.left),box.top+parseFloat(e.style.top)];});
   await page.mouse.move(...anchor);await page.waitForTimeout(200);assert.match(await page.locator('.feature-tip').innerText(),/点击设为工作点位/);await page.mouse.down();await page.mouse.up();await ready();await opened(name);}
- await page.locator('#overviewShow3d').click();assert.equal(await (await reveal('#coverageMode')).inputValue(),'physical');assert.equal(await (await reveal('#coverageMulti')).inputValue(),'class');
- await (await reveal('#coverageMulti')).selectOption('views');await page.locator('#overviewStations').selectOption('none');
+ await setOthers(false);
  await click('#modeSingle');assert.ok(await page.locator('#singlePanel').isVisible());assert.equal(await (await reveal('#coverageMode')).inputValue(),coverageBefore);
  // Demonstration mode (#17): the 3D view alone with caption, legend and limitations; presets and saved views stepped with ← →;
  // the screenshot is a PNG; Esc leaves. Views never change results; the camera keeps the container's aspect ratio.
- {const unchanged=await currentResult();await setInput('#overviewStations','all','change');await click('#demoMode');
+ {const unchanged=await currentResult();await setOthers(true);await click('#demoMode');
   assert.ok(await page.locator('.app').evaluate(e=>e.classList.contains('demo')));assert.ok(await page.locator('aside.left').isHidden());assert.ok(await page.locator('#projectionPanel').isHidden());
   assert.match(await page.locator('#demoCaption').innerText(),/\d+ 个点位/);assert.match(await page.locator('#demoFootnote').innerText(),/非施工或安全结论[\s\S]*曝光 \d+ 天/);
   assert.ok(await page.locator('#demoLegend div').count()>=2);await page.waitForFunction(()=>!document.querySelector('.station-labels .working-label').hidden);
@@ -202,7 +203,7 @@ try{
    assert.equal(downloaded,false);page.off('download',onDownload);assert.ok(await page.locator('.app').evaluate(e=>e.classList.contains('demo')));assert.equal(await page.locator('#demoBar').evaluate(e=>e.classList.contains('recording')),false);}
   await click('#demoSaved [data-demo-remove]');assert.equal(await page.locator('#demoSaved button').count(),0);
   await page.keyboard.press('Escape');assert.equal(await page.locator('.app').evaluate(e=>e.classList.contains('demo')),false);assert.ok(await page.locator('aside.left').isVisible());
-  assert.ok(await page.locator('.station-labels .working-label').isHidden());await setInput('#overviewStations','none','change');await page.waitForTimeout(300);assert.deepEqual(await currentResult(),unchanged);}
+  assert.ok(await page.locator('.station-labels .working-label').isHidden());await setOthers(false);await page.waitForTimeout(300);assert.deepEqual(await currentResult(),unchanged);}
  // 瞄准此处 (ADR-032): right-click on the model, aim the working detector at that point; arrow keys nudge the pose.
  {const box=await page.locator('#webgl canvas').boundingBox(),pose=async()=>[+await page.locator('#azNumber').inputValue(),+await page.locator('#elNumber').inputValue()],start=await pose();
   await page.mouse.click(box.x+box.width*.45,box.y+box.height*.45,{button:'right'});await page.locator('.scene-menu button').first().click();await ready();

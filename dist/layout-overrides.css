@@ -297,7 +297,7 @@
 .station-actions button { flex: 1; padding: 6px 10px; font-size: 12px; }
 /* Floating viewport controls (ADR-032): 图层 popover top-left, display chip bar top-centre; they fade while the
    pointer is away from the 3D view (viewport-tools.js) and are hidden in demonstration mode. */
-.vt-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 7; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: calc(100% - 28px); }
+.vt-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 7; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: max-content; max-width: calc(100% - 28px); }
 .vt-group { position: relative; display: flex; }
 .vt-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; margin: 0; padding: 0 10px; border: 1px solid #31505e; border-radius: 7px; background: #0b1720e6; color: #c4d5dc; font-size: 12px; white-space: nowrap; cursor: pointer; }
 .vt-chip input { margin: 0; }
@@ -355,3 +355,11 @@
 .confirm-dialog p { margin: 0; padding: 18px 18px 12px; font-size: 14px; line-height: 1.6; }
 .confirm-dialog footer { display: flex; justify-content: flex-end; gap: 8px; padding: 0 18px 16px; }
 .confirm-dialog button { padding: 6px 14px; }
+/* 其他点位 chip (display-state.js) and the candidate list's compare tools. */
+.vt-count { min-width: 16px; padding: 0 4px; border-radius: 8px; background: #1b3442; color: #d3e2e8; font-size: 11px; text-align: center; }
+.vt-chip[aria-pressed="true"] { border-color: var(--cyan); color: #fff; }
+.vt-chip[aria-pressed="true"] .vt-count { background: #10534f; }
+.vt-chip:disabled { opacity: .5; cursor: not-allowed; }
+.compare-tools { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+.compare-tools span { margin-right: auto; }
+.compare-tools button { padding: 3px 9px; font-size: 12px; }
