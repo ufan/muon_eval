@@ -175,10 +175,10 @@ try{
   assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));}
  await page.locator('.overview-item summary').first().click();const target=page.locator('[data-overview-station]').first(),targetName=await target.innerText();await target.click();await ready();
  assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${targetName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));
- // Other stations' markers in 3D carry name labels; a click on a label or on the marker itself opens that station.
+ // Other stations' markers: the name shows on hover (permanent labels only in demo mode, owner 2026-10-16); a click on the marker opens that station.
  const labels=page.locator('.station-labels button:not([hidden])');await page.waitForFunction(()=>document.querySelectorAll('.station-labels button:not([hidden])').length>0);
  const escape=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),opened=async name=>assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${escape(name)}」一致`));
- {const label=labels.first(),name=await label.innerText();await label.click();await ready();await opened(name);}
+ assert.ok(await labels.first().isHidden(),'no permanent labels outside demo mode');
  {await page.waitForFunction(()=>document.querySelectorAll('.station-labels button:not([hidden])').length>0);const label=labels.first(),name=await label.innerText();
   const anchor=await label.evaluate(e=>{const box=document.querySelector('#webgl').getBoundingClientRect();return[box.left+parseFloat(e.style.left),box.top+parseFloat(e.style.top)];});
   await page.mouse.move(...anchor);await page.waitForTimeout(200);assert.match(await page.locator('.feature-tip').innerText(),/点击设为工作点位/);await page.mouse.down();await page.mouse.up();await ready();await opened(name);}

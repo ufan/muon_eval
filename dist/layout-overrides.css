@@ -367,3 +367,6 @@
 .side-tabs button[aria-selected="true"] { background: #10534f; color: #fff; }
 #multiPanel.others-off > #overviewSection, #multiPanel.others-off > #tilesPanel { display: none; }
 #multiEmpty button { margin-top: 12px; }
+/* Other stations' names: on hover (the marker tooltip) in the normal view; permanent labels only in demonstration mode,
+   where screenshots and recordings need them (owner, 2026-10-16). */
+.app:not(.demo) .station-labels button { display: none; }
