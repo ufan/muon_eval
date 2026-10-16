@@ -324,7 +324,18 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
   // into this view); an idle scene costs no GPU time.
   let frame=null;
   function requestRender(){if(!renderer||frame!==null)return;frame=requestAnimationFrame(renderFrame);}
-  function renderFrame(){frame=null;if(recording)return;const easing=stepCameraMove(),moving=controls.update();updateScale();scaleRay();renderer.render(scene,camera);updateLabels();if(moving||easing)requestRender();}
+  // Axis triad (owner review 2026-10-16): model X, Y and Z in the bottom-right corner, turning with the view, in the axis
+  // legend's colours. Drawn into the same canvas after the scene, so screenshots and animations carry it too.
+  const gizmoScene=new THREE.Scene(),gizmoCamera=new THREE.OrthographicCamera(-1.7,1.7,1.7,-1.7,.1,10),GIZMO_PX=96;
+  for(const [name,model,color] of [['X',[1,0,0],0x49a7ff],['Y',[0,1,0],0xff9f4a],['Z',[0,0,1],0x38d996]]){
+    const dir=compiledPointToScene(model).normalize(),arrow=new THREE.ArrowHelper(dir,new THREE.Vector3(),1,color,.3,.17);arrow.line.material.toneMapped=arrow.cone.material.toneMapped=false;gizmoScene.add(arrow);
+    const art=document.createElement('canvas');art.width=art.height=64;const g=art.getContext('2d');g.fillStyle='#'+color.toString(16).padStart(6,'0');g.font='bold 46px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(name,32,35);
+    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(art),depthTest:false,toneMapped:false}));sprite.position.copy(dir).multiplyScalar(1.32);sprite.scale.setScalar(.46);gizmoScene.add(sprite);}
+  function renderGizmo(){if(!renderer)return;gizmoCamera.position.copy(camera.position).sub(controls.target).normalize().multiplyScalar(4);gizmoCamera.up.copy(camera.up);gizmoCamera.lookAt(0,0,0);
+    const width=renderer.domElement.clientWidth,height=renderer.domElement.clientHeight,x=width-GIZMO_PX-10,y=demo?52:10;
+    renderer.autoClear=false;renderer.setScissorTest(true);renderer.setScissor(x,y,GIZMO_PX,GIZMO_PX);renderer.setViewport(x,y,GIZMO_PX,GIZMO_PX);renderer.clearDepth();renderer.render(gizmoScene,gizmoCamera);
+    renderer.setScissorTest(false);renderer.setViewport(0,0,width,height);renderer.autoClear=true;}
+  function renderFrame(){frame=null;if(recording)return;const easing=stepCameraMove(),moving=controls.update();updateScale();scaleRay();renderer.render(scene,camera);renderGizmo();updateLabels();if(moving||easing)requestRender();}
   let recording=false;
   const api={
     build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);controls.addEventListener('start',()=>{cameraMove=null;});requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);container.addEventListener('pointerdown',startHandleDrag,{capture:true});renderer.domElement.addEventListener('pointermove',cancelLongPress);renderer.domElement.addEventListener('pointerup',cancelLongPress);renderer.domElement.addEventListener('pointercancel',cancelLongPress);window.addEventListener('pointermove',moveHandleDrag);window.addEventListener('pointerup',endHandleDrag);window.addEventListener('pointercancel',endHandleDrag);renderer.domElement.addEventListener('pointerup',releaseFeature);renderer.domElement.addEventListener('contextmenu',event=>event.preventDefault());renderer.domElement.addEventListener('pointerdown',pressRight);renderer.domElement.addEventListener('pointerup',releaseRight);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
@@ -334,7 +345,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     setDemo(on){demo=Boolean(on);handleGroup.visible=workingShown&&!demo;updateLabels();requestRender();},
     cameraView(){if(!controls)return null;const model=v=>[v.x,-v.z,v.y];return{position:model(camera.position),target:model(controls.target)};},
     setCameraView({position,target}){if(!controls||![...position,...target].every(Number.isFinite))return;camera.position.copy(compiledPointToScene(position));controls.target.copy(compiledPointToScene(target));controls.update();requestRender();},
-    capture(){if(!renderer)return null;controls.update();scaleRay();renderer.render(scene,camera);const box=renderer.domElement.getBoundingClientRect(),image=document.createElement('canvas');
+    capture(){if(!renderer)return null;controls.update();scaleRay();renderer.render(scene,camera);renderGizmo();const box=renderer.domElement.getBoundingClientRect(),image=document.createElement('canvas');
       image.width=renderer.domElement.width;image.height=renderer.domElement.height;image.getContext('2d').drawImage(renderer.domElement,0,0);
       requestRender();return{image,width:box.width,height:box.height,labels:frameLabels()};},
     // Animation export (FR-M5): preset views in the model frame, and one frame drawn from a given view into a 2D context
@@ -343,7 +354,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
     setRecording(on){recording=Boolean(on);if(!recording)requestRender();},
     drawFrame(view,ctx,width,height){if(!renderer)return null;camera.position.copy(compiledPointToScene(view.position));controls.target.copy(compiledPointToScene(view.target));camera.lookAt(controls.target);updateScale();scaleRay();
       // The render loop is paused while recording, so the on-screen labels follow each recorded frame here.
-      renderer.render(scene,camera);updateLabels();ctx.drawImage(renderer.domElement,0,0,width,height);return frameLabels();},
+      renderer.render(scene,camera);renderGizmo();updateLabels();ctx.drawImage(renderer.domElement,0,0,width,height);return frameLabels();},
     setWorkingVisible,
     showProjectionPixel(data,x,y,{threshold=0}={}){if(!currentStation||!currentDevice||!workingShown)return;const pixel=data.values[y*data.n+x];displayRay(pixel.q,currentStation,pixel.dir);emphasiseFeatures(featuresAlongRay(pixel,featureIds,{threshold}));},
     viewRaySideOn,
