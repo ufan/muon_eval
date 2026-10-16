@@ -327,6 +327,7 @@
 .app.demo #projectionPanel { top: 56px; max-height: calc(100% - 70px); }
 /* 多站 tab: the right sidebar widens for the summary. */
 .app.multi { --right-panel: 500px; }
+.app.multi.right-collapsed { --right-panel: 0px; }
 #multiPanel .tiles-panel .tiles-modes { margin: 0 0 8px; }
 #multiPanel .tiles-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 0; }
 #multiPanel .tiles-panel > .hint { margin: 6px 0; font-size: 11px; }
