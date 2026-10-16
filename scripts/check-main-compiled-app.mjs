@@ -30,42 +30,54 @@ try{
  const setInput=(selector,value,event='input')=>page.locator(selector).evaluate((element,{value,event})=>{element.value=value;element.dispatchEvent(new Event(event,{bubbles:true}));},{value,event});
  // The working station's full result, through "导出当前结果".
  async function currentResult(){await page.locator('#mainPatternControls').evaluate(element=>element.open=true);const pending=page.waitForEvent('download');await click('#exportResult');const download=await pending;return JSON.parse(await readFile(await download.path(),'utf8'));}
- const accept=(text)=>page.once('dialog',dialog=>dialog.accept(text));
+ // In-page dialogs (page-dialog.js) replace window.prompt/confirm/alert; a native dialog anywhere fails the run.
+ const nativeDialogs=[];page.on('dialog',dialog=>{nativeDialogs.push(dialog.message());dialog.dismiss().catch(()=>{});});
+ const answer=async text=>{await page.waitForSelector('#pageDialog[open]');if(text!==undefined)await page.locator('#pageDialog input').fill(text);await page.locator('#pageDialogOk').click();await page.waitForFunction(()=>!document.querySelector('#pageDialog')?.open);await page.evaluate(()=>new Promise(r=>setTimeout(r,50)));};// the close event and the caller's continuation run after .open turns false
  const exportPlan=async kind=>{const pending=page.waitForEvent('download');await click('#export');await click(`[data-export="${kind}"]`);const file=await pending;return {name:file.suggestedFilename(),plan:parsePlan(await readFile(await file.path(),'utf8'))};};
  const openCandidates=async()=>{if(await page.locator('#candidateSection').evaluate(e=>e.classList.contains('collapsed')))await click('#candidateSection .section-toggle');};
+ // Dataset controls sit in the header "数据配置" menu; open it before choosing (selectOption needs a visible select).
+ const selectData=async(selector,value)=>{if(await page.locator('#dataMenu').isHidden())await click('#dataMenuButton');await page.locator(selector).selectOption(value);};
+ // Layer and display controls live in popovers over the 3D view (ADR-032): open the one holding a control before using it.
+ const reveal=async selector=>{await page.locator(selector).evaluate(element=>{const popover=element.closest('.vt-popover');if(popover?.hidden)document.querySelector(`[aria-controls="${popover.id}"]`).click();});return page.locator(selector);};
+ // Opens a candidate whatever the state: confirms discarding edits, and reselects if the click deselected it.
+ const openCandidate=async n=>{const item=page.locator('#candidateList .candidate').nth(n);await item.evaluate(e=>e.click());if(await page.evaluate(()=>Boolean(document.querySelector('#pageDialog')?.open))){await page.locator('#pageDialogOk').click();await page.waitForFunction(()=>!document.querySelector('#pageDialog')?.open);}
+  if(await page.locator('#singlePanel').evaluate(e=>e.classList.contains('inactive')))await item.evaluate(e=>e.click());};
+ const setOthers=async on=>{if(await page.locator('#othersButton').getAttribute('aria-pressed')!==String(on))await click('#othersButton');};
  async function loadSelected(){const navigation=page.waitForEvent('load');await click('#loadSelection');await navigation;await ready();}
  await page.goto(base);await ready();
  // An idle scene draws nothing; a view change draws again.
  await page.waitForTimeout(1500);const idleStart=await drawCalls();await page.waitForTimeout(1000);assert.equal(await drawCalls(),idleStart,'idle scene keeps drawing');
  await setInput('#viewSelect','top','change');await page.waitForTimeout(300);assert.ok(await drawCalls()>idleStart);await setInput('#viewSelect','perspective','change');assert.equal(await page.locator('#backendSelect').inputValue(),'compiled');assert.equal(await page.locator('#datasetSelect').inputValue(),release);
- await page.locator('#datasetSelect').selectOption(release);assert.equal(await page.locator('#backendSelect').inputValue(),'compiled');await loadSelected();
+ await selectData('#datasetSelect',release);assert.equal(await page.locator('#backendSelect').inputValue(),'compiled');await loadSelected();
  assert.equal(await page.locator('#datasetSelect').inputValue(),release);assert.equal(await page.locator('#scenarioSelect').inputValue(),'low');
  // ADR-030: the dataset workbench opens on the same release and scenario.
  for(const link of ['#workbenchLink','#workbenchLinkDiagnostics'])assert.equal(await page.locator(link).getAttribute('href'),'./geometry-preview.html?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=low');
  let result=await currentResult();assert.equal(result.backend,'compiled-triangle-bvh@0.1.0');assert.equal(result.identity.release_id,release);assert.equal(result.scenarioId,'low');assert.equal(result.frame,'model_frame');assert.deepEqual(result.config.origin,[12.5,122,57]);
  const initial=structuredClone(result);
  // Features not yet migrated from the retired legacy backend stay visible but gated.
- for(const selector of ['#upLevel','[data-projection="significance"]','[data-layer="flux"]'])assert.ok(await page.locator(selector).isDisabled(),selector);
+ for(const selector of ['#upLevel','[data-projection="significance"]'])assert.ok(await page.locator(selector).isDisabled(),selector);
  await setInput('#upLevel','299');await click('[data-projection="significance"]');
  // Recognition items come from the release's display profile, all off by default (FR-M12); outlines never change results.
  assert.equal(await page.locator('[data-recognition]').count(),4);assert.equal(await page.locator('[data-recognition]:checked').count(),0);assert.equal(await page.locator('#projectionOutlines path[data-item]').count(),0);
  // Lines below the horizon count muons from behind the detector (quick-response@4.0.0).
  assert.equal(await page.locator('#projectionOutlines path.horizon').count(),1);
  const inView=page.locator('#recognitionItems label:not(.out) [data-recognition]');assert.ok(await inView.count()>0);const shown=await inView.first().getAttribute('data-recognition');await inView.first().check();
- assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);assert.match(await page.locator('#projectionReadout').innerText(),/识别轮廓：/);
+ assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);assert.doesNotMatch(await page.locator('#projectionReadout').innerText(),/总计数/,'no idle summary (ADR-032)');
  // Precision lines (FR-M13): off by default, drawn from the result's own counts, remembered.
  assert.equal(await page.locator('#precisionContours').isChecked(),false);assert.equal(await page.locator('#projectionOutlines path.precision').count(),0);
  await page.locator('#precisionContours').check();assert.ok(await page.locator('#projectionOutlines path.precision').count()>0);
  await setInput('#recognitionThreshold','0.5','change');assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);
  // 3D feature layers come from the catalogue: void systems only, defaults from imaging roles (FR-M11).
- assert.deepEqual(await page.locator('[data-feature-group]').evaluateAll(inputs=>inputs.map(input=>[input.dataset.featureGroup,input.checked])),[['flood_release',false],['gallery',true],['vertical_transport',true],['monitoring',true]]);
- assert.equal(await page.locator('[data-feature]').count(),20);
- for(const selector of ['[data-feature-group="flood_release"]','[data-feature-group="gallery"]'])await page.locator(selector).evaluate(element=>{element.checked=!element.checked;element.dispatchEvent(new Event('change',{bubbles:true}));});
- assert.equal(await page.locator('[data-feature="gallery_upper"]').isChecked(),false);
+ assert.deepEqual(await page.locator('[data-feature-group]').evaluateAll(inputs=>inputs.map(input=>[input.dataset.featureGroup,input.checked])),[['gallery',true],['vertical_transport',true],['monitoring',true]]);
+ // The display profile hides the flood-release system from the layer panel (profile 1.1, owner 2026-10-15).
+ assert.equal(await page.locator('[data-feature-group="flood_release"]').count(),0);
+ assert.equal(await page.locator('[data-feature]').count(),8);
+ for(const selector of ['[data-feature-group="monitoring"]','[data-feature-group="vertical_transport"]'])await page.locator(selector).evaluate(element=>{element.checked=!element.checked;element.dispatchEvent(new Event('change',{bubbles:true}));});
+ assert.equal(await page.locator('[data-feature="elevator_shaft"]').isChecked(),false);assert.ok(await page.locator('[data-feature="gallery_upper"]').isChecked());
  for(const selector of ['[data-layer="dam"]','[data-layer="terrain"]','[data-layer="upwater"]','[data-layer="downwater"]'])await page.locator(selector).evaluate(element=>{element.checked=false;element.dispatchEvent(new Event('change',{bubbles:true}));});
  // Coverage highlight (FR-M10): off by default; a view option only, so the result below is unchanged.
- assert.equal(await page.locator('#coverageMode').inputValue(),'off');assert.ok(await page.locator('#coverageOptions').isHidden());
- for(const mode of ['geometric','physical'])await page.locator('#coverageMode').selectOption(mode);await page.locator('#coverageContext').check();
+ assert.equal(await (await reveal('#coverageMode')).inputValue(),'off');assert.ok(await page.locator('#coverageOptions').isHidden());
+ for(const mode of ['geometric','physical'])await (await reveal('#coverageMode')).selectOption(mode);await (await reveal('#coverageContext')).check();
  for(const mode of ['front','cross','top','perspective'])await setInput('#viewSelect',mode,'change');
  result=await currentResult();assert.deepEqual(result,initial);
  for(const selector of ['[data-layer="dam"]','[data-layer="terrain"]','[data-layer="upwater"]','[data-layer="downwater"]'])await page.locator(selector).evaluate(element=>{element.checked=true;element.dispatchEvent(new Event('change',{bubbles:true}));});
@@ -81,7 +93,7 @@ try{
  await click('#updateCandidate');await ready();assert.match(await page.locator('#workingStatus').innerText(),/一致/);assert.ok(await page.locator('#updateCandidate').isDisabled());result=await currentResult();
  // "导出部署方案" writes a muography-plan 1.1.0 file that loads back byte-identically (PLAN_FORMAT.md).
  const planPending=page.waitForEvent('download');await click('#export');assert.equal(await page.locator('#exportMenu').isVisible(),true);assert.ok(await page.locator('[data-export="deployment"]').isDisabled());await click('[data-export="study"]');const download=await planPending,planText=await readFile(await download.path(),'utf8'),plan=parsePlan(planText);
- assert.equal(serializePlan(plan),planText);assert.equal(plan.scene.release,release);assert.equal(plan.scene.scenario,'low');assert.ok(plan.stations.every(s=>s.candidateId===s.id));
+ assert.equal(serializePlan(plan),planText);await click('#export');await click('[data-export="text"]');await page.waitForSelector('#pageDialog[open] textarea');assert.equal(await page.locator('#pageDialog textarea').inputValue(),planText);await answer();assert.equal(plan.scene.release,release);assert.equal(plan.scene.scenario,'low');assert.ok(plan.stations.every(s=>s.candidateId===s.id));
  assert.equal(plan.schemaVersion,'1.1.0');assert.deepEqual(plan.deployments,[]);assert.ok(plan.stations.every(s=>s.note===''));
  // The plan holds no active station (session state); the edited station is the first, active one.
  assert.deepEqual(plan.stations[0].pose,{azimuthDeg:25,elevationDeg:35});
@@ -94,10 +106,13 @@ try{
  // Save as new adds a candidate and makes it the source; deleting it leaves an unsaved working station.
  const count=await page.locator('#candidateList .candidate').count();await setInput('#elNumber','36');await click('#saveCandidate');await ready();
  assert.equal(await page.locator('#candidateList .candidate').count(),count+1);assert.equal(await page.locator('#candidateList .candidate.active').getAttribute('data-candidate'),'station-'+(count+1));
- accept();await click('#remove');await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count);assert.match(await page.locator('#workingStatus').innerText(),/未保存/);
- // Leaving unsaved edits asks first.
- accept();await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());await ready();assert.notDeepEqual((await currentResult()).config.origin,result.config.origin);
+ await click('#remove');await answer();await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count);assert.match(await page.locator('#workingStatus').innerText(),/未保存/);
+ // Leaving unsaved edits asks first, in the page (window.confirm is blocked in embedded viewers).
+ await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());assert.ok(await page.locator('#pageDialog').evaluate(d=>d.open));await page.locator('#pageDialogOk').click();await page.waitForFunction(()=>/一致/.test(document.querySelector('#workingStatus').textContent));await ready();assert.notDeepEqual((await currentResult()).config.origin,result.config.origin);
  await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');
+ // Clicking the highlighted candidate again deselects it: no working station until one is chosen (owner, 2026-10-16).
+ {const active=page.locator('#candidateList .candidate.active');await active.evaluate(element=>element.click());assert.equal(await active.count(),0);assert.ok(await page.locator('#noWorking').isVisible());
+  assert.ok(await page.locator('#remove').isDisabled());await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();assert.equal(await active.count(),1);assert.ok(await page.locator('#noWorking').isHidden());}
  // Every candidate gets a cached result in the background (FR-P10); ticked candidates are compared from the cache,
  // and the exported comparison holds their full, recomputed results.
  await page.waitForFunction(n=>document.querySelectorAll('#candidateList .result-status[data-state="ready"]').length===n,count,{timeout:120000});
@@ -108,68 +123,82 @@ try{
  assert.equal(exported.entries.length,2);assert.equal(exported.entries[0].result.config.elevationDeg,35);assert.equal(exported.entries[0].result.plan.stationId,result.plan.stationId);
  // Named deployments (FR-P7): created, filled by ticking, copied, exported alone or together, deleted; "比较本组合的点位" sets the comparison.
  assert.match(await page.locator('#deploymentSummary').innerText(),/新建/);
- accept('Plan A');await click('#newDeployment');for(const i of [0,2])await page.locator('#deploymentMembers [data-member]').nth(i).check();
+ await click('#newDeployment');await answer('Plan A');for(const i of [0,2])await page.locator('#deploymentMembers [data-member]').nth(i).check();
  assert.match(await page.locator('#deploymentSummary').innerText(),/^2 个点位/);
  let file=await exportPlan('deployment');assert.match(file.name,/-study-1-deployment-1\.json$/);assert.equal(file.plan.stations.length,2);assert.deepEqual(file.plan.deployments.map(d=>d.name),['Plan A']);
- accept('Plan B');await click('#copyDeployment');assert.equal(await page.locator('#deploymentSelect option').count(),2);await page.locator('#deploymentMembers [data-member]').nth(2).uncheck();await page.locator('#deploymentMembers [data-member]').nth(1).check();
+ await click('#copyDeployment');await answer('Plan B');assert.equal(await page.locator('#deploymentSelect option').count(),2);await page.locator('#deploymentMembers [data-member]').nth(2).uncheck();await page.locator('#deploymentMembers [data-member]').nth(1).check();
  file=await exportPlan('deployments');assert.deepEqual(file.plan.deployments.map(d=>[d.name,d.stations.length]),[['Plan A',2],['Plan B',2]]);assert.equal(file.plan.stations.length,3);
  await click('#compareDeployment');await page.waitForFunction(()=>document.querySelectorAll('#mainComparisonSummary p').length===2);
  assert.deepEqual(await page.locator('#candidateList [data-compare]').evaluateAll(inputs=>inputs.map(i=>i.checked)).then(v=>v.slice(0,3)),[true,true,false]);
- accept();await click('#deleteDeployment');assert.equal(await page.locator('#deploymentSelect option').count(),1);assert.equal(await page.locator('#deploymentSelect').inputValue(),'deployment-1');
+ await click('#deleteDeployment');await answer();assert.equal(await page.locator('#deploymentSelect option').count(),1);assert.equal(await page.locator('#deploymentSelect').inputValue(),'deployment-1');
  // Sketching (14d): other candidates in the coverage view, each with its colour; views never change results.
- const before=await currentResult();await page.locator('#coverageMode').selectOption('geometric');assert.equal(await page.locator('.cov-swatch').count(),0);
- await page.locator('#coverageStations').selectOption('compared');assert.equal(await page.locator('#candidateList .cov-swatch').count(),1);assert.ok(await page.locator('#coverageCountLegend').isVisible());
- await page.locator('#coverageStations').selectOption('all');assert.equal(await page.locator('#candidateList .cov-swatch').count(),count-1);
- assert.ok(await page.locator('#fovEdges').isChecked());await page.locator('#fovEdges').uncheck();
- await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovEdges').check();
- assert.equal(await page.locator('#fovSolid').isChecked(),false);await page.locator('#fovSolid').check();await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await page.locator('#fovSolid').uncheck();
+ const before=await currentResult();await (await reveal('#coverageMode')).selectOption('geometric');assert.equal(await page.locator('.cov-swatch').count(),0);
+ // The 比较 boxes are the only membership; the 其他点位 chip shows the compared candidates (display-state.js).
+ await setOthers(true);assert.equal(await page.locator('#candidateList .cov-swatch').count(),1);assert.ok(await (await reveal('#coverageCountLegend')).isVisible());
+ {const was=await page.locator('#candidateList [data-compare]').evaluateAll(inputs=>inputs.map(i=>i.checked));await click('#compareAll');assert.equal(await page.locator('#candidateList .cov-swatch').count(),count-1);
+  await page.evaluate(was=>was.forEach((checked,i)=>{const input=document.querySelectorAll('#candidateList [data-compare]')[i];if(input.checked!==checked)input.click();}),was);assert.equal(await page.locator('#candidateList .cov-swatch').count(),1);}
+ // Defaults (owner 2026-10-15): cone layer off with edges off and solid frustum on; the projection ray layer on.
+ assert.equal(await page.locator('[data-layer="cone"]').isChecked(),false);assert.ok(await page.locator('[data-layer="ray"]').isChecked());
+ // The cone options open only while 视锥 is on (no empty or ineffective popover).
+ assert.ok(await page.locator('[aria-controls="conePopover"]').isDisabled());await page.locator('[data-layer="cone"]').check();assert.ok(await page.locator('[aria-controls="conePopover"]').isEnabled());
+ assert.equal(await (await reveal('#fovEdges')).isChecked(),false);await (await reveal('#fovEdges')).check();
+ await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await (await reveal('#fovEdges')).uncheck();
+ assert.ok(await (await reveal('#fovSolid')).isChecked());await (await reveal('#fovSolid')).uncheck();await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await (await reveal('#fovSolid')).check();await page.locator('[data-layer="cone"]').uncheck();assert.ok(await page.locator('#conePopover').isHidden());
+ for(const layer of ['cone','ray']){const box=page.locator(`[data-layer="${layer}"]`),was=await box.isChecked();await box.setChecked(!was);await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before,layer);await box.setChecked(was);}
  // Physical multi-station maps (15d): 多视角覆盖 by default, legend per map, thresholds only for the class map; views never change results.
- await page.locator('#coverageMode').selectOption('physical');assert.ok(await page.locator('#multiControls').isVisible());assert.equal(await page.locator('#coverageMulti').inputValue(),'views');
- assert.ok(await page.locator('#coverageCountLegend').isHidden());assert.match(await page.locator('#multiLegend').innerText(),/可用视角数/);assert.ok(await page.locator('#classThresholds').isHidden());
- for(const map of ['spread','class','dominant','total','views'])await page.locator('#coverageMulti').selectOption(map);
- await page.locator('#coverageMulti').selectOption('class');assert.ok(await page.locator('#classThresholds').isVisible());await page.locator('#classViews').fill('4');await page.locator('#classViews').dispatchEvent('change');assert.match(await page.locator('#multiLegend').innerText(),/≥4 视角/);
- await page.locator('#classViews').fill('3');await page.locator('#classViews').dispatchEvent('change');await page.locator('#coverageMulti').selectOption('views');
+ await (await reveal('#coverageMode')).selectOption('physical');assert.ok(await page.locator('#multiControls').isVisible());assert.equal(await (await reveal('#coverageMulti')).inputValue(),'views');
+ assert.ok(await (await reveal('#coverageCountLegend')).isHidden());assert.match(await page.locator('#multiLegend').innerText(),/可用视角数/);assert.ok(await page.locator('#classThresholds').isHidden());
+ for(const map of ['spread','class','dominant','total','views'])await (await reveal('#coverageMulti')).selectOption(map);
+ await (await reveal('#coverageMulti')).selectOption('class');assert.ok(await page.locator('#classThresholds').isVisible());await (await reveal('#classViews')).fill('4');await (await reveal('#classViews')).dispatchEvent('change');assert.match(await page.locator('#multiLegend').innerText(),/≥4 视角/);
+ await (await reveal('#classViews')).fill('3');await (await reveal('#classViews')).dispatchEvent('change');await (await reveal('#coverageMulti')).selectOption('views');
  // Slice plane and feature tint (15e): the mask comes from the calculation geometry; views never change results.
- await page.locator('#coverageFeatures').uncheck();await page.locator('#coverageFeatures').check();
+ await (await reveal('#coverageFeatures')).uncheck();await (await reveal('#coverageFeatures')).check();
  assert.equal(await page.locator('#sliceOn').isChecked(),false);await page.locator('#sliceOn').check();assert.match(await page.locator('#sliceOut').innerText(),/^Z = -?\d+\.\d m$/);
  const sliceDone=()=>page.waitForFunction(()=>document.querySelector('#sliceHint').textContent.startsWith('切面只显示'),null,{timeout:30000});
- await page.locator('#sliceAxis').selectOption('y');assert.match(await page.locator('#sliceOut').innerText(),/^Y = /);
+ await (await reveal('#sliceAxis')).selectOption('y');assert.match(await page.locator('#sliceOut').innerText(),/^Y = /);
  await setInput('#slicePos','300','input');await sliceDone();await page.locator('#sliceOn').uncheck();
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
- // Multi-station overview (#15): the same station set as 其他点位, one entry per recognition item; a station name opens it.
- await page.locator('#overviewStations').selectOption('all');assert.equal(await page.locator('#coverageStations').inputValue(),'all');
+ // Multi-station overview (#15) lives in 多站评估 (ADR-032): entering it swaps the right sidebar and shows the stations'
+ // multi-view coverage in 3D; leaving it restores the coverage settings. Same station set as 其他点位; a station name opens it.
+ const coverageBefore=await (await reveal('#coverageMode')).inputValue();await click('#modeMulti');
+ assert.ok(await page.locator('#multiPanel').isVisible());assert.ok(await page.locator('#singlePanel').isHidden());assert.equal(await (await reveal('#coverageMode')).inputValue(),coverageBefore,'the mode does not change the 3D view');
  await page.waitForFunction(()=>/^\d+ 个点位$/.test(document.querySelector('#overviewStatus').textContent),null,{timeout:60000});
  assert.equal(await page.locator('.overview-item').count(),await page.locator('#recognitionItems input:not([data-recognition^="feature:"])').count());assert.match(await page.locator('.overview-item summary').first().innerText(),/站[\s\S]*视角/);
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);
- // Projections side by side (#16): one tile per overview station from the cache, same colour scale; views never change results.
- await click('#overviewTiles');assert.ok(await page.locator('#tilesDialog').evaluate(d=>d.open));
+ // Projections side by side (#16): one card per overview station from the cache, same colour scale; views never change results.
+ assert.ok(await page.locator('#tilesPanel').isVisible());
  assert.equal(await page.locator('.tile').count(),1+await page.locator('#candidateList .cov-swatch').count());assert.equal(await page.locator('.tile canvas').count(),await page.locator('.tile').count());
  {const box=await page.locator('.tile canvas').first().boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);assert.match(await page.locator('#tilesReadout').innerText(),/像素 \(\d+,\d+\) · \d+ 事件/);}
  await page.locator('[data-tiles-mode="transmission"]').click();assert.match(await page.locator('#tilesLegend').innerText(),/透射率/);await page.locator('[data-tiles-mode="counts"]').click();
- await click('#tilesClose');assert.equal(await page.locator('#tilesDialog').evaluate(d=>d.open),false);assert.deepEqual(await currentResult(),before);
- await click('#overviewTiles');{const button=page.locator('[data-tile-station]').first(),name=await button.innerText();await button.click();await ready();
-  assert.equal(await page.locator('#tilesDialog').evaluate(d=>d.open),false);assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));}
+ assert.deepEqual(await currentResult(),before);
+ // The cards are the compared stations: a card's 比较 box removes its station; the list's box brings it back.
+ {const start=await page.locator('#mainComparisonCount').innerText(),id=await page.locator('[data-tile-compare]:checked').first().getAttribute('data-tile-compare');
+  await page.locator(`[data-tile-compare="${id}"]`).evaluate(box=>box.click());await page.waitForFunction(text=>document.querySelector('#mainComparisonCount').textContent!==text,start);assert.equal(await page.locator(`[data-tile-compare="${id}"]`).count(),0);
+  await page.locator(`#candidateList [data-compare="${id}"]`).evaluate(box=>box.click());await page.waitForFunction(text=>document.querySelector('#mainComparisonCount').textContent===text,start);await page.waitForFunction(id=>document.querySelector(`[data-tile-compare="${id}"]`),id);}
+ {const button=page.locator('[data-tile-station]').first(),name=await button.innerText();await button.click();await ready();
+  assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));}
  await page.locator('.overview-item summary').first().click();const target=page.locator('[data-overview-station]').first(),targetName=await target.innerText();await target.click();await ready();
  assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${targetName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));
- // Other stations' markers in 3D carry name labels; a click on a label or on the marker itself opens that station.
+ // Other stations' markers: the name shows on hover (permanent labels only in demo mode, owner 2026-10-16); a click on the marker opens that station.
  const labels=page.locator('.station-labels button:not([hidden])');await page.waitForFunction(()=>document.querySelectorAll('.station-labels button:not([hidden])').length>0);
  const escape=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),opened=async name=>assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${escape(name)}」一致`));
- {const label=labels.first(),name=await label.innerText();await label.click();await ready();await opened(name);}
+ assert.ok(await labels.first().isHidden(),'no permanent labels outside demo mode');
  {await page.waitForFunction(()=>document.querySelectorAll('.station-labels button:not([hidden])').length>0);const label=labels.first(),name=await label.innerText();
   const anchor=await label.evaluate(e=>{const box=document.querySelector('#webgl').getBoundingClientRect();return[box.left+parseFloat(e.style.left),box.top+parseFloat(e.style.top)];});
   await page.mouse.move(...anchor);await page.waitForTimeout(200);assert.match(await page.locator('.feature-tip').innerText(),/点击设为工作点位/);await page.mouse.down();await page.mouse.up();await ready();await opened(name);}
- await page.locator('#overviewShow3d').click();assert.equal(await page.locator('#coverageMode').inputValue(),'physical');assert.equal(await page.locator('#coverageMulti').inputValue(),'class');
- await page.locator('#coverageMulti').selectOption('views');await page.locator('#overviewStations').selectOption('none');
+ await setOthers(false);assert.ok(await page.locator('#multiEmpty').isVisible());assert.ok(await page.locator('#overviewSection').isHidden());
+ await click('#modeSingle');assert.ok(await page.locator('#singlePanel').isVisible());assert.equal(await (await reveal('#coverageMode')).inputValue(),coverageBefore);
  // Demonstration mode (#17): the 3D view alone with caption, legend and limitations; presets and saved views stepped with ← →;
  // the screenshot is a PNG; Esc leaves. Views never change results; the camera keeps the container's aspect ratio.
- {const unchanged=await currentResult();await page.locator('#overviewStations').selectOption('all');await click('#demoMode');
+ {const unchanged=await currentResult();await setOthers(true);await click('#demoMode');
   assert.ok(await page.locator('.app').evaluate(e=>e.classList.contains('demo')));assert.ok(await page.locator('aside.left').isHidden());assert.ok(await page.locator('#projectionPanel').isHidden());
   assert.match(await page.locator('#demoCaption').innerText(),/\d+ 个点位/);assert.match(await page.locator('#demoFootnote').innerText(),/非施工或安全结论[\s\S]*曝光 \d+ 天/);
   assert.ok(await page.locator('#demoLegend div').count()>=2);await page.waitForFunction(()=>!document.querySelector('.station-labels .working-label').hidden);
   await page.waitForFunction(()=>{const canvas=document.querySelector('#webgl canvas'),box=document.querySelector('#webgl').getBoundingClientRect();return Math.abs(canvas.width/canvas.height-box.width/box.height)<.01&&box.width>window.innerWidth*.95;});
   const view=await page.locator('#viewSelect').inputValue();await page.keyboard.press('ArrowRight');assert.notEqual(await page.locator('#viewSelect').inputValue(),view);
-  accept('演示视角');await click('#demoSaveView');assert.equal(await page.locator('#demoSaved [data-demo-view]').innerText(),'演示视角');
-  await click('#demoProjection');assert.ok(await page.locator('#projectionPanel').isVisible());await click('#demoProjection');
+  await click('#demoSaveView');await answer('演示视角');assert.equal(await page.locator('#demoSaved [data-demo-view]').innerText(),'演示视角');
+  // 图例 and 说明 are optional (owner 2026-10-16).
+  for(const [toggle,box] of [['#demoLegendToggle','#demoLegend'],['#demoNoteToggle','#demoFootnote']]){assert.ok(await page.locator(box).isVisible());await click(toggle);assert.ok(await page.locator(box).isHidden());await click(toggle);assert.ok(await page.locator(box).isVisible());}
   const download=page.waitForEvent('download');await click('#demoShot');assert.match((await download).suggestedFilename(),/^muography-demo-.+-\d{8}-\d{4}\.png$/);
   // Animation (FR-M5): frames are generated with exact timestamps; Esc cancels without a download and keeps demo mode.
   if(!await page.locator('#demoRecord').isDisabled()){let downloaded=false;const onDownload=()=>{downloaded=true;};page.on('download',onDownload);
@@ -179,7 +208,19 @@ try{
    assert.equal(downloaded,false);page.off('download',onDownload);assert.ok(await page.locator('.app').evaluate(e=>e.classList.contains('demo')));assert.equal(await page.locator('#demoBar').evaluate(e=>e.classList.contains('recording')),false);}
   await click('#demoSaved [data-demo-remove]');assert.equal(await page.locator('#demoSaved button').count(),0);
   await page.keyboard.press('Escape');assert.equal(await page.locator('.app').evaluate(e=>e.classList.contains('demo')),false);assert.ok(await page.locator('aside.left').isVisible());
-  assert.ok(await page.locator('.station-labels .working-label').isHidden());await page.locator('#overviewStations').selectOption('none');await page.waitForTimeout(300);assert.deepEqual(await currentResult(),unchanged);}
+  assert.ok(await page.locator('.station-labels .working-label').isHidden());await setOthers(false);await page.waitForTimeout(300);assert.deepEqual(await currentResult(),unchanged);}
+ // 瞄准此处 (ADR-032): right-click on the model, aim the working detector at that point; arrow keys nudge the pose.
+ {const box=await page.locator('#webgl canvas').boundingBox(),pose=async()=>[+await page.locator('#azNumber').inputValue(),+await page.locator('#elNumber').inputValue()],start=await pose();
+  await page.mouse.click(box.x+box.width*.45,box.y+box.height*.45,{button:'right'});await page.locator('.scene-menu button').first().click();await ready();
+  assert.notDeepEqual(await pose(),start);assert.match(await page.locator('#placeNote').innerText(),/已瞄准所点位置/);assert.ok(await page.locator('.scene-menu').isHidden());
+  const [az,el]=await pose();await page.locator('#webgl canvas').hover();await page.keyboard.press('Shift+ArrowUp');await page.keyboard.press('ArrowLeft');await ready();
+  assert.deepEqual(await pose(),[(az+359)%360,Math.min(90,el+5)]);
+  }
+ // Drag handles (ADR-032 step 7): the centre moves the working detector, the axis tip aims it; the view never orbits meanwhile.
+ {const handle=async kind=>page.locator(`[data-handle="${kind}"]`).evaluate(a=>{const b=document.querySelector('#webgl').getBoundingClientRect();return[b.left+parseFloat(a.style.left),b.top+parseFloat(a.style.top)];});
+  const values=async()=>Promise.all(['#x','#y','#z','#azNumber','#elNumber'].map(id=>page.locator(id).inputValue())),drag=async(kind,dx,dy)=>{const [x,y]=await handle(kind);await page.mouse.move(x,y);await page.mouse.down();for(let i=1;i<=8;i++)await page.mouse.move(x+dx*i/8,y+dy*i/8);await page.mouse.up();await ready();};
+  const start=await values();await drag('move',40,12);const moved=await values();assert.notDeepEqual(moved.slice(0,2),start.slice(0,2));assert.equal(moved[2],start[2],'a horizontal drag keeps the height');assert.deepEqual(moved.slice(3),start.slice(3));
+  await drag('aim',-30,-40);const aimed=await values();assert.deepEqual(aimed.slice(0,3),moved.slice(0,3));assert.notDeepEqual(aimed.slice(3),moved.slice(3));assert.match(await page.locator('#workingStatus').innerText(),/已修改|未保存/);}
  // Placing: one click on the model moves the working station there; Esc cancels.
  await click('#placeStation');assert.ok(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')));await page.keyboard.press('Escape');assert.equal(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')),false);
  const xyz=async()=>Promise.all(['#x','#y','#z'].map(id=>page.locator(id).inputValue())),start=await xyz();await click('#placeStation');
@@ -188,18 +229,19 @@ try{
  assert.match(await page.locator('#placeNote').innerText(),/0\.5 m|已放入/);
  // A cavity seen through the semi-transparent concrete takes the click: the station goes inside it, 1 m above its floor.
  await setInput('#viewSelect','top','change');let cavityNote=null;
- for(const fy of [.35,.42,.5,.58,.65])for(const fx of [.2,.3,.4,.5,.6,.7,.8]){if(cavityNote)break;await click('#placeStation');await page.mouse.move(view.x+view.width*fx,view.y+view.height*fy);await page.mouse.down();await page.mouse.up();
+ const steps=(from,to,step)=>Array.from({length:Math.round((to-from)/step)+1},(_,i)=>+(from+i*step).toFixed(3));
+ for(const fy of steps(.25,.75,.05))for(const fx of steps(.15,.85,.05)){if(cavityNote)break;await click('#placeStation');await page.mouse.move(view.x+view.width*fx,view.y+view.height*fy);await page.mouse.down();await page.mouse.up();
   const note=await page.locator('#placeNote').innerText();if(note.startsWith('已放入'))cavityNote=note;else if(await page.locator('#placeStation').evaluate(e=>e.classList.contains('active')))await page.keyboard.press('Escape');}
  assert.ok(cavityNote,'no cavity found under the top-view grid');const [,floor]=/底板 Z ([\d.]+) m，离底板 1\.00 m/.exec(cavityNote);assert.ok(Math.abs(+await page.locator('#z').inputValue()-(+floor+1))<.011,cavityNote);
  await ready();await setInput('#viewSelect','perspective','change');
- accept();await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();
+ await openCandidate(0);await ready();
  const artifacts=await mkdtemp(join(tmpdir(),'muon-main-compiled-'));await page.screenshot({path:join(artifacts,'desktop.png')});
- for(const [scenarioId,waterLevel] of [['mid',293],['high',298],['extreme',305]]){await page.locator('#scenarioSelect').selectOption(scenarioId);await loadSelected();result=await currentResult();assert.equal(result.scenarioId,scenarioId);assert.equal(result.variables.water_up_level,waterLevel);assert.equal(result.variables.gate_state,'closed');assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);}
+ for(const [scenarioId,waterLevel] of [['mid',293],['high',298],['extreme',305]]){await selectData('#scenarioSelect',scenarioId);await loadSelected();result=await currentResult();assert.equal(result.scenarioId,scenarioId);assert.equal(result.variables.water_up_level,waterLevel);assert.equal(result.variables.gate_state,'closed');assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);}
  await page.setViewportSize({width:390,height:844});for(const selector of ['#toggleLeft','#toggleRight'])await click(selector);await page.waitForFunction(()=>{const canvas=document.querySelector('#webgl canvas'),rect=canvas?.getBoundingClientRect();return rect?.width>0&&rect.height>0&&Math.abs(canvas.width/canvas.height-rect.width/rect.height)<.01;},null,{timeout:10000});await page.screenshot({path:join(artifacts,'narrow.png'),fullPage:true});
  // Device settings and edited stations persist across a reload.
  await page.reload();await ready();await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');assert.equal(await page.locator('#azNumber').inputValue(),'25');
- assert.equal(await page.locator('#recognitionThreshold').inputValue(),'0.5');assert.ok(await page.locator('#precisionContours').isChecked());assert.equal(await page.locator('#coverageMode').inputValue(),'physical');assert.ok(await page.locator('#coverageContext').isChecked());assert.ok(await page.locator(`[data-recognition="${shown}"]`).isChecked());
- assert.ok(await page.locator('[data-feature-group="flood_release"]').isChecked());assert.equal(await page.locator('[data-feature-group="gallery"]').isChecked(),false);
+ assert.equal(await page.locator('#recognitionThreshold').inputValue(),'0.5');assert.ok(await page.locator('#precisionContours').isChecked());assert.equal(await (await reveal('#coverageMode')).inputValue(),'physical');assert.ok(await (await reveal('#coverageContext')).isChecked());assert.ok(await page.locator(`[data-recognition="${shown}"]`).isChecked());
+ assert.equal(await page.locator('[data-feature-group="monitoring"]').isChecked(),false);assert.equal(await page.locator('[data-feature-group="vertical_transport"]').isChecked(),false);
  // An imported plan becomes a new study (FR-P8): in place for the current release and scenario; another scenario opens that scenario.
  const studies=async()=>page.locator('#studySelect option').evaluateAll(options=>options.map(o=>[o.value,o.selected]));
  assert.deepEqual(await studies(),[['study-1',true]]);
@@ -211,8 +253,8 @@ try{
  assert.equal(await page.locator('#scenarioSelect').inputValue(),'mid');assert.equal(await page.locator('#elNumber').inputValue(),'41');assert.deepEqual(await studies(),[['study-1',false],['study-2',false],['study-3',true]]);
  assert.deepEqual(errors,[]);
  // A plan for an unregistered release is refused with a message; nothing changes.
- const refusal=page.waitForEvent('dialog');const bad=join(artifacts,'bad-plan.json');await writeFile(bad,planText.replace(release,'unknown@0'));
- await page.locator('#importPlanFile').setInputFiles(bad);const dialog=await refusal;assert.match(dialog.message(),/未登记/);await dialog.dismiss();
+ const bad=join(artifacts,'bad-plan.json');await writeFile(bad,planText.replace(release,'unknown@0'));
+ await page.locator('#importPlanFile').setInputFiles(bad);await page.waitForSelector('#pageDialog[open]');assert.match(await page.locator('#pageDialogText').innerText(),/未登记/);await answer();
  assert.equal(await page.locator('#elNumber').inputValue(),'41');assert.equal((await studies()).length,3);
  // Switching studies restores each one's stations and device; a new study starts from the dataset candidates; the choice survives a reload.
  await openCandidates();await page.locator('#studySelect').selectOption('study-1');await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');
@@ -221,9 +263,13 @@ try{
  await page.reload();await ready();assert.equal((await studies()).find(([,on])=>on)[0],'study-4');
  await openCandidates();await page.locator('#studySelect').selectOption('study-3');await ready();assert.equal(await page.locator('#elNumber').inputValue(),'41');
  // Studies can be renamed and deleted; deleting the active study opens the first remaining one.
- accept('Gallery study');await click('#renameStudy');assert.equal(await page.locator('#studySelect option:checked').innerText(),'Gallery study');
- accept();await click('#deleteStudy');await ready();assert.deepEqual((await studies()).map(([id])=>id),['study-1','study-2','study-4']);assert.equal(await page.locator('#studySelect').inputValue(),'study-1');
+ await click('#renameStudy');await answer('Gallery study');assert.equal(await page.locator('#studySelect option:checked').innerText(),'Gallery study');
+ await click('#deleteStudy');await answer();await ready();assert.deepEqual((await studies()).map(([id])=>id),['study-1','study-2','study-4']);assert.equal(await page.locator('#studySelect').inputValue(),'study-1');
  assert.equal(await page.locator('#deploymentSelect option').count(),1);
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
- console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, studies (rename, delete), working station and candidates, deployments and plan export menu, multi-station coverage, overview, demonstration mode with animation and placement, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
+ // Last, so the pan cannot disturb the steps above: a right-drag pans the view and does not open the right-click menu.
+ {await page.setViewportSize({width:1440,height:900});await page.waitForTimeout(500);const box=await page.locator('#webgl canvas').boundingBox();await page.mouse.move(box.x+box.width*.5,box.y+box.height*.6);await page.mouse.down({button:'right'});
+  for(let i=1;i<=6;i++)await page.mouse.move(box.x+box.width*.5+i*10,box.y+box.height*.6+i*4);await page.mouse.up({button:'right'});assert.ok(await page.locator('.scene-menu').isHidden(),'no menu after a pan');}
+ assert.deepEqual(nativeDialogs,[],'no native browser dialogs');
+ console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import (download and copyable text), in-page dialogs, studies (rename, delete), working station and candidates, deployments and plan export menu, multi-station coverage, overview, demonstration mode with animation and placement, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

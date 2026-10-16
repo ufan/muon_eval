@@ -23,3 +23,17 @@ export function skySideDirection(direction) {
   if (!Array.isArray(direction) || direction.length !== 3 || !direction.every(Number.isFinite)) throw new Error('Invalid line direction');
   return direction[2] < 0 ? { direction: direction.map(value => -value), side: 'back' } : { direction: [...direction], side: 'front' };
 }
+
+// Pose that points the detector axis from origin at target, in the convention of detectorBasis (azimuth from X+
+// toward Y+, elevation above the horizontal), rounded to 0.1°. Poses look at or above the horizon, so a target
+// below the detector keeps its azimuth and gets elevation 0 (clamped: true). Null when the points coincide.
+export function aimAt(origin, target) {
+  const d = target.map((value, axis) => value - origin[axis]), horizontal = Math.hypot(d[0], d[1]);
+  if (Math.hypot(...d) < 1e-9) return null;
+  const round = value => Math.round(value * 10) / 10;
+  let az = horizontal < 1e-9 ? 0 : round(Math.atan2(d[1], d[0]) * 180 / Math.PI);
+  if (az < 0) az = round(az + 360);
+  if (az >= 360) az = 0;
+  const el = round(Math.atan2(d[2], horizontal) * 180 / Math.PI);
+  return el < 0 ? { az, el: 0, clamped: true } : { az, el: Math.min(90, el), clamped: false };
+}

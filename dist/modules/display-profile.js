@@ -57,3 +57,28 @@ export function resolveRecognitionItems(profile, catalogue, materialIds) {
     return { ...resolved, kind: 'features', featureIds, material: null, color: (item.color ?? catalogue.get(featureIds[0]).color).toUpperCase() };
   }).map(({ id, label, kind, featureIds, material, color, default: on }) => ({ id, label, kind, featureIds, material, color, default: on })));
 }
+
+// Feature-layer options (profile 1.1): feature groups that are not listed in the 3D layer panel and cannot be picked
+// in the 3D view (they stay in the scene, so linked emphasis can still highlight them). View choices only.
+export function resolveFeatureLayerOptions(profile, catalogue) {
+  const hidden = profile?.feature_layers?.hidden_groups;
+  if (hidden === undefined) return { hiddenGroups: [] };
+  if (!Array.isArray(hidden) || !hidden.length) throw new Error('Display profile feature_layers.hidden_groups needs at least one group');
+  const known = new Set(catalogue.groups.map(group => group.id));
+  for (const id of hidden) if (!known.has(id)) throw new Error(`Unknown feature group ${id} in display profile`);
+  if (new Set(hidden).size !== hidden.length) throw new Error('Duplicate feature group in display profile');
+  return { hiddenGroups: [...hidden] };
+}
+
+// Axis labels (profile 1.1): short zh/en wording of the model-frame axes and origin for the 3D view's axis legend.
+// The dataset's frame definitions stay the source of truth (shown as tooltips); these are presentation text only.
+export function resolveAxisLabels(profile) {
+  const axes = profile?.axes;
+  if (axes === undefined || axes === null) return null;
+  const out = {};
+  for (const key of ['X', 'Y', 'Z', 'origin']) {
+    if (!isLabel(axes[key])) throw new Error(`Display profile ${key === 'origin' ? 'origin' : `axis ${key}`} needs a zh/en label`);
+    out[key] = { zh: axes[key].zh, en: axes[key].en };
+  }
+  return deepFreeze(out);
+}

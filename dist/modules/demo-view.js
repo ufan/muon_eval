@@ -4,6 +4,7 @@
 // View state only: nothing here changes a result. Saved views are kept per release.
 import { snapshotLayout, demoFileName, cycleView, tourFrames, orbitFrames } from './demo-snapshot.js';
 import { muxWebm } from './webm-muxer.js';
+import { pageAlert, pagePrompt } from './page-dialog.js';
 
 // Text, boxes and dots of a screenshot or animation frame (demo-snapshot.js layout), in CSS pixels.
 function drawOps(ctx, ops) {
@@ -20,7 +21,15 @@ const videoType = () => typeof MediaRecorder === 'undefined' ? null : VIDEO_TYPE
 
 export function createDemoView({ root = document, sceneView, storage, storageKey, datasetId, describe, onToggle = () => {} }) {
   const $ = s => root.querySelector(s), app = $('.app'), bar = $('#demoBar');
-  let on = false, current = null, saved = [];
+  let on = false, current = null, saved = [], panels = { legend: true, note: true };
+  // 图例 and 说明 are the user's choice (owner, 2026-10-16), remembered in this browser; exports follow what is shown, except
+  // that a hidden 说明 still leaves its first line ("not a construction or safety conclusion") in screenshots and animations.
+  const panelsKey = `${storageKey}:panels`;
+  try { const p = JSON.parse(storage.getItem(panelsKey)); if (p && typeof p === 'object') panels = { legend: p.legend !== false, note: p.note !== false }; } catch {}
+  const exported = ({ caption, legend, footnote }) => ({ caption, legend: panels.legend ? legend : [], footnote: panels.note ? footnote : footnote.slice(0, 1) });
+  function syncPanels() { $('#demoLegend').hidden = !on || !panels.legend; $('#demoFootnote').hidden = !on || !panels.note;
+    $('#demoLegendToggle').setAttribute('aria-pressed', String(panels.legend)); $('#demoNoteToggle').setAttribute('aria-pressed', String(panels.note)); }
+  const togglePanel = key => { panels = { ...panels, [key]: !panels[key] }; try { storage.setItem(panelsKey, JSON.stringify(panels)); } catch {} syncPanels(); };
   try { saved = (JSON.parse(storage.getItem(storageKey)) ?? []).filter(v => typeof v?.id === 'string' && Array.isArray(v.position) && Array.isArray(v.target)); } catch {}
   const persist = () => { try { storage.setItem(storageKey, JSON.stringify(saved)); } catch {} };
   // Presets are the page's own view list (#viewSelect), so their names come from the dataset's views.
@@ -52,14 +61,15 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
     $('#demoFootnote').replaceChildren(...footnote.map(text => Object.assign(document.createElement('div'), { textContent: text })));
   }
   function setOn(value) {
-    on = Boolean(value); app.classList.toggle('demo', on); app.classList.remove('demo-projection'); if (on) current = $('#viewSelect').value;
-    for (const id of ['#demoBar', '#demoCaption', '#demoLegend', '#demoFootnote']) $(id).hidden = !on;
-    $('#demoProjection').setAttribute('aria-pressed', 'false');
+    on = Boolean(value); app.classList.toggle('demo', on);
+    // Demonstration mode shows the 3D view alone; the projection stays in the right sidebar (ADR-032).
+    if (on) current = $('#viewSelect').value;
+    for (const id of ['#demoBar', '#demoCaption']) $(id).hidden = !on; syncPanels();
     sceneView.setDemo(on); renderViews(); render(); onToggle(on);
   }
   function screenshot() {
     const shot = sceneView.capture(); if (!shot) return;
-    const { caption, legend, footnote } = describe(), ratio = shot.image.width / shot.width, out = document.createElement('canvas');
+    const { caption, legend, footnote } = exported(describe()), ratio = shot.image.width / shot.width, out = document.createElement('canvas');
     out.width = shot.image.width; out.height = shot.image.height;
     const ctx = out.getContext('2d'); ctx.drawImage(shot.image, 0, 0); ctx.scale(ratio, ratio);
     drawOps(ctx, snapshotLayout({ width: shot.width, height: shot.height, caption, legend, footnote, labels: shot.labels }));
@@ -85,7 +95,7 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
       : tourFrames([...presets().map(p => sceneView.presetView(p.id)), ...saved.map(v => ({ position: v.position, target: v.target }))], { fps, moveSeconds: 2, holdSeconds: 1 });
     const box = $('#webgl').getBoundingClientRect(), width = Math.round(box.width / 2) * 2, height = Math.round(box.height / 2) * 2;
     const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
-    const ctx = canvas.getContext('2d'), text = describe(), button = $('#demoRecord'), state = recording = { cancelled: false, stop: null };
+    const ctx = canvas.getContext('2d'), text = exported(describe()), button = $('#demoRecord'), state = recording = { cancelled: false, stop: null };
     const draw = index => { drawOps(ctx, snapshotLayout({ width, height, ...text, labels: sceneView.drawFrame(frames[index], ctx, width, height) })); };
     const finish = () => { recording = null; sceneView.setRecording(false); sceneView.setCameraView(start); button.textContent = '录制动画'; bar.classList.remove('recording'); };
     sceneView.setRecording(true); bar.classList.add('recording'); button.textContent = '准备录制…';
@@ -104,7 +114,7 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
       }
       if (!failure) await encoder.flush().catch(error => { failure = error; });
       encoder.close(); finish();
-      if (failure) { console.error(failure); alert('动画编码失败：' + failure.message); return; }
+      if (failure) { console.error(failure); pageAlert('动画编码失败：' + failure.message); return; }
       if (!state.cancelled) download(new Blob([muxWebm({ codec: encoding.id, width, height, frames: chunks, durationUs: frames.length * 1e6 / fps })], { type: 'video/webm' }), demoFileName(datasetId, new Date(), 'webm'));
       return;
     }
@@ -131,12 +141,12 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
   $('#demoShot').onclick = screenshot;
   $('#demoRecord').onclick = record;
   if (!videoType() && typeof VideoEncoder === 'undefined') { $('#demoRecord').disabled = true; $('#demoRecord').title = '此浏览器不支持录制视频'; }
-  $('#demoProjection').onclick = () => { const shown = app.classList.toggle('demo-projection'); $('#demoProjection').setAttribute('aria-pressed', String(shown)); };
-  $('#demoSaveView').onclick = () => {
+  $('#demoLegendToggle').onclick = () => togglePanel('legend'); $('#demoNoteToggle').onclick = () => togglePanel('note');
+  $('#demoSaveView').onclick = async () => {
     const view = sceneView.cameraView(); if (!view) return;
-    const number = saved.reduce((max, v) => Math.max(max, +v.id.replace(/^view-/, '') || 0), 0) + 1, name = prompt('视角名称', `视角 ${number}`);
+    const number = saved.reduce((max, v) => Math.max(max, +v.id.replace(/^view-/, '') || 0), 0) + 1, name = await pagePrompt('视角名称', `视角 ${number}`, { maxLength: 40 });
     if (name === null) return;
-    saved.push({ id: `view-${number}`, name: name.trim().slice(0, 40) || `视角 ${number}`, ...view }); current = `view-${number}`; persist(); renderViews();
+    saved.push({ id: `view-${number}`, name, ...view }); current = `view-${number}`; persist(); renderViews();
   };
   root.addEventListener('keydown', event => {
     if (!on || event.target.closest?.('input, select, textarea') || (recording && event.key !== 'Escape')) return;

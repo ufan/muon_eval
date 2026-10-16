@@ -35,6 +35,32 @@ Expected counts and significance are therefore **comparison metrics and magnitud
 
 The side-panel heading "station assessment" does not mean a relative scan ranking has been done. These are mostly single-station raw or derived metrics; future scans compare quantiles, ranks, robustness and multi-objective trade-offs under common constraints.
 
+### The hovered pixel's 3D ray
+
+Hovering a pixel of the expected projection draws that pixel's ray in the 3D view: from the detector outward along the pixel's direction, as traced by the same calculation that gives the readout numbers. The readout's "坝体混凝土 · 穿行 32.4 m · 距探测器 4.7 m 处进入" is the concrete stretch of the ray that starts 4.7 m from the detector and runs 32.4 m. The ray disappears when the pointer leaves the projection, unless the pixel is pinned.
+
+**The ray in 3D.** Each stretch is a tube colored by the material it passes through:
+
+| Color | Material | Profile label |
+| --- | --- | --- |
+| Yellow | Concrete | 混凝土 |
+| Light green | Rock (terrain and surrounding rock) | 岩石 |
+| Blue | Water (reservoir, tailwater) | 水 |
+| Orange-red | Steel | 钢 |
+| Cyan | Air inside the path (the gallery the detector sits in, or a cavity the ray crosses) | 空气 |
+| White | A material without a defined ray color | the material's ID |
+
+- **Solid or ghosted.** Where nothing is between the camera and the tube, it is drawn solid and lit. Where a surface hides it, only a dimmed, ghosted copy shows through. A stretch that looks ghosted is behind or inside the subject from the current viewpoint; rotate the view to see how this changes.
+- **Rings and labels** mark each surface crossing taken from the calculation: 入 where the ray enters material from air, 出 where it leaves material into air, 界 at an interface between two materials, each with its distance from the detector in metres.
+- **Exit stub.** After the last exit, a thin cyan stub (at most a quarter of the ray's length) shows the ray continuing into open air. It is not part of the attenuating path.
+- **Constant size.** Tube thickness and ring size stay constant on screen at any zoom; they are not measurements.
+- **Linked components.** Components the ray crosses (galleries, rooms and so on) are highlighted while the ray is shown.
+- These colors belong to the ray only. They differ from the subject's display colors, the recognition outline colors and the feature-layer colors. The pink arrow is the detector's pointing axis (the centre of the field of view), not a traced ray.
+
+**Depth profile in the readout.** Under the readout a bar runs from the detector (0 m) to the end of the drawn ray, in the same colors as the tube. Wide stretches carry their material name; hover over any stretch for its material and distance range. White ticks mark the surface crossings, with their distances under the bar. Empty gaps in the bar mean the calculation has no interval there; they are never filled in.
+
+**Pinning and side view.** A click on a projection pixel pins it: its ray and profile stay after the pointer leaves the projection, and the pixel is outlined. Clicking the same pixel again unpins it. A pixel picked from the 3D coverage is pinned the same way. While a pixel is pinned, "侧视射线" moves the camera to look at its ray side-on, framed to its full length, so a ray that points roughly away from the camera is no longer foreshortened. Any camera drag cancels the move.
+
 ## 3. Parameter sensitivity and choices
 
 | Parameter change | Main effect | Advice |

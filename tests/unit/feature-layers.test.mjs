@@ -30,10 +30,15 @@ const catalogue = buildFeatureCatalogue({
 
 test('feature layers group the direct, non-water features by system', () => {
   assert.deepEqual(featureLayerGroups(catalogue), [
-    { id: 'services', label: '设施', featureIds: ['duct', 'duct_tunnel'], defaultVisible: false },
-    { id: 'access', label: '通道', featureIds: ['tunnel_a', 'tunnel_b'], defaultVisible: true },
-    { id: 'rooms', label: '房间', featureIds: ['room'], defaultVisible: true }
+    { id: 'services', label: '设施', featureIds: ['duct', 'duct_tunnel'], defaultVisible: false, listed: true },
+    { id: 'access', label: '通道', featureIds: ['tunnel_a', 'tunnel_b'], defaultVisible: true, listed: true },
+    { id: 'rooms', label: '房间', featureIds: ['room'], defaultVisible: true, listed: true }
   ]);
+});
+
+test('groups the display profile hides stay in the result, unlisted and off by default', () => {
+  const groups = featureLayerGroups(catalogue, { hiddenGroups: ['access'] });
+  assert.deepEqual(groups.map(g => [g.id, g.listed, g.defaultVisible]), [['services', true, false], ['access', false, false], ['rooms', true, true]]);
 });
 
 test('a group is shown by default only when every feature in it is a reference void or imaging target', () => {

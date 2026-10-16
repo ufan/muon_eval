@@ -1,11 +1,10 @@
+/* 导出方案 looks like the other header buttons (a green "primary" style read as an active state, owner review 2026-10-16). */
 .header-export {
   margin-left: auto;
   padding: 6px 12px;
-  border-color: #2a716b;
-  background: #10312f;
-  color: #dffbf7;
+  border-color: #31505e;
+  background: #10222d;
 }
-.header-export:hover { background: #10534f; }
 .header-actions { margin-left:auto; display:flex; align-items:center; gap:8px; }
 .header-actions .header-export { margin-left:0; }
 .header-secondary { padding:6px 12px; background:#10222d; border-color:#31505e; }
@@ -132,6 +131,9 @@
   background: #0a1821;
   color: #e9f2f5;
 }
+/* The view list is offered as preset buttons in demonstration mode (demo-view.js reads its options); the main
+   interface does not show the select (owner, 2026-10-15). */
+.view-sidebar-control { display: none; }
 .viewport-top-left {
   position: absolute;
   left: 14px;
@@ -143,11 +145,6 @@
   gap: 10px;
 }
 .viewport-top-left .scale { position: static; }
-#fluxLegend {
-  position: static;
-  width: 250px;
-}
-#fluxLegend > i { width: 100%; }
 .orientation-strip {
   position: absolute;
   left: 18px;
@@ -168,12 +165,16 @@
 .bank-directions { display: flex; align-items: center; gap: 22px; }
 .bank-directions b { color: #8ea5b2; font-weight: 600; }
 .orientation-strip span { display: inline-flex; align-items: center; gap: 5px; color: #bed0d7; }
+/* Axis labels come from the display profile and can be long: the three items wrap rather than clip in a narrow view. */
+.orientation-strip { white-space: normal; }
+/* Keep clear of the projection panel's default place (right 14px, 300px wide). */
+@media (min-width: 721px) { .app:not(.demo) .orientation-strip { right: 336px; } }
+.axis-definitions { flex-wrap: wrap; row-gap: 2px; }
 .orientation-strip i { width: 12px; height: 3px; display: inline-block; }
 .orientation-strip .axis-x { background: #49a7ff; }
 .orientation-strip .axis-y { background: #ff9f4a; }
 .orientation-strip .axis-z { background: #38d996; }
 @media (max-width: 1050px) {
-  #fluxLegend { width: 230px; }
   .orientation-strip { font-size: 11px; }
   .axis-definitions,
   .bank-directions { gap: 12px; }
@@ -181,7 +182,6 @@
 @media (max-width: 720px) {
   .orientation-strip { overflow: hidden; bottom: 8px; }
   .viewport-top-left { left: 12px; top: 12px; max-width: calc(100% - 24px); }
-  #fluxLegend { width: min(230px, 100%); }
 }
 
 .collapsible-section > h2 {
@@ -213,12 +213,17 @@
 .app.right-collapsed { --right-panel: 0px; }
 .app.left-collapsed > .left,
 .app.right-collapsed > .right { visibility: hidden; overflow: hidden; }
+/* Sidebar collapse tabs attached to the inner edge of each sidebar (on the 3D view's left and right edges), above the
+   projection panel, which keeps a 14px margin. The triangle points the way the sidebar moves. */
 .sidebar-toggle {
-  min-width: 76px;
-  border-color: #31505e;
-  color: #bed0d7;
+  position: absolute; top: 50%; z-index: 8; width: 14px; height: 44px; padding: 0; transform: translateY(-50%);
+  display: grid; place-items: center; font-size: 9px; line-height: 1;
+  background: #0b1720e6; border: 1px solid #31505e; color: #9fb6c0; cursor: pointer;
 }
-.sidebar-toggle:hover { color: #fff; border-color: var(--cyan); }
+.sidebar-toggle.edge-left { left: 0; border-left: 0; border-radius: 0 6px 6px 0; }
+.sidebar-toggle.edge-right { right: 0; border-right: 0; border-radius: 6px 0 0 6px; }
+.sidebar-toggle:hover, .sidebar-toggle:focus-visible { color: #fff; border-color: var(--cyan); background: #10222d; }
+.app.demo .sidebar-toggle { display: none; }
 .angle-value {
   display: inline-flex !important;
   align-items: center;
@@ -249,6 +254,13 @@
 .application-selection select{width:100%;min-width:0;font:inherit;padding:6px;background:#08131b;color:#e9f2f5;border:1px solid #294250;border-radius:5px}
 .application-selection [hidden]{display:none}
 .application-selection .hint{overflow-wrap:anywhere}
+/* Header data-configuration menu: same surface as the export menu, opening below its button. */
+.data-menu{position:relative}
+.data-options{position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:grid;gap:10px;width:min(340px,calc(100vw - 32px));padding:12px 14px;background:#0b1720;border:1px solid #294553;border-radius:8px;box-shadow:0 12px 28px #000a}
+.data-options[hidden]{display:none}
+.data-options h2{margin:0;font-size:13px}
+.data-options .hint{margin:0}
+@media(max-width:720px){.data-options{position:fixed;left:16px;right:16px;top:56px;width:auto}}
 /* Link to the dataset workbench styled like the header buttons (ADR-030). */
 .header-link { display:inline-flex; align-items:center; border:1px solid #31505e; border-radius:7px; color:inherit; text-decoration:none; font-size:inherit; }
 .header-link:hover { border-color:#4b7384; }
@@ -265,8 +277,145 @@
 .slice-control{margin:8px 0}.slice-control label{display:inline-flex;margin:4px 8px 4px 0}.slice-control select{background:#08131b;color:var(--text);border:1px solid #294250;border-radius:6px;padding:3px}.slice-control[data-off] .layer-adjust,.slice-control[data-off] select,.slice-control[data-off] .hint{display:none}
 .overview-item{margin:6px 0;border:1px solid #1d3542;border-radius:6px;background:#0b1720}.overview-item summary{cursor:pointer;padding:6px 8px;list-style:none;display:grid;gap:4px}.overview-item summary::-webkit-details-marker{display:none}.overview-item summary b{font-size:13px}.overview-item .swatch{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin-right:6px;vertical-align:middle}.overview-item .numbers{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:11px;color:var(--muted)}.overview-item .numbers em{font-style:normal;color:#ffd28c}.class-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:#222}.class-bar i{display:block;background:var(--c)}.overview-item table{width:100%;border-collapse:collapse;font-size:11px;margin:0 0 6px}.overview-item th,.overview-item td{padding:2px 6px;text-align:right;white-space:nowrap}.overview-item th:first-child,.overview-item td:first-child{text-align:left;white-space:normal}.overview-item th{color:var(--muted);font-weight:400}.overview-item tr.out td{color:var(--muted)}.overview-item button.link{border:0;background:none;padding:0;color:var(--cyan);cursor:pointer;text-align:left;font-size:11px}#overviewShow3d{width:100%;margin:6px 0}
 .station-labels{position:absolute;inset:0;pointer-events:none;z-index:6;overflow:hidden}.station-labels button{position:absolute;transform:translate(10px,-50%);pointer-events:auto;font-size:11px;line-height:1.3;padding:1px 6px;border:1px solid var(--c);border-radius:4px;background:#071018cc;color:#e9f2f5;white-space:nowrap;cursor:pointer}.station-labels button:hover{background:#10534f}.station-labels button[hidden]{display:none}
-#overviewTiles{width:100%;margin:6px 0 0}.tiles-dialog{width:min(1180px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:0 0 10px;border:1px solid #31505e;border-radius:12px;background:#09151e;color:#e9f2f5;box-shadow:0 24px 80px #000c}.tiles-dialog::backdrop{background:#02070bb8;backdrop-filter:blur(2px)}.tiles-dialog>header{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #203542}.tiles-dialog h2{margin:0;font-size:15px;letter-spacing:.04em}.tiles-modes{display:flex;gap:4px;margin-left:auto}.tiles-modes button.active{background:#10534f;border-color:var(--cyan)}.tiles-dialog>.hint{margin:8px 16px}.tiles-dialog .swatch{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin:0 4px 0 6px;vertical-align:middle}.tiles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:0 16px}.tile{margin:0;min-width:0}.tile figcaption{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;font-size:12px;margin-bottom:4px}.tile figcaption .swatch{margin:0;background:var(--c)}.tile figcaption small{width:100%;color:var(--muted);font-size:11px}.tile button.link{border:0;background:none;padding:0;color:var(--cyan);cursor:pointer;font-size:12px;font-weight:600}.tile-image{position:relative;aspect-ratio:1;border:1px solid var(--c);border-radius:4px;overflow:hidden;background:#10202a}.tile-image.pending::after{content:'计算中…';position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:12px}.tile-image canvas{display:block;width:100%;height:100%;image-rendering:pixelated}.tile-outlines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.tile-outlines path{fill:none;stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-linejoin:round;filter:drop-shadow(0 0 1.5px #000)}.tile-outlines path.horizon{stroke:#d7e3e8;stroke-opacity:.75;stroke-width:1.1;stroke-dasharray:4 3;filter:none}.tile-outlines path.precision{stroke:#fff;stroke-opacity:.85;stroke-width:1.2}.tile-outlines path.precision[data-level="0.1"]{stroke-dasharray:5 3}
-.app.demo{display:block;height:100vh}.app.demo>:not(main){display:none}.app.demo>main{height:100vh;width:100vw}.app.demo #projectionPanel{display:none}.app.demo.demo-projection #projectionPanel{display:block}.app.demo #fluxLegend{display:none}.demo-bar{position:absolute;top:12px;right:12px;z-index:8;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:calc(100% - 24px)}.demo-bar[hidden],.demo-caption[hidden],.demo-legend[hidden],.demo-footnote[hidden]{display:none}.demo-bar button{padding:5px 10px;font-size:12px;background:#071018d9}.demo-bar button.active,.demo-bar button[aria-pressed=true]{background:#10534f;border-color:var(--cyan)}.demo-views{display:flex;gap:4px;flex-wrap:wrap}.demo-saved{display:inline-flex}.demo-saved button:last-child{padding:5px 7px;color:var(--muted)}.demo-caption{position:absolute;left:12px;top:44px;z-index:7;max-width:min(60%,640px);padding:8px 14px;border-radius:8px;background:#071018cc}.demo-caption b{display:block;font-size:18px}.demo-caption span{display:block;color:var(--muted);font-size:13px;margin-top:2px}.demo-legend{position:absolute;left:12px;bottom:64px;z-index:7;max-width:min(50%,560px);padding:8px 12px;border-radius:8px;background:#071018cc;font-size:12px;line-height:1.6}.demo-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin-right:6px}.demo-footnote{position:absolute;left:0;right:0;bottom:0;z-index:7;padding:6px 12px;background:#071018d9;font-size:12px;line-height:1.5}.demo-footnote div+div{color:var(--muted)}.station-labels .working-label{position:absolute;transform:translate(10px,-50%);font-size:11px;line-height:1.3;padding:1px 6px;border:1px solid #ff4fb3;border-radius:4px;background:#071018cc;color:#e9f2f5;white-space:nowrap}.station-labels .working-label[hidden]{display:none}
+.tiles-modes{display:flex;gap:4px}.tiles-modes button.active{background:#10534f;border-color:var(--cyan)}.tiles-panel .swatch{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin:0 4px 0 6px;vertical-align:middle}.tiles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:0 16px}.tile{margin:0;min-width:0}.tile figcaption{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;font-size:12px;margin-bottom:4px}.tile figcaption .swatch{margin:0;background:var(--c)}.tile figcaption small{width:100%;color:var(--muted);font-size:11px}.tile button.link{border:0;background:none;padding:0;color:var(--cyan);cursor:pointer;font-size:12px;font-weight:600}.tile-image{position:relative;aspect-ratio:1;border:1px solid var(--c);border-radius:4px;overflow:hidden;background:#10202a}.tile-image.pending::after{content:'计算中…';position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:12px}.tile-image canvas{display:block;width:100%;height:100%;image-rendering:pixelated}.tile-outlines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.tile-outlines path{fill:none;stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-linejoin:round;filter:drop-shadow(0 0 1.5px #000)}.tile-outlines path.horizon{stroke:#d7e3e8;stroke-opacity:.75;stroke-width:1.1;stroke-dasharray:4 3;filter:none}.tile-outlines path.precision{stroke:#fff;stroke-opacity:.85;stroke-width:1.2}.tile-outlines path.precision[data-level="0.1"]{stroke-dasharray:5 3}
+.app.demo{display:block;height:100vh}.app.demo>:not(main){display:none}.app.demo>main{height:100vh;width:100vw}.app.demo #projectionPanel{display:none}.demo-bar{position:absolute;top:12px;right:12px;z-index:8;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:calc(100% - 24px)}.demo-bar[hidden],.demo-caption[hidden],.demo-legend[hidden],.demo-footnote[hidden]{display:none}.demo-bar button{padding:5px 10px;font-size:12px;background:#071018d9}.demo-bar button.active,.demo-bar button[aria-pressed=true]{background:#10534f;border-color:var(--cyan)}.demo-views{display:flex;gap:4px;flex-wrap:wrap}.demo-saved{display:inline-flex}.demo-saved button:last-child{padding:5px 7px;color:var(--muted)}.demo-caption{position:absolute;left:12px;top:44px;z-index:7;max-width:min(60%,640px);padding:8px 14px;border-radius:8px;background:#071018cc}.demo-caption b{display:block;font-size:18px}.demo-caption span{display:block;color:var(--muted);font-size:13px;margin-top:2px}.demo-legend{position:absolute;left:12px;bottom:64px;z-index:7;max-width:min(50%,560px);padding:8px 12px;border-radius:8px;background:#071018cc;font-size:12px;line-height:1.6}.demo-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin-right:6px}.demo-footnote{position:absolute;left:0;right:0;bottom:0;z-index:7;padding:6px 12px;background:#071018d9;font-size:12px;line-height:1.5}.demo-footnote div+div{color:var(--muted)}.station-labels .working-label{position:absolute;transform:translate(10px,-50%);font-size:11px;line-height:1.3;padding:1px 6px;border:1px solid #ff4fb3;border-radius:4px;background:#071018cc;color:#e9f2f5;white-space:nowrap}.station-labels .working-label[hidden]{display:none}
 .app.demo>main#viewport{height:100vh;min-height:0}
 @media(max-width:720px){.demo-bar{left:8px;right:8px;top:8px;justify-content:flex-start;max-width:none}.demo-bar button{padding:4px 8px}.demo-caption{top:92px;left:8px;max-width:calc(100% - 16px);padding:6px 10px}.demo-caption b{font-size:15px}.demo-caption span{font-size:12px}.demo-legend{left:8px;bottom:84px;max-width:calc(100% - 16px);font-size:11px;line-height:1.5}.demo-footnote{font-size:11px;padding:5px 8px}}
 .demo-bar select{font-size:12px;padding:4px 6px;background:#071018d9}.demo-bar.recording>:not(#demoRecord){pointer-events:none;opacity:.45}.demo-bar.recording #demoRecord{border-color:#ff5f55;background:#3a1416}
+/* Labels at the hovered ray's surface crossings in the 3D view (入 entry, 出 exit, 界 material interface). */
+.ray-labels{position:absolute;inset:0;pointer-events:none;z-index:6;overflow:hidden}.ray-labels span{position:absolute;transform:translate(9px,-50%);padding:1px 5px;border:1px solid #ffffff80;border-radius:4px;background:#071018d9;color:#ffffff;font-size:11px;line-height:1.3;white-space:nowrap;font-variant-numeric:tabular-nums}
+/* Right sidebar: 方案比较 and 专家诊断 drawers (main-pattern-view.js) styled as sidebar sections under 站点评估. */
+.right details.sidebar-details { margin: 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; }
+.right details.sidebar-details > summary { padding: 15px 16px; font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #b9ccd5; }
+.right details.sidebar-details > summary span { letter-spacing: 0; font-weight: 400; }
+.right details.sidebar-details > div { padding: 0 16px 15px !important; font-size: 12px !important; line-height: 1.55; color: #a9bdc6; }
+.right details.sidebar-details label { display: flex; align-items: center; gap: 6px; margin: 6px 0; }
+.right details.sidebar-details button { margin: 4px 6px 4px 0; padding: 5px 10px; font-size: 12px; }
+.right details.sidebar-details input[type="file"] { min-width: 0; max-width: 100%; font-size: 11px; }
+.station-actions { display: flex; gap: 8px; margin-top: 10px; }
+.station-actions button { flex: 1; padding: 6px 10px; font-size: 12px; }
+/* Floating viewport controls (ADR-032): 图层 popover top-left, display chip bar top-centre; they fade while the
+   pointer is away from the 3D view (viewport-tools.js) and are hidden in demonstration mode. */
+.vt-bar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 7; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: max-content; max-width: calc(100% - 28px); }
+.vt-group { position: relative; display: flex; }
+.vt-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; margin: 0; padding: 0 10px; border: 1px solid #31505e; border-radius: 7px; background: #0b1720e6; color: #c4d5dc; font-size: 12px; white-space: nowrap; cursor: pointer; }
+.vt-chip input { margin: 0; }
+.vt-chip:hover, .vt-more:hover { border-color: #4b7384; color: #fff; }
+.vt-chip:has(input:checked), .vt-chip.active, .vt-chip[aria-expanded="true"] { border-color: var(--cyan); color: #fff; }
+.vt-chip.vt-split { border-radius: 7px 0 0 7px; }
+.vt-more { height: 28px; width: 22px; padding: 0; border: 1px solid #31505e; border-left: 0; border-radius: 0 7px 7px 0; background: #0b1720e6; color: #9fb6c0; font-size: 10px; cursor: pointer; }
+.vt-more[aria-expanded="true"] { border-color: var(--cyan); color: #fff; }
+.vt-popover { position: absolute; top: calc(100% + 6px); left: 0; z-index: 9; width: min(280px, calc(100vw - 32px)); max-height: min(70vh, 540px); overflow: auto; padding: 8px 12px; background: #0b1720f5; border: 1px solid #294553; border-radius: 9px; box-shadow: 0 12px 28px #000a; font-size: 12px; text-align: left; }
+.vt-popover.vt-wide { width: min(330px, calc(100vw - 32px)); }
+.vt-bar .vt-popover { left: 50%; transform: translateX(-50%); }
+.vt-popover label { margin: 6px 0; }
+.vt-popover .hint { font-size: 11px; color: #8ea5b2; line-height: 1.5; margin: 6px 0 2px; }
+.vt-popover .coverage-options { margin-left: 0; }
+#layersTool { order: -1; }
+#viewport .vt-bar, #viewport #layersTool { transition: opacity .35s ease; }
+#viewport.tools-idle .vt-bar, #viewport.tools-idle #layersTool { opacity: .22; }
+@media (prefers-reduced-motion: reduce) { #viewport .vt-bar, #viewport #layersTool { transition: none; } }
+.app.demo .vt-bar, .app.demo #layersTool { display: none; }
+/* 投影结果 in the right sidebar (ADR-032): a sidebar section, not a floating window. In demonstration mode
+   demo-view.js moves the panel back over the 3D view, where the floating styles above apply. */
+.right #projectionPanel { position: static; width: auto; max-height: none; overflow: visible; padding: 15px 16px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; user-select: auto; }
+.right #projectionHandle { cursor: default; margin-bottom: 4px; }
+.right #projectionHandle b { font-size: 12px; letter-spacing: .1em; color: #b9ccd5; }
+.right #projectionHandle span { display: none; }
+#projectionReadout .readout-hint { color: #8ea5b2; }
+/* 多站 tab: the right sidebar widens for the summary. */
+.app.multi { --right-panel: 500px; }
+.app.multi.right-collapsed { --right-panel: 0px; }
+#multiPanel .tiles-panel .tiles-modes { margin: 0 0 8px; }
+#multiPanel .tiles-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 0; }
+#multiPanel .tiles-panel > .hint { margin: 6px 0; font-size: 11px; }
+.tile-compare { display: inline-flex; align-items: center; gap: 3px; margin: 0 0 0 auto; font-size: 11px; color: #9fb4be; }
+#multiPanel .tile figcaption { flex-wrap: nowrap; }
+#multiPanel .tile figcaption > b, #multiPanel .tile figcaption > button.link { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+#multiPanel .tile figcaption small { display: none; }
+#multiPanel .tile .tile-stats { display: block; margin: 0 0 4px; color: var(--muted); font-size: 11px; }
+/* Right-click menu in the 3D view (瞄准此处 / 放到此处). */
+.scene-menu { position: absolute; z-index: 10; display: grid; min-width: 120px; padding: 4px; border: 1px solid #294553; border-radius: 7px; background: #0b1720f5; box-shadow: 0 10px 24px #000a; }
+.scene-menu button { margin: 0; padding: 6px 10px; border: 0; background: transparent; color: #e1edf1; font-size: 12px; text-align: left; }
+.scene-menu button:hover, .scene-menu button:focus-visible { background: #10534f; }
+.scene-menu[hidden] { display: none; }
+/* No working station: the right sidebar shows only a short prompt. */
+#singlePanel.inactive > :not(#noWorking) { display: none; }
+.no-working { padding: 20px 16px; border-bottom: 1px solid var(--line); }
+.no-working p { margin: 0; color: #a9bdc6; font-size: 13px; line-height: 1.6; }
+/* In-page confirmation (replaces window.confirm, which embedded viewers block). */
+/* In-page dialogs (page-dialog.js): browser prompt/confirm/alert are blocked in embedded viewers. */
+.page-dialog { inset: 0; margin: auto; max-height: calc(100vh - 32px); width: min(400px, calc(100vw - 32px)); padding: 0; border: 1px solid #31505e; border-radius: 10px; background: #09151e; color: #e9f2f5; }
+.page-dialog.wide { width: min(720px, calc(100vw - 32px)); }
+.page-dialog::backdrop { background: #02070bb8; }
+.page-dialog p { margin: 0; padding: 18px 18px 12px; font-size: 14px; line-height: 1.6; white-space: pre-line; }
+.page-dialog-body { padding: 0 18px; }
+.page-dialog-body:empty { display: none; }
+.page-dialog-body input { width: 100%; box-sizing: border-box; margin-bottom: 14px; padding: 7px 9px; background: #050d13; color: #e9f2f5; border: 1px solid #31505e; border-radius: 6px; font: inherit; }
+.page-dialog-body input:focus { outline: 2px solid #3fb6a0; outline-offset: 1px; }
+.page-dialog-body textarea { width: 100%; box-sizing: border-box; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; background: #050d13; color: #cfe3ea; border: 1px solid #284452; border-radius: 6px; padding: 8px; resize: vertical; }
+.page-dialog-actions { display: flex; gap: 8px; margin: 8px 0 14px; }
+.page-dialog footer { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 0 18px 16px; }
+.page-dialog-status { margin-right: auto; font-size: 12px; color: #8fd3b0; }
+.page-dialog button { padding: 6px 14px; }
+.page-dialog.danger #pageDialogOk { background: #8f2f2f; border-color: #b24a4a; color: #fff; }
+@media (pointer: coarse) { .page-dialog button { min-height: 40px; } }
+/* 其他点位 chip (display-state.js) and the candidate list's compare tools. */
+.vt-count { min-width: 16px; padding: 0 4px; border-radius: 8px; background: #1b3442; color: #d3e2e8; font-size: 11px; text-align: center; }
+.vt-chip[aria-pressed="true"] { border-color: var(--cyan); color: #fff; }
+.vt-chip[aria-pressed="true"] .vt-count { background: #10534f; }
+.vt-chip:disabled { opacity: .5; cursor: not-allowed; }
+.compare-tools { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+.compare-tools span { margin-right: auto; }
+.compare-tools button { padding: 3px 9px; font-size: 12px; }
+/* Right-sidebar tabs (ADR-032 R): 点位 = the working station, 多站 = the summary of the stations shown in 3D. */
+.side-tabs { position: sticky; top: 0; z-index: 3; display: flex; gap: 0; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.side-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 0; padding: 6px 10px; border: 1px solid #31505e; border-radius: 0; background: #0b1720; color: #a9bdc6; font-size: 13px; }
+.side-tabs button:first-child { border-radius: 7px 0 0 7px; }
+.side-tabs button + button { border-left: 0; border-radius: 0 7px 7px 0; }
+.side-tabs button[aria-selected="true"] { background: #10534f; color: #fff; }
+#multiPanel.others-off > #overviewSection, #multiPanel.others-off > #tilesPanel { display: none; }
+#multiEmpty button { margin-top: 12px; }
+/* Other stations' names: on hover (the marker tooltip) in the normal view; permanent labels only in demonstration mode,
+   where screenshots and recordings need them (owner, 2026-10-16). */
+.app:not(.demo) .station-labels button { display: none; }
+.vt-more:disabled { opacity: .4; cursor: not-allowed; }
+/* Detector drag handles: invisible screen anchors (for scripts and tests only). */
+.handle-anchors { position: absolute; inset: 0; pointer-events: none; visibility: hidden; }
+.handle-anchors span { position: absolute; width: 1px; height: 1px; }
+/* Tablets (721–1100 px, owner 2026-10-16): the left sidebar keeps its column; the right sidebar slides over the 3D view
+   from the right and its edge tab opens and closes it. Phones are not supported (a notice shows below 721 px). */
+@media (min-width: 721px) and (max-width: 1100px) {
+  .app { position: relative; --left-panel: 248px; --right-panel: 0px; grid-template-columns: var(--left-panel) minmax(0, 1fr); }
+  .app.multi { --right-panel: 0px; }
+  .app > .right { position: absolute; top: 54px; bottom: 34px; right: 0; z-index: 20; width: min(340px, 46vw); visibility: visible; border-left: 1px solid var(--line); box-shadow: -12px 0 28px #0009; transition: transform .2s ease; }
+  .app.multi > .right { width: min(480px, 62vw); }
+  .app.right-collapsed > .right { transform: translateX(100%); visibility: hidden; }
+  .app:not(.right-collapsed) .sidebar-toggle.edge-right { right: min(340px, 46vw); }
+  .app.multi:not(.right-collapsed) .sidebar-toggle.edge-right { right: min(480px, 62vw); }
+}
+@media (min-width: 721px) and (max-width: 1100px) and (prefers-reduced-motion: reduce) { .app > .right { transition: none; } }
+/* Touch screens: larger targets for the chips, popover controls, edge tabs and menu items. */
+@media (pointer: coarse) {
+  .vt-chip, .vt-more { height: 38px; font-size: 13px; }
+  .vt-more { width: 30px; }
+  .vt-popover label { min-height: 34px; }
+  .sidebar-toggle { width: 24px; height: 60px; font-size: 12px; }
+  .scene-menu button { padding: 11px 14px; font-size: 14px; }
+  .side-tabs button { padding: 9px 10px; }
+}
+.small-screen-note { display: none; }
+@media (max-width: 720px) { .small-screen-note { display: block; padding: 8px 16px; background: #3a2a0c; color: #ffd98a; font-size: 12px; line-height: 1.5; } }
+@media (min-width: 721px) and (max-width: 1100px) {
+  /* Keep the chip bar in the uncovered part of the 3D view, right-aligned and clear of 图层 and the scale bar. */
+  .vt-bar { left: auto; right: 12px; transform: none; justify-content: flex-end; max-width: calc(100% - 150px); }
+  .app:not(.right-collapsed) .vt-bar { right: calc(min(340px, 46vw) + 12px); max-width: calc(100% - min(340px, 46vw) - 150px); }
+  .app.multi:not(.right-collapsed) .vt-bar { right: calc(min(480px, 62vw) + 12px); max-width: calc(100% - min(480px, 62vw) - 150px); }
+  .vt-bar .vt-popover { left: auto; right: 0; transform: none; }
+  /* Compact header: one line, the title shortens first. */
+  header { gap: 8px; padding: 0 12px; }
+  header .title { flex: 1; min-width: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header-actions { gap: 5px; }
+  .header-actions > button, .header-actions .header-link, .data-menu > button, .export-menu > button { padding: 5px 8px; font-size: 12px; white-space: nowrap; }
+}
+.demo-bar button[aria-pressed="true"] { border-color: var(--cyan); color: #fff; }

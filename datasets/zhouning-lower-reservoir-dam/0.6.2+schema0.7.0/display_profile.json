@@ -1,10 +1,17 @@
 {
-  "profile_version": "1.0",
-  "note": "Presentation-only recognition items for projection outlines (ADR-029). Added by the platform on 2026-10-13; not part of the authored release package; geometry unchanged.",
+  "profile_version": "1.1",
+  "note": "Presentation-only recognition items for projection outlines (ADR-029). Added by the platform on 2026-10-13; not part of the authored release package; geometry unchanged. Profile 1.1 (owner, 2026-10-15): the flood-release system is not a key imaging target, so it is left out of the 3D layer panel and 3D picking; it can still be highlighted. Axis labels summarise model_frame and bearings for the 3D view legend.",
   "recognition_items": [
     { "id": "galleries", "label": { "zh": "廊道", "en": "Galleries" }, "select": { "system": "gallery" }, "default": false },
     { "id": "observation_rooms", "label": { "zh": "观测室", "en": "Observation rooms" }, "select": { "class": "observation_room" }, "default": false },
     { "id": "elevator_shaft", "label": { "zh": "电梯井", "en": "Elevator shaft" }, "members": ["elevator_shaft"], "default": false },
     { "id": "dam_concrete", "label": { "zh": "坝体混凝土", "en": "Dam concrete" }, "material": "concrete", "color": "#AAA79C", "default": false }
-  ]
+  ],
+  "feature_layers": { "hidden_groups": ["flood_release"] },
+  "axes": {
+    "X": { "zh": "指向下游（方位 47°）", "en": "downstream (bearing 47°)" },
+    "Y": { "zh": "沿坝轴指向西北／左岸（方位 317°）", "en": "along the dam axis to the north-west / left bank (bearing 317°)" },
+    "Z": { "zh": "向上，Z = 高程 − 198 m", "en": "up, Z = elevation − 198 m" },
+    "origin": { "zh": "坝顶东南端上游面投影，▽198", "en": "upstream face at the south-east crest end, at elevation 198 m" }
+  }
 }

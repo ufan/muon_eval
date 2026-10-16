@@ -1,8 +1,8 @@
 import { featureLayerGroups } from './feature-layers.js';
 // 3D feature-layer panel (FR-M11): one checkbox per feature group, expandable to its
 // features. View state only, remembered per release; hiding never changes results.
-export function createFeatureLayerPanel({ root = document, features, storage, storageKey, onVisibility = () => {}, onHoverFeatures = () => {} }) {
-  const host = root.querySelector('#featureLayers'), groups = featureLayerGroups(features);
+export function createFeatureLayerPanel({ root = document, features, featureLayers = {}, storage, storageKey, onVisibility = () => {}, onHoverFeatures = () => {} }) {
+  const host = root.querySelector('#featureLayers'), groups = featureLayerGroups(features, featureLayers).filter(group => group.listed);
   let saved = {};
   try { saved = JSON.parse(storage.getItem(storageKey)) ?? {}; } catch {}
   const visible = new Map(groups.flatMap(group => group.featureIds.map(id => [id, typeof saved[id] === 'boolean' ? saved[id] : group.defaultVisible])));

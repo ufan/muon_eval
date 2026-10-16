@@ -24,7 +24,7 @@ export function createCompiledMainAssessment({ runtime }) {
       const config = { origin, azimuthDeg: station.az, elevationDeg: station.el, length };
       const basis = detectorBasis(station.az, station.el);
       return Object.freeze({
-        cloud: () => null, quickMetrics: () => null,
+        quickMetrics: () => null,
         centralRay: () => runtime.traceRayModel(origin, slopeDirection(basis, 0, 0), length),
         projection(quality) {
           if (!['preview', 'final'].includes(quality)) throw new Error('Unknown assessment quality');

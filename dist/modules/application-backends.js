@@ -33,7 +33,7 @@ export async function createApplicationBackend(dataset, selection) {
       return samples;
     },
     stations: compiledDefaultStations(dataset), environment: structuredClone(runtime.variables), waterLayers,
-    capabilities: { continuousWater: false, targetSignificance: false, fluxCloud: false, layers: ['dam','terrain','upwater','downwater','cone'] },
+    capabilities: { continuousWater: false, targetSignificance: false, layers: ['dam','terrain','upwater','downwater','cone','ray'] },
     scenarios: [...dataset.geometry.scenarios.values()].map(s => ({ id: s.id, label: s.label, variables: { ...s.variables } })),
     environmentDescription: Object.entries(runtime.variables).map(([key,value]) => `${key}=${value}`).join(' · ') };
 }
