@@ -374,3 +374,38 @@
 /* Detector drag handles: invisible screen anchors (for scripts and tests only). */
 .handle-anchors { position: absolute; inset: 0; pointer-events: none; visibility: hidden; }
 .handle-anchors span { position: absolute; width: 1px; height: 1px; }
+/* Tablets (721–1100 px, owner 2026-10-16): the left sidebar keeps its column; the right sidebar slides over the 3D view
+   from the right and its edge tab opens and closes it. Phones are not supported (a notice shows below 721 px). */
+@media (min-width: 721px) and (max-width: 1100px) {
+  .app { position: relative; --left-panel: 248px; --right-panel: 0px; grid-template-columns: var(--left-panel) minmax(0, 1fr); }
+  .app.multi { --right-panel: 0px; }
+  .app > .right { position: absolute; top: 54px; bottom: 34px; right: 0; z-index: 20; width: min(340px, 46vw); visibility: visible; border-left: 1px solid var(--line); box-shadow: -12px 0 28px #0009; transition: transform .2s ease; }
+  .app.multi > .right { width: min(480px, 62vw); }
+  .app.right-collapsed > .right { transform: translateX(100%); visibility: hidden; }
+  .app:not(.right-collapsed) .sidebar-toggle.edge-right { right: min(340px, 46vw); }
+  .app.multi:not(.right-collapsed) .sidebar-toggle.edge-right { right: min(480px, 62vw); }
+}
+@media (min-width: 721px) and (max-width: 1100px) and (prefers-reduced-motion: reduce) { .app > .right { transition: none; } }
+/* Touch screens: larger targets for the chips, popover controls, edge tabs and menu items. */
+@media (pointer: coarse) {
+  .vt-chip, .vt-more { height: 38px; font-size: 13px; }
+  .vt-more { width: 30px; }
+  .vt-popover label { min-height: 34px; }
+  .sidebar-toggle { width: 24px; height: 60px; font-size: 12px; }
+  .scene-menu button { padding: 11px 14px; font-size: 14px; }
+  .side-tabs button { padding: 9px 10px; }
+}
+.small-screen-note { display: none; }
+@media (max-width: 720px) { .small-screen-note { display: block; padding: 8px 16px; background: #3a2a0c; color: #ffd98a; font-size: 12px; line-height: 1.5; } }
+@media (min-width: 721px) and (max-width: 1100px) {
+  /* Keep the chip bar in the uncovered part of the 3D view, right-aligned and clear of 图层 and the scale bar. */
+  .vt-bar { left: auto; right: 12px; transform: none; justify-content: flex-end; max-width: calc(100% - 150px); }
+  .app:not(.right-collapsed) .vt-bar { right: calc(min(340px, 46vw) + 12px); max-width: calc(100% - min(340px, 46vw) - 150px); }
+  .app.multi:not(.right-collapsed) .vt-bar { right: calc(min(480px, 62vw) + 12px); max-width: calc(100% - min(480px, 62vw) - 150px); }
+  .vt-bar .vt-popover { left: auto; right: 0; transform: none; }
+  /* Compact header: one line, the title shortens first. */
+  header { gap: 8px; padding: 0 12px; }
+  header .title { flex: 1; min-width: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header-actions { gap: 5px; }
+  .header-actions > button, .header-actions .header-link, .data-menu > button, .export-menu > button { padding: 5px 8px; font-size: 12px; white-space: nowrap; }
+}

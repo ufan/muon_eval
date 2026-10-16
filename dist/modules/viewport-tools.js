@@ -16,7 +16,9 @@ export function createViewportTools({ root = document, idleMs = 2000 } = {}) {
     if (open) wake();
   }
   function wake() { clearTimeout(idleTimer); idleTimer = null; viewport.classList.remove('tools-idle'); }
-  function sleepSoon() { clearTimeout(idleTimer); idleTimer = setTimeout(() => { if (!anyOpen()) viewport.classList.add('tools-idle'); }, idleMs); }
+  // Touch screens have no hover to bring the controls back, so they never fade there.
+  const touchOnly = globalThis.matchMedia?.('(hover: none)').matches ?? false;
+  function sleepSoon() { if (touchOnly) return; clearTimeout(idleTimer); idleTimer = setTimeout(() => { if (!anyOpen()) viewport.classList.add('tools-idle'); }, idleMs); }
   for (const trigger of triggers) trigger.addEventListener('click', event => { event.stopPropagation(); toggle(trigger); });
   const outside = event => { if (anyOpen() && !event.target.closest('.vt-group')) { close(); if (!viewport.matches(':hover')) sleepSoon(); } };
   const escape = event => { if (event.key === 'Escape' && anyOpen()) { const open = triggers.find(trigger => !popoverOf(trigger).hidden); close(); open.focus(); } };
