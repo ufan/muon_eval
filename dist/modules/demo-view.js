@@ -20,7 +20,7 @@ const videoType = () => typeof MediaRecorder === 'undefined' ? null : VIDEO_TYPE
 
 export function createDemoView({ root = document, sceneView, storage, storageKey, datasetId, describe, onToggle = () => {} }) {
   const $ = s => root.querySelector(s), app = $('.app'), bar = $('#demoBar');
-  let on = false, current = null, saved = [], projectionHome = null, panels = { legend: true, note: true };
+  let on = false, current = null, saved = [], panels = { legend: true, note: true };
   // 图例 and 说明 are the user's choice (owner, 2026-10-16), remembered in this browser; exports follow what is shown, except
   // that a hidden 说明 still leaves its first line ("not a construction or safety conclusion") in screenshots and animations.
   const panelsKey = `${storageKey}:panels`;
@@ -29,7 +29,6 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
   function syncPanels() { $('#demoLegend').hidden = !on || !panels.legend; $('#demoFootnote').hidden = !on || !panels.note;
     $('#demoLegendToggle').setAttribute('aria-pressed', String(panels.legend)); $('#demoNoteToggle').setAttribute('aria-pressed', String(panels.note)); }
   const togglePanel = key => { panels = { ...panels, [key]: !panels[key] }; try { storage.setItem(panelsKey, JSON.stringify(panels)); } catch {} syncPanels(); };
-  const projection = $('#projectionPanel');
   try { saved = (JSON.parse(storage.getItem(storageKey)) ?? []).filter(v => typeof v?.id === 'string' && Array.isArray(v.position) && Array.isArray(v.target)); } catch {}
   const persist = () => { try { storage.setItem(storageKey, JSON.stringify(saved)); } catch {} };
   // Presets are the page's own view list (#viewSelect), so their names come from the dataset's views.
@@ -61,12 +60,10 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
     $('#demoFootnote').replaceChildren(...footnote.map(text => Object.assign(document.createElement('div'), { textContent: text })));
   }
   function setOn(value) {
-    on = Boolean(value); app.classList.toggle('demo', on); app.classList.remove('demo-projection');
-    // The projection sits in the right sidebar (ADR-032); in demonstration mode it floats over the 3D view again.
-    if (on) { projectionHome = { parent: projection.parentElement, next: projection.nextElementSibling }; $('#viewport').append(projection); }
-    else if (projectionHome) { projectionHome.parent.insertBefore(projection, projectionHome.next); projectionHome = null; } if (on) current = $('#viewSelect').value;
+    on = Boolean(value); app.classList.toggle('demo', on);
+    // Demonstration mode shows the 3D view alone; the projection stays in the right sidebar (ADR-032).
+    if (on) current = $('#viewSelect').value;
     for (const id of ['#demoBar', '#demoCaption']) $(id).hidden = !on; syncPanels();
-    $('#demoProjection').setAttribute('aria-pressed', 'false');
     sceneView.setDemo(on); renderViews(); render(); onToggle(on);
   }
   function screenshot() {
@@ -144,7 +141,6 @@ export function createDemoView({ root = document, sceneView, storage, storageKey
   $('#demoRecord').onclick = record;
   if (!videoType() && typeof VideoEncoder === 'undefined') { $('#demoRecord').disabled = true; $('#demoRecord').title = '此浏览器不支持录制视频'; }
   $('#demoLegendToggle').onclick = () => togglePanel('legend'); $('#demoNoteToggle').onclick = () => togglePanel('note');
-  $('#demoProjection').onclick = () => { const shown = app.classList.toggle('demo-projection'); $('#demoProjection').setAttribute('aria-pressed', String(shown)); };
   $('#demoSaveView').onclick = () => {
     const view = sceneView.cameraView(); if (!view) return;
     const number = saved.reduce((max, v) => Math.max(max, +v.id.replace(/^view-/, '') || 0), 0) + 1, name = prompt('视角名称', `视角 ${number}`);

@@ -195,7 +195,6 @@ try{
   await page.waitForFunction(()=>{const canvas=document.querySelector('#webgl canvas'),box=document.querySelector('#webgl').getBoundingClientRect();return Math.abs(canvas.width/canvas.height-box.width/box.height)<.01&&box.width>window.innerWidth*.95;});
   const view=await page.locator('#viewSelect').inputValue();await page.keyboard.press('ArrowRight');assert.notEqual(await page.locator('#viewSelect').inputValue(),view);
   accept('演示视角');await click('#demoSaveView');assert.equal(await page.locator('#demoSaved [data-demo-view]').innerText(),'演示视角');
-  await click('#demoProjection');assert.ok(await page.locator('#projectionPanel').isVisible());await click('#demoProjection');
   // 图例 and 说明 are optional (owner 2026-10-16).
   for(const [toggle,box] of [['#demoLegendToggle','#demoLegend'],['#demoNoteToggle','#demoFootnote']]){assert.ok(await page.locator(box).isVisible());await click(toggle);assert.ok(await page.locator(box).isHidden());await click(toggle);assert.ok(await page.locator(box).isVisible());}
   const download=page.waitForEvent('download');await click('#demoShot');assert.match((await download).suggestedFilename(),/^muography-demo-.+-\d{8}-\d{4}\.png$/);

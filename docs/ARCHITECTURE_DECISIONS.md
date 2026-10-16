@@ -652,7 +652,7 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 - **Devices (owner, 2026-10-16):** desktops and tablets (≥ 768 px, touch). From 721 to 1100 px the right sidebar slides over the 3D view from its edge tab and the chip bar keeps to the uncovered part; touch screens get larger targets, no idle fading, and a long press for the right-click menu. Phones are not supported; below 721 px a notice says so.
 - **Not now:** a docking framework (more machinery than the app needs, ADR-004); the detector's-eye view (FR-M18) and target-first workflow (FR-M19) are recorded as future features.
 
-**Consequences.** Every layout change is view state only and never changes results; element IDs stay so the browser test keeps its selectors. The browser test drives the floating controls, the 其他点位 chip and the tabs. Saved coverage settings migrate once (former station set shown while coverage was on → other stations shown). Tablet layouts are checked at 1024 × 768 and 820 × 1180. Demonstration mode keeps the projection floating over the view.
+**Consequences.** Every layout change is view state only and never changes results; element IDs stay so the browser test keeps its selectors. The browser test drives the floating controls, the 其他点位 chip and the tabs. Saved coverage settings migrate once (former station set shown while coverage was on → other stations shown). Tablet layouts are checked at 1024 × 768 and 820 × 1180. Demonstration mode shows the 3D view alone (the 投影图 toggle was removed, owner 2026-10-16).
 
 ---
 
