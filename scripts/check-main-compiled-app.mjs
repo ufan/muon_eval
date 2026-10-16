@@ -137,9 +137,11 @@ try{
   await page.evaluate(was=>was.forEach((checked,i)=>{const input=document.querySelectorAll('#candidateList [data-compare]')[i];if(input.checked!==checked)input.click();}),was);assert.equal(await page.locator('#candidateList .cov-swatch').count(),1);}
  // Defaults (owner 2026-10-15): cone layer off with edges off and solid frustum on; the projection ray layer on.
  assert.equal(await page.locator('[data-layer="cone"]').isChecked(),false);assert.ok(await page.locator('[data-layer="ray"]').isChecked());
+ // The cone options open only while 视锥 is on (no empty or ineffective popover).
+ assert.ok(await page.locator('[aria-controls="conePopover"]').isDisabled());await page.locator('[data-layer="cone"]').check();assert.ok(await page.locator('[aria-controls="conePopover"]').isEnabled());
  assert.equal(await (await reveal('#fovEdges')).isChecked(),false);await (await reveal('#fovEdges')).check();
  await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await (await reveal('#fovEdges')).uncheck();
- assert.ok(await (await reveal('#fovSolid')).isChecked());await (await reveal('#fovSolid')).uncheck();await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await (await reveal('#fovSolid')).check();
+ assert.ok(await (await reveal('#fovSolid')).isChecked());await (await reveal('#fovSolid')).uncheck();await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before);await (await reveal('#fovSolid')).check();await page.locator('[data-layer="cone"]').uncheck();assert.ok(await page.locator('#conePopover').isHidden());
  for(const layer of ['cone','ray']){const box=page.locator(`[data-layer="${layer}"]`),was=await box.isChecked();await box.setChecked(!was);await page.waitForTimeout(300);assert.deepEqual(await currentResult(),before,layer);await box.setChecked(was);}
  // Physical multi-station maps (15d): 多视角覆盖 by default, legend per map, thresholds only for the class map; views never change results.
  await (await reveal('#coverageMode')).selectOption('physical');assert.ok(await page.locator('#multiControls').isVisible());assert.equal(await (await reveal('#coverageMulti')).inputValue(),'views');

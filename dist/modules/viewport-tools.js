@@ -23,10 +23,22 @@ export function createViewportTools({ root = document, idleMs = 2000 } = {}) {
   root.addEventListener('click', outside); root.addEventListener('keydown', escape);
   viewport.addEventListener('pointerenter', wake); viewport.addEventListener('pointerleave', sleepSoon);
   viewport.addEventListener('focusin', wake);
+  // 视锥 and 切面: their options only act while the layer is on, so the ▾ is disabled (and its popover closed) while it
+  // is off, instead of opening an empty or ineffective frame (owner review 2026-10-16).
+  const splits = [...root.querySelectorAll('.vt-split')].map(label => ({ box: label.querySelector('input'), more: label.nextElementSibling }));
+  function syncSplits() {
+    for (const { box, more } of splits) {
+      more.disabled = !box.checked; more.title = box.checked ? more.getAttribute('aria-label') : `先打开${label(box)}`;
+      if (!box.checked && !popoverOf(more).hidden) { popoverOf(more).hidden = true; more.setAttribute('aria-expanded', 'false'); }
+    }
+  }
+  const label = box => box.closest('label').textContent.trim();
+  for (const { box } of splits) box.addEventListener('change', syncSplits);
+  syncSplits();
   // The coverage chip names the active mode, so the state is visible without opening the popover.
   const mode = root.querySelector('#coverageMode'), chip = root.querySelector('#coverageButton'), state = root.querySelector('#coverageChipState');
   const syncCoverage = () => { const on = mode.value !== 'off'; state.textContent = '：' + mode.selectedOptions[0].textContent.replace(/（.*$/, ''); chip.classList.toggle('active', on); };
   mode.addEventListener('change', syncCoverage); mode.addEventListener('coverage-applied', syncCoverage); syncCoverage();
-  return Object.freeze({ close, syncCoverage,
+  return Object.freeze({ close, syncCoverage, syncSplits,
     dispose() { clearTimeout(idleTimer); root.removeEventListener('click', outside); root.removeEventListener('keydown', escape); } });
 }

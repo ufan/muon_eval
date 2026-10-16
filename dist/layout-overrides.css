@@ -370,3 +370,4 @@
 /* Other stations' names: on hover (the marker tooltip) in the normal view; permanent labels only in demonstration mode,
    where screenshots and recordings need them (owner, 2026-10-16). */
 .app:not(.demo) .station-labels button { display: none; }
+.vt-more:disabled { opacity: .4; cursor: not-allowed; }
