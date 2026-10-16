@@ -635,7 +635,7 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 
 **Consequences.** The plan format gains aims and regions (data format, migration from 1.1). The 15d class thresholds move from view settings into an aim template; the 3D maps stay as they are and show the selected aim's metric where it is a per-point quantity. Scans can be compared across projects only through the aims stored with them.
 
-## ADR-032 Main-view layout: deployment left, station right, task modes, floating viewport controls
+## ADR-032 Main-view layout: deployment left, station right, one display state, floating viewport controls
 
 **Status.** Accepted (owner, 2026-10-15); implemented step by step on the review branch.
 
@@ -645,12 +645,13 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 - **Left sidebar: deployment configuration only** — 工作方案, 候选部署点, 部署组合.
 - **Right sidebar: the single (working) station** — 当前探测器, 投影结果 (map, pixel readout, depth profile, pin and side view, precision lines, recognition outlines), 站点评估 with export. Device parameters stay a header dialog. The readout appears only for a hovered or pinned pixel (no idle summary).
 - **Viewport controls float over the 3D view.** A collapsed 图层 popover holds the geometry layers; a chip bar holds the viewing aids (视锥, 射线, 覆盖, 切面) with small popovers for their options. They fade when the pointer has been away from the view, never while a popover is open, and without animation under reduced motion.
-- **Two task modes in the header: 单站考察 and 多站评估.** Multi-station mode replaces the right sidebar with a wide analysis panel: a station picker (compared candidates, current deployment or all), one card per station with a thumbnail projection and key numbers from the cached results, the target × station table and 方案比较. 专家诊断 stays in the single-station panel under 站点评估, because its contour layers are drawn on the working station's projection. Entering it switches the 3D coverage to multi-view physical coverage for those stations; leaving restores the previous settings. The mode is per-browser view state.
+- **One station set, one display state (revised 2026-10-16, owner choice R).** The 比较 boxes are the only membership of the multi-station set; 全选 / 清空 in the list header, and 部署组合 load into them (载入到比较). `display-state.js` owns whether the other stations are shown and how coverage is drawn: a **其他点位 (n)** chip shows or hides the compared candidates (markers, labels, fields of view, coverage; at most eight), independent of coverage; 覆盖 sets only the style. The former station-set selects and the header mode switch are gone.
+- **Right-sidebar tabs 点位 | 多站 (n).** 点位 is the working station; 多站 summarises exactly the stations shown in 3D: 多站总览, one card per station with a thumbnail projection, key numbers and a 比较 box, and 方案比较; while other stations are hidden it shows a prompt with 显示其他点位. 专家诊断 stays under 站点评估 in 点位, because its contour layers are drawn on the working station's projection. Switching tabs never changes the 3D view, and showing stations never switches tabs. The sidebar widens for 多站; the tab is per-browser view state.
 - **Station interaction:** right-click in the 3D view offers 瞄准此处 (set azimuth/elevation to look at the point, via a pure function) and 放到此处; keyboard shortcuts toggle the viewing aids and nudge the pose. Drag handles on the detector are a later, separate decision (vendoring TransformControls).
 - **Deselecting the working station (owner, 2026-10-16):** clicking the highlighted candidate in the list deselects it and discards unsaved edits; the 3D view then hides the working detector, its cone, ray and coverage, and the right sidebar shows a prompt until a candidate is chosen (clicks from cards, labels or the overview only ever select). This is view state: the study keeps its one working station internally (DOMAIN_MODEL unchanged) and a reload selects it again. Switching with unsaved edits asks in the page, since embedded viewers block `window.confirm`.
 - **Not now:** a docking framework (more machinery than the app needs, ADR-004); the detector's-eye view (FR-M18) and target-first workflow (FR-M19) are recorded as future features.
 
-**Consequences.** Every layout change is view state only and never changes results; element IDs stay so the browser test keeps its selectors. The browser test gains the mode switch and the floating controls. Narrow screens need compact versions of the chip bar and the mode switch. Demonstration mode keeps the projection floating over the view.
+**Consequences.** Every layout change is view state only and never changes results; element IDs stay so the browser test keeps its selectors. The browser test drives the floating controls, the 其他点位 chip and the tabs. Saved coverage settings migrate once (former station set shown while coverage was on → other stations shown). Narrow screens need a compact chip bar. Demonstration mode keeps the projection floating over the view.
 
 ---
 
@@ -675,6 +676,7 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 
 ## Change log
 
+- 2026-10-16: ADR-032 revised (owner choice R): one display state, 其他点位 chip, compare boxes as the only station set, right-sidebar tabs instead of the header mode switch.
 - 2026-10-15: ADR-032 accepted: main-view layout with deployment left, station right, task modes and floating viewport controls (owner).
 - 2026-10-14: ADR-031 principle accepted, specification deferred (owner).
 - 2026-10-14: ADR-031 proposed: evaluation aims are user input; the app supplies regions, per-point metrics, aggregations and optimisation on the same definition (owner principle).
