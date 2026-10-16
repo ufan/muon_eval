@@ -212,7 +212,8 @@ try{
   await page.mouse.click(box.x+box.width*.45,box.y+box.height*.45,{button:'right'});await page.locator('.scene-menu button').first().click();await ready();
   assert.notDeepEqual(await pose(),start);assert.match(await page.locator('#placeNote').innerText(),/已瞄准所点位置/);assert.ok(await page.locator('.scene-menu').isHidden());
   const [az,el]=await pose();await page.locator('#webgl canvas').hover();await page.keyboard.press('Shift+ArrowUp');await page.keyboard.press('ArrowLeft');await ready();
-  assert.deepEqual(await pose(),[(az+359)%360,Math.min(90,el+5)]);}
+  assert.deepEqual(await pose(),[(az+359)%360,Math.min(90,el+5)]);
+  }
  // Drag handles (ADR-032 step 7): the centre moves the working detector, the axis tip aims it; the view never orbits meanwhile.
  {const handle=async kind=>page.locator(`[data-handle="${kind}"]`).evaluate(a=>{const b=document.querySelector('#webgl').getBoundingClientRect();return[b.left+parseFloat(a.style.left),b.top+parseFloat(a.style.top)];});
   const values=async()=>Promise.all(['#x','#y','#z','#azNumber','#elNumber'].map(id=>page.locator(id).inputValue())),drag=async(kind,dx,dy)=>{const [x,y]=await handle(kind);await page.mouse.move(x,y);await page.mouse.down();for(let i=1;i<=8;i++)await page.mouse.move(x+dx*i/8,y+dy*i/8);await page.mouse.up();await ready();};
@@ -264,5 +265,8 @@ try{
  accept();await click('#deleteStudy');await ready();assert.deepEqual((await studies()).map(([id])=>id),['study-1','study-2','study-4']);assert.equal(await page.locator('#studySelect').inputValue(),'study-1');
  assert.equal(await page.locator('#deploymentSelect option').count(),1);
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
+ // Last, so the pan cannot disturb the steps above: a right-drag pans the view and does not open the right-click menu.
+ {await page.setViewportSize({width:1440,height:900});await page.waitForTimeout(500);const box=await page.locator('#webgl canvas').boundingBox();await page.mouse.move(box.x+box.width*.5,box.y+box.height*.6);await page.mouse.down({button:'right'});
+  for(let i=1;i<=6;i++)await page.mouse.move(box.x+box.width*.5+i*10,box.y+box.height*.6+i*4);await page.mouse.up({button:'right'});assert.ok(await page.locator('.scene-menu').isHidden(),'no menu after a pan');}
  console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import, studies (rename, delete), working station and candidates, deployments and plan export menu, multi-station coverage, overview, demonstration mode with animation and placement, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
