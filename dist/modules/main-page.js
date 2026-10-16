@@ -192,8 +192,11 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
    sceneView.setCoverage(value);displayState={...displayState,coverage:value};coverageSignature='';multiOptions={errorLevel:value.multi.errorLevel,minViews:value.multi.minViews,goodSpreadDeg:value.multi.goodSpreadDeg,minSpreadDeg:value.multi.minSpreadDeg};renderList();renderOverview();try{storage.setItem(key,JSON.stringify(displayState));}catch{}};
   for(const input of [mode,core,context,multi,error,views,good,minimum,featureTint])input.onchange=apply;
   // 其他点位 chip: shows or hides the compared candidates in 3D; the count is the number compared.
-  $('#othersButton').onclick=()=>{displayState={...displayState,others:!displayState.others};apply();};apply();}
+  $('#othersButton').onclick=()=>{displayState={...displayState,others:!displayState.others};apply();};
+  $('#showOthersButton').onclick=()=>{if(!displayState.others){displayState={...displayState,others:true};apply();}};apply();}
  function syncOthersChip(){const chip=$('#othersButton');if(!chip||!study)return;const set=shownSet(),on=displayState.others;chip.setAttribute('aria-pressed',String(on));chip.classList.toggle('active',on);$('#othersCount').textContent=String(set.compared);
+  // The 多站 tab: its count, and a prompt instead of the summary while other stations are hidden.
+  if($('#multiCount'))$('#multiCount').textContent=String(set.ids.length);if($('#multiPanel')){$('#multiPanel').classList.toggle('others-off',!on);$('#multiEmpty').hidden=on;}
   chip.disabled=!on&&set.compared===0;chip.title=set.compared===0?'先在候选部署点列表中勾选“比较”':set.hiddenCount?`三维中只显示前 8 个（另有 ${set.hiddenCount} 个未显示）`:on?'隐藏勾选比较的候选点位':'在三维中显示勾选比较的候选点位';}
  // Placing the working station on the model (14d): one click on a visible surface, 0.5 m off it on the viewer's side.
  function setPlacingButton(on){const button=$('#placeStation');button.classList.toggle('active',on);button.textContent=on?'在模型上点击…（Esc 取消）':'在模型上点选位置';}

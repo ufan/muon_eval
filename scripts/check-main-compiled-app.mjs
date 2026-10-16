@@ -182,7 +182,7 @@ try{
  {await page.waitForFunction(()=>document.querySelectorAll('.station-labels button:not([hidden])').length>0);const label=labels.first(),name=await label.innerText();
   const anchor=await label.evaluate(e=>{const box=document.querySelector('#webgl').getBoundingClientRect();return[box.left+parseFloat(e.style.left),box.top+parseFloat(e.style.top)];});
   await page.mouse.move(...anchor);await page.waitForTimeout(200);assert.match(await page.locator('.feature-tip').innerText(),/点击设为工作点位/);await page.mouse.down();await page.mouse.up();await ready();await opened(name);}
- await setOthers(false);
+ await setOthers(false);assert.ok(await page.locator('#multiEmpty').isVisible());assert.ok(await page.locator('#overviewSection').isHidden());
  await click('#modeSingle');assert.ok(await page.locator('#singlePanel').isVisible());assert.equal(await (await reveal('#coverageMode')).inputValue(),coverageBefore);
  // Demonstration mode (#17): the 3D view alone with caption, legend and limitations; presets and saved views stepped with ← →;
  // the screenshot is a PNG; Esc leaves. Views never change results; the camera keeps the container's aspect ratio.

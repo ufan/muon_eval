@@ -325,17 +325,12 @@
 .right #projectionHandle span { display: none; }
 #projectionReadout .readout-hint { color: #8ea5b2; }
 .app.demo #projectionPanel { top: 56px; max-height: calc(100% - 70px); }
-/* Task modes (ADR-032): header switch; 多站评估 widens the right sidebar for the analysis panel. */
-.mode-switch { display: flex; margin-left: 18px; border: 1px solid #31505e; border-radius: 8px; overflow: hidden; }
-.mode-switch button { margin: 0; padding: 5px 14px; border: 0; border-radius: 0; background: #0b1720; color: #a9bdc6; font-size: 13px; }
-.mode-switch button + button { border-left: 1px solid #31505e; }
-.mode-switch button[aria-selected="true"] { background: #10534f; color: #fff; }
+/* 多站 tab: the right sidebar widens for the summary. */
 .app.multi { --right-panel: 500px; }
 #multiPanel .tiles-panel .tiles-modes { margin: 0 0 8px; }
 #multiPanel .tiles-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 0; }
 #multiPanel .tiles-panel > .hint { margin: 6px 0; font-size: 11px; }
 .tile-compare { display: inline-flex; align-items: center; gap: 3px; margin: 0 0 0 auto; font-size: 11px; color: #9fb4be; }
-@media (max-width: 720px) { .mode-switch { margin-left: 8px; } .mode-switch button { padding: 4px 8px; font-size: 12px; } }
 #multiPanel .tile figcaption { flex-wrap: nowrap; }
 #multiPanel .tile figcaption > b, #multiPanel .tile figcaption > button.link { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
 #multiPanel .tile figcaption small { display: none; }
@@ -363,3 +358,11 @@
 .compare-tools { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 12px; color: var(--muted); }
 .compare-tools span { margin-right: auto; }
 .compare-tools button { padding: 3px 9px; font-size: 12px; }
+/* Right-sidebar tabs (ADR-032 R): 点位 = the working station, 多站 = the summary of the stations shown in 3D. */
+.side-tabs { position: sticky; top: 0; z-index: 3; display: flex; gap: 0; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.side-tabs button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 0; padding: 6px 10px; border: 1px solid #31505e; border-radius: 0; background: #0b1720; color: #a9bdc6; font-size: 13px; }
+.side-tabs button:first-child { border-radius: 7px 0 0 7px; }
+.side-tabs button + button { border-left: 0; border-radius: 0 7px 7px 0; }
+.side-tabs button[aria-selected="true"] { background: #10534f; color: #fff; }
+#multiPanel.others-off > #overviewSection, #multiPanel.others-off > #tilesPanel { display: none; }
+#multiEmpty button { margin-top: 12px; }
