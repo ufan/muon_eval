@@ -1,11 +1,10 @@
+/* 导出方案 looks like the other header buttons (a green "primary" style read as an active state, owner review 2026-10-16). */
 .header-export {
   margin-left: auto;
   padding: 6px 12px;
-  border-color: #2a716b;
-  background: #10312f;
-  color: #dffbf7;
+  border-color: #31505e;
+  background: #10222d;
 }
-.header-export:hover { background: #10534f; }
 .header-actions { margin-left:auto; display:flex; align-items:center; gap:8px; }
 .header-actions .header-export { margin-left:0; }
 .header-secondary { padding:6px 12px; background:#10222d; border-color:#31505e; }
