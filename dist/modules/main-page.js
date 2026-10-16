@@ -62,7 +62,9 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  // No red: red is the geometric count tint.
  const EXTRA_COLORS=['#4fc3f7','#ffd54f','#81c784','#ba68c8','#4db6ac','#9fa8da','#90a4ae','#dce775'];let coverageSignature='',displayState=readDisplayState(null);
  // The other stations shown in 3D and summarised in 多站 (display-state.js): the compared candidates while 其他点位 is on.
- function shownSet(){return shownStations(displayState,{pool:study.plan.stations.map(s=>s.id),compared:study.compared,working:workingActive&&!study.modified?study.working.from:null});}
+ // The candidate loaded as the working station is shown once, as the working station, also while it has unsaved edits
+ // (its saved pose was drawn as a second station on top of it, owner review 2026-10-16).
+ function shownSet(){return shownStations(displayState,{pool:study.plan.stations.map(s=>s.id),compared:study.compared,working:workingActive?study.working.from:null});}
  function coverageExtras(){const pool=study.plan.stations.map(s=>s.id);
   return shownSet().ids.map(id=>{const s=study.candidate(id),input=study.candidateInput(id);
    const entry=results.get(assessmentKey(input));
