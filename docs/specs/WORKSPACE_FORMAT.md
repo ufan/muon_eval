@@ -1,6 +1,6 @@
 # Workspace format (`muography-workspace` 2.0.0)
 
-**Status: proposed (ADR-033), not implemented.** The app still reads and writes [`muography-plan` 1.1.0](PLAN_FORMAT.md). This spec describes the format that replaces it and how existing data moves over. Owner decisions of 2026-10-17 are included: exposure belongs to the study, sites merge within a study on exact equality, migrated studies keep a 候选池 deployment, and another release of the same dataset imports with a warning.
+**Status: proposed (ADR-033); the format module is implemented, the app does not use it yet.** The app still reads and writes [`muography-plan` 1.1.0](PLAN_FORMAT.md). This spec describes the format that replaces it and how existing data moves over. Owner decisions of 2026-10-17 are included: exposure belongs to the study, sites merge within a study on exact equality, migrated studies keep a 候选池 deployment, and another release of the same dataset imports with a warning.
 
 A workspace holds everything a user has saved for one dataset release:
 - **sites:** where a detector can stand;
@@ -10,8 +10,8 @@ A workspace holds everything a user has saved for one dataset release:
 
 It is flat: every item is stored once and referenced by ID, so two studies can share a deployment and two stations can share a site. The same format serves as browser storage, as a full export, and as an export of any selection (some stations, some deployments, one study). Any such file can be imported by another person on another host.
 
-- Code (planned): `dist/modules/workspace-format.js` for validation, canonical text, item hashes, selection closure and migration from 1.x; `dist/modules/workspace-store.js` for browser storage; `dist/modules/workspace-import.js` for import classification and merging. All three are pure apart from the storage object passed in.
-- Schema for other tools: [`dist/schemas/muography-workspace-2.schema.json`](../../dist/schemas/muography-workspace-2.schema.json) (JSON Schema 2020-12). Cross-item rules (unique IDs, references, closure) are checked by the code, as for plans.
+- Code: `dist/modules/workspace-format.js` (implemented: `validateWorkspace`, `parseWorkspace`, `serializeWorkspace`, `itemHash`, `workspaceHash`, `newId`, `createWorkspace`, `selectWorkspace`, `missingScenarios`, `migrateStudies`, `selectionFromPlan`; tests in `tests/unit/workspace-format.test.mjs`). Planned: `dist/modules/workspace-store.js` for browser storage and `dist/modules/workspace-import.js` for import classification and merging. All are pure apart from the storage object passed in.
+- Schema for other tools: [`dist/schemas/muography-workspace-2.schema.json`](../../dist/schemas/muography-workspace-2.schema.json) (JSON Schema 2020-12). Cross-item rules (unique IDs, references, closure, unique scene IDs) are checked by the code only; `tests/data/workspace-format.test.mjs` checks that schema and code agree on everything else.
 - Examples: [`examples/workspace-2.0-full.json`](examples/workspace-2.0-full.json) is a whole workspace; [`examples/workspace-2.0-selection.json`](examples/workspace-2.0-selection.json) is one exported deployment.
 
 ## Document
