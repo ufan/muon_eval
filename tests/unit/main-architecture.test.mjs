@@ -63,7 +63,7 @@ test('major module import graph is acyclic and core/controller/state cannot impo
  const root=new URL('../../dist/',import.meta.url),seen=new Set(),active=new Set();
  async function visit(url){assert.ok(!active.has(url.href),'Import cycle: '+url.href);if(seen.has(url.href))return;active.add(url.href);const source=await readFile(url,'utf8');for(const m of source.matchAll(/(?:from\s*|import\s*)['"]([^'"]+)['"]/g))if(m[1].startsWith('.'))await visit(new URL(m[1],url));active.delete(url.href);seen.add(url.href);}
  await visit(new URL('app.js',root));
- for(const name of ['compiled-main-assessment','assessment-controller','deployment-state','device-configuration','detector-pose','recognition-layers','feature-layers','plan-format','plan-store','study-state','candidate-results']){
+ for(const name of ['compiled-main-assessment','assessment-controller','deployment-state','device-configuration','detector-pose','recognition-layers','feature-layers','plan-format','plan-store','workspace-format','workspace-store','workspace-study','study-state','candidate-results']){
   const source=await readFile(new URL('modules/'+name+'.js',root),'utf8');assert.doesNotMatch(source,/\bdocument\b|\bwindow\b|localStorage|THREE|from\s*['"][^'"]*(?:view|main-page|three|compiled-mesh-runtime)/);
  }
  const entry=await readFile(new URL('app.js',root),'utf8');assert.ok(entry.split('\n').length<40);assert.doesNotMatch(entry,/new THREE|traceRayModel|createProjectionPass|addEventListener|localStorage/);

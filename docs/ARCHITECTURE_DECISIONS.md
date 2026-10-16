@@ -42,7 +42,7 @@ Last updated: 2026-10-10
 | 030 | Two entry points: planning app and dataset workbench, one selection contract | Accepted (owner, 2026-10-14); links and drawer done (15c); 11b, W1 open |
 | 031 | Evaluation aims are user input; the app supplies metrics, regions and optimisation | Principle accepted (owner, 2026-10-14); specification deferred |
 | 032 | Main-view layout: deployment left, station right, one display state, floating viewport controls | Accepted (owner, 2026-10-15; revised 2026-10-16); implemented |
-| 033 | Playground-first workflow on a flat, shareable workspace (plan model 2.0) | Proposed (2026-10-16); owner decisions settled 2026-10-17; not implemented |
+| 033 | Playground-first workflow on a flat, shareable workspace (plan model 2.0) | Accepted (owner decisions 2026-10-17); steps 2–3 implemented (format, workspace storage), steps 4–6 open |
 
 ---
 
@@ -740,6 +740,10 @@ Each case adds kinds and items; none changes the meaning of existing 2.0 members
   5. Export of selections and the import preview.
   6. The study composer, with scenes; aims follow with ADR-031.
 
+**Progress.**
+- Step 2 (2026-10-17): `workspace-format.js`.
+- Step 3 (2026-10-17): storage switch-over. Until step 4, the study UI edits each study as a plan view, with the study's first deployment as its candidate pool (`workspace-study.js`). Imports merge new items and refuse conflicts until the preview of step 5.
+
 **Owner decisions (2026-10-17).**
 1. Exposure belongs to the study, configured separately from the device and the stations; the playground has one session exposure.
 2. Migration merges sites within one study on exactly equal position and candidate.
@@ -767,6 +771,7 @@ Each case adds kinds and items; none changes the meaning of existing 2.0 members
 
 ## Change log
 
+- 2026-10-17: ADR-033 steps 2 and 3 implemented (format module; workspace storage with an interim plan-view bridge).
 - 2026-10-17: ADR-033 owner decisions: exposure on the study (session in the playground), exact-equality site merge within a study, 候选池 deployment on migration, other-release import with a warning.
 - 2026-10-16: ADR-033 proposed: playground-first workflow, flat per-release workspace (`muography-workspace` 2.0), self-contained selection exports with merge-on-import, seams for carriers and time-varying observation (owner direction; four decisions open). Index rows for ADR-031 and ADR-032 added.
 - 2026-10-16: ADR-032 revised (owner choice R): one display state, 其他点位 chip, compare boxes as the only station set, right-sidebar tabs instead of the header mode switch.

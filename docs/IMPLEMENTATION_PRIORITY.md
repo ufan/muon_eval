@@ -45,7 +45,7 @@ Last updated: 2026-10-12
 | AN1 | Anomaly schema as part of the plan format | FR-H1, FR-H11 | Field `anomalies` reserved (empty) in plans 1.0 and 1.1; schema designed with P4 as plan 1.2.0 (owner; 1.1.0 went to deployments, 14a) | Todo |
 | 13 | Headless batch runner (Node CLI) | FR-S5, ADR-006 | `scripts/run-plan.mjs` on the pure `plan-runner.js`: plan in; per-station results, run summary and optional replayable comparison out; worker threads, byte-identical for any thread count. Six stations at 65² in about 6 s on four cores. Scan input with P5. Known limits are tracked in 13a, #14, FR-L4, FR-K11 and the pending browser regressions | Done |
 | 13a | Open run outputs in the app; smaller result files | FR-S5, FR-P4 | With 11b (same versioned result format and export/import menu). (1) The app cannot open a single `<station>.result.json` or a run folder (`summary.json`); today only `comparison.json` replays. (2) Sizes: a 65² result is 3–4 MB of JSON and `comparison.json` embeds every result (22 MB for 6 stations), so about 14 stations exceed the app's 50 MB import limit, and replay stops at 20 rows. Fix: comparison references result files by SHA-256 (as `summary.json` does) instead of embedding them, and a compact result encoding; limits set from measurements | Todo |
-| 11c | Workspace 2.0: playground-first workflow, flat shared workspace, selection export and import preview | FR-P11, FR-P12, ADR-033 | Steps: (1) design documents (WORKSPACE_FORMAT.md, schema, ADR-033, DOMAIN_MODEL §2.3a) — drafted 2026-10-16, owner decisions settled 2026-10-17; (2) `workspace-format.js` + migration, test-first — done 2026-10-17; (3) storage switch-over; (4) 我的点位 and deployment sidebar (mock-ups first); (5) selection export and import preview; (6) study composer with scenes. Aims follow ADR-031 (2.1) | In design |
+| 11c | Workspace 2.0: playground-first workflow, flat shared workspace, selection export and import preview | FR-P11, FR-P12, ADR-033 | Steps: (1) design documents (WORKSPACE_FORMAT.md, schema, ADR-033, DOMAIN_MODEL §2.3a) — drafted 2026-10-16, owner decisions settled 2026-10-17; (2) `workspace-format.js` + migration, test-first — done 2026-10-17; (3) storage switch-over — done 2026-10-17 (workspace storage, one-time 1.x migration, workspace export, merge-only import; the study UI edits a plan view through the interim `workspace-study.js`); (4) 我的点位 and deployment sidebar (mock-ups first); (5) selection export and import preview; (6) study composer with scenes. Aims follow ADR-031 (2.1) | In design |
 
 ## P3 — Multi-station overview and demonstration (Phase 2)
 
@@ -149,6 +149,7 @@ Before scan performance by owner decision (OQ-10). AN1 is in P2 with the plan fo
 
 ## Change log
 
+- 2026-10-17: 11c step 3 done: the app stores the workspace (`workspace-store.js`), migrates 1.x storage once, exports workspace selections and imports workspace or 1.x files (merge only; conflicts refused until step 5).
 - 2026-10-17: 11c step 2 done: `workspace-format.js` (validation, canonical text, item hashes, IDs, selection closure, 1.x migration) with unit and schema-agreement tests.
 - 2026-10-16: 11c added (workspace 2.0, ADR-033); design documents drafted.
 - 2026-10-14: 15d done (physical multi-station maps on subject surfaces).

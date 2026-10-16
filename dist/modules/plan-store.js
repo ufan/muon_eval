@@ -78,6 +78,17 @@ export function switchStudy(storage, release, id) {
   return { plan, session: session(plan, readJson(storage, studySessionKey(release, id))) };
 }
 
+// Every stored 1.x study of a release, for the one-time move to the workspace (WORKSPACE_FORMAT.md,
+// Migration). Read only; unreadable studies are skipped and named in `problems`.
+export function readLegacyStudies(storage, release) {
+  const index = readIndex(storage, release), studies = [], problems = [];
+  for (const id of index?.studies ?? []) {
+    try { studies.push({ id, plan: readPlan(storage, release, id), session: readJson(storage, studySessionKey(release, id)) }); }
+    catch (error) { problems.push(`${id}: ${error.message}`); }
+  }
+  return { studies, active: index?.active ?? null, problems };
+}
+
 export function deleteStudy(storage, release, id) {
   const index = readIndex(storage, release);
   if (!index?.studies.includes(id)) return;

@@ -3,7 +3,10 @@ import { deviceSettingsData as serializeDeviceSettings } from './device-configur
 import { createRecognitionPanel } from './recognition-panel-view.js';
 import { createFeatureLayerPanel } from './feature-layer-panel-view.js';
 import { featureLayerGroups, featuresInView } from './feature-layers.js';
-import { parsePlan, serializePlan, planFromState, extractDeployments } from './plan-format.js';
+import { parsePlan, planFromState, detectorFromSettings } from './plan-format.js';
+import { newId, parseWorkspace, serializeWorkspace, selectWorkspace, selectionFromPlan, detectorWithoutExposure } from './workspace-format.js';
+import { openWorkspace, saveWorkspace, saveWorkspaceSession } from './workspace-store.js';
+import { listStudyItems, planViewOf, applyPlanView, addStudyFromPlan, removeStudy, studyForImport, ensurePool, legacySession, workspaceSession } from './workspace-study.js';
 import { createStudyState } from './study-state.js';
 import { assessmentKey, compactResult, compactItemLengths, createResultCache, createCandidateQueue, compareEntries, entryCountsBottomFirst } from './candidate-results.js';
 import { overviewTable } from './overview-table.js';
@@ -14,7 +17,6 @@ import { createTaskMode } from './task-mode.js';
 import { aimAt as aimPose } from './detector-pose.js';
 import { shortcutFor } from './view-shortcuts.js';
 import { demoFootnote } from './demo-snapshot.js';
-import { openStudies, saveStudy, saveSession, createStudy, switchStudy, listStudies, deleteStudy } from './plan-store.js';
 import { selectionHref, APP_PAGES } from './application-selection.js';
 import { placementPoint } from './coverage-map.js';
 import { readDisplayState, shownStations } from './display-state.js';
@@ -26,7 +28,8 @@ export function createMainPage({workbenchHref='./geometry-preview.html',datasetI
  const precisionKey=`muon-precision:${datasetId}`;try{projection.precision=storage.getItem(precisionKey)==='1';}catch{}
  // Studies (PLAN_FORMAT.md, FR-P8): each release keeps several plans; the active one holds the stations, poses,
  // detector and deployments. The active station is session state stored next to the plan, never inside it.
- let studyId='study-1',datasetStations=[],study=null,workingKey=null,workingBusy=false;
+ // Storage is the release's workspace (muography-workspace 2.0, ADR-033); the study UI edits one study as a plan view (workspace-study.js).
+ let studyId=null,workspace=null,wsSession=null,datasetStations=[],study=null,workingKey=null,workingBusy=false;
  const escapeHtml=text=>String(text).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};`);
  const mainPatterns=createMainPatternView({canvas:$('#projectionCanvas'),host:$('#multiPanel'),diagnosticsHost:$('#singlePanel'),backendLabel,onExportComparison:()=>fullResults(study.compared)});
  const recognition=createRecognitionPanel({root,features,items:recognitionItems,storage,storageKey:`muon-recognition:${datasetId}`,onChange:()=>{projection.recognition=recognition.state();drawProjection();renderOverview();},onHoverItem:item=>sceneView.emphasiseFeatures(item?.kind==='features'?[...item.featureIds]:[])});
@@ -46,7 +49,8 @@ export function createMainPage({workbenchHref='./geometry-preview.html',datasetI
  const controller=createController({readInputs:inputs,onInvalidate(){workingBusy=true;queue.pause();mainPatterns.invalidate();projection.data=null;sceneView.setCoverageResult(null);sceneView.setFeaturesInView(null);recognition.update(null);projection.recognition=recognition.state();$('#projectionReadout').textContent='姿态更新中…';},onStart(input){workingKey=assessmentKey(input);workingBusy=true;queue.pause();sceneView.drawDetector(input.station,input.device);},onQuick({metrics}){if(metrics)showQuickMetrics(metrics);},onProgress({quality,progress}){$('#projectionReadout').textContent=`${quality==='preview'?'快速预览':'精细投影'}计算中… ${Math.round(100*progress)}%`;},onResult(data,input){projection.data=data;sceneView.setCoverageResult(data,input.device);sceneView.setFeaturesInView(featuresInView(data,layerFeatureIds,{threshold:recognition.state().threshold}));recognition.update(data);projection.recognition=recognition.state();if(data.quality==='final'){updateProjectionAssessment(data,input.station);mainPatterns.update(data.patternResult,projection.mode);results.set(assessmentKey(input),compactResult(data.patternResult,{selection:mainPatterns.selection,recognition:compactItemLengths(data,recognitionItems)}));workingBusy=false;refreshCandidates();resumeQueue();renderList();showComparison();}drawProjection();},onError(error){console.error(error);workingBusy=false;resumeQueue();$('#projectionReadout').textContent='评估计算失败：'+error.message;}});
  const scheduleDetectorUpdate=()=>controller.schedule(),resize=()=>sceneView.resize(),setView=mode=>sceneView.setView(mode);
  const drawProjection=()=>projectionView.draw(projection,study.configuration.response);
- const applyDeviceSettings=s=>study.configure(s);
+ // Exposure belongs to the study (ADR-033): changing it in the form sets it for every candidate of the study.
+ const applyDeviceSettings=s=>{study.configure(s);if(Number.isInteger(s.exposureDays)&&s.exposureDays!==study.exposureDays){study.setExposure(s.exposureDays);persistPlan();refreshCandidates();}};
  const deviceSettingsData=()=>study.working.settings;
  $('#projectionToggle')?.addEventListener('click',()=>{const b=$('#projectionBody'),hidden=b.style.display==='none';b.style.display=hidden?'block':'none';$('#projectionToggle').textContent=hidden?'−':'+'});
 $$('[data-projection]').forEach(b=>b.addEventListener('click',()=>{if(b.disabled)return;projection.mode=b.dataset.projection;$$('[data-projection]').forEach(x=>x.classList.toggle('active',x===b));mainPatterns.redraw(projection.mode);drawProjection()}));
@@ -147,18 +151,27 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  function syncDeviceStatus(){const {device:DEVICE,response:RESPONSE}=study.configuration,pct=v=>(100*v).toFixed(1).replace(/\.0$/,'')+'%',slope=v=>v.toFixed(2);$('#areaOut').textContent=`${(DEVICE.width*1000).toFixed(1)} × ${(DEVICE.height*1000).toFixed(1)} mm`;$('#pitchOut').textContent=(DEVICE.stripPitch*1000).toFixed(2).replace(/0$/,'')+' mm';$('#stripsOut').textContent=DEVICE.stripsX;$('#spacingOut').textContent=DEVICE.spacing.toFixed(2)+' m';$('#baselineOut').textContent=DEVICE.baseline.toFixed(2)+' m';$('#fovOut').textContent=DEVICE.fovH.toFixed(1)+'° / '+DEVICE.fovV.toFixed(1)+'°';$('#coreFovOut').textContent=`${2*DEVICE.stripsX-1} × ${2*DEVICE.stripsY-1}`;$('#efficiencyOut').textContent=pct(RESPONSE.layerEfficiency);$('#coincidenceOut').textContent=pct(RESPONSE.layerEfficiency**DEVICE.layers*RESPONSE.deadLiveFraction);$('#deadOut').textContent=pct(1-RESPONSE.deadLiveFraction);$('#resolutionOut').textContent=RESPONSE.angularResolutionDeg.toFixed(2).replace(/0$/,'')+'°';$('#exposureLabel').textContent=RESPONSE.exposureDays+'天预计计数';$('#sxMin').textContent='−'+slope(DEVICE.maxSlopeX);$('#sxMax').textContent='+'+slope(DEVICE.maxSlopeX);$('#syMin').textContent='−'+slope(DEVICE.maxSlopeY);$('#syMax').textContent='+'+slope(DEVICE.maxSlopeY)}
  function sync(){const w=study.working;for(const k of ['name','x','y','z','az','el'])$('#'+k).value=w[k];$('#azNumber').value=w.az;$('#elNumber').value=w.el;syncDeviceStatus()}
  // The study's plan always follows the scenario chosen in the app.
- function applyPlan(plan,session){study=createStudyState({plan:{...plan,scene:{...plan.scene,scenario:scenarioId}},session,environment:state.environment});}
- const persistSession=()=>saveSession(storage,datasetId,studyId,study.session());
- const persistPlan=()=>saveStudy(storage,datasetId,studyId,study.plan,study.session());
+ function applyPlan(plan,session){study=createStudyState({plan:{...plan,scene:{...plan.scene,scenario:scenarioId}},session,environment:state.environment,newId:prefix=>newId(prefix)});}
+ const persistSession=()=>{wsSession=workspaceSession(workspace,studyId,study.session(),wsSession);saveWorkspaceSession(storage,datasetId,wsSession);};
+ const persistPlan=()=>{workspace=applyPlanView(workspace,studyId,study.plan);saveWorkspace(storage,datasetId,workspace);persistSession();};
+ const defaultDetector=()=>({name:'default',...detectorWithoutExposure(detectorFromSettings(state.configuration.device.model,serializeDeviceSettings(state.configuration)))});
+ const datasetPlan=title=>planFromState({title,release:datasetId,scenario:scenarioId,model:state.configuration.device.model,stations:datasetStations,settings:serializeDeviceSettings(state.configuration)});
+ // A study from the dataset candidates. One made with 新建 is stored at once; the first study of a new release
+ // (open=false, at start) is written with the first change.
+ function newStudy(open=true){const added=addStudyFromPlan(workspace,datasetPlan(`工作方案 ${workspace.studies.length+1}`));workspace=added.workspace;if(!open){loadStudy(added.studyId);return;}saveWorkspace(storage,datasetId,workspace);openStudyById(added.studyId);}
  // Study picker: switch between the release's studies or start a new one from the dataset candidates.
- const studyLabel=({id,title})=>title||`工作方案 ${id.replace(/^study-/,'')}`;
- function renderStudies(){const select=$('#studySelect');if(!select)return;const studies=listStudies(storage,datasetId);if(!studies.some(s=>s.id===studyId))studies.push({id:studyId,title:study.plan.title});select.replaceChildren(...studies.map(s=>new Option(studyLabel(s),s.id,false,s.id===studyId)));}
+ const studyLabel=({title})=>title||'工作方案';
+ function renderStudies(){const select=$('#studySelect');if(!select)return;select.replaceChildren(...listStudyItems(workspace).map(s=>new Option(studyLabel(s),s.id,false,s.id===studyId)));}
  function openStudy(id,{plan,session}){studyId=id;applyPlan(plan,session);renderStudies();renderList();sync();showComparison();refreshCandidates();scheduleDetectorUpdate();}
- function bindStudies(){$('#studySelect').onchange=e=>{persistPlan();try{openStudy(e.target.value,switchStudy(storage,datasetId,e.target.value));}catch(error){pageAlert('工作方案无法打开：'+error.message);renderStudies();}};
+ // Loads a study into the study state (no rendering); openStudyById also refreshes the page.
+ function loadStudy(id){const pooled=ensurePool(workspace,id);if(pooled!==workspace){workspace=pooled;saveWorkspace(storage,datasetId,workspace);}studyId=id;applyPlan(planViewOf(workspace,id,{scenario:scenarioId}),legacySession(workspace,wsSession,id));persistSession();}
+ function openStudyById(id){loadStudy(id);renderStudies();renderList();sync();showComparison();refreshCandidates();scheduleDetectorUpdate();}
+ function bindStudies(){$('#studySelect').onchange=e=>{persistPlan();try{openStudyById(e.target.value);}catch(error){pageAlert('工作方案无法打开：'+error.message);renderStudies();}};
   $('#renameStudy').onclick=async()=>{const name=await askName('工作方案名称',studyLabel({id:studyId,title:study.plan.title}));if(name===null)return;study.setTitle(name);persistPlan();renderStudies();};
-  $('#deleteStudy').onclick=async()=>{if(!await pageConfirm(`删除工作方案「${studyLabel({id:studyId,title:study.plan.title})}」？此操作不可撤销，需要时请先导出。`,{ok:'删除',danger:true}))return;deleteStudy(storage,datasetId,studyId);const next=listStudies(storage,datasetId)[0];
-   if(next){openStudy(next.id,switchStudy(storage,datasetId,next.id));return;}const plan=planFromState({release:datasetId,scenario:scenarioId,model:state.configuration.device.model,stations:datasetStations,settings:serializeDeviceSettings(state.configuration)});openStudy(createStudy(storage,datasetId,plan),{plan,session:null});};
-  $('#newStudy').onclick=()=>{persistPlan();const plan=planFromState({release:datasetId,scenario:scenarioId,model:state.configuration.device.model,stations:datasetStations,settings:serializeDeviceSettings(state.configuration)});openStudy(createStudy(storage,datasetId,plan),{plan,session:null});};}
+  // Deleting a study keeps its candidates and deployments in the workspace (they may be shared, ADR-033).
+  $('#deleteStudy').onclick=async()=>{if(!await pageConfirm(`删除工作方案「${studyLabel({id:studyId,title:study.plan.title})}」？此操作不可撤销，需要时请先导出。`,{ok:'删除',danger:true}))return;persistPlan();workspace=removeStudy(workspace,studyId);saveWorkspace(storage,datasetId,workspace);const next=workspace.studies[0];
+   if(next){openStudyById(next.id);return;}newStudy();};
+  $('#newStudy').onclick=()=>{persistPlan();newStudy();};}
  function fillDeviceForm(){const s=deviceSettingsData();$('#cfgWidth').value=(s.width*1000).toFixed(1);$('#cfgHeight').value=(s.height*1000).toFixed(1);$('#cfgPitch').value=(s.stripPitch*1000).toFixed(2);$('#cfgStrips').value=s.strips;$('#cfgSpacing').value=s.spacing;$('#cfgEfficiency').value=(s.layerEfficiency*100).toFixed(1);$('#cfgDead').value=((1-s.deadLiveFraction)*100).toFixed(1);$('#cfgResolution').value=s.angularResolutionDeg;$('#cfgSystematic').value=(s.systematicFraction*100).toFixed(1);$('#cfgExposure').value=s.exposureDays;$('#cfgAngular').value=s.angularModel}
  function bindDeviceSettings(){const dialog=$('#deviceDialog');$('#deviceSettings').onclick=()=>{fillDeviceForm();dialog.showModal()};$('#deviceClose').onclick=$('#deviceCancel').onclick=()=>dialog.close();const formSettings=()=>({width:+$('#cfgWidth').value/1000,height:+$('#cfgHeight').value/1000,stripPitch:+$('#cfgPitch').value/1000,strips:+$('#cfgStrips').value,spacing:+$('#cfgSpacing').value,layerEfficiency:+$('#cfgEfficiency').value/100,deadLiveFraction:1-+$('#cfgDead').value/100,angularResolutionDeg:+$('#cfgResolution').value,systematicFraction:+$('#cfgSystematic').value/100,exposureDays:+$('#cfgExposure').value,angularModel:$('#cfgAngular').value});
   // The form edits the working station's detector; "应用到全部候选" also sets it on every candidate (explicit update, FR-P6).
@@ -166,13 +179,27 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
   $('#deviceApplyAll').onclick=()=>{applyDeviceSettings(formSettings());study.applyDetectorToAll();controller.clearCaches();persistPlan();syncDeviceStatus();refreshCandidates();renderList();showComparison();dialog.close();scheduleDetectorUpdate()};dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()})}
  function updateWater(){if(!capabilities.continuousWater)return;const level=+$('#upLevel').value;$('#upOut').textContent='▽'+level+' m';state.setEnvironment({upstream:level});sceneView.setWater(level);scheduleDetectorUpdate();}
  function setDamOpacity(){const opacity=+$('#damOpacity').value/100;$('#damOpacityOut').textContent=Math.round(opacity*100)+'%';sceneView.setDamOpacity(opacity);}
- // An imported plan always becomes a new study of its release (never overwriting one); a plan of another
- // release or scenario then opens that selection, where the new study is the active one.
+ // Import (interim, ADR-033 step 3): a workspace file (any selection) or a 1.x plan file is merged into the workspace of
+ // its release and opens as a study; conflicts are refused until the import preview (step 5). A file of another
+ // registered release is imported there and that release opens; another release of the same dataset imports here
+ // after a warning; another dataset is refused.
+ const datasetOf=release=>String(release).split('@')[0];
  async function importPlan(event){const file=event.target.files[0];event.target.value='';if(!file)return;
-  try{if(file.size>5*1024*1024)throw new Error('文件超过 5 MB');const plan=parsePlan(await file.text());
-   if(plan.scene.contentHash!==null)throw new Error('用户加载的数据集尚不支持');if(!releases.includes(plan.scene.release))throw new Error(`未登记的数据集版本 ${plan.scene.release}`);
-   if(plan.scene.release===datasetId&&(plan.scene.scenario??scenarioId)===scenarioId){persistPlan();openStudy(createStudy(storage,datasetId,plan),{plan,session:null});return;}
-   persistPlan();createStudy(storage,plan.scene.release,plan);location.assign(selectionHref(APP_PAGES.main,{datasetId:plan.scene.release,scenarioId:plan.scene.scenario}));
+  try{if(file.size>5*1024*1024)throw new Error('文件超过 5 MB');const source=await file.text();let format;try{format=JSON.parse(source)?.format;}catch{throw new Error('不是 JSON 文件');}
+   let selection,scenario=null;if(format==='muography-plan'){const plan=parsePlan(source);scenario=plan.scene.scenario;selection=selectionFromPlan(plan);}else{selection=parseWorkspace(source);}
+   if(selection.release.contentHash!==null)throw new Error('用户加载的数据集尚不支持');const release=selection.release.id;
+   if(datasetOf(release)!==datasetOf(datasetId))throw new Error(`文件属于另一个数据集（${release}）`);
+   const importInto=(target,targetSession)=>{const roots=selection.roots.length?selection:{...selection,contents:'selection',roots:selection.studies.map(s=>s.id)};
+    if(!roots.roots.length)throw new Error('文件中没有工作方案、部署组合或点位');const title=roots.roots.some(id=>id.startsWith('dep-'))?'导入的部署组合':'导入的点位';
+    const result=studyForImport(target,roots,{title,exposureDays:targetSession?.exposureDays});return result;};
+   if(release!==datasetId&&releases.includes(release)){
+    const opened=openWorkspace({storage,release,defaultDetector:defaultDetector()}),result=importInto(opened.workspace,opened.session);
+    saveWorkspace(storage,release,result.workspace);saveWorkspaceSession(storage,release,{...opened.session,activeStudy:result.studyId,activeDeployment:null,shown:[],working:null});
+    persistPlan();location.assign(selectionHref(APP_PAGES.main,{datasetId:release,scenarioId:scenario}));return;}
+   if(release!==datasetId&&!await pageConfirm(`此文件来自数据集版本 ${release}，当前打开的是 ${datasetId}。点位位置和姿态将按当前版本的模型坐标直接使用，可能与原版本不一致。继续导入？`,{ok:'仍然导入'}))return;
+   persistPlan();const result=importInto(workspace,wsSession);workspace=result.workspace;saveWorkspace(storage,datasetId,workspace);
+   if(scenario!==null&&scenario!==scenarioId){wsSession={...wsSession,activeStudy:result.studyId,activeDeployment:null,shown:[],working:null};saveWorkspaceSession(storage,datasetId,wsSession);location.assign(selectionHref(APP_PAGES.main,{datasetId,scenarioId:scenario}));return;}
+   openStudyById(result.studyId);
   }catch(error){pageAlert('方案导入失败：'+error.message);}}
  // Coverage highlight (FR-M10): view state, remembered per release; never changes results.
  function bindCoverage(){const key=`muon-coverage:${datasetId}`;let saved=null;try{saved=JSON.parse(storage.getItem(key));}catch{}displayState=readDisplayState(saved);const c=displayState.coverage;
@@ -217,20 +244,21 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
      .catch(error=>{if(error?.name!=='AbortError'){console.error(error);$('#sliceHint').textContent='切面材料范围计算失败：'+error.message;}});}};
   on.onchange=axis.onchange=apply;pos.oninput=apply;apply();}
  function bindPlacement(){$('#placeStation').onclick=()=>{const on=!$('#placeStation').classList.contains('active');setPlacingButton(on);sceneView.setPlacing(on);};}
- // Export (FR-P9): the whole study, the current deployment or all deployments; a deployment file holds only
- // its member candidates and the detectors they use.
- function bindExportMenu(){const button=$('#export'),menu=$('#exportMenu'),slug=text=>text.replace(/[^A-Za-z0-9._-]+/g,'_'),base=()=>`muography-plan-${slug(datasetId)}-${slug(studyId)}`;
+ // Export (FR-P9, ADR-033): the whole study, the current deployment or all deployments, each a self-contained
+ // muography-workspace selection (the roots plus every station, site and detector they use).
+ function bindExportMenu(){const button=$('#export'),menu=$('#exportMenu'),slug=text=>text.replace(/[^A-Za-z0-9._-]+/g,'_'),base=()=>`muography-${slug(datasetId)}-${slug(studyLabel({title:study.plan.title}))}`;
   const close=()=>{menu.hidden=true;button.setAttribute('aria-expanded','false');};
   button.onclick=e=>{e.stopPropagation();if(!menu.hidden){close();return;}const deployments=study.plan.deployments,active=deployments.find(d=>d.id===study.activeDeployment);
    menu.querySelector('[data-export="deployment"]').disabled=!active?.stations.length;menu.querySelector('[data-export="deployments"]').disabled=!deployments.some(d=>d.stations.length);menu.hidden=false;button.setAttribute('aria-expanded','true');};
   document.addEventListener('click',e=>{if(!menu.hidden&&!e.target.closest('.export-menu'))close();});
+  const selection=roots=>serializeWorkspace(selectWorkspace(workspace,roots,{exportedAt:new Date().toISOString()}));
   menu.onclick=e=>{const kind=e.target.closest('[data-export]')?.dataset.export;if(!kind)return;close();
-   try{const all=study.plan.deployments.filter(d=>d.stations.length).map(d=>d.id);
-    if(kind==='study')downloadText(serializePlan(study.plan),`${base()}.json`);
-    else if(kind==='deployment')downloadText(serializePlan(extractDeployments(study.plan,[study.activeDeployment])),`${base()}-${slug(study.activeDeployment)}.json`);
-    else if(kind==='deployments')downloadText(serializePlan(extractDeployments(study.plan,all)),`${base()}-deployments.json`);
+   try{persistPlan();const all=study.plan.deployments.filter(d=>d.stations.length).map(d=>d.id);
+    if(kind==='study')downloadText(selection([studyId]),`${base()}.json`);
+    else if(kind==='deployment')downloadText(selection([study.activeDeployment]),`${base()}-${slug(study.plan.deployments.find(d=>d.id===study.activeDeployment).name)}.json`);
+    else if(kind==='deployments')downloadText(selection(all),`${base()}-deployments.json`);
     // Where the viewer blocks downloads (embedded artifact pages), the same file can be copied as text.
-    else pageText('整个工作方案（muography-plan JSON）。可复制后保存为 .json 文件，再用“导入方案”载入。',serializePlan(study.plan),{filename:`${base()}.json`});
+    else pageText('整个工作方案（muography-workspace JSON）。可复制后保存为 .json 文件，再用“导入方案”载入。',selection([studyId]),{filename:`${base()}.json`});
    }catch(error){pageAlert('导出失败：'+error.message);}};}
  function bind(){document.querySelectorAll('.section-toggle').forEach(button=>button.onclick=()=>{const section=button.closest('.collapsible-section'),collapsed=section.classList.toggle('collapsed');button.textContent=collapsed?'▸':'▾';button.setAttribute('aria-expanded',String(!collapsed));button.title=(collapsed?'展开':'收起')+section.querySelector('h2').childNodes[0].textContent.trim()});const updateField=(k,value)=>{try{study.update(k,value);}catch{return;}persistSession();sync();renderList();scheduleDetectorUpdate()};for(const k of ['name','x','y','z','az','el'])$('#'+k).addEventListener('input',e=>updateField(k,e.target.value));$('#azNumber').addEventListener('input',e=>updateField('az',e.target.value));$('#elNumber').addEventListener('input',e=>updateField('el',e.target.value));const toggleSidebar=side=>{const app=$('.app'),collapsed=app.classList.toggle(side+'-collapsed'),button=$(side==='left'?'#toggleLeft':'#toggleRight'),action=(collapsed?'展开':'收起')+(side==='left'?'左侧栏':'右侧栏');// Edge tabs on the sidebars: the triangle points the way the sidebar will move.
   button.textContent=(side==='left')===collapsed?'▶':'◀';button.setAttribute('aria-expanded',String(!collapsed));button.setAttribute('aria-label',action);button.title=action;requestAnimationFrame(resize)};$('#toggleLeft').onclick=()=>toggleSidebar('left');$('#toggleRight').onclick=()=>toggleSidebar('right');$('#viewSelect').onchange=e=>setView(e.target.value);$$('[data-layer]').forEach(e=>{sceneView.setLayer(e.dataset.layer,e.checked);e.onchange=()=>sceneView.setLayer(e.dataset.layer,e.checked);});$('#damOpacity').oninput=setDamOpacity;setDamOpacity();$('#upLevel').oninput=updateWater;$('#gridSize').disabled=true;$('#gridSize').closest('.field').style.display='none';// The plan changed, so the working result's plan reference is recomputed too (provenance, not physics).
@@ -243,7 +271,7 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
   // Backend limitations are configuration context, shown in the 数据配置 menu (which already names the frozen scenario), not in the layer panel.
   if(!continuous){const note=root.createElement('p');note.className='hint';note.id='backendLimitations';note.textContent='此后端未提供：连续水位、结构显著度；模型范围外的材料未知。';($('#dataMenu')??$('#environmentSection')).append(note);}
  }
- return Object.freeze({start(){$('#specVersion').textContent=datasetVersion;configureCapabilities();if(capabilities.continuousWater){$('#upLevel').value=state.environment.upstream;$('#upOut').textContent='▽'+$('#upLevel').value+' m';}else $('#upOut').textContent='冻结工况';datasetStations=state.candidates;const loaded=openStudies({storage,release:datasetId,scenario:scenarioId,model:state.configuration.device.model,candidateIds,defaultStations:datasetStations,defaultSettings:serializeDeviceSettings(state.configuration)});studyId=loaded.active;applyPlan(loaded.plan,loaded.session);if(loaded.warning)console.warn(loaded.warning);renderStudies();bindStudies();bindDeployments();renderList();sync();showComparison();for(const link of [$('#workbenchLink'),$('#workbenchLinkDiagnostics')])if(link)link.href=workbenchHref;sceneView.build();featureLayers.apply();bindCoverage();bindOverview();$('#precisionContours').checked=projection.precision;$('#precisionContours').onchange=e=>{projection.precision=e.target.checked;try{storage.setItem(precisionKey,projection.precision?'1':'0');}catch{}renderOverview();drawProjection();};bind();bindPlacement();bindSlice();bindFovEdges();bindFovSolid();bindDeviceSettings();makeProjectionDraggable();controller.run();refreshCandidates();taskMode.restore();bindShortcuts();},constrainProjectionPanel,hoverFeature(id){sceneView.emphasiseFeatures(id?[id]:[]);projectionView.emphasiseItem(id?recognition.itemForFeature(id)?.id??null:null);},pickFeature(id){recognition.toggleFeature(id);},pickCoverage(ix,iy){projectionView.selectPixel(ix,iy);},
+ return Object.freeze({start(){$('#specVersion').textContent=datasetVersion;configureCapabilities();if(capabilities.continuousWater){$('#upLevel').value=state.environment.upstream;$('#upOut').textContent='▽'+$('#upLevel').value+' m';}else $('#upOut').textContent='冻结工况';datasetStations=state.candidates;const loaded=openWorkspace({storage,release:datasetId,defaultDetector:defaultDetector(),legacy:{storage,release:datasetId,scenario:scenarioId,model:state.configuration.device.model,candidateIds,defaultStations:datasetStations,defaultSettings:serializeDeviceSettings(state.configuration)}});workspace=loaded.workspace;wsSession=loaded.session;if(loaded.warning)console.warn(loaded.warning);const first=workspace.studies.some(s=>s.id===wsSession.activeStudy)?wsSession.activeStudy:workspace.studies[0]?.id;try{if(first)loadStudy(first);else newStudy(false);}catch(error){console.warn(error);newStudy(false);}if(loaded.report.length)pageAlert(`已将本机保存的工作方案转换为新的工作区格式（muography-workspace 2.0）。\n${loaded.report.join('\n')}`);renderStudies();bindStudies();bindDeployments();renderList();sync();showComparison();for(const link of [$('#workbenchLink'),$('#workbenchLinkDiagnostics')])if(link)link.href=workbenchHref;sceneView.build();featureLayers.apply();bindCoverage();bindOverview();$('#precisionContours').checked=projection.precision;$('#precisionContours').onchange=e=>{projection.precision=e.target.checked;try{storage.setItem(precisionKey,projection.precision?'1':'0');}catch{}renderOverview();drawProjection();};bind();bindPlacement();bindSlice();bindFovEdges();bindFovSolid();bindDeviceSettings();makeProjectionDraggable();controller.run();refreshCandidates();taskMode.restore();bindShortcuts();},constrainProjectionPanel,hoverFeature(id){sceneView.emphasiseFeatures(id?[id]:[]);projectionView.emphasiseItem(id?recognition.itemForFeature(id)?.id??null:null);},pickFeature(id){recognition.toggleFeature(id);},pickCoverage(ix,iy){projectionView.selectPixel(ix,iy);},
   // A click on a cavity (gallery, room, shaft) places the station inside it, on its floor plus the mounting height;
   // elsewhere 0.5 m off the clicked surface. Cavity geometry comes from the calculation (station-placement.js).
   placeStation({point,normal,direction,featureId=null}){setPlacingButton(false);if(!workingActive)setWorkingActive(true);const cavity=featureId?placeInCavity({point,direction,featureId}):null,note=$('#placeNote');

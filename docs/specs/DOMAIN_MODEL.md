@@ -141,7 +141,7 @@ Scene composition (Target): **scene = release + environment state + active anoma
 
 ### 2.3a Workspace model (Target, ADR-033)
 
-Proposed replacement for §2.3, specified in [WORKSPACE_FORMAT](WORKSPACE_FORMAT.md) (`muography-workspace` 2.0). Not implemented; §2.3 remains the current model until the storage switch-over.
+Replacement for §2.3, specified in [WORKSPACE_FORMAT](WORKSPACE_FORMAT.md) (`muography-workspace` 2.0). **Partial (2026-10-17):** storage, migration, export and merge-only import use the workspace; the study UI still edits one study as a §2.3 plan view through an interim bridge (a study's first deployment is its candidate pool) until the 我的点位 sidebar (ADR-033 step 4).
 
 ```mermaid
 classDiagram
@@ -271,6 +271,7 @@ Add a column (and a kind profile, FR-K10) when a new kind or dam type is conside
 
 ## Change log
 
+- 2026-10-17: §2.3a partial: the app stores the workspace and migrates 1.x storage; the study UI uses an interim plan view.
 - 2026-10-17: §2.3a: exposure moved from the station to the study (playground exposure as session state), owner decision.
 - 2026-10-16: Added §2.3a workspace model (Target, ADR-033): Workspace, Site, Station (site + pose + detector + exposure), Detector, Deployment, Study (scenes, aim, basis), item hash, import; gap row; workspace lifecycle.
 - 2026-10-14: Coverage (view) current for a single station; back-side lines included.

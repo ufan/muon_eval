@@ -1,6 +1,6 @@
 # Workspace format (`muography-workspace` 2.0.0)
 
-**Status: proposed (ADR-033); the format module is implemented, the app does not use it yet.** The app still reads and writes [`muography-plan` 1.1.0](PLAN_FORMAT.md). This spec describes the format that replaces it and how existing data moves over. Owner decisions of 2026-10-17 are included: exposure belongs to the study, sites merge within a study on exact equality, migrated studies keep a 候选池 deployment, and another release of the same dataset imports with a warning.
+**Status: in use for storage, export and import (ADR-033 step 3, 2026-10-17); the 我的点位 sidebar, the import preview and the study composer follow.** The app stores each release's workspace, converts 1.x storage once, exports workspace selections and still imports [`muography-plan` 1.x](PLAN_FORMAT.md) files. Until the sidebar is rebuilt (step 4), the study UI edits one study through an interim bridge (see [Interim study view](#interim-study-view-step-3)). Owner decisions of 2026-10-17 are included: exposure belongs to the study, sites merge within a study on exact equality, migrated studies keep a 候选池 deployment, and another release of the same dataset imports with a warning.
 
 A workspace holds everything a user has saved for one dataset release:
 - **sites:** where a detector can stand;
@@ -10,7 +10,7 @@ A workspace holds everything a user has saved for one dataset release:
 
 It is flat: every item is stored once and referenced by ID, so two studies can share a deployment and two stations can share a site. The same format serves as browser storage, as a full export, and as an export of any selection (some stations, some deployments, one study). Any such file can be imported by another person on another host.
 
-- Code: `dist/modules/workspace-format.js` (implemented: `validateWorkspace`, `parseWorkspace`, `serializeWorkspace`, `itemHash`, `workspaceHash`, `newId`, `createWorkspace`, `selectWorkspace`, `missingScenarios`, `migrateStudies`, `selectionFromPlan`; tests in `tests/unit/workspace-format.test.mjs`). Planned: `dist/modules/workspace-store.js` for browser storage and `dist/modules/workspace-import.js` for import classification and merging. All are pure apart from the storage object passed in.
+- Code: `dist/modules/workspace-format.js` (validation, canonical text, item hashes, IDs, selection closure, 1.x migration), `dist/modules/workspace-store.js` (browser storage, one-time migration) and the interim `dist/modules/workspace-study.js` (plan view of one study, merge of imports). Planned: `dist/modules/workspace-import.js` for the import preview (step 5). All are pure apart from the storage object passed in; tests in `tests/unit/workspace-*.test.mjs`.
 - Schema for other tools: [`dist/schemas/muography-workspace-2.schema.json`](../../dist/schemas/muography-workspace-2.schema.json) (JSON Schema 2020-12). Cross-item rules (unique IDs, references, closure, unique scene IDs) are checked by the code only; `tests/data/workspace-format.test.mjs` checks that schema and code agree on everything else.
 - Examples: [`examples/workspace-2.0-full.json`](examples/workspace-2.0-full.json) is a whole workspace; [`examples/workspace-2.0-selection.json`](examples/workspace-2.0-selection.json) is one exported deployment.
 
@@ -180,6 +180,24 @@ For each 1.x study, in the order of `muon-studies`:
 Session: the active 1.x study's session becomes the workspace session. Its working station becomes the draft (its `exposureDays` becomes the playground exposure), its `compare` list becomes `shown`, its active deployment maps to the new ID, and `activeStudy` is that study.
 
 Nothing is lost silently: every 1.x station, deployment and title has a counterpart, and differing exposures are reported. The migration is tested with the stored-data fixtures of `plan-store.test.mjs`, plus a random-number source injected for IDs.
+
+## Interim study view (step 3)
+
+Until the 我的点位 sidebar replaces the study UI, `workspace-study.js` shows one study as a muography-plan 1.1 view, which the existing study state edits:
+
+- **Pool convention:** a study's first deployment is its candidate pool (`<title> · 候选池`, as migration makes it). The view's candidates are the pool; its deployments are the study's other deployments. A study without a pool, for example one imported from elsewhere, gets one holding the stations its deployments use.
+- **Writing back:**
+  - A moved station moves its site when it is the site's only user; otherwise it takes a site of the study at exactly that place, or a new one.
+  - Stations and deployments the study dropped are deleted only when no other deployment or study uses them; unused sites and detectors go with them.
+  - New stations and deployments get global IDs from the start.
+- **Exposure:** the device form's exposure sets the study exposure for all its candidates (label 曝光时间 / 天（全方案）).
+- **New study:** 新建 adds a study of the dataset candidates and stores it at once. The first study of a release that has no stored data is written with the first change. Deleting a study keeps its stations and deployments in the workspace.
+- **Import:**
+  - Files are merged as new items, identical items are skipped, and any conflict refuses the whole import (until the preview, step 5).
+  - A study root opens that study; deployments or stations open as a new study (导入的部署组合 / 导入的点位).
+  - A 1.x plan of another scenario opens that scenario.
+- **Export:** the menu exports workspace selections: the study, the current deployment, or all deployments of the study.
+- **Result provenance** still records the hash of the plan view and the station's global ID; the closure hash described under [Identity](#identity) arrives with step 4.
 
 ## Batch runs
 

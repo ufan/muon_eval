@@ -36,7 +36,8 @@ const prune = (detectors, stations) => {
   return Object.fromEntries(Object.entries(detectors).filter(([name]) => used.has(name)));
 };
 
-export function createStudyState({ plan, session = null, environment }) {
+// newId(prefix) names new stations ('sta') and deployments ('dep'); without it, plan-local names are used.
+export function createStudyState({ plan, session = null, environment, newId = null }) {
   let current = freeze(validatePlan(plan));
   if (!current.schemaVersion.startsWith('1.1.')) throw new Error('Study state needs a current plan; migrate first');
   const ids = () => new Set(current.stations.map(s => s.id));
@@ -47,7 +48,7 @@ export function createStudyState({ plan, session = null, environment }) {
   let activeDeployment = deploymentIds().includes(session?.activeDeployment) ? session.activeDeployment : deploymentIds()[0] ?? null;
   const deployment = id => { const d = current.deployments.find(item => item.id === id); if (!d) throw new Error(`Deployment ${id} is not in the study`); return d; };
   const withDeployments = deployments => commit({ ...current, deployments });
-  const newDeploymentId = () => { let n = current.deployments.length + 1; while (deploymentIds().includes(`deployment-${n}`)) n++; return `deployment-${n}`; };
+  const newDeploymentId = () => { if (newId) return newId('dep'); let n = current.deployments.length + 1; while (deploymentIds().includes(`deployment-${n}`)) n++; return `deployment-${n}`; };
   const commit = next => { current = freeze(validatePlan({ ...next, detectors: prune(next.detectors, next.stations) })); };
   const station = (w, base = {}) => ({ ...base, name: w.name, position: [w.x, w.y, w.z], pose: { azimuthDeg: w.az, elevationDeg: w.el } });
   const configuration = settings => {
@@ -85,7 +86,7 @@ export function createStudyState({ plan, session = null, environment }) {
       for (let k = 2; names.has(name); k++) name = `${working.name} (${k})`;
       const [detectors, detector] = resolveDetector(current.detectors, working.model, working.settings);
       const source = working.from === null ? null : this.candidate(working.from);
-      const id = `station-${n}`;
+      const id = newId ? newId('sta') : `station-${n}`;
       commit({ ...current, detectors, stations: [...current.stations, station({ ...working, name },
         { id, candidateId: source?.candidateId ?? null, detector, note: '' })] });
       working = { ...working, name, from: id };
@@ -105,6 +106,13 @@ export function createStudyState({ plan, session = null, environment }) {
       compared.delete(id);
       if (working.from === id) working = { ...working, from: null };
     },
+    // One exposure for the whole study (ADR-033): every detector and the working station observe this long.
+    setExposure(days) {
+      if (!Number.isInteger(days) || days < 1 || days > 3650) throw new Error('Exposure must be 1–3650 whole days');
+      commit({ ...current, detectors: Object.fromEntries(Object.entries(current.detectors).map(([name, d]) => [name, { ...d, response: { ...d.response, exposureDays: days } }])) });
+      working = { ...working, settings: normalise({ ...working.settings, exposureDays: days }, working.settings) };
+    },
+    get exposureDays() { return current.detectors.default.response.exposureDays; },
     applyDetectorToAll() {
       const [detectors, detector] = resolveDetector(current.detectors, working.model, working.settings);
       commit({ ...current, detectors, stations: current.stations.map(s => ({ ...s, detector })) });
