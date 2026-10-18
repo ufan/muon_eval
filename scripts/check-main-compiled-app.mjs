@@ -11,7 +11,7 @@ import { replayPatternComparison } from '../dist/modules/pattern-comparison.js';
 import { serializePlan, planFromState, settingsFromDetector } from '../dist/modules/plan-format.js';
 import { parseWorkspace, serializeWorkspace } from '../dist/modules/workspace-format.js';
 
-const options=new Map();for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i],value=process.argv[i+1];if(!['--playwright','--chromium'].includes(key)||!value)throw Error('Usage: node scripts/check-main-compiled-app.mjs [--playwright /path/index.mjs] [--chromium /path/browser]');options.set(key,value);}
+const options=new Map();for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i],value=process.argv[i+1];if(!['--playwright','--chromium','--base'].includes(key)||!value)throw Error('Usage: node scripts/check-main-compiled-app.mjs [--playwright /path/index.mjs] [--chromium /path/browser] [--base http://host:port]');options.set(key,value);}
 // Environment fallback lets `npm run test:browser` locate an existing Playwright/Chromium.
 if(!options.has('--playwright')&&process.env.PLAYWRIGHT_MODULE)options.set('--playwright',process.env.PLAYWRIGHT_MODULE);
 if(!options.has('--chromium')&&process.env.CHROMIUM_PATH)options.set('--chromium',process.env.CHROMIUM_PATH);
@@ -19,7 +19,8 @@ const {chromium}=await import(options.has('--playwright')?pathToFileURL(options.
 const root=new URL('../dist/',import.meta.url),mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json'};
 const server=createServer(async(request,response)=>{try{const path=new URL(request.url,'http://localhost').pathname,file=resolveStaticPath(path);if(!file){response.writeHead(403).end();return;}response.setHeader('Content-Type',mime[extname(file.pathname)]||'application/octet-stream');response.end(await readFile(file));}catch{response.writeHead(404).end();}});
 server.listen(0,'127.0.0.1');await once(server,'listening');let browser;
-const release='zhouning-lower-reservoir-dam@0.6.2+schema0.7.0',base='http://127.0.0.1:'+server.address().port;
+// --base <url> runs the same checks against an already running deployment (e.g. the nginx container of deploy/).
+const release='zhouning-lower-reservoir-dam@0.6.2+schema0.7.0',base=options.get('--base')?.replace(/\/$/,'')??'http://127.0.0.1:'+server.address().port;
 try{
  browser=await chromium.launch({headless:true,...(options.has('--chromium')?{executablePath:options.get('--chromium')}:{}),args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',error=>{errors.push(error.message);console.error(error.message);});page.on('console',message=>{if(message.type()==='error'){errors.push(message.text());console.error(message.text());}});

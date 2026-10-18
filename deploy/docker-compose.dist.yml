@@ -1,0 +1,16 @@
+# Serving a release directory with stock nginx (the server layout, e.g. /srv/muon_dam_eval):
+#   /srv/muon_dam_eval/
+#     docker-compose.yml   this file
+#     nginx.conf           the repository's nginx.conf (compression, caching, security headers)
+#     dist/                a release extracted from scripts/package-deploy.sh (includes datasets/ and .gz copies)
+# Update and rollback: docs/guides/DEPLOYMENT.md, "Serving a release directory".
+services:
+  muon-dam-eval:
+    image: m.daocloud.io/docker.io/library/nginx:alpine
+    container_name: muon-dam-eval
+    ports:
+      - "5177:80"
+    volumes:
+      - ./dist/:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped

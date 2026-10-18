@@ -35,6 +35,37 @@ docker compose down
 
 In production, put an existing HTTPS reverse proxy (Nginx, Caddy, Traefik or a cloud load balancer) in front of `127.0.0.1:8080`, with a domain, TLS certificate, access logs and authentication.
 
+### Serving a release directory (recommended for a server behind a router)
+
+Stock nginx serves an extracted release; no image is built on the server. Layout (example `/srv/muon_dam_eval`):
+
+```text
+/srv/muon_dam_eval/
+  docker-compose.yml   deploy/docker-compose.dist.yml (nginx:alpine, port 5177, dist/ and nginx.conf mounted read-only)
+  nginx.conf           the repository's nginx.conf
+  dist/                a release from scripts/package-deploy.sh
+```
+
+The repository's `nginx.conf` is what makes the first load fast. Without it, stock nginx sends about 7 MB uncompressed and no cache instructions. With it:
+- **Compression:** the release's ready-made `.gz` copies (gzip level 9) are sent with no work per request, and other files are compressed on the fly. A first visit is about 1.6 MB.
+- **Caching:** versioned dataset files are cached for a year, so repeat visits skip the 2.6 MB mesh. Pages, modules and the registry are revalidated with ETags, so updates show at once and unchanged files cost a 304.
+- **Security headers** on every response.
+
+Measured on HTTP/1.1 with 100 ms latency and 1 MB/s, the time until the scene and its first result are ready drops from 9.4 s to 5.2 s.
+
+Update, keeping the previous release for rollback:
+
+```bash
+bash scripts/package-deploy.sh /tmp/muon-release.tar.gz        # on a build machine with Node 22 and Python
+# copy the archive and the repository's nginx.conf to the server, then:
+cd /srv/muon_dam_eval
+mkdir dist.new && tar -xzf /tmp/muon-release.tar.gz -C dist.new --strip-components=1
+mv dist dist.prev && mv dist.new dist
+docker compose up -d --force-recreate                           # the bind mount follows the new dist/
+```
+
+Roll back with `mv dist dist.bad && mv dist.prev dist && docker compose up -d --force-recreate`. After changing only `nginx.conf`, run `docker compose exec muon-dam-eval nginx -s reload`. A browser behind plain `http://address:port` uses HTTP/1.1 (six parallel requests). HTTPS on a domain name would add HTTP/2 or HTTP/3 and remove that queue.
+
 ## 3. Existing static web server or static hosting
 
 Static hosts that publish only `dist/` need the datasets copied in first:
@@ -49,6 +80,8 @@ Then copy the whole of `dist/` to any static site directory. `dist/datasets/` is
 - `.json`: `application/json`
 - `.wasm`: `application/wasm` (reserved for later)
 - `.glb`, `.f32`: served as binary (`application/octet-stream` or `model/gltf-binary`)
+
+**First-load speed.** A first visit downloads about 7 MB uncompressed (the scene mesh alone is 2.6 MB), so enable compression on the host: gzip or Brotli for `.js`, `.css`, `.json` and the binary `.glb` / `.f32` files (`application/octet-stream`). That brings it to about 1.5 MB, and the mesh compresses to about 0.8 MB. `nginx.conf` does this. Dataset release directories are versioned and immutable (ADR-018), so their files may be cached long (`nginx.conf`: `max-age=31536000, immutable`); keep `datasets/registry.json` revalidated. The page itself preloads every module (`<link rel="modulepreload">`) and the registry, so high-latency hosts do not pay one round trip per import level.
 
 The root path must serve `index.html`. The application needs no server API and can run on an intranet, VPN, object-storage static website or ordinary Nginx/Apache.
 

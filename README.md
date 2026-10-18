@@ -135,8 +135,10 @@ for native wheels, decoded geometry, the staging copy and archive. Temporary
 files are removed on exit; failures stop packaging before publishing an archive.
 A pin mismatch requires investigation, not updating pins to bypass validation.
 
-The archive contains a complete `dist/`, including `datasets/` and
-`data/derived-interfaces/`. The checkout's `dist/` and live deployment are
+The archive contains a complete `dist/`, including `datasets/`,
+`data/derived-interfaces/` and ready-made `.gz` copies for nginx `gzip_static`
+(`scripts/precompress.mjs`); serve it with the repository's `nginx.conf`
+(see [Serving a release directory](docs/guides/DEPLOYMENT.md#serving-a-release-directory-recommended-for-a-server-behind-a-router)). The checkout's `dist/` and live deployment are
 untouched. Extract the archive into a new server release directory, verify it,
 and keep the previous release for rollback. If replacing the directory mounted
 by Docker Compose through a rename, recreate the web container so its bind mount

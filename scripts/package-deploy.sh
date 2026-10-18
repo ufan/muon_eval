@@ -58,6 +58,8 @@ for (const entry of Object.values(registry.datasets)) {
 }
 console.log('Packaged interfaces and dataset integrity verified.');
 JS
+# Ready-made gzip copies for nginx gzip_static (nginx.conf): written after verification, from the verified files.
+node scripts/precompress.mjs dist
 # Create and inspect the archive before publishing it. Exclusive creation avoids
 # overwriting another release even if the destination appeared during generation.
 tar -czf "$work/release.tar.gz" dist
