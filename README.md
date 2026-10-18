@@ -111,6 +111,38 @@ The compiled backend's finite domain, aggregate source-entity attribution and la
 - **Material contribution contours**: per-material contours of path length (m) or water-equivalent contribution (m.w.e.), with explicit physical levels or labelled adaptive inspection levels. Each graph uses its own sampling coordinates; separate SVG layers keep CSS-pixel line widths; turning depth/boundary diagnostics off does not affect contribution lines. Legends record levels, coverage and incomplete/ambiguous states. Adaptive levels are not comparable across views. Each graph has its own contour JSON v1 export with fields, levels, source snapshot and completeness; display settings are stored separately and the original raw JSON is unchanged. See [contour controls](docs/guides/PROJECTION_WORKFLOW.md#material-contour-controls) and the [export/replay contract](docs/specs/PROJECTION_DATA.md#contour-export-and-replay).
 - **Finite-model interpretation** ([workflow](docs/guides/PROJECTION_WORKFLOW.md#finite-model-interpretation-and-comparison)): approved finite-model reference lines, open-sky/acceptance interpretation, reproducible station/pose comparison and v1 export/replay, including offline generation of the derived preview assets.
 
+## Create a deployable static package
+
+Run from the repository root:
+
+```bash
+bash scripts/package-deploy.sh
+# Or choose a new output archive (existing files are never overwritten):
+bash scripts/package-deploy.sh /tmp/muon-release.tar.gz
+```
+
+Requires Node.js 22+, Python 3.9–3.12 with pip, tar, and network access to
+Python package wheels. Set `PYTHON=/path/to/python` to select another interpreter.
+No npm install, browser download, or system package installation is needed.
+
+The script stages the current working files (including uncommitted changes),
+installs isolated `manifold3d==3.5.4` and `numpy==1.26.4`, generates and validates
+all four interface artifacts, checks evidence pins while packaging them, syncs
+the registered datasets, verifies packaged hashes and JavaScript entry syntax,
+and creates `site-deploy-<timestamp>.tar.gz` in the repository root by default.
+It does not run the application/browser test suite. Allow temporary disk space
+for native wheels, decoded geometry, the staging copy and archive. Temporary
+files are removed on exit; failures stop packaging before publishing an archive.
+A pin mismatch requires investigation, not updating pins to bypass validation.
+
+The archive contains a complete `dist/`, including `datasets/` and
+`data/derived-interfaces/`. The checkout's `dist/` and live deployment are
+untouched. Extract the archive into a new server release directory, verify it,
+and keep the previous release for rollback. If replacing the directory mounted
+by Docker Compose through a rename, recreate the web container so its bind mount
+uses the new directory. Service changes are a separate deployment step.
+Generated archives are ignored by Git and should not be committed.
+
 ## Current hosted instance
 
 `https://zhouning-muon-deployment.zyong06.chatgpt.site/`
