@@ -35,6 +35,16 @@ Expected counts and significance are therefore **comparison metrics and magnitud
 
 The side-panel heading "station assessment" does not mean a relative scan ranking has been done. These are mostly single-station raw or derived metrics; future scans compare quantiles, ranks, robustness and multi-objective trade-offs under common constraints.
 
+### Lines from behind the detector (后方来向)
+
+A projection pixel is a line through the detector; below the horizon line of the map, its muons come from the sky behind the detector (the detector cannot tell the direction without time-of-flight). The 后方来向 chip in the viewport tools hides everything these lines record, as a view option only:
+- the back part of the projection map and of the side-by-side cards is drawn blank, has no readout, and outlines and precision lines stop at the horizon;
+- coverage shading (geometric, physical and multi-station) and the 3D readout leave out points seen only through a line from behind;
+- the field of view loses its back edges;
+- the 多站 numbers (image share, counts, usable views and their spread) count only lines from in front.
+
+Results and exports never change; the counts of those pixels are still part of every result. Use it to judge what a deployment records from in front alone.
+
 ### The hovered pixel's 3D ray
 
 Hovering a pixel of the expected projection draws that pixel's ray in the 3D view: from the detector outward along the pixel's direction, as traced by the same calculation that gives the readout numbers. The readout's "坝体混凝土 · 穿行 32.4 m · 距探测器 4.7 m 处进入" is the concrete stretch of the ray that starts 4.7 m from the detector and runs 32.4 m. The ray disappears when the pointer leaves the projection, unless the pixel is pinned.

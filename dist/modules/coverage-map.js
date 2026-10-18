@@ -21,11 +21,12 @@ export function lineSlopes(point, origin, basis) {
   return { sx: dot(d, basis.right) / f, sy: dot(d, basis.up) / f, side: f > 0 ? 'front' : 'back' };
 }
 
-// 'probed' | 'no-flux' | 'outside' (model frame, z up).
-export function classifyCoverage(point, origin, basis, device) {
+// 'probed' | 'no-flux' | 'outside' (model frame, z up). With back: false (后方来向 hidden, a view option) points seen
+// only through a line behind the detector count as outside.
+export function classifyCoverage(point, origin, basis, device, { back = true } = {}) {
   const slopes = lineSlopes(point, origin, basis);
   if (!slopes || Math.abs(slopes.sx) > device.maxSlopeX || Math.abs(slopes.sy) > device.maxSlopeY) return 'outside';
-  if (point[2] > origin[2]) return 'probed';
+  if (point[2] > origin[2]) return back || slopes.side === 'front' ? 'probed' : 'outside';
   return slopes.side === 'front' ? 'no-flux' : 'outside';
 }
 
@@ -52,9 +53,9 @@ export function coverageBrightness(countsPerSr) {
 
 // What one station sees at a surface point (model frame): status, line slopes and side,
 // and, with a result, the projection pixel holding that line and its counts per steradian.
-export function coverageReadout(point, station, device, result) {
+export function coverageReadout(point, station, device, result, { back = true } = {}) {
   const origin = [station.x, station.y, station.z], basis = detectorBasis(station.az, station.el);
-  const status = classifyCoverage(point, origin, basis, device), slopes = lineSlopes(point, origin, basis);
+  const status = classifyCoverage(point, origin, basis, device, { back }), slopes = lineSlopes(point, origin, basis);
   const readout = { status, sx: slopes?.sx ?? null, sy: slopes?.sy ?? null, side: slopes?.side ?? null, ix: null, iy: null, countsPerSr: null };
   if (status === 'outside' || !result) return readout;
   const ix = slopeBin(slopes.sx, result.n, device), iy = slopeBin(slopes.sy, result.n, device);
@@ -74,8 +75,8 @@ export function placementPoint(point, normal, rayDirection, offsetM = 0.5) {
 }
 
 // Ids of the stations ({ id, x, y, z, az, el, device }) that probe a surface point.
-export function coveringStations(point, stations) {
-  return stations.filter(s => classifyCoverage(point, [s.x, s.y, s.z], detectorBasis(s.az, s.el), s.device) === 'probed').map(s => s.id);
+export function coveringStations(point, stations, options = {}) {
+  return stations.filter(s => classifyCoverage(point, [s.x, s.y, s.z], detectorBasis(s.az, s.el), s.device, options) === 'probed').map(s => s.id);
 }
 
 // Candidates shown next to the working station: 'none' | 'compared' | 'deployment' | 'all', in
@@ -100,9 +101,9 @@ export function usableCounts(errorLevel) {
 // is not probed; otherwise the pixel's counts (null while the station's result is pending), counts per
 // steradian and the unit direction from the station to the point. `counts` is the result's per-pixel
 // counts, bottom row first (as in the projection's own values).
-export function stationViewAt(point, station) {
+export function stationViewAt(point, station, { back = true } = {}) {
   const origin = [station.x, station.y, station.z], basis = detectorBasis(station.az, station.el);
-  if (classifyCoverage(point, origin, basis, station.device) !== 'probed') return null;
+  if (classifyCoverage(point, origin, basis, station.device, { back }) !== 'probed') return null;
   const d = point.map((v, i) => v - origin[i]), length = Math.hypot(...d), direction = d.map(v => v / length);
   if (!station.counts) return { id: station.id, counts: null, countsPerSr: null, direction };
   const { sx, sy } = lineSlopes(point, origin, basis), ix = slopeBin(sx, station.n, station.device), iy = slopeBin(sy, station.n, station.device);
@@ -115,8 +116,8 @@ export function stationViewAt(point, station) {
 // view's counting error, the dominant station (most counts per steradian), the summed counts per
 // steradian, and the class: 'none' (not seen), 'insufficient' (< 2 usable views or spread < minSpreadDeg),
 // 'good' (≥ minViews usable views and spread ≥ goodSpreadDeg) or 'limited'.
-export function multiViewCoverage(point, stations, { errorLevel = .1, minViews = 3, goodSpreadDeg = 30, minSpreadDeg = 10 } = {}) {
-  const views = stations.map(s => stationViewAt(point, s)).filter(Boolean), threshold = usableCounts(errorLevel);
+export function multiViewCoverage(point, stations, { errorLevel = .1, minViews = 3, goodSpreadDeg = 30, minSpreadDeg = 10, back = true } = {}) {
+  const views = stations.map(s => stationViewAt(point, s, { back })).filter(Boolean), threshold = usableCounts(errorLevel);
   const measured = views.filter(v => v.counts !== null), usable = measured.filter(v => v.counts >= threshold);
   let spread = 0;
   for (let i = 0; i < usable.length; i++) for (let j = i + 1; j < usable.length; j++) {

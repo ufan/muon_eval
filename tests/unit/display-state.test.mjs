@@ -4,14 +4,14 @@ import { DISPLAY_DEFAULTS, readDisplayState, shownStations } from '../../dist/mo
 
 test('defaults: other stations hidden, coverage off with the decided multi-view thresholds', () => {
   assert.deepEqual(readDisplayState(null), DISPLAY_DEFAULTS);
-  assert.deepEqual(DISPLAY_DEFAULTS, { others: false, coverage: { mode: 'off', core: false, context: false, features: true,
+  assert.deepEqual(DISPLAY_DEFAULTS, { others: false, back: true, coverage: { mode: 'off', core: false, context: false, features: true,
     multi: { map: 'views', errorLevel: 0.1, minViews: 3, goodSpreadDeg: 30, minSpreadDeg: 10 } } });
 });
 
 test('saved values are normalised; unknown or out-of-range values fall back', () => {
   const state = readDisplayState({ others: true, coverage: { mode: 'physical', core: true, context: 1, features: false,
     multi: { map: 'class', errorLevel: 0.05, minViews: 42, goodSpreadDeg: -3, minSpreadDeg: 'x' } } });
-  assert.deepEqual(state, { others: true, coverage: { mode: 'physical', core: true, context: false, features: false,
+  assert.deepEqual(state, { others: true, back: true, coverage: { mode: 'physical', core: true, context: false, features: false,
     multi: { map: 'class', errorLevel: 0.05, minViews: 9, goodSpreadDeg: 1, minSpreadDeg: 10 } } });
   assert.equal(readDisplayState({ coverage: { mode: 'rainbow' } }).coverage.mode, 'off');
 });
@@ -32,4 +32,10 @@ test('shown stations: the compared candidates in pool order, without the working
   assert.deepEqual(shownStations({ others: true }, { pool, compared: ['c', 'a'], working: null }), { ids: ['a', 'c'], hiddenCount: 0, compared: 2 });
   const many = shownStations({ others: true }, { pool, compared: pool, working: null });
   assert.deepEqual(many, { ids: pool.slice(0, 8), hiddenCount: 2, compared: 10 });
+});
+
+test('lines from behind the detector (后方来向) are shown unless turned off; older settings keep them shown', () => {
+  assert.equal(readDisplayState({ others: true, back: false }).back, false);
+  assert.equal(readDisplayState({ others: true, back: 'no' }).back, true);
+  assert.equal(readDisplayState({ mode: 'geometric', stations: 'compared' }).back, true);
 });

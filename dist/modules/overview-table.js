@@ -12,12 +12,13 @@ const median = values => {
 
 // One station and one item: the mask (ray length inside the item > threshold), its share of the image, the
 // counts in it and the median counting error 1/√N of its pixels (pixels without counts count as infinite).
-export function stationItemSummary(entry, itemId, threshold) {
+// back: false leaves out pixels whose lines come from behind the detector (后方来向 hidden, a view option).
+export function stationItemSummary(entry, itemId, threshold, { back = true } = {}) {
   const item = entry.items?.[itemId], detectorInside = entry.detectorItems?.includes(itemId) ?? false;
   const errors = [];
   let counts = 0;
   if (item) item.index.forEach((pixel, k) => {
-    if (!(item.length[k] > threshold)) return;
+    if (!(item.length[k] > threshold) || (!back && entry.pixels.side?.[pixel])) return;
     const n = entry.pixels.count[pixel];
     counts += n; errors.push(n > 0 ? 1 / Math.sqrt(n) : Infinity);
   });
@@ -55,7 +56,7 @@ export function overviewTable({ items, stations, samples, threshold, options = {
   return items.map(item => {
     const rows = stations.map(s => {
       if (!s.entry) return { id: s.id, name: s.name, state: 'pending' };
-      const summary = stationItemSummary(s.entry, item.id, threshold);
+      const summary = stationItemSummary(s.entry, item.id, threshold, options);
       return { id: s.id, name: s.name, state: 'ready', ...summary };
     });
     const views = stations.map(s => s.entry ? { ...s, detectorFeatures: s.entry.detectorFeatures ?? [] } : { ...s, counts: null }), points = samples.get(item.id);

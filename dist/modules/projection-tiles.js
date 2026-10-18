@@ -40,3 +40,20 @@ export function entryPixel(entry, ix, iy) {
   const i = (entry.n - 1 - iy) * entry.n + ix, p = entry.pixels;
   return { count: p.count[i], transmission: p.transmission[i], mwe: p.mwe[i], side: p.side[i] ? 'back' : 'front' };
 }
+
+// Lines from behind the detector hidden (后方来向 off, a view option): `side` marks back pixels (1), top row first, as the
+// masks and the outline coordinates use. frontMask clears back pixels of a mask; frontLines cuts polylines (points in
+// pixel units, x right, y down) where they enter back pixels and drops pieces shorter than two points.
+export const frontMask = (mask, side) => Uint8Array.from(mask, (v, i) => v && !side[i] ? 1 : 0);
+export function frontLines(lines, side, n) {
+  const behind = ([x, y]) => side[Math.min(n - 1, Math.max(0, Math.floor(y))) * n + Math.min(n - 1, Math.max(0, Math.floor(x)))] === 1;
+  const out = [];
+  for (const line of lines) {
+    let piece = [];
+    for (const point of line) {
+      if (behind(point)) { if (piece.length > 1) out.push(piece); piece = []; } else piece.push(point);
+    }
+    if (piece.length > 1) out.push(piece);
+  }
+  return out;
+}

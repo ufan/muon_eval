@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { colorLevel, heatRgb, entryMask, entryCountField, entryPixel } from '../../dist/modules/projection-tiles.js';
+import { colorLevel, heatRgb, entryMask, entryCountField, entryPixel, frontMask, frontLines } from '../../dist/modules/projection-tiles.js';
 import { precisionContours } from '../../dist/modules/precision-contours.js';
 
 // Per-station projections side by side (#16, FR-M4), drawn from the cached compact results: one fixed colour
@@ -33,4 +33,12 @@ test('precision lines from the cached counts equal those of the full projection'
   assert.deepEqual(field.values.map(v => v.count), [9, 0, 400, 100]);
   const full = { n, values: [{ count: 9 }, { count: 0 }, { count: 400 }, { count: 100 }] };
   assert.deepEqual(precisionContours(field), precisionContours(full));
+});
+
+test('with lines from behind hidden, masks and lines keep only the pixels whose lines come from in front', () => {
+  // 3 × 3, top row first: the bottom row comes from behind.
+  const side = Uint8Array.from([0, 0, 0, 0, 0, 0, 1, 1, 1]);
+  assert.deepEqual([...frontMask(Uint8Array.from([1, 0, 0, 1, 1, 0, 1, 1, 0]), side)], [1, 0, 0, 1, 1, 0, 0, 0, 0]);
+  // A vertical line from the top into the back row is cut where it enters it; a line entirely behind disappears.
+  assert.deepEqual(frontLines([[[1.5, .2], [1.5, 1.5], [1.5, 2.5]], [[.2, 2.4], [2.8, 2.6]]], side, 3), [[[1.5, .2], [1.5, 1.5]]]);
 });

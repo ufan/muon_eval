@@ -1,6 +1,6 @@
 import { outlineRings, crossingsAlongRay, detectorSpaceItems } from './recognition-layers.js';
 import { precisionContours } from './precision-contours.js';
-import { colorLevel, heatRgb } from './projection-tiles.js';
+import { colorLevel, heatRgb, frontMask, frontLines } from './projection-tiles.js';
 import { RAY_MATERIALS, rayMarkers, rayProfile } from './ray-display.js';
 // Projection panel view: heat map on the canvas, recognition outlines (FR-M12) in
 // an SVG overlay in pixel units, and the hover readout with the crossed items.
@@ -12,6 +12,8 @@ export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave
  // One fixed colour scale for every station (projection-tiles.js), shared with the side-by-side view (#16).
  function colorCss(t){const [r,g,b]=heatRgb(Math.min(1,Math.max(0,t)));return`rgb(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)})`}
  const recognition=()=>projection.recognition??{items:[],layers:new Map(),selected:new Set(),threshold:0};
+ // 后方来向 hidden (display-state back, a view option): back pixels are drawn blank and are not read out.
+ const BACK_HIDDEN_FILL='#0d1820',hideBack=()=>projection.showBack===false,hiddenPixel=(d,ix,iy)=>hideBack()&&d.values[iy*d.n+ix].side==='back';
  const selectedItems=()=>{const r=recognition();return r.items.filter(item=>r.selected.has(item.id)&&r.layers.get(item.id)?.inView);};
  function drawOutlines(){const svg=$('#projectionOutlines'),d=projection.data;svg.replaceChildren();if(!d)return;const n=d.n,r=recognition(),used=new Map(),placed=[],size=n*.05;svg.setAttribute('viewBox',`0 0 ${n} ${n}`);
   // Pixel picked from the 3D coverage, marked until the result changes.
@@ -21,13 +23,13 @@ export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave
   if(back.some(Boolean)){const onBorder=(a,b)=>(a[0]===b[0]&&(a[0]===0||a[0]===n))||(a[1]===b[1]&&(a[1]===0||a[1]===n));let line='';
    for(const ring of outlineRings(back,n))for(let i=1;i<ring.length;i++){if(onBorder(ring[i-1],ring[i]))continue;line+=`M${ring[i-1].join(',')}L${ring[i].join(',')}`;}
    const horizon=document.createElementNS(SVG,'path');horizon.setAttribute('d',line);horizon.classList.add('horizon');svg.append(horizon);
-   const first=[...Array(n).keys()].find(r=>back[r*n]),labels=[['前方来向 ↑',first-.5],['后方来向 ↓',first+size*1.1]];
+   const first=[...Array(n).keys()].find(r=>back[r*n]),labels=[['前方来向 ↑',first-.5],[hideBack()?'后方来向（已隐藏）':'后方来向 ↓',first+size*1.1]];
    for(const [label,y] of labels){if(!Number.isFinite(y)||y<size||y>n-.3)continue;const text=document.createElementNS(SVG,'text');text.setAttribute('x',.6);text.setAttribute('y',y);text.setAttribute('font-size',size*.85);text.classList.add('horizon-label');text.textContent=label;svg.append(text);}}
   // Statistical precision (FR-M13): counting error 1/sqrt(N) = 10 % (dashed) and 5 % (solid); neutral, unnamed lines.
   if(projection.precision){if(precisionCache.data!==d)precisionCache={data:d,contours:precisionContours(d)};
-   for(const {relativeError,lines} of precisionCache.contours){if(!lines.length)continue;const path=document.createElementNS(SVG,'path');path.setAttribute('d',lines.map(l=>'M'+l.map(p=>p.join(',')).join('L')).join(''));path.classList.add('precision');path.dataset.level=String(relativeError);svg.append(path);
+   for(const {relativeError,lines:all} of precisionCache.contours){const lines=hideBack()?frontLines(all,back,n):all;if(!lines.length)continue;const path=document.createElementNS(SVG,'path');path.setAttribute('d',lines.map(l=>'M'+l.map(p=>p.join(',')).join('L')).join(''));path.classList.add('precision');path.dataset.level=String(relativeError);svg.append(path);
     const longest=lines.reduce((a,b)=>b.length>a.length?b:a),[x,y]=longest[Math.floor(longest.length/2)],text=document.createElementNS(SVG,'text'),lx=Math.min(x+.3,n*.9);let ly=Math.max(y-.3,size);while(placed.some(([px,py])=>Math.abs(px-lx)<n*.25&&Math.abs(py-ly)<size*1.1))ly+=size*1.15;placed.push([lx,ly]);text.setAttribute('x',lx);text.setAttribute('y',ly);text.setAttribute('font-size',size*.8);text.classList.add('precision-label');text.textContent=`${Math.round(relativeError*100)}%`;svg.append(text);}}
-  for(const item of selectedItems()){const layer=r.layers.get(item.id),rings=outlineRings(layer.mask,n),dash=DASHES[(used.get(item.color)??0)%DASHES.length];used.set(item.color,(used.get(item.color)??0)+1);
+  for(const item of selectedItems()){const layer=r.layers.get(item.id),mask=hideBack()?frontMask(layer.mask,back):layer.mask;if(!mask.some(Boolean))continue;const rings=outlineRings(mask,n),dash=DASHES[(used.get(item.color)??0)%DASHES.length];used.set(item.color,(used.get(item.color)??0)+1);
    const path=document.createElementNS(SVG,'path');path.setAttribute('d',rings.map(ring=>'M'+ring.map(p=>p.join(',')).join('L')+'Z').join(''));path.setAttribute('stroke',item.color);if(dash)path.setAttribute('stroke-dasharray',dash);path.dataset.item=item.id;svg.append(path);
    // Label at the top-left corner of the largest ring.
    const ring=rings.reduce((a,b)=>b.length>a.length?b:a),[x,y]=ring.reduce((a,b)=>b[1]<a[1]||(b[1]===a[1]&&b[0]<a[0])?b:a),text=document.createElementNS(SVG,'text'),lx=Math.min(x,n*.7);let ly=Math.max(y-.4,size);
@@ -35,11 +37,11 @@ export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave
    while(placed.some(([px,py])=>Math.abs(px-lx)<n*.25&&Math.abs(py-ly)<size*1.1))ly+=size*1.15;placed.push([lx,ly]);text.setAttribute('x',lx);text.setAttribute('y',ly);text.setAttribute('font-size',size);text.setAttribute('fill',item.color);text.textContent=item.label.zh;svg.append(text);}}
  // Items that contain the detector: their stretch from the detector is left out of masks and crossings.
  function detectorSpace(d){const r=recognition(),ids=detectorSpaceItems(d.values[Math.floor(d.values.length/2)],r.items);if(!ids.length)return'';const byId=new Map(r.items.map(item=>[item.id,item]));return`<br><span class="detector-space">探测器位于：${ids.map(id=>escapeHtml(byId.get(id).label.zh)).join('、')}（自身空间不计入轮廓）</span>`;}
- function drawProjection(){const d=projection.data;if(!d){drawOutlines();return;}const canvas=$('#projectionCanvas'),ctx=canvas.getContext('2d'),n=d.n,w=canvas.width/n,h=canvas.height/n,mode=projection.mode;ctx.clearRect(0,0,canvas.width,canvas.height);for(let iy=0;iy<n;iy++)for(let ix=0;ix<n;ix++){const q=d.values[iy*n+ix],t=mode==='counts'?colorLevel(mode,q.displayCount):mode==='transmission'?colorLevel(mode,q.displayTransmission):0;ctx.fillStyle=mode==='significance'?'#10202a':colorCss(t);ctx.fillRect(ix*w,canvas.height-(iy+1)*h,w+.5,h+.5)}drawOutlines();// No idle summary (ADR-032): totals are in 站点评估; the readout is for a hovered or pinned pixel.
+ function drawProjection(){const d=projection.data;if(!d){drawOutlines();return;}const canvas=$('#projectionCanvas'),ctx=canvas.getContext('2d'),n=d.n,w=canvas.width/n,h=canvas.height/n,mode=projection.mode;ctx.clearRect(0,0,canvas.width,canvas.height);for(let iy=0;iy<n;iy++)for(let ix=0;ix<n;ix++){const q=d.values[iy*n+ix],t=mode==='counts'?colorLevel(mode,q.displayCount):mode==='transmission'?colorLevel(mode,q.displayTransmission):0;ctx.fillStyle=hideBack()&&q.side==='back'?BACK_HIDDEN_FILL:mode==='significance'?'#10202a':colorCss(t);ctx.fillRect(ix*w,canvas.height-(iy+1)*h,w+.5,h+.5)}drawOutlines();// No idle summary (ADR-032): totals are in 站点评估; the readout is for a hovered or pinned pixel.
   $('#projectionReadout').innerHTML=`<span class="readout-hint">悬停投影图查看像素读数 · 点击固定像素</span>${detectorSpace(d)}`}
  function pixelAt(ev){const d=projection.data,r=ev.currentTarget.getBoundingClientRect();return[Math.max(0,Math.min(d.n-1,Math.floor((ev.clientX-r.left)/r.width*d.n))),Math.max(0,Math.min(d.n-1,d.n-1-Math.floor((ev.clientY-r.top)/r.height*d.n)))];}
- function hover(ev){if(!projection.data)return;showPixel(...pixelAt(ev));}
- function pin(ev){const d=projection.data;if(!d)return;const [ix,iy]=pixelAt(ev);selected=pinned(ix,iy)?null:{data:d,ix,iy};drawOutlines();showPixel(ix,iy);}
+ function hover(ev){if(!projection.data)return;const [ix,iy]=pixelAt(ev);if(hiddenPixel(projection.data,ix,iy)){onLeave();$('#projectionReadout').innerHTML='<span class="readout-hint">后方来向已隐藏（显示工具“后方来向”可打开）</span>';return;}showPixel(ix,iy);}
+ function pin(ev){const d=projection.data;if(!d)return;const [ix,iy]=pixelAt(ev);if(hiddenPixel(d,ix,iy))return;selected=pinned(ix,iy)?null:{data:d,ix,iy};drawOutlines();showPixel(ix,iy);}
  function readoutClick(ev){if(ev.target.closest('[data-ray-side]')&&selected?.data===projection.data)onSideView(selected.data,selected.ix,selected.iy);}
  // Readout of one pixel (ix from the left, iy from the bottom), shared by hover and by a click on the 3D coverage.
  function showPixel(ix,iy){const d=projection.data;if(!d)return;const q=d.values[iy*d.n+ix],rec=recognition(),byId=new Map(rec.items.map(item=>[item.id,item]));
@@ -57,5 +59,5 @@ export function createProjectionCanvasView({root=document,onHover=()=>{},onLeave
  const pinned=(ix,iy)=>selected?.data===projection.data&&selected.ix===ix&&selected.iy===iy;
  function rayActions(ix,iy){return pinned(ix,iy)?'<div class="ray-actions"><button type="button" data-ray-side>侧视射线</button><span>已固定 · 再次点击该像素取消</span></div>':'<div class="ray-actions"><span>点击像素固定射线</span></div>';}
  const canvas=$('#projectionCanvas'),leave=()=>{onLeave();drawProjection();if(selected?.data===projection.data)showPixel(selected.ix,selected.iy);};canvas.addEventListener('mousemove',hover);canvas.addEventListener('mouseleave',leave);canvas.addEventListener('click',pin);$('#projectionReadout').addEventListener('click',readoutClick);
- return Object.freeze({draw(state,response){projection=state;RESPONSE={...response};drawProjection();},selectPixel(ix,iy){const d=projection.data;if(!d||!Number.isInteger(ix)||!Number.isInteger(iy)||ix<0||iy<0||ix>=d.n||iy>=d.n)return;selected={data:d,ix,iy};drawOutlines();showPixel(ix,iy);},emphasiseItem(id){for(const path of root.querySelectorAll('#projectionOutlines path'))path.classList.toggle('emphasised',path.dataset.item===id);},dispose(){canvas.removeEventListener('mousemove',hover);canvas.removeEventListener('mouseleave',leave);canvas.removeEventListener('click',pin);$('#projectionReadout').removeEventListener('click',readoutClick);}});
+ return Object.freeze({draw(state,response){projection=state;RESPONSE={...response};drawProjection();},selectPixel(ix,iy){const d=projection.data;if(!d||!Number.isInteger(ix)||!Number.isInteger(iy)||ix<0||iy<0||ix>=d.n||iy>=d.n||hiddenPixel(d,ix,iy))return;selected={data:d,ix,iy};drawOutlines();showPixel(ix,iy);},emphasiseItem(id){for(const path of root.querySelectorAll('#projectionOutlines path'))path.classList.toggle('emphasised',path.dataset.item===id);},dispose(){canvas.removeEventListener('mousemove',hover);canvas.removeEventListener('mouseleave',leave);canvas.removeEventListener('click',pin);$('#projectionReadout').removeEventListener('click',readoutClick);}});
 }
