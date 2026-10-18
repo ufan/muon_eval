@@ -49,7 +49,7 @@ export function createProjectionTiles({ root = document, onOpenStation = () => {
     const figure = document.createElement('figure'), caption = document.createElement('figcaption'), entry = station.entry;
     figure.className = 'tile'; figure.dataset.tile = station.id; figure.style.setProperty('--c', station.color);
     const name = station.id === 'working' ? `<b>${escape(station.name)}</b>` : `<button type="button" class="link" data-tile-station="${escape(station.id)}" title="设为工作点位">${escape(station.name)}</button>`;
-    const compare = station.id === 'working' ? '' : `<label class="tile-compare" title="加入或移出方案比较"><input type="checkbox" data-tile-compare="${escape(station.id)}"${station.compared ? ' checked' : ''}>比较</label>`;
+    const compare = station.id === 'working' ? '' : `<label class="tile-compare" title="在三维和多站中显示或移出"><input type="checkbox" data-tile-compare="${escape(station.id)}"${station.compared ? ' checked' : ''}>显示</label>`;
     caption.innerHTML = `<i class="swatch"></i>${name}${compare}<small>${entry ? `${formatCount(entry.totalCount)} 计数 · 透射 ${(100 * entry.weightedTransmission).toFixed(2)}%` : '计算中…'}</small>`;
     caption.querySelector('[data-tile-station]')?.addEventListener('click', () => onOpenStation(station.id));
     caption.querySelector('[data-tile-compare]')?.addEventListener('change', event => onToggleCompare(station.id, event.target.checked));

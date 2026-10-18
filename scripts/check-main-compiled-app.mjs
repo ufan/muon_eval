@@ -130,7 +130,7 @@ try{
  // The result records the plan it came from: same hash as the exported plan, and the active station.
  assert.match(result.plan.hash,/^sha256:[0-9a-f]{64}$/);assert.equal(result.plan.stationId,plan.stations[0].id);
  // Device form recomputes from one snapshot; results are history-independent (FR-C1), so doubling exposure doubles counts exactly.
- // "应用到全部候选" sets the detector on every candidate, so the working station still equals its candidate.
+ // "应用到全部点位" sets the detector on every station, so the working station still equals its candidate.
  await click('#deviceSettings');await page.locator('#cfgExposure').fill('60');await click('#deviceApplyAll');await ready();
  const doubled=await currentResult();assert.equal(doubled.response.exposureDays,60);assert.equal(doubled.totalCount,result.totalCount*2);assert.equal(doubled.weightedTransmission,result.weightedTransmission);assert.equal(doubled.plan.stationId,result.plan.stationId);
  // Save as new adds a candidate (with a global workspace ID) and makes it the source; deleting it leaves an unsaved working station.
