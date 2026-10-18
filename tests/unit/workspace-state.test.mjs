@@ -211,3 +211,17 @@ test('deselecting a deployment clears the ticks and the active deployment', () =
   s.deselectDeployment();
   assert.deepEqual([s.compared, s.activeDeployment, s.matchedDeployment, s.session().shown], [[], null, null, []]);
 });
+
+test('a draft at the position and pose of a saved station is that station (at start and when a suggestion loads)', () => {
+  const first = state(), id = first.saveAsNew();
+  const again = createWorkspaceState({ workspace: first.workspace, session: { ...first.session(), working: null }, environment, draft });
+  assert.equal(again.working.from, id);
+  // A draft kept in the session at that position and pose links to it too, keeping its values (here equal: no edits).
+  const kept = createWorkspaceState({ workspace: first.workspace, session: { ...first.session(), working: { ...first.session().working, station: null, site: null } }, environment, draft });
+  assert.deepEqual([kept.working.from, kept.modified], [id, false]);
+  const s = state(first.workspace);
+  s.loadDraft({ name: '建议点 A', x: 1, y: 2, z: 3, az: 0, el: 25, candidateId: 'a' });
+  assert.deepEqual([s.working.from, s.modified], [id, false]);
+  s.loadDraft({ name: 'B', x: 1, y: 2, z: 3, az: 0, el: 26, candidateId: 'a' });
+  assert.equal(s.working.from, null);
+});

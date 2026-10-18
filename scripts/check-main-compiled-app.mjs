@@ -137,6 +137,8 @@ try{
  const count=await page.locator('#candidateList .candidate').count();await setInput('#elNumber','36');await click('#saveCandidate');await ready();
  assert.equal(await page.locator('#candidateList .candidate').count(),count+1);assert.equal(await page.locator('#candidateList .candidate.active').getAttribute('data-candidate').then(id=>/^sta-[0-9a-hjkmnp-tv-z]{16}$/.test(id)),true);
  await click('#remove');await answer();await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count);assert.match(await page.locator('#workingStatus').innerText(),/未保存|未加入我的点位/);
+ // The working station is always highlighted somewhere: here as an inspected suggestion or as the unsaved draft row.
+ assert.equal(await page.locator('#candidateList .working-draft, #suggestionList .suggestion.active').count(),1);
  // Leaving unsaved edits asks first, in the page (window.confirm is blocked in embedded viewers).
  await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());assert.ok(await page.locator('#pageDialog').evaluate(d=>d.open));await page.locator('#pageDialogOk').click();await page.waitForFunction(()=>/一致/.test(document.querySelector('#workingStatus').textContent));await ready();assert.notDeepEqual((await currentResult()).config.origin,result.config.origin);
  await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');

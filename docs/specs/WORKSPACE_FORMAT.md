@@ -193,7 +193,7 @@ Nothing is lost silently: every 1.x station, deployment and title has a counterp
   - 存为新点位 reuses the draft's site while its position is unchanged; otherwise it makes a new site.
   - 更新点位 on a moved station whose site is shared asks 仅此点位另建站址 or 移动整个站址.
   - A draft that is no saved station counts as edited only once it is changed.
-  - **Position and pose identify a station** (owner, 2026-10-18): saving, adding or updating refuses a station with the same position and pose as another, naming that station. Names are free text and may repeat.
+  - **Position and pose identify a station** (owner, 2026-10-18): saving, adding or updating refuses a station with the same position and pose as another, naming that station. Names are free text and may repeat. A draft (a loaded suggestion, the start draft or the one kept in the session) at a saved station's position and pose is that station, highlighted in 我的点位; an active suggestion opens its list; any other unsaved working station has its own highlighted row (未保存) at the top of 我的点位, so the station shown in 3D always has a highlighted row.
   - 撤销修改 (shown while there are edits) discards them: back to the saved station, or to the draft as it was loaded.
 - **部署组合:**
   - Clicking a deployment replaces the ticks with its stations. The shown bar says when the ticks equal a deployment; when they differ from the one last loaded, it offers 更新「…」 and 另存为组合.

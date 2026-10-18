@@ -46,6 +46,9 @@ export function createWorkspaceState({ workspace, session = null, environment, d
     settings: normalise({ ...d.settings, exposureDays }), candidateId: d.candidateId ?? null });
   let working = fromSession(session?.working) ?? (ws.stations.length ? fromStation(ws.stations[0].id) : draft ? fromDraft(draft) : null);
   if (!working) throw new Error('A workspace state needs a saved station or a draft');
+  // Position and pose identify a station: a draft at a saved station's position and pose is that station.
+  const savedAt = w => ws.stations.find(s => s.pose.azimuthDeg === w.az && s.pose.elevationDeg === w.el && siteOf(s).position.every((v, i) => v === [w.x, w.y, w.z][i]))?.id ?? null;
+  if (working.from === null && savedAt(working)) { const at = savedAt(working); working = session?.working ? { ...working, from: at, site: station(at).placement.site } : fromStation(at); }
   // A draft that is no saved station counts as edited once the user changes it (or when it comes back from the session).
   let touched = working.from === null && Boolean(session?.working);
   // The draft as it was loaded (a dataset suggestion or the start draft), for revert.
@@ -93,7 +96,7 @@ export function createWorkspaceState({ workspace, session = null, environment, d
     get exposureDays() { return exposureDays; },
     candidate(id) { return view(station(id)); },
     select(id) { station(id); working = fromStation(id); touched = false; },
-    loadDraft(d) { working = fromDraft({ ...d, model: working.model, settings: working.settings }); draftBase = working; touched = false; },
+    loadDraft(d) { working = fromDraft({ ...d, model: working.model, settings: working.settings }); const at = savedAt(working); if (at) working = fromStation(at); draftBase = working.from === null ? working : null; touched = false; },
     // Discards the edits of the working station: back to its saved station, or to the draft as it was loaded.
     revert() { if (working.from !== null) { working = fromStation(working.from); touched = false; } else if (draftBase) { working = { ...draftBase, settings: normalise({ ...draftBase.settings, exposureDays }, draftBase.settings) }; touched = false; } },
     update(field, value) {

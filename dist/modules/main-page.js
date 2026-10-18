@@ -82,7 +82,10 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
   d.querySelector('[data-compare]').onchange=e=>{study.setCompared(s.id,e.target.checked);afterShownChange();};return d;}
  function renderList(){const h=$('#candidateList');if(!h||!study)return;syncOthersChip();const extras=coverageExtras(),swatch=new Map(extras.map(s=>[s.id,s.color]));syncCoverageStations(extras);const w=study.working,compared=new Set(study.compared),modified=study.modified,context={w,compared,modified,swatch};
   const groups=new Map(),sites=new Map(study.workspace.sites.map(site=>[site.id,site]));for(const s of study.plan.stations){if(!groups.has(s.site))groups.set(s.site,[]);groups.get(s.site).push(s);}
-  h.replaceChildren(...[...groups.entries()].map(([siteId,list])=>{if(list.length===1)return stationRow(list[0],context,true);
+  // The working station always has a highlighted row: a saved station, an inspected suggestion, or else this unsaved draft row.
+  let draftRow=null;if(workingActive&&w.from===null&&!datasetStations.some(activeSuggestion)){draftRow=document.createElement('div');draftRow.className='working-draft';draftRow.title='当前探测器（未保存）；再次点击取消选择';
+   draftRow.innerHTML=`<b>${escapeHtml(w.name||'新点位')} <em>· 未保存</em></b><span>X ${w.x.toFixed(1)} · Y ${w.y.toFixed(1)} · Z ${w.z.toFixed(1)}</span><span>方位 ${w.az}° · 仰角 ${w.el}°</span>`;draftRow.onclick=()=>deactivateWorking();}
+  h.replaceChildren(...(draftRow?[draftRow]:[]),...[...groups.entries()].map(([siteId,list])=>{if(list.length===1)return stationRow(list[0],context,true);
    const g=document.createElement('div'),[x,y,z]=list[0].position;g.className='site-group';g.dataset.site=siteId;
    g.innerHTML=`<header><label class="compare"><input type="checkbox" data-compare-site="${escapeHtml(siteId)}"${list.every(s=>compared.has(s.id))?' checked':''}>显示</label><b>${escapeHtml(sites.get(siteId)?.name??'站址')}</b><span>X ${x.toFixed(1)} · Y ${y.toFixed(1)} · Z ${z.toFixed(1)} · ${list.length} 个姿态</span></header>`;
    g.querySelector('[data-compare-site]').onchange=e=>{for(const s of list)study.setCompared(s.id,e.target.checked);afterShownChange();};
@@ -142,7 +145,7 @@ function makeProjectionDraggable(){const panel=$('#projectionPanel'),handle=$('#
  const activeSuggestion=c=>workingActive&&study.working.from===null&&study.working.candidateId===suggestionKey(c);
  // Position and pose identify a station: a clash names the station already there (no two stations share them).
  function clashAlert(error){const name=/same position and pose: (.*)$/.exec(error.message)?.[1];if(name===undefined)throw error;pageAlert(`「${name}」已在同一位置和姿态，不能再加入一个相同的点位。`);}
- function renderSuggestions(){const host=$('#suggestionList');if(!host)return;$('#suggestionCount').textContent=`(${datasetStations.length})`;
+ function renderSuggestions(){const host=$('#suggestionList');if(!host)return;if(datasetStations.some(activeSuggestion))$('#suggestionSection').open=true;$('#suggestionCount').textContent=`(${datasetStations.length})`;
   host.replaceChildren(...datasetStations.map(c=>{const row=document.createElement('div'),active=activeSuggestion(c);row.className='suggestion'+(active?' active':'');row.dataset.suggestion=c.id;
    row.innerHTML=`<button type="button" class="suggestion-main" title="${active?'再次点击取消查看':'查看此建议位置'}">${escapeHtml(c.name)}<span>${active?(study.modified?'已修改':'查看中'):''}</span></button><button type="button" class="suggestion-add" title="加入我的点位">＋</button>`;
    row.querySelector('.suggestion-main').onclick=()=>{if(active)deactivateWorking();else loadSuggestion(c);};
