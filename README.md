@@ -26,7 +26,7 @@ Open `http://127.0.0.1:8765/`. Any other static HTTP server also works once the 
 - `CONTEXT.md`: use cases, geometry semantics, terminology and current datasets.
 - `docs/`: the four guideline documents ([architecture decisions](docs/ARCHITECTURE_DECISIONS.md), [feature requirements](docs/FEATURE_REQUIREMENTS.md), [roadmap](docs/ROADMAP.md), [implementation priority](docs/IMPLEMENTATION_PRIORITY.md)); all open work is tracked only there.
   - `docs/specs/`: modular specifications (architecture, module boundaries, calculation model, geometry reference contract, projection data and validation); index in [specs/README](docs/specs/README.md).
-  - `docs/guides/`: result interpretation, projection workflow, deployment and repository migration.
+  - `docs/guides/`: [stations, deployments and studies](docs/guides/STATIONS_AND_DEPLOYMENTS.md) (the left sidebar), result interpretation, projection workflow, deployment and repository migration.
 - `datasets/`: versioned dataset releases and their descriptions; registry `datasets/registry.json` ([datasets/README](datasets/README.md)).
 - `dist/`: the static application (web root).
   - `index.html`: page and controls; `geometry-preview.html`: standalone compiled-geometry preview.

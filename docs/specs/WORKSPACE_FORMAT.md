@@ -183,6 +183,8 @@ Nothing is lost silently: every 1.x station, deployment and title has a counterp
 
 ## The workspace in the app (step 4)
 
+User-facing guide: [Stations, deployments and studies](../guides/STATIONS_AND_DEPLOYMENTS.md).
+
 `workspace-state.js` holds the workspace and the session; the left sidebar shows it directly (ADR-032, ADR-033):
 
 - **我的点位:** every saved station, grouped by site when a site has several poses.

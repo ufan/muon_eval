@@ -23,7 +23,7 @@ It is a rapid evaluation and plan-comparison tool for engineering deployment, no
 3. The four guideline documents at the top of `docs/`: `ARCHITECTURE_DECISIONS.md`, `FEATURE_REQUIREMENTS.md`, `ROADMAP.md`, `IMPLEMENTATION_PRIORITY.md`.
 4. `docs/specs/`: the specs relevant to the task (current architecture and module boundaries, calculation model, geometry reference contract, projection data and validation); index in `docs/specs/README.md`.
 5. The dataset's own description; the current example is `datasets/zhouning-lower-reservoir-dam/README.md`.
-6. `docs/guides/`: result interpretation, projection workflow, deployment and `MIGRATION_CHECKLIST.md`.
+6. `docs/guides/`: stations and deployments (left sidebar), result interpretation, projection workflow, deployment and `MIGRATION_CHECKLIST.md`.
 
 Check `git status --short` before changing anything, keep the user's existing changes, and never assume the working tree is clean.
 
