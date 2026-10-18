@@ -8,7 +8,8 @@ import { extname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { replayPatternComparison } from '../dist/modules/pattern-comparison.js';
-import { parsePlan, serializePlan, planHash } from '../dist/modules/plan-format.js';
+import { serializePlan, planFromState, settingsFromDetector } from '../dist/modules/plan-format.js';
+import { parseWorkspace, serializeWorkspace } from '../dist/modules/workspace-format.js';
 
 const options=new Map();for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i],value=process.argv[i+1];if(!['--playwright','--chromium'].includes(key)||!value)throw Error('Usage: node scripts/check-main-compiled-app.mjs [--playwright /path/index.mjs] [--chromium /path/browser]');options.set(key,value);}
 // Environment fallback lets `npm run test:browser` locate an existing Playwright/Chromium.
@@ -32,8 +33,8 @@ try{
  async function currentResult(){await page.locator('#mainPatternControls').evaluate(element=>element.open=true);const pending=page.waitForEvent('download');await click('#exportResult');const download=await pending;return JSON.parse(await readFile(await download.path(),'utf8'));}
  // In-page dialogs (page-dialog.js) replace window.prompt/confirm/alert; a native dialog anywhere fails the run.
  const nativeDialogs=[];page.on('dialog',dialog=>{nativeDialogs.push(dialog.message());dialog.dismiss().catch(()=>{});});
- const answer=async text=>{await page.waitForSelector('#pageDialog[open]');if(text!==undefined)await page.locator('#pageDialog input').fill(text);await page.locator('#pageDialogOk').click();await page.waitForFunction(()=>!document.querySelector('#pageDialog')?.open);await page.evaluate(()=>new Promise(r=>setTimeout(r,50)));};// the close event and the caller's continuation run after .open turns false
- const exportPlan=async kind=>{const pending=page.waitForEvent('download');await click('#export');await click(`[data-export="${kind}"]`);const file=await pending;return {name:file.suggestedFilename(),plan:parsePlan(await readFile(await file.path(),'utf8'))};};
+ const answer=async text=>{await page.waitForSelector('#pageDialog[open]');if(text!==undefined)await page.locator('#pageDialog input[type=text]').fill(text);await page.locator('#pageDialogOk').click();await page.waitForFunction(()=>!document.querySelector('#pageDialog')?.open);await page.evaluate(()=>new Promise(r=>setTimeout(r,50)));};// the close event and the caller's continuation run after .open turns false
+ const exportPlan=async kind=>{const pending=page.waitForEvent('download');await click('#export');await click(`[data-export="${kind}"]`);const file=await pending;return {name:file.suggestedFilename(),plan:parseWorkspace(await readFile(await file.path(),'utf8'))};};
  const openCandidates=async()=>{if(await page.locator('#candidateSection').evaluate(e=>e.classList.contains('collapsed')))await click('#candidateSection .section-toggle');};
  // Dataset controls sit in the header "数据配置" menu; open it before choosing (selectOption needs a visible select).
  const selectData=async(selector,value)=>{if(await page.locator('#dataMenu').isHidden())await click('#dataMenuButton');await page.locator(selector).selectOption(value);};
@@ -61,6 +62,12 @@ try{
  assert.equal(await page.locator('[data-recognition]').count(),4);assert.equal(await page.locator('[data-recognition]:checked').count(),0);assert.equal(await page.locator('#projectionOutlines path[data-item]').count(),0);
  // Lines below the horizon count muons from behind the detector (quick-response@4.0.0).
  assert.equal(await page.locator('#projectionOutlines path.horizon').count(),1);
+ // 后方来向 off (a view option): back pixels are blank and not read out, the label says so, the result is unchanged; on again restores it.
+ {const before=await currentResult();await page.locator('#projectionCanvas').scrollIntoViewIfNeeded();const box=await page.locator('#projectionCanvas').boundingBox();await page.locator('#showBack').uncheck();
+  assert.match(await page.locator('#projectionOutlines .horizon-label').allTextContents().then(t=>t.join(' ')),/已隐藏/);
+  await page.mouse.move(box.x+box.width/2,box.y+box.height-2);assert.match(await page.locator('#projectionReadout').innerText(),/后方来向已隐藏/);
+  assert.deepEqual(await currentResult(),before);await page.locator('#showBack').check();await page.mouse.move(box.x+box.width/2,box.y+box.height-2);
+  assert.match(await page.locator('#projectionReadout').innerText(),/后方来向/);assert.doesNotMatch(await page.locator('#projectionReadout').innerText(),/已隐藏/);}
  const inView=page.locator('#recognitionItems label:not(.out) [data-recognition]');assert.ok(await inView.count()>0);const shown=await inView.first().getAttribute('data-recognition');await inView.first().check();
  assert.equal(await page.locator(`#projectionOutlines path[data-item="${shown}"]`).count(),1);assert.doesNotMatch(await page.locator('#projectionReadout').innerText(),/总计数/,'no idle summary (ADR-032)');
  // Precision lines (FR-M13): off by default, drawn from the result's own counts, remembered.
@@ -87,26 +94,51 @@ try{
  await page.locator('#expertDiagnostics').evaluate(e=>e.open=true);
  await page.locator('#mainMaterialContours').check();await page.locator('#mainResponseContours').check();assert.ok(await page.locator('#mainPatternOverlay path').count()>0);
  await page.locator('#projectionCanvas').scrollIntoViewIfNeeded();const canvas=await page.locator('#projectionCanvas').boundingBox();await page.mouse.move(canvas.x+canvas.width/2,canvas.y+canvas.height/2);assert.match(await page.locator('#projectionReadout').innerText(),/柱密度/);assert.ok(await page.locator('#projectionReadout .crossing').count()>0);await page.mouse.move(0,0);
+ // Playground first (ADR-033): nothing is saved for a new release; the draft starts at the first dataset suggestion.
+ await openCandidates();assert.equal(await page.locator('#candidateList .candidate').count(),0);assert.ok(await page.locator('#emptyStations').isVisible());assert.match(await page.locator('#workingStatus').innerText(),/查看建议位置.*未加入我的点位/);assert.equal(await page.locator('#saveCandidate').innerText(),'加入我的点位');
+ // Each suggestion loads into the draft and 存为新点位 saves it; then the first station is opened.
+ await page.locator('#suggestionSection').evaluate(d=>d.open=true);const suggestions=await page.locator('#suggestionList .suggestion').count();assert.ok(suggestions>2);
+ // A suggestion row activates like a station row: highlighted as the working station, a second click deselects it.
+ await page.locator('#suggestionList .suggestion-main').nth(1).click();assert.equal(await page.locator('#suggestionList .suggestion.active').count(),1);assert.match(await page.locator('#suggestionList .suggestion.active span').innerText(),/查看中/);
+ await page.locator('#suggestionList .suggestion-main').nth(1).click();assert.equal(await page.locator('#suggestionList .suggestion.active').count(),0);assert.ok(await page.locator('#noWorking').isVisible());
+ // ＋ adds one to 我的点位 without loading it; the second is saved through the working station, the rest with ＋.
+ await page.locator('#suggestionList .suggestion-add').nth(0).click();assert.equal(await page.locator('#candidateList .candidate').count(),1);assert.ok(await page.locator('#noWorking').isVisible());
+ await page.locator('#suggestionList .suggestion-main').nth(1).click();await click('#saveCandidate');
+ for(let i=2;i<suggestions;i++)await page.locator('#suggestionList .suggestion-add').nth(i).click();
+ assert.equal(await page.locator('#candidateList .candidate').count(),suggestions);
+ // Position and pose identify a station: adding the same suggestion again is refused, naming the station already there.
+ await page.locator('#suggestionList .suggestion-add').nth(0).click();await page.waitForSelector('#pageDialog[open]');assert.match(await page.locator('#pageDialogText').innerText(),/已在同一位置和姿态/);await answer();
+ assert.equal(await page.locator('#candidateList .candidate').count(),suggestions);
+ await openCandidate(0);await ready();assert.match(await page.locator('#workingStatus').innerText(),/一致/);
  await setInput('#azNumber','10');await setInput('#azNumber','25');await setInput('#elNumber','35');await ready();result=await currentResult();assert.equal(result.config.azimuthDeg,25);assert.equal(result.config.elevationDeg,35);assert.deepEqual(result.variables,initial.variables);
  // Edits change the working station only (FR-P6); "更新候选" writes them back to the source candidate.
  assert.match(await page.locator('#workingStatus').innerText(),/已修改/);assert.equal(await page.locator('#updateCandidate').isDisabled(),false);
- await click('#updateCandidate');await ready();assert.match(await page.locator('#workingStatus').innerText(),/一致/);assert.ok(await page.locator('#updateCandidate').isDisabled());result=await currentResult();
- // "导出部署方案" writes a muography-plan 1.1.0 file that loads back byte-identically (PLAN_FORMAT.md).
- const planPending=page.waitForEvent('download');await click('#export');assert.equal(await page.locator('#exportMenu').isVisible(),true);assert.ok(await page.locator('[data-export="deployment"]').isDisabled());await click('[data-export="study"]');const download=await planPending,planText=await readFile(await download.path(),'utf8'),plan=parsePlan(planText);
- assert.equal(serializePlan(plan),planText);await click('#export');await click('[data-export="text"]');await page.waitForSelector('#pageDialog[open] textarea');assert.equal(await page.locator('#pageDialog textarea').inputValue(),planText);await answer();assert.equal(plan.scene.release,release);assert.equal(plan.scene.scenario,'low');assert.ok(plan.stations.every(s=>s.candidateId===s.id));
- assert.equal(plan.schemaVersion,'1.1.0');assert.deepEqual(plan.deployments,[]);assert.ok(plan.stations.every(s=>s.note===''));
+ await click('#updateCandidate');await ready();assert.match(await page.locator('#workingStatus').innerText(),/一致/);assert.ok(await page.locator('#updateCandidate').isDisabled());
+ // 撤销修改 discards edits: the working station returns to its saved station.
+ assert.ok(await page.locator('#revertCandidate').isHidden());await setInput('#azNumber','80');assert.match(await page.locator('#workingStatus').innerText(),/已修改/);
+ await click('#revertCandidate');assert.equal(await page.locator('#azNumber').inputValue(),'25');assert.match(await page.locator('#workingStatus').innerText(),/一致/);assert.ok(await page.locator('#revertCandidate').isHidden());await ready();result=await currentResult();
+ // "导出方案 → 整个工作区" writes the muography-workspace 2.0 file, which loads back byte-identically (WORKSPACE_FORMAT.md).
+ const planPending=page.waitForEvent('download');await click('#export');assert.equal(await page.locator('#exportMenu').isVisible(),true);assert.ok(await page.locator('[data-export="deployment"]').isDisabled());await click('[data-export="workspace"]');const download=await planPending,planText=await readFile(await download.path(),'utf8'),exportedStudy=parseWorkspace(planText);
+ assert.equal(serializeWorkspace(exportedStudy),planText);await click('#export');await click('[data-export="text"]');await page.waitForSelector('#pageDialog[open] textarea');const shownText=parseWorkspace(await page.locator('#pageDialog textarea').inputValue());assert.equal(serializeWorkspace({...shownText,provenance:{...shownText.provenance,exportedAt:exportedStudy.provenance.exportedAt}}),planText);await answer();assert.equal(exportedStudy.release.id,release);assert.deepEqual([exportedStudy.contents,exportedStudy.roots,exportedStudy.studies],['workspace',[],[]]);assert.ok(exportedStudy.sites.every(s=>s.candidateId!==null));
+ assert.equal(exportedStudy.schemaVersion,'2.0.0');assert.equal(exportedStudy.deployments.length,0);assert.equal(exportedStudy.sites.length,suggestions);assert.ok(exportedStudy.stations.every(s=>s.note===''));
+ // The saved stations as a 1.x plan, for the import checks below.
+ const sitesById=new Map(exportedStudy.sites.map(site=>[site.id,site])),savedDetector=exportedStudy.detectors[0];
+ const plan=planFromState({release,scenario:'low',model:savedDetector.device.model,settings:settingsFromDetector({device:savedDetector.device,response:{...savedDetector.response,exposureDays:30}}),
+  stations:exportedStudy.stations.map(s=>{const site=sitesById.get(s.placement.site);return {id:s.id,name:s.name,x:site.position[0],y:site.position[1],z:site.position[2],az:s.pose.azimuthDeg,el:s.pose.elevationDeg,candidateId:site.candidateId,note:s.note};})}),legacyText=serializePlan(plan);
  // The plan holds no active station (session state); the edited station is the first, active one.
  assert.deepEqual(plan.stations[0].pose,{azimuthDeg:25,elevationDeg:35});
  // The result records the plan it came from: same hash as the exported plan, and the active station.
- assert.deepEqual(result.plan,{hash:planHash(plan),stationId:plan.stations[0].id});
+ assert.match(result.plan.hash,/^sha256:[0-9a-f]{64}$/);assert.equal(result.plan.stationId,plan.stations[0].id);
  // Device form recomputes from one snapshot; results are history-independent (FR-C1), so doubling exposure doubles counts exactly.
- // "应用到全部候选" sets the detector on every candidate, so the working station still equals its candidate.
+ // "应用到全部点位" sets the detector on every station, so the working station still equals its candidate.
  await click('#deviceSettings');await page.locator('#cfgExposure').fill('60');await click('#deviceApplyAll');await ready();
  const doubled=await currentResult();assert.equal(doubled.response.exposureDays,60);assert.equal(doubled.totalCount,result.totalCount*2);assert.equal(doubled.weightedTransmission,result.weightedTransmission);assert.equal(doubled.plan.stationId,result.plan.stationId);
- // Save as new adds a candidate and makes it the source; deleting it leaves an unsaved working station.
+ // Save as new adds a candidate (with a global workspace ID) and makes it the source; deleting it leaves an unsaved working station.
  const count=await page.locator('#candidateList .candidate').count();await setInput('#elNumber','36');await click('#saveCandidate');await ready();
- assert.equal(await page.locator('#candidateList .candidate').count(),count+1);assert.equal(await page.locator('#candidateList .candidate.active').getAttribute('data-candidate'),'station-'+(count+1));
- await click('#remove');await answer();await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count);assert.match(await page.locator('#workingStatus').innerText(),/未保存/);
+ assert.equal(await page.locator('#candidateList .candidate').count(),count+1);assert.equal(await page.locator('#candidateList .candidate.active').getAttribute('data-candidate').then(id=>/^sta-[0-9a-hjkmnp-tv-z]{16}$/.test(id)),true);
+ await click('#remove');await answer();await ready();assert.equal(await page.locator('#candidateList .candidate').count(),count);assert.match(await page.locator('#workingStatus').innerText(),/未保存|未加入我的点位/);
+ // The working station is always highlighted somewhere: here as an inspected suggestion or as the unsaved draft row.
+ assert.equal(await page.locator('#candidateList .working-draft, #suggestionList .suggestion.active').count(),1);
  // Leaving unsaved edits asks first, in the page (window.confirm is blocked in embedded viewers).
  await page.locator('#candidateList .candidate').nth(1).evaluate(element=>element.click());assert.ok(await page.locator('#pageDialog').evaluate(d=>d.open));await page.locator('#pageDialogOk').click();await page.waitForFunction(()=>/一致/.test(document.querySelector('#workingStatus').textContent));await ready();assert.notDeepEqual((await currentResult()).config.origin,result.config.origin);
  await page.locator('#candidateList .candidate').nth(0).evaluate(element=>element.click());await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');
@@ -121,16 +153,26 @@ try{
  assert.match(await page.locator('#mainComparisonSummary').innerText(),/混凝土覆盖/);
  const comparisonPending=page.waitForEvent('download');await click('#mainExportComparison');const exported=replayPatternComparison(JSON.parse(await readFile(await (await comparisonPending).path(),'utf8')));
  assert.equal(exported.entries.length,2);assert.equal(exported.entries[0].result.config.elevationDeg,35);assert.equal(exported.entries[0].result.plan.stationId,result.plan.stationId);
- // Named deployments (FR-P7): created, filled by ticking, copied, exported alone or together, deleted; "比较本组合的点位" sets the comparison.
- assert.match(await page.locator('#deploymentSummary').innerText(),/新建/);
- await click('#newDeployment');await answer('Plan A');for(const i of [0,2])await page.locator('#deploymentMembers [data-member]').nth(i).check();
- assert.match(await page.locator('#deploymentSummary').innerText(),/^2 个点位/);
- let file=await exportPlan('deployment');assert.match(file.name,/-study-1-deployment-1\.json$/);assert.equal(file.plan.stations.length,2);assert.deepEqual(file.plan.deployments.map(d=>d.name),['Plan A']);
- await click('#copyDeployment');await answer('Plan B');assert.equal(await page.locator('#deploymentSelect option').count(),2);await page.locator('#deploymentMembers [data-member]').nth(2).uncheck();await page.locator('#deploymentMembers [data-member]').nth(1).check();
- file=await exportPlan('deployments');assert.deepEqual(file.plan.deployments.map(d=>[d.name,d.stations.length]),[['Plan A',2],['Plan B',2]]);assert.equal(file.plan.stations.length,3);
- await click('#compareDeployment');await page.waitForFunction(()=>document.querySelectorAll('#mainComparisonSummary p').length===2);
+ // Named deployments (FR-P7): saved from the ticks, shown by a click, changed ticks saved as another, exported alone, deleted from ⋯.
+ assert.match(await page.locator('#deploymentSummary').innerText(),/新建/);assert.ok(await page.locator('#shownSave').isVisible());assert.ok(await page.locator('#updateShownDeployment').isHidden());
+ await click('#newDeployment');await answer('Plan A');assert.match(await page.locator('#shownStatus').innerText(),/= 组合「Plan A」/);assert.ok(await page.locator('#shownSave').isHidden());
+ let file=await exportPlan('deployment');assert.match(file.name,/-Plan_A\.json$/);assert.equal(file.plan.stations.length,2);assert.deepEqual(file.plan.deployments.map(d=>d.name),['Plan A']);
+ // ＋ opened the member dialog with the ticked stations; ⋯ → 编辑成员 opens it with the members ticked and changes them.
+ const editMembers=async index=>{await page.locator('#deploymentList .item-row').nth(0).locator('.item-more').click();await page.locator('.item-menu button',{hasText:'编辑成员'}).click();
+  await page.waitForSelector('#pageDialog[open] .page-checklist');await page.locator('#pageDialog .page-checklist input').nth(index).click();await answer();};
+ await editMembers(2);assert.match(await page.locator('#deploymentList .item-row').nth(0).innerText(),/3 个点位/);assert.equal(await page.locator('#deploymentList .members span').count(),3);
+ await editMembers(2);assert.match(await page.locator('#deploymentList .item-row').nth(0).innerText(),/2 个点位/);
+ await page.locator('#candidateList [data-compare]').nth(1).uncheck();await page.locator('#candidateList [data-compare]').nth(2).check();
+ assert.match(await page.locator('#shownStatus').innerText(),/与「Plan A」不同/);assert.ok(await page.locator('#updateShownDeployment').isVisible());
+ await click('#saveShownDeployment');await answer('Plan B');assert.equal(await page.locator('#deploymentList .item-row').count(),2);assert.match(await page.locator('#shownStatus').innerText(),/= 组合「Plan B」/);
+ file=await exportPlan('shown');assert.equal(file.plan.stations.length,2);assert.deepEqual(file.plan.deployments,[]);
+ await page.locator('#deploymentList .item-row').nth(0).locator('.item-main').click();await page.waitForFunction(()=>document.querySelectorAll('#mainComparisonSummary p').length===2);
  assert.deepEqual(await page.locator('#candidateList [data-compare]').evaluateAll(inputs=>inputs.map(i=>i.checked)).then(v=>v.slice(0,3)),[true,true,false]);
- await click('#deleteDeployment');await answer();assert.equal(await page.locator('#deploymentSelect option').count(),1);assert.equal(await page.locator('#deploymentSelect').inputValue(),'deployment-1');
+ await page.locator('#deploymentList .item-row').nth(1).locator('.item-more').click();await page.locator('.item-menu button',{hasText:'删除'}).click();await answer();
+ assert.equal(await page.locator('#deploymentList .item-row').count(),1);assert.match(await page.locator('#shownStatus').innerText(),/= 组合「Plan A」/);
+ // A click on the deployment shown deactivates it (nothing ticked, a fresh start); another click shows it again.
+ await page.locator('#deploymentList .item-row').nth(0).locator('.item-main').click();assert.equal(await page.locator('#candidateList [data-compare]:checked').count(),0);assert.ok(await page.locator('#deploymentList .item-row.shown').count()===0);
+ await page.locator('#deploymentList .item-row').nth(0).locator('.item-main').click();assert.equal(await page.locator('#candidateList [data-compare]:checked').count(),2);await page.waitForFunction(()=>document.querySelectorAll('#mainComparisonSummary p').length===2);
  // Sketching (14d): other candidates in the coverage view, each with its colour; views never change results.
  const before=await currentResult();await (await reveal('#coverageMode')).selectOption('geometric');assert.equal(await page.locator('.cov-swatch').count(),0);
  // The 比较 boxes are the only membership; the 其他点位 chip shows the compared candidates (display-state.js).
@@ -176,12 +218,12 @@ try{
   await page.locator(`[data-tile-compare="${id}"]`).evaluate(box=>box.click());await page.waitForFunction(text=>document.querySelector('#mainComparisonCount').textContent!==text,start);assert.equal(await page.locator(`[data-tile-compare="${id}"]`).count(),0);
   await page.locator(`#candidateList [data-compare="${id}"]`).evaluate(box=>box.click());await page.waitForFunction(text=>document.querySelector('#mainComparisonCount').textContent===text,start);await page.waitForFunction(id=>document.querySelector(`[data-tile-compare="${id}"]`),id);}
  {const button=page.locator('[data-tile-station]').first(),name=await button.innerText();await button.click();await ready();
-  assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));}
+  assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与点位「${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));}
  await page.locator('.overview-item summary').first().click();const target=page.locator('[data-overview-station]').first(),targetName=await target.innerText();await target.click();await ready();
- assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${targetName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));
+ assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与点位「${targetName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}」一致`));
  // Other stations' markers: the name shows on hover (permanent labels only in demo mode, owner 2026-10-16); a click on the marker opens that station.
  const labels=page.locator('.station-labels button:not([hidden])');await page.waitForFunction(()=>document.querySelectorAll('.station-labels button:not([hidden])').length>0);
- const escape=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),opened=async name=>assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与候选「${escape(name)}」一致`));
+ const escape=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),opened=async name=>assert.match(await page.locator('#workingStatus').innerText(),new RegExp(`与点位「${escape(name)}」一致`));
  assert.ok(await labels.first().isHidden(),'no permanent labels outside demo mode');
  {await page.waitForFunction(()=>document.querySelectorAll('.station-labels button:not([hidden])').length>0);const label=labels.first(),name=await label.innerText();
   const anchor=await label.evaluate(e=>{const box=document.querySelector('#webgl').getBoundingClientRect();return[box.left+parseFloat(e.style.left),box.top+parseFloat(e.style.top)];});
@@ -242,34 +284,53 @@ try{
  await page.reload();await ready();await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');assert.equal(await page.locator('#azNumber').inputValue(),'25');
  assert.equal(await page.locator('#recognitionThreshold').inputValue(),'0.5');assert.ok(await page.locator('#precisionContours').isChecked());assert.equal(await (await reveal('#coverageMode')).inputValue(),'physical');assert.ok(await (await reveal('#coverageContext')).isChecked());assert.ok(await page.locator(`[data-recognition="${shown}"]`).isChecked());
  assert.equal(await page.locator('[data-feature-group="monitoring"]').isChecked(),false);assert.equal(await page.locator('[data-feature-group="vertical_transport"]').isChecked(),false);
- // An imported plan becomes a new study (FR-P8): in place for the current release and scenario; another scenario opens that scenario.
- const studies=async()=>page.locator('#studySelect option').evaluateAll(options=>options.map(o=>[o.value,o.selected]));
- assert.deepEqual(await studies(),[['study-1',true]]);
- const importPlan=async(mutate,expectNavigation)=>{const doc=JSON.parse(planText);mutate(doc);const file=join(artifacts,'imported-plan.json');await writeFile(file,JSON.stringify(doc));
+ // An imported 1.x plan is merged as a study (FR-P12): its stations are added and shown; another scenario opens that scenario.
+ const studies=async()=>page.locator('#studyList .item-row .item-main b').allTextContents();
+ assert.deepEqual(await studies(),[]);assert.ok(await page.locator('#studySection').isHidden());
+ const savedCount=await page.locator('#candidateList .candidate').count();
+ const importPlan=async(mutate,expectNavigation)=>{const doc=JSON.parse(legacyText);mutate(doc);const file=join(artifacts,'imported-plan.json');await writeFile(file,JSON.stringify(doc));
   const navigation=expectNavigation?page.waitForEvent('load'):null;await page.locator('#importPlanFile').setInputFiles(file);if(navigation){await navigation;}await ready();};
- await importPlan(doc=>{doc.scene.scenario='extreme';doc.stations[0].pose.elevationDeg=40;},false);
- assert.equal(await page.locator('#elNumber').inputValue(),'40');assert.equal(await page.locator('#scenarioSelect').inputValue(),'extreme');assert.deepEqual(await studies(),[['study-1',false],['study-2',true]]);
- await importPlan(doc=>{doc.scene.scenario='mid';doc.stations[0].pose.elevationDeg=41;},true);
- assert.equal(await page.locator('#scenarioSelect').inputValue(),'mid');assert.equal(await page.locator('#elNumber').inputValue(),'41');assert.deepEqual(await studies(),[['study-1',false],['study-2',false],['study-3',true]]);
+ await importPlan(doc=>{doc.title='Imported A';doc.scene.scenario='extreme';doc.stations[0].pose.elevationDeg=40;},false);
+ assert.equal(await page.locator('#scenarioSelect').inputValue(),'extreme');assert.deepEqual(await studies(),['Imported A']);
+ assert.equal(await page.locator('#candidateList .candidate').count(),savedCount+plan.stations.length);assert.equal(await page.locator('#candidateList [data-compare]:checked').count(),plan.stations.length);
+ await importPlan(doc=>{doc.title='Imported B';doc.scene.scenario='mid';doc.stations[0].pose.elevationDeg=41;},true);
+ assert.equal(await page.locator('#scenarioSelect').inputValue(),'mid');await openCandidates();assert.deepEqual(await studies(),['Imported A','Imported B']);
+ assert.equal(await page.locator('#candidateList .candidate').count(),savedCount+2*plan.stations.length);
  assert.deepEqual(errors,[]);
- // A plan for an unregistered release is refused with a message; nothing changes.
- const bad=join(artifacts,'bad-plan.json');await writeFile(bad,planText.replace(release,'unknown@0'));
- await page.locator('#importPlanFile').setInputFiles(bad);await page.waitForSelector('#pageDialog[open]');assert.match(await page.locator('#pageDialogText').innerText(),/未登记/);await answer();
- assert.equal(await page.locator('#elNumber').inputValue(),'41');assert.equal((await studies()).length,3);
- // Switching studies restores each one's stations and device; a new study starts from the dataset candidates; the choice survives a reload.
- await openCandidates();await page.locator('#studySelect').selectOption('study-1');await ready();assert.equal(await page.locator('#elNumber').inputValue(),'35');
+ // A file of another dataset is refused; another release of this dataset asks first (cancelled here); a changed copy of an
+ // item already stored is a conflict and refused until the import preview; nothing changes.
+ const bad=join(artifacts,'bad-plan.json');await writeFile(bad,planText.split(release).join('unknown@0'));
+ await page.locator('#importPlanFile').setInputFiles(bad);await page.waitForSelector('#pageDialog[open]');assert.match(await page.locator('#pageDialogText').innerText(),/另一个数据集/);await answer();
+ const otherRelease=join(artifacts,'other-release.json');await writeFile(otherRelease,planText.split(release).join(`${release.split('@')[0]}@9.9.9`));
+ await page.locator('#importPlanFile').setInputFiles(otherRelease);await page.waitForSelector('#pageDialog[open]');assert.match(await page.locator('#pageDialogText').innerText(),/9\.9\.9/);
+ await page.locator('#pageDialogCancel').click();await page.waitForFunction(()=>!document.querySelector('#pageDialog').open);
+ const conflict=join(artifacts,'conflict.json'),changed=JSON.parse(planText);changed.stations[0].name='Changed elsewhere';await writeFile(conflict,JSON.stringify(changed));
+ await page.locator('#importPlanFile').setInputFiles(conflict);await page.waitForSelector('#pageDialog[open]');assert.match(await page.locator('#pageDialogText').innerText(),/conflict/i);await answer();
+ assert.equal((await studies()).length,2);assert.equal(await page.locator('#candidateList .candidate').count(),savedCount+2*plan.stations.length);
+ // Studies are read-only rows until the composer (ADR-033 step 6): expand to show one of its deployments, rename, delete (its stations stay).
  await click('#deviceSettings');assert.equal(await page.locator('#cfgExposure').inputValue(),'60');await click('#deviceCancel');
- await click('#newStudy');await ready();assert.deepEqual((await studies()).map(([id,on])=>[id,on]).at(-1),['study-4',true]);assert.equal(await page.locator('#candidateList .candidate').count(),count);
- await page.reload();await ready();assert.equal((await studies()).find(([,on])=>on)[0],'study-4');
- await openCandidates();await page.locator('#studySelect').selectOption('study-3');await ready();assert.equal(await page.locator('#elNumber').inputValue(),'41');
- // Studies can be renamed and deleted; deleting the active study opens the first remaining one.
- await click('#renameStudy');await answer('Gallery study');assert.equal(await page.locator('#studySelect option:checked').innerText(),'Gallery study');
- await click('#deleteStudy');await answer();await ready();assert.deepEqual((await studies()).map(([id])=>id),['study-1','study-2','study-4']);assert.equal(await page.locator('#studySelect').inputValue(),'study-1');
- assert.equal(await page.locator('#deploymentSelect option').count(),1);
+ {const row=page.locator('#studyList .item-row').nth(1);await row.locator('.item-main').click();assert.ok(await row.locator('.item-children').isVisible());
+  await row.locator('.item-children button').first().click();assert.equal(await page.locator('#candidateList [data-compare]:checked').count(),plan.stations.length);
+  await row.locator('.item-more').click();await page.locator('.item-menu button',{hasText:'重命名'}).click();await answer('Gallery study');assert.deepEqual(await studies(),['Imported A','Gallery study']);
+  await page.locator('#studyList .item-row').nth(1).locator('.item-more').click();await page.locator('.item-menu button',{hasText:'删除'}).click();await answer();assert.deepEqual(await studies(),['Imported A']);}
+ assert.equal(await page.locator('#candidateList .candidate').count(),savedCount+2*plan.stations.length);
+ await page.reload();await ready();assert.deepEqual(await studies(),['Imported A']);assert.equal(await page.locator('#deploymentList .item-row').count(),1+2*(plan.deployments.length+1));
+ // Studies saved by the previous version (muography-plan 1.x keys) move into the workspace when the app opens; the 1.x keys stay.
+ const legacyPage=await browser.newPage();await legacyPage.goto(base);await legacyPage.evaluate(({release,text,copy})=>{localStorage.clear();
+  localStorage.setItem(`muon-studies:${release}`,JSON.stringify({version:1,active:'study-1',studies:['study-1','study-2']}));localStorage.setItem(`muon-plan:${release}:study-1`,text);localStorage.setItem(`muon-plan:${release}:study-2`,copy);},
+  {release,text:serializePlan({...plan,title:'Legacy study',scene:{...plan.scene,scenario:null}}),copy:serializePlan({...plan,title:'Legacy copy',scene:{...plan.scene,scenario:null}})});
+ await legacyPage.reload();await legacyPage.waitForFunction(()=>document.querySelector('#studyList .item-main b')?.textContent==='Legacy study',null,{timeout:60000});
+ const stored=await legacyPage.evaluate(release=>({workspace:JSON.parse(localStorage.getItem(`muon-workspace:${release}`)),legacy:localStorage.getItem(`muon-plan:${release}:study-1`)!==null}),release);
+ assert.deepEqual([stored.workspace.format,stored.workspace.studies.map(s=>s.title),stored.legacy],['muography-workspace',['Legacy study','Legacy copy'],true]);
+ // Each old study had its own copies; they are merged only on request (合并重复), keeping both studies' deployments.
+ assert.equal(await legacyPage.locator('#candidateList .candidate').count(),2*plan.stations.length);assert.ok(await legacyPage.locator('#duplicateNotice').isVisible());
+ await legacyPage.locator('#mergeDuplicates').click();await legacyPage.waitForSelector('#pageDialog[open]');await legacyPage.locator('#pageDialogOk').click();
+ await legacyPage.waitForFunction(n=>document.querySelectorAll('#candidateList .candidate').length===n,plan.stations.length);assert.ok(await legacyPage.locator('#duplicateNotice').isHidden());
+ assert.equal(await legacyPage.locator('#studyList .item-row').count(),2);await legacyPage.close();
  const invalid=await browser.newPage();await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=legacy');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/cannot run/);assert.equal(await invalid.locator('#webgl canvas').count(),0);await invalid.goto(base+'/?dataset='+encodeURIComponent(release)+'&backend=compiled&scenario=missing');await invalid.waitForFunction(()=>document.querySelector('#loading')?.classList.contains('error'));assert.match(await invalid.locator('#loading').innerText(),/Unknown compiled scenario/);assert.equal(await invalid.locator('#webgl canvas').count(),0);
  // Last, so the pan cannot disturb the steps above: a right-drag pans the view and does not open the right-click menu.
  {await page.setViewportSize({width:1440,height:900});await page.waitForTimeout(500);const box=await page.locator('#webgl canvas').boundingBox();await page.mouse.move(box.x+box.width*.5,box.y+box.height*.6);await page.mouse.down({button:'right'});
   for(let i=1;i<=6;i++)await page.mouse.move(box.x+box.width*.5+i*10,box.y+box.height*.6+i*4);await page.mouse.up({button:'right'});assert.ok(await page.locator('.scene-menu').isHidden(),'no menu after a pan');}
  assert.deepEqual(nativeDialogs,[],'no native browser dialogs');
- console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, plan export/import (download and copyable text), in-page dialogs, studies (rename, delete), working station and candidates, deployments and plan export menu, multi-station coverage, overview, demonstration mode with animation and placement, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
+ console.log('Compiled main application: all frozen scenarios, selection, capability gates for migration targets, recognition outlines, precision lines, expert diagnostics, workbench link, workspace storage and 1.x migration, study export/import (download and copyable text), in-page dialogs, studies (rename, delete), working station and candidates, deployments and plan export menu, multi-station coverage, overview, demonstration mode with animation and placement, cached comparison, coverage highlight, on-demand rendering, 3D feature layers, geometry layers, pose cancellation, device/stations, persistence, exports and desktop/narrow passed.');console.log('Screenshots: '+artifacts);
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

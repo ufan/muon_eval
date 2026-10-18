@@ -4,7 +4,7 @@ Modular, detailed specifications of the platform. The code must match them: a ch
 
 The guideline documents sit one level up in [`docs/`](../../): [architecture decisions](../ARCHITECTURE_DECISIONS.md), [feature requirements](../FEATURE_REQUIREMENTS.md), [roadmap](../ROADMAP.md) and [implementation priority](../IMPLEMENTATION_PRIORITY.md). Specs contain no task lists; open work is tracked only in those files. Usage and operation guides are in [`../guides/`](../guides/).
 
-Last updated: 2026-10-10
+Last updated: 2026-10-16
 
 ## Index
 
@@ -18,6 +18,7 @@ Last updated: 2026-10-10
 | Geometry | [GEOMETRY_REFERENCES.md](GEOMETRY_REFERENCES.md) | Supporting record for the contract: decision, library comparison, evidence, real-release audit, reproduction |
 | Projection | [PROJECTION_DATA.md](PROJECTION_DATA.md) | Calculation identity, numerical fields, overlays, material contributions, contour extraction, graph mapping, contour export v1.0.0 |
 | Plans | [PLAN_FORMAT.md](PLAN_FORMAT.md) | `muography-plan` 1.0.0: members, ranges, canonical text, versions and migration, plan hash; schema in `dist/schemas/` |
+| Plans | [WORKSPACE_FORMAT.md](WORKSPACE_FORMAT.md) | Proposed `muography-workspace` 2.0.0 (ADR-033): flat per-release workspace, items and global IDs, selection export, import merge rules, storage, migration from 1.x; schema in `dist/schemas/`, examples in `examples/` |
 | Testing | [TEST_STRATEGY.md](TEST_STRATEGY.md) | Test layers L0–L6, budgets, triggers, when to test first, current tests by layer |
 | Projection | [PROJECTION_VALIDATION.md](PROJECTION_VALIDATION.md) | Numerical gates, feature-scale policy, performance budgets, analytical fixtures |
 

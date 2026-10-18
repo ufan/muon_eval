@@ -44,6 +44,7 @@ data contract + coordinate adapters → pure geometry query interfaces
 
 **Goal:** a complete deployment plan can be saved, loaded, shared as a file and migrated across versions.
 **Covers:** FR-P1, FR-P2; ADR-006 seams (schemas, async cancellable assessment port). Station export/import between releases (FR-B2) uses the same format.
+**Next (ADR-033):** workspace 2.0 replaces plan 1.1: flat per-release store of sites, stations, deployments and opt-in studies; any selection exported and merged on import.
 **Exit:** round-trip plan tests; plan/scan/result schemas stable enough to serve as a future API contract.
 
 ## Phase 2 — Multi-station overview and demonstration
@@ -128,6 +129,7 @@ Not urgent. U1: load a packaged dataset from file (FR-L1…L4). U2: offline conv
 
 ## Change log
 
+- 2026-10-16: Phase 1 continues with the workspace 2.0 model (ADR-033, FR-P11, FR-P12): playground-first workflow, flat shared workspace, sharing of any selection; carriers and time-varying observation deferred to real cases.
 - 2026-10-15: Main-view layout (ADR-032) brought forward; FR-M18 detector's-eye view and FR-M19 target-first workflow added to Phase 5.
 - 2026-10-14: Planning app and dataset workbench as two linked entry points (ADR-030): expert diagnostics with 15c (Phase 2), one export menu after the plan format (Phase 1), workbench slimming later.
 - 2026-10-13: Phase 2 includes subject features (FR-M11, FR-M12; ADR-029).

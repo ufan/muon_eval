@@ -52,3 +52,10 @@ test('the table: one row per item with each station, seen-by count and multi-vie
   assert.equal(g.multi.shareMinViews, .5); assert.equal(g.multi.pending, true);
   assert.equal(table[1].multi, null); assert.equal(table[1].seenBy, 0);
 });
+
+test('with lines from behind hidden, a station row counts only the pixels whose lines come from in front', () => {
+  const e = entry([100, 400, 2500, 0], { g: [[0, .5], [1, .5], [2, 3]] });
+  e.pixels.side = Uint8Array.from([0, 1, 0, 0]);
+  assert.deepEqual([stationItemSummary(e, 'g', .1).maskPixels, stationItemSummary(e, 'g', .1, { back: false }).maskPixels], [3, 2]);
+  assert.equal(stationItemSummary(e, 'g', .1, { back: false }).counts, 2600);
+});

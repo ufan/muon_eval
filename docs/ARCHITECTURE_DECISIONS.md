@@ -40,6 +40,9 @@ Last updated: 2026-10-10
 | 028 | Retire the legacy backend; keep its UI with gated migration targets | Accepted, implemented |
 | 029 | One subject-feature catalogue for 3D layers, projection outlines, picking, coverage and ROI | Accepted; implemented (15b-1…15b-6; envelope overlay kept in the preview only); optional fill and sampled-pixel view open |
 | 030 | Two entry points: planning app and dataset workbench, one selection contract | Accepted (owner, 2026-10-14); links and drawer done (15c); 11b, W1 open |
+| 031 | Evaluation aims are user input; the app supplies metrics, regions and optimisation | Principle accepted (owner, 2026-10-14); specification deferred |
+| 032 | Main-view layout: deployment left, station right, one display state, floating viewport controls | Accepted (owner, 2026-10-15; revised 2026-10-16); implemented |
+| 033 | Playground-first workflow on a flat, shareable workspace (plan model 2.0) | Accepted (owner decisions 2026-10-17); steps 2–4 implemented (format, storage, sidebar), steps 5–6 open |
 
 ---
 
@@ -642,20 +645,111 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 **Context.** After several review rounds the sidebars mixed four kinds of content: geometry layers, viewing aids (cone, ray, coverage), deployment configuration (study, candidates, deployments) and single- and multi-station results. Controls used constantly during station inspection sat between rarely used ones, the projection floated over the 3D view, and multi-station analysis (overview, comparison, diagnostics) competed for the same narrow columns. Seven layouts were sketched (floating tools with a bottom drawer, task modes, docked projection with a full-screen workspace, an in-scene station inspector with a detector's-eye view, a candidate filmstrip, dockable panels, target-first); the owner chose the task-mode frame with parts of two others.
 
 **Decision.**
-- **Left sidebar: deployment configuration only** — 工作方案, 候选部署点, 部署组合.
-- **Right sidebar: the single (working) station** — 当前探测器, 投影结果 (map, pixel readout, depth profile, pin and side view, precision lines, recognition outlines), 站点评估 with export. Device parameters stay a header dialog. The readout appears only for a hovered or pinned pixel (no idle summary).
+- **Left sidebar: deployment configuration only** — 我的点位 (saved stations grouped by site, dataset suggestions), 部署组合 and 工作方案 (revised 2026-10-17 with ADR-033 step 4; formerly 工作方案 picker, 候选部署点 and 部署组合).
+- **Right sidebar: the single (working) station** — 当前探测器, 投影结果 (map, pixel readout, depth profile, pin and side view, precision lines, recognition outlines), a one-line summary under its title (total counts, weighted transmission) with 导出结果 — the former 站点评估 box with centre-line and legacy grid numbers was removed (owner, 2026-10-17). Device parameters stay a header dialog. The readout appears only for a hovered or pinned pixel (no idle summary).
 - **Viewport controls float over the 3D view.** A collapsed 图层 popover holds the geometry layers; a chip bar holds the viewing aids (视锥, 射线, 覆盖, 切面) with small popovers for their options. They fade when the pointer has been away from the view, never while a popover is open, and without animation under reduced motion.
-- **One station set, one display state (revised 2026-10-16, owner choice R).** The 比较 boxes are the only membership of the multi-station set; 全选 / 清空 in the list header, and 部署组合 load into them (载入到比较). `display-state.js` owns whether the other stations are shown and how coverage is drawn: a **其他点位 (n)** chip shows or hides the compared candidates (markers, labels, fields of view, coverage; at most eight), independent of coverage; 覆盖 sets only the style. The former station-set selects and the header mode switch are gone.
-- **Right-sidebar tabs 点位 | 多站 (n).** 点位 is the working station; 多站 summarises exactly the stations shown in 3D: 多站总览, one card per station with a thumbnail projection, key numbers and a 比较 box, and 方案比较; while other stations are hidden it shows a prompt with 显示其他点位. 专家诊断 stays under 站点评估 in 点位, because its contour layers are drawn on the working station's projection. Switching tabs never changes the 3D view, and showing stations never switches tabs. The sidebar widens for 多站; the tab is per-browser view state.
+- **One station set, one display state (revised 2026-10-16, owner choice R).** A 后方来向 chip (2026-10-17, owner request; `back` in display-state) hides what lines from behind the detector record in the projections, cards, coverage, field-of-view edges and 多站 numbers; view state only. The ticks (显示, formerly 比较) are the only membership of the multi-station set; 全选 / 清空 in the list header, and clicking a 部署组合 loads its stations into them (since ADR-033 step 4). `display-state.js` owns whether the other stations are shown and how coverage is drawn: a **其他点位 (n)** chip shows or hides the compared candidates (markers, labels, fields of view, coverage; at most eight), independent of coverage; 覆盖 sets only the style. The former station-set selects and the header mode switch are gone.
+- **Right-sidebar tabs 点位 | 多站 (n).** 点位 is the working station; 多站 summarises exactly the stations shown in 3D: 多站总览, one card per station with a thumbnail projection, key numbers and a 比较 box, and 方案比较; while other stations are hidden it shows a prompt with 显示其他点位. 专家诊断 stays in 点位, below the projection, because its contour layers are drawn on the working station's projection. Switching tabs never changes the 3D view, and showing stations never switches tabs. The sidebar widens for 多站; the tab is per-browser view state.
 - **Station interaction:** right-click in the 3D view offers 瞄准此处 (set azimuth/elevation to look at the point, via a pure function) and 放到此处; keyboard shortcuts toggle the viewing aids and nudge the pose. Drag handles on the detector (owner, 2026-10-16) are custom rather than a vendored TransformControls: a centre handle moves the working detector horizontally (Shift: vertically, `station-drag.js`), a handle at the tip of a short axis line aims it (through `aimAt`); both keep a constant screen size, preview live and update the station on release; invisible screen anchors (`data-handle`) let scripts find them.
 - **Deselecting the working station (owner, 2026-10-16):** clicking the highlighted candidate in the list deselects it and discards unsaved edits; the 3D view then hides the working detector, its cone, ray and coverage, and the right sidebar shows a prompt until a candidate is chosen (clicks from cards, labels or the overview only ever select). This is view state: the study keeps its one working station internally (DOMAIN_MODEL unchanged) and a reload selects it again. Switching with unsaved edits asks in the page, since embedded viewers block `window.confirm`.
 - **Devices (owner, 2026-10-16):** desktops and tablets (≥ 768 px, touch). From 721 to 1100 px the right sidebar slides over the 3D view from its edge tab and the chip bar keeps to the uncovered part; touch screens get larger targets, no idle fading, and a long press for the right-click menu. Phones are not supported; below 721 px a notice says so.
 - **In-page dialogs (owner, 2026-10-16):** naming, delete confirmations and error messages use one in-page `<dialog>` (`page-dialog.js`), never `window.prompt` / `confirm` / `alert`, which embedded viewers such as the published artifact page block. Deletes show a red 删除 button. Because those viewers may also block file downloads, the 导出方案 menu adds 以文本显示（可复制）: the whole-study JSON in a read-only text box with 复制全部 and 下载文件. Other downloads (results, screenshots, videos) still rely on the browser.
 - **Not now:** a docking framework (more machinery than the app needs, ADR-004); the detector's-eye view (FR-M18) and target-first workflow (FR-M19) are recorded as future features.
 
-**Consequences.** Every layout change is view state only and never changes results; element IDs stay so the browser test keeps its selectors. The browser test drives the floating controls, the 其他点位 chip and the tabs. Saved coverage settings migrate once (former station set shown while coverage was on → other stations shown). Tablet layouts are checked at 1024 × 768 and 820 × 1180. Demonstration mode shows the 3D view alone (the 投影图 toggle was removed, owner 2026-10-16).
+**Consequences.** Every layout change is view state only and never changes results; element IDs stay so the browser test keeps its selectors. The browser test drives the floating controls, the 其他点位 chip and the tabs. Saved coverage settings migrate once (former station set shown while coverage was on → other stations shown). Tablet layouts are checked at 1024 × 768 and 820 × 1180. Demonstration mode shows the 3D view alone (the 投影图 toggle was removed, owner 2026-10-16). Its 演示模式 button sits in the top-right corner of the 3D view, not in the header (bottom-right on tablets, where the chip bar needs the top; owner, 2026-10-17).
 
----
+## ADR-033 Playground-first workflow on a flat, shareable workspace (plan model 2.0)
+
+**Status.** Proposed (owner direction 2026-10-16: playground-first flow on a flat shared workspace; sharing of any selection between people and hosts; carriers and time-varying observation deferred to real cases; the four open decisions settled 2026-10-17). The format is specified in [WORKSPACE_FORMAT.md](specs/WORKSPACE_FORMAT.md). The open owner decisions are listed at the end; nothing is implemented yet.
+
+**Context.**
+- **Bundling in plan 1.1:** a study bundles everything. Each 1.x station carries position, pose and detector, and lives inside exactly one study. As a result:
+  - two poses at one place are two unrelated positions;
+  - studies cannot share stations or deployments;
+  - a 比较 set grew next to 部署组合;
+  - exposure sits inside the detector response, although it describes how long one observes, not the device.
+- **External review (2026-10-16):** a review of the data model proposed a full 2.0 model: a reusable site and mount library, carriers (TBM), observation configurations, deployments referenced by studies, scene states, trajectories, observation periods, revisions and snapshots, self-contained bundles, and migration without automatic site merging.
+- **What the owner accepted and changed:**
+  - Accepted: the separation of where, how and what together, and shareable bundles.
+  - Too early: carriers and time integration differ too much from fixed sites to design without a real case.
+  - Workflow: users start in a playground and accumulate configurations, so a strict top-down hierarchy is unintuitive. Studies, however, differ in their scenes and optimisation goals.
+  - Sharing: any saved list or bundle must be exportable and importable by another person on another host.
+
+**Decision.**
+- **Workflow: playground first.**
+  - The app opens to the working draft (today's working station) with nothing to set up.
+  - Saving keeps things: 存为新点位 adds a station to 我的点位, and a saved selection becomes a deployment.
+  - A study is opt-in, composed later from saved deployments, one or more scenes and an aim (ADR-031).
+  - The left sidebar shows studies only once one exists; mock-ups follow before any UI work.
+- **Storage: one flat workspace per release** (`muography-workspace` 2.0).
+  - Items: detectors, sites, stations (site + pose + detector), deployments and studies. Each is stored once and referenced by global ID.
+  - Sharing between studies needs no extra machinery.
+  - There is no visible "project" level and no cross-release workspace.
+  - Sites are created implicitly: a saved draft reuses its site while its position is unchanged. Sites are never matched by position.
+- **A study is one question.** It holds:
+  - its scenes (release scenarios now; anomaly hypotheses later);
+  - its exposure: how long the stations observe (constant days in 2.0; an observation schedule later). Exposure is configured on its own, not with the device, and not per station (owner, 2026-10-17). In the playground, without a study, the session holds one exposure;
+  - the deployments it compares;
+  - an aim (reserved until ADR-031 is specified, together with the rule that combines several scenes);
+  - an optional `basis`: the item hashes recorded when the user writes down a conclusion, so a later change shows as 已变更，需重新评估.
+
+  There are **no revisions or snapshots** of items: items are edited in place, and the basis is the only memory of what a conclusion used.
+- **Sharing: every export is self-contained,** in the same format:
+  - Granularity: selected stations, deployments, a study, or the whole workspace, each with the full closure of what it references.
+  - Global random IDs and computed item hashes make re-imports recognisable.
+  - Import always merges into the workspace of the open release, through a preview. A file from another release of the same dataset imports with a warning, positions taken unchanged (owner, 2026-10-17); a file of another dataset is refused. New, identical and conflicting items are listed; conflicts default to keeping both. The import is atomic, and nothing is ever merged by position.
+  - Transport is file or copy-paste text. There is no server and no live collaboration (FR-P3).
+- **Seams for later cases** (cheap now, invisible to users):
+  - `placement` and `exposure` are tagged objects, with only `site` and `constant` in 2.0;
+  - every position names its frame;
+  - exposure moves from the detector response to the study, as a tagged value;
+  - the scene is a value with an ID inside a study;
+  - newer versions are refused, never guessed.
+
+  A separate `requires` list was considered and dropped: the version check and the tagged kinds already make unsupported content fail closed.
+- **Migration:** 1.x studies and plan files convert without loss (WORKSPACE_FORMAT.md):
+  - fresh IDs;
+  - sites merged only for exactly equal position and candidate within one study (owner, 2026-10-17);
+  - a 候选池 deployment that keeps each study's grouping (owner, 2026-10-17);
+  - the study's exposure taken from its `default` detector, with differing detector exposures recorded in the study note and the migration report.
+
+  The 1.x storage stays as a backup.
+
+**Paper cases (not implemented; they test the seams).**
+
+| Case | Carried by | New work when it arrives |
+|---|---|---|
+| **Staged water levels** (dam, now) | A study with several scenes (`low`, `mid`, …) and a constant study exposure | The aim's scene-combination rule (worst case, weighted, all must pass), with ADR-031 as 2.1. The calculation core already evaluates each scenario separately; results are cached per scene by the assessment key. |
+| **Blast-furnace campaign** | Fixed sites around the furnace (`placement: site`). The scene states are the campaign stages: burden level as environment variables, wall wear as anomaly hypotheses (ADR-025). The new study exposure kind is `periods`: a list of (scene, days) whose counts add up. | Exposure-period kind and summation over cached per-scene results. Continuous environment variables (FR-K2). High-Z energy loss (FR-K4). Near-horizontal poses (FR-K6). A furnace kind profile (FR-K10). Frames may stay `model_frame`. |
+| **TBM-mounted detector** | Placement kind `carrier-mount`: a carrier ID plus a mounting pose in the carrier frame. A carrier is a new item with a trajectory (time, position, orientation, interpolation) in `model_frame`. The study exposure kind is `trajectory`: counts integrated over time. Excavation stages are scene states. | Carrier item and carrier frame (device pose = carrier pose × mounting pose). Trajectory sampling and its static approximation rule (piecewise constant, always labelled). Time-integrated counts over many pose samples (scan-like batches, FR-S5). Changing geometry per excavation stage. Deep overburden (FR-K5). A tunnel dataset with a kind profile. |
+
+Each case adds kinds and items; none changes the meaning of existing 2.0 members. So 2.0 files stay valid, and the generic calculation core only gains a sum over cached results.
+
+**Consequences.**
+- **Data format (major version):** `muography-workspace` 2.0.0 replaces `muography-plan` 1.1 for storage and exchange. 1.x stays readable, both for stored data and for imported files.
+- **Physics-semantics label:** exposure moves out of the detector response into the study (the session in the playground). For one constant exposure the counts are unchanged. A station's cached result depends on the exposure in force, through the assessment key as today.
+- **New pure modules:** `workspace-format.js`, `workspace-store.js` and `workspace-import.js`, test-first, replacing `plan-format.js`, `plan-store.js` and the study parts of `study-state.js`.
+- **UI:** 我的点位 with sites grouped automatically; 保存为组合; 新建工作方案 as a composer; export of any selection; an import preview; 粘贴导入. The 比较 boxes become the session's shown set over saved stations.
+- **Runner:** the batch runner accepts workspace files (study, deployment or stations), with the scene recorded per result.
+- **Docs:** DOMAIN_MODEL, CONTEXT, PLAN_FORMAT (marked superseded on implementation) and the FR-P items are updated with each step.
+- **Order of work:**
+  1. These documents.
+  2. The format and migration modules.
+  3. Storage switch-over.
+  4. The 我的点位 and deployment sidebar.
+  5. Export of selections and the import preview.
+  6. The study composer, with scenes; aims follow with ADR-031.
+
+**Progress.**
+- Step 2 (2026-10-17): `workspace-format.js`.
+- Step 3 (2026-10-17): storage switch-over; an interim plan-view bridge let the old study UI run on the workspace.
+- Step 4 (2026-10-17): the left sidebar works on the workspace (`workspace-state.js`), and the bridge and `study-state.js` are gone. Owner choices: layout A, one scrolling sidebar with 我的点位 (grouped by site), 部署组合 and 工作方案; ticks are the shown set, with explicit 更新 / 另存为组合; dataset suggestions in a collapsed section; studies read-only until the composer. Imports merge new items and refuse conflicts until the preview (step 5). Copies from several converted 1.x studies show a 合并重复 notice and merge only on request (owner comment, 2026-10-17).
+
+**Owner decisions (2026-10-17).**
+1. Exposure belongs to the study, configured separately from the device and the stations; the playground has one session exposure.
+2. Migration merges sites within one study on exactly equal position and candidate.
+3. Each migrated study gets a `<study title> · 候选池` deployment.
+4. A file from another release of the same dataset imports with a warning; positions are taken unchanged, missing scenarios are mapped or the study is skipped.
 
 ## Open questions
 
@@ -678,6 +772,10 @@ Loading the dataset and building the runtime takes ≈ 1.2 s on every page load 
 
 ## Change log
 
+- 2026-10-17: ADR-033 step 4: left sidebar on the workspace (我的点位, 部署组合, read-only 工作方案); ADR-032 left-sidebar text revised.
+- 2026-10-17: ADR-033 steps 2 and 3 implemented (format module; workspace storage with an interim plan-view bridge).
+- 2026-10-17: ADR-033 owner decisions: exposure on the study (session in the playground), exact-equality site merge within a study, 候选池 deployment on migration, other-release import with a warning.
+- 2026-10-16: ADR-033 proposed: playground-first workflow, flat per-release workspace (`muography-workspace` 2.0), self-contained selection exports with merge-on-import, seams for carriers and time-varying observation (owner direction; four decisions open). Index rows for ADR-031 and ADR-032 added.
 - 2026-10-16: ADR-032 revised (owner choice R): one display state, 其他点位 chip, compare boxes as the only station set, right-sidebar tabs instead of the header mode switch.
 - 2026-10-15: ADR-032 accepted: main-view layout with deployment left, station right, task modes and floating viewport controls (owner).
 - 2026-10-14: ADR-031 principle accepted, specification deferred (owner).

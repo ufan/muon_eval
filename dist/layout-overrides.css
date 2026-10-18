@@ -419,3 +419,93 @@
   .header-actions > button, .header-actions .header-link, .data-menu > button, .export-menu > button { padding: 5px 8px; font-size: 12px; white-space: nowrap; }
 }
 .demo-bar button[aria-pressed="true"] { border-color: var(--cyan); color: #fff; }
+
+/* 我的点位, 部署组合 and 工作方案 on the workspace (ADR-033 step 4). */
+.section-count { font-weight: 400; font-size: 12px; color: var(--muted); }
+.section-add { margin-left: auto; padding: 0 8px; font-size: 14px; line-height: 20px; }
+.collapsible-section h2 .section-add + .section-toggle { margin-left: 4px; }
+.shown-bar { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+.shown-bar #shownStatus { margin-right: auto; min-width: 0; }
+.shown-bar #shownStatus b { color: var(--text); font-weight: 600; }
+.shown-bar #shownStatus em { color: #f5c26b; font-style: normal; }
+.shown-bar button, .shown-save button { padding: 3px 9px; font-size: 12px; }
+.shown-save { display: flex; gap: 6px; justify-content: flex-end; margin: 0 0 8px; }
+.site-group { margin: 0 0 8px; border: 1px solid var(--line); border-radius: 8px; background: #0a1922; }
+.site-group > header { position: relative; display: block; padding: 7px 64px 6px 10px; cursor: pointer; }
+.site-group > header b { display: block; font-size: 13px; }
+.site-group > header span { display: block; font-size: 11px; color: var(--muted); }
+.site-group > header .compare { position: absolute; right: 8px; top: 6px; margin: 0; gap: 4px; font-size: 11px; color: var(--muted); }
+.site-group .candidate { margin: 0 6px 6px 18px; }
+.suggestions { margin: 4px 0 10px; font-size: 12px; color: var(--muted); }
+.suggestions summary { cursor: pointer; padding: 4px 0; }
+.suggestion { display: flex; justify-content: space-between; gap: 6px; width: 100%; margin: 4px 0; padding: 5px 8px; text-align: left; font-size: 12px; }
+.suggestion span { color: var(--muted); white-space: nowrap; }
+.item-list { display: grid; gap: 6px; margin: 0 0 8px; }
+.item-row { position: relative; border: 1px solid var(--line); border-radius: 8px; background: #0a1922; }
+.item-row.shown { border-color: var(--cyan); }
+.item-row > .item-main { display: block; width: 100%; padding: 7px 34px 7px 10px; border: 0; background: none; text-align: left; cursor: pointer; }
+.item-row > .item-main b { display: block; font-size: 13px; color: var(--text); }
+.item-row > .item-main span { display: block; font-size: 11px; color: var(--muted); }
+.item-row > .item-more { position: absolute; right: 4px; top: 5px; padding: 1px 7px; font-size: 14px; line-height: 18px; }
+.item-row .item-children { display: grid; gap: 4px; padding: 0 8px 8px 18px; }
+.item-row .item-children button { text-align: left; font-size: 12px; padding: 4px 8px; }
+.item-menu { position: absolute; right: 4px; top: 30px; z-index: 30; display: grid; min-width: 120px; padding: 4px; border: 1px solid #31505e; border-radius: 8px; background: #09151e; box-shadow: 0 8px 24px #000a; }
+.item-menu button { text-align: left; padding: 6px 10px; border: 0; background: none; font-size: 12px; }
+.item-menu button:hover { background: #12303d; }
+.item-menu button.danger { color: #ff8f8f; }
+.page-dialog .danger-choice { background: #8f2f2f; border-color: #b24a4a; color: #fff; }
+@media (pointer: coarse) { .item-row > .item-more { padding: 4px 10px; } .item-menu button { padding: 10px 12px; } }
+.shown-save[hidden], .item-row .item-children[hidden], #studySection[hidden] { display: none; }
+.collapsible-section h2 .section-count { margin: 0 auto 0 6px; }
+.shown-bar { flex-wrap: wrap; align-items: flex-start; }
+.shown-bar .shown-actions { display: flex; gap: 6px; flex: none; }
+.duplicate-notice { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 6px 8px; border: 1px solid #6b5420; border-radius: 8px; background: #2a210c; font-size: 12px; color: #f5d48b; }
+.duplicate-notice[hidden] { display: none; }
+.duplicate-notice span { flex: 1; }
+.duplicate-notice button { flex: none; padding: 3px 9px; font-size: 12px; }
+/* The chip bar sits right of the 图层 button and centres its chips there; its empty area lets clicks through to the 3D view. */
+@media (min-width: 1101px) {
+  .vt-bar { left: 96px; right: 120px; transform: none; width: auto; max-width: none; pointer-events: none; }
+  .vt-bar > * { pointer-events: auto; }
+}
+.working-status-row { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; }
+.working-status-row .working-status { flex: 1; margin: 0; }
+.working-status-row button { flex: none; padding: 3px 9px; font-size: 12px; }
+.working-status-row button[hidden] { display: none; }
+/* 演示模式 sits in the top-right corner of the 3D view (owner comments 2026-10-17); the demonstration has its own 退出演示. */
+#viewport > .demo-chip { position: absolute; top: 12px; right: 14px; z-index: 7; font-size: 12px; }
+.app.demo #viewport > .demo-chip { display: none; }
+@media (min-width: 721px) and (max-width: 1100px) {
+  /* Too little width for both at the top: 演示模式 goes to the bottom-right corner of the uncovered view, above the axis triad. */
+  #viewport > .demo-chip { top: auto; bottom: 96px; }
+  .app:not(.right-collapsed) #viewport > .demo-chip { right: calc(min(340px, 46vw) + 14px); }
+  .app.multi:not(.right-collapsed) #viewport > .demo-chip { right: calc(min(480px, 62vw) + 14px); }
+}
+/* One summary line under the projection title (replaces the 站点评估 box, owner 2026-10-17). */
+.projection-summary { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+.projection-summary span { flex: 1; min-width: 0; }
+.projection-summary button { flex: none; padding: 3px 9px; font-size: 12px; }
+/* Dataset suggestions: a row activates like a station row (highlighted, a second click deselects); ＋ adds it to 我的点位. */
+.suggestion { display: flex; gap: 4px; width: auto; margin: 4px 0; padding: 0; }
+.suggestion .suggestion-main { flex: 1; display: flex; justify-content: space-between; gap: 6px; min-width: 0; padding: 5px 8px; text-align: left; font-size: 12px; }
+.suggestion .suggestion-main span { color: var(--muted); white-space: nowrap; }
+.suggestion.active .suggestion-main { border-color: var(--pink); background: #321429; }
+.suggestion.active .suggestion-main span { color: #ffb3dd; }
+.suggestion .suggestion-add { flex: none; padding: 0 10px; font-size: 14px; }
+.suggestion-all { width: 100%; margin: 2px 0 6px; padding: 4px 8px; font-size: 12px; }
+.page-checklist { max-height: min(50vh, 420px); overflow: auto; margin: 0 0 14px; padding: 4px 0; border-top: 1px solid #1d3542; border-bottom: 1px solid #1d3542; }
+.page-checklist label { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 13px; cursor: pointer; }
+.page-checklist label.grouped { padding-left: 18px; }
+.page-checklist label span { margin-left: auto; font-size: 11px; color: var(--muted); }
+.page-checklist-group { padding: 6px 2px 0; font-size: 12px; color: var(--muted); }
+.item-row .item-children.members { display: flex; flex-wrap: wrap; gap: 4px 6px; padding: 0 10px 8px; }
+.item-row .item-children.members span { padding: 1px 7px; border-radius: 10px; background: #12303d; font-size: 11px; color: var(--text); }
+.item-row .item-children.members[hidden] { display: none; }
+.page-checklist label { display: flex; justify-content: flex-start; grid-template-columns: none; text-align: left; }
+.page-checklist label input { flex: none; width: auto; margin: 0; padding: 0; }
+.page-checklist label span { flex: none; white-space: nowrap; }
+/* The unsaved working station's row (neither a saved station nor an inspected suggestion), styled like an active station row. */
+.working-draft { border: 1px solid var(--pink); border-radius: 8px; padding: 9px 10px; margin-bottom: 7px; cursor: pointer; background: #321429; }
+.working-draft b { display: block; }
+.working-draft b em { font-style: normal; font-weight: 400; color: #ffb3dd; }
+.working-draft span { display: block; font-size: 12px; color: var(--muted); }

@@ -1,5 +1,7 @@
 # Plan format (`muography-plan` 1.1.0)
 
+> **Superseded for storage and export** by [`muography-workspace` 2.0](WORKSPACE_FORMAT.md) (ADR-033, 2026-10-17). The app still reads 1.x plan files on import and converts 1.x browser storage once (kept as a backup); the batch runner still reads plan files. The storage and export sections below describe the 1.x behaviour.
+
 A plan is the saved, shareable description of one deployment study (FR-P5): which dataset release and scenario it applies to, which detector configurations it uses, the candidate pool (stations with their poses) and the named deployments drawn from it. It is the first of the versioned formats of ADR-006 (FR-P1, FR-P2) and the future API contract for plans.
 
 - Code: `dist/modules/plan-format.js` (validation, migration, canonical text, conversion to and from the app state).

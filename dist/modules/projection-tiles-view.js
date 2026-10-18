@@ -4,7 +4,7 @@
 // station as the working station; a card's 比较 box adds it to or removes it from the comparison.
 import { outlineRings } from './recognition-layers.js';
 import { precisionContours } from './precision-contours.js';
-import { colorLevel, heatRgb, entryMask, entryCountField, entryPixel } from './projection-tiles.js';
+import { colorLevel, heatRgb, entryMask, entryCountField, entryPixel, frontMask, frontLines } from './projection-tiles.js';
 
 const SVG = 'http://www.w3.org/2000/svg', SIZE = 240;
 const escape = text => String(text).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
@@ -15,13 +15,15 @@ export function createProjectionTiles({ root = document, onOpenStation = () => {
   const visible = () => !panel.closest('[hidden]');
   let mode = 'counts', last = null;
   const path = (d, cls) => { const p = document.createElementNS(SVG, 'path'); p.setAttribute('d', d); if (cls) p.classList.add(cls); return p; };
-  function drawImage(canvas, entry) {
+  // 后方来向 hidden (state.showBack false, a view option): back pixels blank, outlines and lines kept to the front, no readout.
+  const BACK_HIDDEN_RGB = [13, 24, 32];
+  function drawImage(canvas, entry, showBack = true) {
     const ctx = canvas.getContext('2d'), n = entry.n, image = ctx.createImageData(n, n), values = mode === 'counts' ? entry.pixels.displayCount : entry.pixels.displayTransmission;
-    values.forEach((v, i) => { const rgb = heatRgb(colorLevel(mode, v)); image.data.set([...rgb.map(c => Math.round(c * 255)), 255], i * 4); });
+    values.forEach((v, i) => { const rgb = !showBack && entry.pixels.side[i] ? BACK_HIDDEN_RGB : heatRgb(colorLevel(mode, v)).map(c => Math.round(c * 255)); image.data.set([...rgb, 255], i * 4); });
     const scratch = document.createElement('canvas'); scratch.width = scratch.height = n; scratch.getContext('2d').putImageData(image, 0, 0);
     ctx.imageSmoothingEnabled = false; ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(scratch, 0, 0, canvas.width, canvas.height);
   }
-  function overlay(entry, { items, threshold, precision }) {
+  function overlay(entry, { items, threshold, precision, showBack = true }) {
     const svg = document.createElementNS(SVG, 'svg'), n = entry.n;
     svg.setAttribute('viewBox', `0 0 ${n} ${n}`); svg.classList.add('tile-outlines');
     if (entry.pixels.side.some(Boolean)) {
@@ -30,12 +32,13 @@ export function createProjectionTiles({ root = document, onOpenStation = () => {
       for (const ring of outlineRings(entry.pixels.side, n)) for (let i = 1; i < ring.length; i++) if (!onBorder(ring[i - 1], ring[i])) line += `M${ring[i - 1].join(',')}L${ring[i].join(',')}`;
       svg.append(path(line, 'horizon'));
     }
-    if (precision) for (const { relativeError, lines } of precisionContours(entryCountField(entry))) {
+    if (precision) for (const { relativeError, lines: all } of precisionContours(entryCountField(entry))) {
+      const lines = showBack ? all : frontLines(all, entry.pixels.side, n);
       if (!lines.length) continue;
       const p = path(lines.map(l => 'M' + l.map(q => q.join(',')).join('L')).join(''), 'precision'); p.dataset.level = String(relativeError); svg.append(p);
     }
     for (const item of items) {
-      const mask = entryMask(entry, item.id, threshold);
+      const mask = showBack ? entryMask(entry, item.id, threshold) : frontMask(entryMask(entry, item.id, threshold), entry.pixels.side);
       if (!mask.some(Boolean)) continue;
       const p = path(outlineRings(mask, n).map(ring => 'M' + ring.map(q => q.join(',')).join('L') + 'Z').join(''));
       p.setAttribute('stroke', item.color); p.dataset.item = item.id; svg.append(p);
@@ -46,16 +49,17 @@ export function createProjectionTiles({ root = document, onOpenStation = () => {
     const figure = document.createElement('figure'), caption = document.createElement('figcaption'), entry = station.entry;
     figure.className = 'tile'; figure.dataset.tile = station.id; figure.style.setProperty('--c', station.color);
     const name = station.id === 'working' ? `<b>${escape(station.name)}</b>` : `<button type="button" class="link" data-tile-station="${escape(station.id)}" title="设为工作点位">${escape(station.name)}</button>`;
-    const compare = station.id === 'working' ? '' : `<label class="tile-compare" title="加入或移出方案比较"><input type="checkbox" data-tile-compare="${escape(station.id)}"${station.compared ? ' checked' : ''}>比较</label>`;
+    const compare = station.id === 'working' ? '' : `<label class="tile-compare" title="在三维和多站中显示或移出"><input type="checkbox" data-tile-compare="${escape(station.id)}"${station.compared ? ' checked' : ''}>显示</label>`;
     caption.innerHTML = `<i class="swatch"></i>${name}${compare}<small>${entry ? `${formatCount(entry.totalCount)} 计数 · 透射 ${(100 * entry.weightedTransmission).toFixed(2)}%` : '计算中…'}</small>`;
     caption.querySelector('[data-tile-station]')?.addEventListener('click', () => onOpenStation(station.id));
     caption.querySelector('[data-tile-compare]')?.addEventListener('change', event => onToggleCompare(station.id, event.target.checked));
     const frame = document.createElement('div'); frame.className = 'tile-image';
     if (entry) {
-      const canvas = document.createElement('canvas'); canvas.width = canvas.height = SIZE; drawImage(canvas, entry);
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = SIZE; drawImage(canvas, entry, state.showBack !== false);
       canvas.addEventListener('mousemove', event => {
         const box = canvas.getBoundingClientRect(), n = entry.n, ix = Math.min(n - 1, Math.max(0, Math.floor((event.clientX - box.left) / box.width * n))),
           iy = Math.min(n - 1, Math.max(0, n - 1 - Math.floor((event.clientY - box.top) / box.height * n))), p = entryPixel(entry, ix, iy);
+        if (state.showBack === false && p.side === 'back') { readout.textContent = `${station.name} · 后方来向已隐藏`; return; }
         readout.textContent = `${station.name} · 像素 (${ix + 1},${iy + 1}) · ${Math.round(p.count)} 事件/${state.exposureDays}天 · 透射 ${(100 * p.transmission).toFixed(3)}% · 柱密度 ${p.mwe.toFixed(0)} m.w.e.${p.side === 'back' ? ' · 后方来向' : ''}`;
       });
       frame.append(canvas, overlay(entry, state));

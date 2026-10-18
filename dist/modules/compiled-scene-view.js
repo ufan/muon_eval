@@ -92,12 +92,13 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
   // No working station (the candidate list's toggle): its detector, axis, field of view and ray are hidden, and its
   // coverage slot gets an empty field of view, so the shader and readouts see only the other stations.
   let workingShown=true;
-  function collapseWorkingCoverage(){coverage.covMax.value.set(1e-6,1e-6);coverage.covSlotMax.value[0].set(1e-6,1e-6);}
+  // A deselected working station drops out of the coverage shading (covWorking), edges included.
+  function collapseWorkingCoverage(){coverage.covWorking.value=0;}
   function setWorkingVisible(on){workingShown=Boolean(on);handleGroup.visible=workingShown&&!demo;detectorGroup.visible=workingShown;axisGroup.visible=workingShown&&(layerState.get('cone')??false);
     if(!workingShown){clearRay();emphasiseFeatures([]);collapseWorkingCoverage();}else if(currentStation&&currentDevice)setCoveragePose(currentStation,currentDevice);drawFovEdges();updateLabels();}
   function setCoveragePose(station,device){const basis=detectorBasis(station.az,station.el);coverage.covOrigin.value.copy(compiledPointToScene([station.x,station.y,station.z]));
     coverage.covForward.value.copy(compiledPointToScene(basis.forward));coverage.covRight.value.copy(compiledPointToScene(basis.right));coverage.covUp.value.copy(compiledPointToScene(basis.up));
-    coverage.covMax.value.set(device.maxSlopeX,device.maxSlopeY);coverage.covStep.value=device.nativeSlopeStep;coverage.covStrips.value=device.stripsX;setSlot(0,{origin:coverage.covOrigin.value,forward:coverage.covForward.value,right:coverage.covRight.value,up:coverage.covUp.value,device,color:coverage.covColor.value});if(!workingShown)collapseWorkingCoverage();}
+    coverage.covMax.value.set(device.maxSlopeX,device.maxSlopeY);coverage.covStep.value=device.nativeSlopeStep;coverage.covStrips.value=device.stripsX;setSlot(0,{origin:coverage.covOrigin.value,forward:coverage.covForward.value,right:coverage.covRight.value,up:coverage.covUp.value,device,color:coverage.covColor.value});coverage.covWorking.value=workingShown?1:0;}
   function setSlot(i,{origin,forward,right,up,device,color}){coverage.covSlotOrigin.value[i].copy(origin);coverage.covSlotForward.value[i].copy(forward);coverage.covSlotRight.value[i].copy(right);coverage.covSlotUp.value[i].copy(up);
     coverage.covSlotMax.value[i].set(device.maxSlopeX,device.maxSlopeY);coverage.covSlotStep.value[i]=device.nativeSlopeStep;coverage.covSlotStrips.value[i]=device.stripsX;coverage.covSlotColor.value[i].copy(color);}
   // Field-of-view edges (option 视场棱线): the four corner lines of a station's acceptance as lines of constant screen
@@ -135,7 +136,10 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
   function drawFovEdges(){for(const child of [...fovGroup.children,...solidGroup.children]){lineMaterials.delete(child.material);}clear(fovGroup);clear(solidGroup);const shown=layerState.get('cone')??false;fovGroup.visible=fovEdges&&shown;solidGroup.visible=fovSolid&&shown;
     const working=currentStation&&currentDevice&&workingShown;
     if(fovSolid){if(working)addFovSolid(currentStation,currentDevice,0xff65bd);for(const s of extraStations)addFovSolid(s,s.device,s.color);}
-    if(working)addFovEdges(currentStation,currentDevice,LOOK.fovEdge);for(const s of extraStations)addFovEdges(s,s.device,s.color,{width:2,back:false});}
+    if(working)addFovEdges(currentStation,currentDevice,LOOK.fovEdge,{back:showBack});for(const s of extraStations)addFovEdges(s,s.device,s.color,{width:2,back:false});}
+  // 后方来向 (display-state back): lines from behind the detector in the coverage shading, its readout and the field-of-view edges.
+  let showBack=true;
+  function setShowBack(on){showBack=Boolean(on);coverage.covBack.value=showBack?1:0;drawFovEdges();requestRender();}
   function setFovEdges(on){fovEdges=Boolean(on);fovGroup.visible=fovEdges&&(layerState.get('cone')??false);}
   function setFovSolid(on){fovSolid=Boolean(on);drawFovEdges();}
   // Physical maps of all shown stations (15d) in one float texture: slot 0 the working station, slots 1–8 the others;
@@ -205,10 +209,10 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
   function coverageAt(){if(!coverage.covMode.value||!currentStation||!currentDevice||!workingShown)return null;
     const targets=[...subjectMeshes.filter(mesh=>mesh.visible),...(sliceMesh.visible?[sliceMesh]:[]),...(featureCoverage.value?[...featureMeshes.values()].flat().filter(mesh=>mesh.visible):[])];
     const hit=raycaster.intersectObjects(targets,false).find(h=>h.object!==sliceMesh||sliceMatter(h));
-    if(!hit)return null;const point=[hit.point.x,-hit.point.z,hit.point.y],readout=coverageReadout(point,currentStation,currentDevice,coverageResult);
-    if(extraStations.length&&coverage.covMode.value===2){readout.multi=multiViewCoverage(point,[{...currentStation,id:'working',device:currentDevice,n:workingCounts?.n,counts:workingCounts?.counts??null},...extraStations],multiOptions);
+    if(!hit)return null;const point=[hit.point.x,-hit.point.z,hit.point.y],readout=coverageReadout(point,currentStation,currentDevice,coverageResult,{back:showBack});
+    if(extraStations.length&&coverage.covMode.value===2){readout.multi=multiViewCoverage(point,[{...currentStation,id:'working',device:currentDevice,n:workingCounts?.n,counts:workingCounts?.counts??null},...extraStations],{...multiOptions,back:showBack});
       readout.names=new Map([['working',`${currentStation.name??'当前点位'}（编辑中）`],...extraStations.map(s=>[s.id,s.name])]);return readout;}
-    if(extraStations.length)readout.covering=coveringStations(point,[{...currentStation,id:'working',name:currentStation.name??'当前点位',device:currentDevice},...extraStations]).map(id=>id==='working'?`${currentStation.name??'当前点位'}（编辑中）`:extraStations.find(s=>s.id===id).name);
+    if(extraStations.length)readout.covering=coveringStations(point,[{...currentStation,id:'working',name:currentStation.name??'当前点位',device:currentDevice},...extraStations],{back:showBack}).map(id=>id==='working'?`${currentStation.name??'当前点位'}（编辑中）`:extraStations.find(s=>s.id===id).name);
     return readout;}
   const CLASS_TEXT={none:'无点位覆盖',insufficient:'不足',limited:'有限',good:'良好'};
   function coverageText(r){if(r.multi){const m=r.multi,names=ids=>ids.map(id=>r.names.get(id)).join('、');if(m.class==='none')return'无点位覆盖';
@@ -339,7 +343,7 @@ export function createCompiledSceneView({ runtime, waterLayers, features=null, f
   let recording=false;
   const api={
     build(){renderer=new THREE.WebGLRenderer({antialias:true});renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.setPixelRatio(Math.min(devicePixelRatio,2));container.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=Math.max(.1,radius*.1);controls.maxDistance=Math.max(radius*10,wholeBox.getSize(new THREE.Vector3()).length()*2);setView('perspective');observer=new ResizeObserver(()=>{resize();onResize();requestRender();});observer.observe(container);resize();controls.addEventListener('change',requestRender);controls.addEventListener('start',()=>{cameraMove=null;});requestRender();{renderer.domElement.addEventListener('pointermove',hoverFeature);renderer.domElement.addEventListener('pointerleave',leaveFeature);renderer.domElement.addEventListener('pointerdown',pressFeature);container.addEventListener('pointerdown',startHandleDrag,{capture:true});renderer.domElement.addEventListener('pointermove',cancelLongPress);renderer.domElement.addEventListener('pointerup',cancelLongPress);renderer.domElement.addEventListener('pointercancel',cancelLongPress);window.addEventListener('pointermove',moveHandleDrag);window.addEventListener('pointerup',endHandleDrag);window.addEventListener('pointercancel',endHandleDrag);renderer.domElement.addEventListener('pointerup',releaseFeature);renderer.domElement.addEventListener('contextmenu',event=>event.preventDefault());renderer.domElement.addEventListener('pointerdown',pressRight);renderer.domElement.addEventListener('pointerup',releaseRight);window.addEventListener('keydown',cancelPlacing);}$('#loading').style.display='none';},
-    resize,setView,setLayer,setDamOpacity,drawDetector,setSlice,setSliceMask,subjectExtent,setFovEdges,setFovSolid,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
+    resize,setView,setLayer,setDamOpacity,drawDetector,setSlice,setSliceMask,subjectExtent,setFovEdges,setFovSolid,setShowBack,setFeatureVisible,emphasiseFeatures,setCoverage,setCoverageResult,setFeaturesInView,setCoverageStations,setPlacing,
     // Demonstration mode (#17): labels, camera views as view state (model frame, z up) and a capture of the
     // current frame with every station's label position (CSS pixels within the image).
     setDemo(on){demo=Boolean(on);handleGroup.visible=workingShown&&!demo;updateLabels();requestRender();},

@@ -164,3 +164,14 @@ test('the counts-per-steradian map divides each pixel by its own solid angle (bo
   const n = 5, counts = Float32Array.from({ length: n * n }, (_, i) => i + 1), map = perSteradianMap(counts, n, wide), bins = nativeAxisBins(n, wide);
   for (const [ix, iy] of [[0, 0], [2, 3], [4, 4]]) assert.ok(Math.abs(map[iy * n + ix] - counts[iy * n + ix] / pixelSolidAngleOf(bins[ix], bins[iy])) < 1e-3 * map[iy * n + ix]);
 });
+
+test('with lines from behind hidden (后方来向 off), points seen only through a line behind the detector are not probed', () => {
+  const low = detectorBasis(30, 3), d = slopeDirection(low, 0, -(device.maxSlopeY * .95)), behind = at(skySideDirection(d).direction, 30);
+  assert.equal(classifyCoverage(behind, origin, low, device, { back: false }), 'outside');
+  assert.equal(classifyCoverage(at(slopeDirection(basis, .02, .03), 50), origin, basis, device, { back: false }), 'probed');
+  assert.equal(classifyCoverage(at(d, 30), origin, low, device, { back: false }), 'no-flux');
+  const s = { id: 's', x: origin[0], y: origin[1], z: origin[2], az: 30, el: 3, device };
+  assert.deepEqual([coveringStations(behind, [s]), coveringStations(behind, [s], { back: false })], [['s'], []]);
+  assert.equal(stationViewAt(behind, { ...s, n: 9, counts: null }, { back: false }), null);
+  assert.deepEqual(multiViewCoverage(behind, [{ ...s, n: 9, counts: null }], { back: false }).seen, []);
+});

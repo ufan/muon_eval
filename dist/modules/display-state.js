@@ -6,7 +6,8 @@ import { MAX_EXTRA_COVERAGE } from './coverage-map.js';
 
 const MODES = ['off', 'geometric', 'physical'], MAPS = ['views', 'spread', 'class', 'dominant', 'total'];
 
-export const DISPLAY_DEFAULTS = Object.freeze({ others: false, coverage: Object.freeze({ mode: 'off', core: false, context: false, features: true,
+// back: show what lines from behind the detector record (后方来向) in the projections, coverage and 多站 numbers.
+export const DISPLAY_DEFAULTS = Object.freeze({ others: false, back: true, coverage: Object.freeze({ mode: 'off', core: false, context: false, features: true,
   multi: Object.freeze({ map: 'views', errorLevel: 0.1, minViews: 3, goodSpreadDeg: 30, minSpreadDeg: 10 }) }) });
 
 const integer = (value, low, high, fallback) => { const v = Math.round(Number(value)); return Number.isFinite(v) && value !== null && value !== '' ? Math.min(high, Math.max(low, v)) : fallback; };
@@ -23,9 +24,9 @@ function readCoverage(c = {}) {
 // was shown only while coverage was on; 'deployment' and 'all' map to the compared candidates.
 export function readDisplayState(saved) {
   if (!saved || typeof saved !== 'object') return structuredClone(DISPLAY_DEFAULTS);
-  if ('coverage' in saved || 'others' in saved) return { others: saved.others === true, coverage: readCoverage(saved.coverage) };
+  if ('coverage' in saved || 'others' in saved) return { others: saved.others === true, back: saved.back !== false, coverage: readCoverage(saved.coverage) };
   const coverage = readCoverage(saved);
-  return { others: coverage.mode !== 'off' && ['compared', 'deployment', 'all'].includes(saved.stations), coverage };
+  return { others: coverage.mode !== 'off' && ['compared', 'deployment', 'all'].includes(saved.stations), back: true, coverage };
 }
 
 // The other stations to show: the compared candidates in pool order, without the one loaded as the working station,

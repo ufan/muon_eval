@@ -29,6 +29,8 @@ export function createCoverageUniforms() {
     covMode: { value: 0 },               // 0 off, 1 geometric, 2 physical
     covHasMap: { value: 0 },             // physical map of the current result available
     covCore: { value: 0 },               // emphasise the core field of view (half the slopes)
+    covWorking: { value: 1 },            // 0 while no working station is shown (deselected): it tints nothing and draws no edges
+    covBack: { value: 1 },               // 1: points seen through lines from behind the detector count (后方来向 shown), 0: only from in front
     covOrigin: { value: new THREE.Vector3() }, covForward: { value: new THREE.Vector3(1, 0, 0) },
     covRight: { value: new THREE.Vector3(0, 0, 1) }, covUp: { value: new THREE.Vector3(0, 1, 0) },
     covMax: { value: new THREE.Vector2(1, 1) }, covStep: { value: 1 }, covStrips: { value: 2 }, covBins: { value: 1 },
@@ -39,7 +41,7 @@ export function createCoverageUniforms() {
 const VERTEX = ['varying vec3 vCovWorld;', 'vCovWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;'];
 const FRAGMENT_HEAD = `
 varying vec3 vCovWorld;
-uniform int covMode; uniform int covHasMap; uniform int covCore; uniform float covLayer; uniform float covTwoSided;
+uniform int covMode; uniform int covHasMap; uniform int covCore; uniform float covLayer; uniform float covTwoSided; uniform float covBack; uniform float covWorking;
 uniform vec3 covOrigin; uniform vec3 covForward; uniform vec3 covRight; uniform vec3 covUp;
 uniform vec2 covMax; uniform float covStep; uniform float covStrips; uniform float covBins;
 uniform sampler2D covMap; uniform vec3 covColor; uniform float covMinOpacity;
@@ -79,8 +81,9 @@ if (covMode == 2 && covMulti > 0 && covLayer > 0.5 && (gl_FrontFacing || covTwoS
   int seen = 0, usable = 0; vec3 dirs[COV_EXTRA + 1]; float bestSr = -1.0, totalSr = 0.0; vec3 bestColor = vec3(0.0);
   for (int i = 0; i < COV_EXTRA + 1; i++) {
     if (i > covExtraCount) break;
+    if (i == 0 && covWorking < 0.5) continue;
     vec3 d = vCovWorld - covSlotOrigin[i]; float F = dot(d, covSlotForward[i]);
-    if (abs(F) < 1e-6 || d.y <= 0.0) continue;
+    if (abs(F) < 1e-6 || d.y <= 0.0 || (covBack < 0.5 && F < 0.0)) continue;
     float sx = dot(d, covSlotRight[i]) / F, sy = dot(d, covSlotUp[i]) / F;
     if (max(abs(sx) / covSlotMax[i].x, abs(sy) / covSlotMax[i].y) > 1.0) continue;
     seen++;
@@ -107,11 +110,11 @@ if (covMode == 2 && covMulti > 0 && covLayer > 0.5 && (gl_FrontFacing || covTwoS
   }
   // Each station's field-of-view edge in its colour (as in the geometric view).
   vec3 covD = vCovWorld - covOrigin; float covE = covEdgeOf(covD, covForward, covRight, covUp, covMax), covW = fwidth(covE);
-  bool covOnLine = abs(covE - 1.0) < covW * 1.5 && (covD.y > 0.0 || dot(covD, covForward) > 0.0); vec3 covLine = covColor;
+  bool covOnLine = covWorking > 0.5 && abs(covE - 1.0) < covW * 1.5 && ((covD.y > 0.0 && covBack > 0.5) || dot(covD, covForward) > 0.0); vec3 covLine = covColor;
   for (int i = 0; i < COV_EXTRA; i++) {
     if (i >= covExtraCount) break;
     vec3 e = vCovWorld - covExtraOrigin[i]; float edge = covEdgeOf(e, covExtraForward[i], covExtraRight[i], covExtraUp[i], covExtraMax[i]), w = fwidth(edge);
-    if (!covOnLine && abs(edge - 1.0) < w * 1.5 && (e.y > 0.0 || dot(e, covExtraForward[i]) > 0.0)) { covOnLine = true; covLine = covExtraColor[i]; }
+    if (!covOnLine && abs(edge - 1.0) < w * 1.5 && ((e.y > 0.0 && covBack > 0.5) || dot(e, covExtraForward[i]) > 0.0)) { covOnLine = true; covLine = covExtraColor[i]; }
   }
   if (covOnLine) { diffuseColor.rgb = covLine; diffuseColor.a = 1.0; }
 } else
@@ -119,21 +122,23 @@ if (covMode == 2 && covMulti > 0 && covLayer > 0.5 && (gl_FrontFacing || covTwoS
 if (covMode > 0 && covLayer > 0.5 && (gl_FrontFacing || covTwoSided > 0.5) && covExtraCount > 0) {
   // Several stations: count those probing this point (inside the field of view, point above the station).
   vec3 covD = vCovWorld - covOrigin; float covE = covEdgeOf(covD, covForward, covRight, covUp, covMax), covW = fwidth(covE);
-  int covK = covE <= 1.0 && covD.y > 0.0 ? 1 : 0; vec3 covLine = covColor; bool covOnLine = abs(covE - 1.0) < covW * 1.5 && (covD.y > 0.0 || dot(covD, covForward) > 0.0);
+  float covF0 = dot(covD, covForward);
+  int covK = covWorking > 0.5 && covE <= 1.0 && covD.y > 0.0 && (covBack > 0.5 || covF0 > 0.0) ? 1 : 0; vec3 covLine = covColor; bool covOnLine = covWorking > 0.5 && abs(covE - 1.0) < covW * 1.5 && ((covD.y > 0.0 && covBack > 0.5) || covF0 > 0.0);
   for (int i = 0; i < COV_EXTRA; i++) {
     if (i >= covExtraCount) break;
     vec3 e = vCovWorld - covExtraOrigin[i]; float edge = covEdgeOf(e, covExtraForward[i], covExtraRight[i], covExtraUp[i], covExtraMax[i]), w = fwidth(edge);
-    if (edge <= 1.0 && e.y > 0.0) covK++;
-    if (!covOnLine && abs(edge - 1.0) < w * 1.5 && (e.y > 0.0 || dot(e, covExtraForward[i]) > 0.0)) { covOnLine = true; covLine = covExtraColor[i]; }
+    float f = dot(e, covExtraForward[i]);
+    if (edge <= 1.0 && e.y > 0.0 && (covBack > 0.5 || f > 0.0)) covK++;
+    if (!covOnLine && abs(edge - 1.0) < w * 1.5 && ((e.y > 0.0 && covBack > 0.5) || f > 0.0)) { covOnLine = true; covLine = covExtraColor[i]; }
   }
   if (covK > 0) { float covS = covCountStrength(covK); diffuseColor.rgb = mix(diffuseColor.rgb, covCountColor(covK), covS); diffuseColor.a = max(diffuseColor.a, covMinOpacity + 0.5 * covS); }
   if (covOnLine) { diffuseColor.rgb = covLine; diffuseColor.a = 1.0; }
-} else if (covMode > 0 && covLayer > 0.5 && (gl_FrontFacing || covTwoSided > 0.5)) {
+} else if (covMode > 0 && covWorking > 0.5 && covLayer > 0.5 && (gl_FrontFacing || covTwoSided > 0.5)) {
   vec3 covD = vCovWorld - covOrigin; float covF = dot(covD, covForward);
   if (abs(covF) > 1e-6) {
     float covSx = dot(covD, covRight) / covF, covSy = dot(covD, covUp) / covF;
     float covEdge = max(abs(covSx) / covMax.x, abs(covSy) / covMax.y);
-    bool covUpward = covD.y > 0.0, covShown = covUpward || covF > 0.0;
+    bool covUpward = covD.y > 0.0, covShown = covF > 0.0 || (covUpward && covBack > 0.5);
     if (covEdge <= 1.0 && covShown) {
       vec3 covTint = covColor; float covStrength = 0.55;
       if (!covUpward) { covTint = vec3(0.42); covStrength = 0.45; }          // in front, below the horizon: no flux
