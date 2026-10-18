@@ -1,6 +1,6 @@
 # Workspace format (`muography-workspace` 2.0.0)
 
-**Status: in use for storage, export and import (ADR-033 step 3, 2026-10-17); the 我的点位 sidebar, the import preview and the study composer follow.** The app stores each release's workspace, converts 1.x storage once, exports workspace selections and still imports [`muography-plan` 1.x](PLAN_FORMAT.md) files. Until the sidebar is rebuilt (step 4), the study UI edits one study through an interim bridge (see [Interim study view](#interim-study-view-step-3)). Owner decisions of 2026-10-17 are included: exposure belongs to the study, sites merge within a study on exact equality, migrated studies keep a 候选池 deployment, and another release of the same dataset imports with a warning.
+**Status: in use (ADR-033 steps 3–4, 2026-10-17): storage, the 我的点位 / 部署组合 / 工作方案 sidebar, export and merge-only import; the import preview and the study composer follow.** The app stores each release's workspace, converts 1.x storage once, exports workspace selections and still imports [`muography-plan` 1.x](PLAN_FORMAT.md) files. See [The workspace in the app](#the-workspace-in-the-app-step-4). Owner decisions of 2026-10-17 are included: exposure belongs to the study, sites merge within a study on exact equality, migrated studies keep a 候选池 deployment, and another release of the same dataset imports with a warning.
 
 A workspace holds everything a user has saved for one dataset release:
 - **sites:** where a detector can stand;
@@ -10,7 +10,7 @@ A workspace holds everything a user has saved for one dataset release:
 
 It is flat: every item is stored once and referenced by ID, so two studies can share a deployment and two stations can share a site. The same format serves as browser storage, as a full export, and as an export of any selection (some stations, some deployments, one study). Any such file can be imported by another person on another host.
 
-- Code: `dist/modules/workspace-format.js` (validation, canonical text, item hashes, IDs, selection closure, 1.x migration), `dist/modules/workspace-store.js` (browser storage, one-time migration) and the interim `dist/modules/workspace-study.js` (plan view of one study, merge of imports). Planned: `dist/modules/workspace-import.js` for the import preview (step 5). All are pure apart from the storage object passed in; tests in `tests/unit/workspace-*.test.mjs`.
+- Code: `dist/modules/workspace-format.js` (validation, canonical text, item hashes, IDs, selection closure, 1.x migration), `dist/modules/workspace-store.js` (browser storage, one-time migration), `dist/modules/workspace-state.js` (the workspace and session in the app) and `dist/modules/workspace-import.js` (merge of imports; the preview follows in step 5). All are pure apart from the storage object passed in; tests in `tests/unit/workspace-*.test.mjs`.
 - Schema for other tools: [`dist/schemas/muography-workspace-2.schema.json`](../../dist/schemas/muography-workspace-2.schema.json) (JSON Schema 2020-12). Cross-item rules (unique IDs, references, closure, unique scene IDs) are checked by the code only; `tests/data/workspace-format.test.mjs` checks that schema and code agree on everything else.
 - Examples: [`examples/workspace-2.0-full.json`](examples/workspace-2.0-full.json) is a whole workspace; [`examples/workspace-2.0-selection.json`](examples/workspace-2.0-selection.json) is one exported deployment.
 
@@ -181,23 +181,33 @@ Session: the active 1.x study's session becomes the workspace session. Its worki
 
 Nothing is lost silently: every 1.x station, deployment and title has a counterpart, and differing exposures are reported. The migration is tested with the stored-data fixtures of `plan-store.test.mjs`, plus a random-number source injected for IDs.
 
-## Interim study view (step 3)
+## The workspace in the app (step 4)
 
-Until the 我的点位 sidebar replaces the study UI, `workspace-study.js` shows one study as a muography-plan 1.1 view, which the existing study state edits:
+`workspace-state.js` holds the workspace and the session; the left sidebar shows it directly (ADR-032, ADR-033):
 
-- **Pool convention:** a study's first deployment is its candidate pool (`<title> · 候选池`, as migration makes it). The view's candidates are the pool; its deployments are the study's other deployments. A study without a pool, for example one imported from elsewhere, gets one holding the stations its deployments use.
-- **Writing back:**
-  - A moved station moves its site when it is the site's only user; otherwise it takes a site of the study at exactly that place, or a new one.
-  - Stations and deployments the study dropped are deleted only when no other deployment or study uses them; unused sites and detectors go with them.
-  - New stations and deployments get global IDs from the start.
-- **Exposure:** the device form's exposure sets the study exposure for all its candidates (label 曝光时间 / 天（全方案）).
-- **New study:** 新建 adds a study of the dataset candidates and stores it at once. The first study of a release that has no stored data is written with the first change. Deleting a study keeps its stations and deployments in the workspace.
-- **Import:**
-  - Files are merged as new items, identical items are skipped, and any conflict refuses the whole import (until the preview, step 5).
-  - A study root opens that study; deployments or stations open as a new study (导入的部署组合 / 导入的点位).
-  - A 1.x plan of another scenario opens that scenario.
-- **Export:** the menu exports workspace selections: the study, the current deployment, or all deployments of the study.
-- **Result provenance** still records the hash of the plan view and the station's global ID; the closure hash described under [Identity](#identity) arrives with step 4.
+- **我的点位:** every saved station, grouped by site when a site has several poses.
+  - Clicking a station loads it into the working draft; clicking it again deselects it.
+  - The tick (显示) puts a station in the shown set: shown in 3D, compared and summarised in 多站.
+  - 数据集建议位置 lists the dataset's candidate positions, unrelated to 我的点位. A click makes one the working station to inspect (查看中), highlighted like a station row; a second click deselects it. ＋ (or 加入我的点位 under 当前探测器) adds it to 我的点位, where its name, position and pose are edited.
+- **Saving:**
+  - 存为新点位 reuses the draft's site while its position is unchanged; otherwise it makes a new site.
+  - 更新点位 on a moved station whose site is shared asks 仅此点位另建站址 or 移动整个站址.
+  - A draft that is no saved station counts as edited only once it is changed.
+  - **Position and pose identify a station** (owner, 2026-10-18): saving, adding or updating refuses a station with the same position and pose as another, naming that station. Names are free text and may repeat.
+  - 撤销修改 (shown while there are edits) discards them: back to the saved station, or to the draft as it was loaded.
+- **部署组合:**
+  - Clicking a deployment replaces the ticks with its stations. The shown bar says when the ticks equal a deployment; when they differ from the one last loaded, it offers 更新「…」 and 另存为组合.
+  - ＋ opens the member dialog: a name and every saved station (grouped by site), pre-ticked from the current ticks.
+  - Clicking the deployment being shown deactivates it: nothing is ticked and no deployment is active, a fresh start.
+  - Clicking a deployment also lists its members under it; ⋯ → 编辑成员 opens the same dialog with the members ticked.
+  - The ⋯ menu also renames, copies, exports or deletes; deleting also removes the deployment from studies, which the confirmation names.
+- **工作方案:** read-only rows until the composer (step 6). A row expands to show its deployments (a click shows one); the ⋯ menu renames, exports or deletes, and deleting keeps the study's deployments and stations.
+- **合并重复:** stations with the same position and pose — copies from several converted 1.x studies or from imports — are listed in a notice and merged only on request: the first of each group stays, deployments, the shown set and the draft refer to it, and sites of exactly the same place merge.
+- **Deleting a station** removes it from every deployment, after a confirmation naming them and the studies involved; an unused site goes with it.
+- **Exposure:** the playground exposure of the session (the device form's 曝光时间, label 全方案) applies to every station; studies keep their own.
+- **Export:** 整个工作区, 勾选显示的点位, 当前部署组合, or copyable text; per item through ⋯.
+- **Import:** merges new items, skips identical ones and refuses conflicts (until the preview, step 5); the imported stations become the shown set. A 1.x plan of another scenario opens that scenario.
+- **Result provenance:** results record `plan: { hash, stationId }`, with the hash of the station's workspace selection ([Identity](#identity)).
 
 ## Batch runs
 

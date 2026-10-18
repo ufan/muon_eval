@@ -29,12 +29,13 @@ function show(fill, read) {
   const run = () => new Promise(resolve => {
     const d = element(), body = d.querySelector('.page-dialog-body');
     body.replaceChildren(); d.querySelector('.page-dialog-status').textContent = '';
-    d.classList.remove('danger', 'wide');
+    d.classList.remove('danger', 'wide'); d.querySelector('#pageDialogOk').hidden = false;
+    d.querySelectorAll('[data-choice]').forEach(button => button.remove());
     fill(d, body);
     d.returnValue = '';
     d.addEventListener('close', () => resolve(read(d.returnValue, body)), { once: true });
     d.showModal();
-    (body.querySelector('input,[data-action]') ?? d.querySelector('#pageDialogOk')).focus({ preventScroll: true });
+    (body.querySelector('input,[data-action]') ?? d.querySelector('[data-choice]') ?? d.querySelector('#pageDialogOk')).focus({ preventScroll: true });
   });
   const next = queue.then(run, run);
   queue = next.catch(() => {});
@@ -52,6 +53,21 @@ function setButtons(d, { message, ok = '确定', cancel = '取消', danger = fal
 export const pageConfirm = (message, { ok = '继续', danger = false } = {}) =>
   show(d => setButtons(d, { message, ok, danger }), value => value === 'ok');
 
+// One of several answers, or null when cancelled: choices are [{ value, label, danger? }], the first is the default.
+export const pageChoose = (message, choices) => show(d => {
+  setButtons(d, { message });
+  const ok = d.querySelector('#pageDialogOk'), footer = ok.parentElement;
+  ok.hidden = true;
+  choices.forEach(({ value, label, danger = false }, i) => {
+    const button = document.createElement('button');
+    button.type = 'button'; button.dataset.choice = value; button.textContent = label;
+    if (i === 0) button.className = 'primary';
+    if (danger) button.classList.add('danger-choice');
+    button.onclick = () => d.close(`choice:${value}`);
+    footer.insertBefore(button, ok);
+  });
+}, value => value.startsWith('choice:') ? value.slice(7) : null);
+
 export const pageAlert = message => show(d => setButtons(d, { message, ok: '知道了', cancel: null }), () => undefined);
 
 export const pagePrompt = (message, value = '', { maxLength = MAX_NAME } = {}) => show((d, body) => {
@@ -60,6 +76,32 @@ export const pagePrompt = (message, value = '', { maxLength = MAX_NAME } = {}) =
   input.type = 'text'; input.value = value; input.maxLength = maxLength; input.setAttribute('aria-label', message);
   body.append(input); queueMicrotask(() => input.select());
 }, (result, body) => normalizeName(result === 'ok' ? body.querySelector('input').value : null, value, maxLength));
+
+// A name and a checklist (e.g. a deployment and its stations): items are [{ id, label, detail?, group?, checked }]; consecutive
+// items of one group are indented under it. Resolves { name, ids } (ids in item order), or null when cancelled.
+export const pageChecklist = (message, { name = '', items = [], ok = '确定' } = {}) => show((d, body) => {
+  setButtons(d, { message, ok }); d.classList.add('wide');
+  const input = document.createElement('input'), list = document.createElement('div'), status = d.querySelector('.page-dialog-status'), okButton = d.querySelector('#pageDialogOk');
+  input.type = 'text'; input.value = name; input.maxLength = MAX_NAME; input.setAttribute('aria-label', '名称');
+  list.className = 'page-checklist';
+  let group = null;
+  for (const item of items) {
+    if (item.group && item.group !== group) { const head = document.createElement('div'); head.className = 'page-checklist-group'; head.textContent = item.group; list.append(head); }
+    group = item.group ?? null;
+    const label = document.createElement('label'), box = document.createElement('input');
+    box.type = 'checkbox'; box.value = item.id; box.checked = Boolean(item.checked);
+    label.className = item.group ? 'grouped' : ''; label.append(box, document.createTextNode(item.label));
+    if (item.detail) { const span = document.createElement('span'); span.textContent = item.detail; label.append(span); }
+    list.append(label);
+  }
+  const count = () => { const n = list.querySelectorAll('input:checked').length; status.textContent = `已选 ${n} 个`; okButton.disabled = !n; };
+  list.addEventListener('change', count); count();
+  body.append(input, list); queueMicrotask(() => input.select());
+}, (result, body) => {
+  const okButton = dialog.querySelector('#pageDialogOk'); okButton.disabled = false;
+  if (result !== 'ok') return null;
+  return { name: normalizeName(body.querySelector('input[type=text]').value, name), ids: [...body.querySelectorAll('.page-checklist input:checked')].map(box => box.value) };
+});
 
 // A read-only text with 复制 and 下载: the fallback when the viewer blocks file downloads.
 export const pageText = (message, text, { filename = 'export.json', type = 'application/json' } = {}) => show((d, body) => {
