@@ -1,0 +1,2 @@
+# Vendored third-party code keeps its upstream whitespace (shader strings); not subject to git diff --check.
+dist/vendor/** -whitespace

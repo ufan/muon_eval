@@ -3,7 +3,10 @@ import { buildFeatureCatalogue } from './feature-catalogue.js';
 import { resolveAxisLabels, resolveFeatureLayerOptions, resolveRecognitionItems } from './display-profile.js';
 import { validateBundle, validateTerrainHeader, verifySha256 } from './dataset-validation.js';
 
-// fetch/digest injection lets Node tests exercise the actual browser loading path.
+// fetch/digest injection lets Node tests exercise the actual browser loading path. Loading keeps the request rounds few:
+// options.registry reuses a registry the caller already read, independent files are fetched together, and
+// options.scenarioId starts the mesh of the scenario about to be shown as soon as the manifest names it (null: the
+// release's first scenario, the app's default).
 export async function loadDataset(id = null, registryUrl = './datasets/registry.json', options = {}) {
   const fetcher = options.fetch || globalThis.fetch;
   const registryAddress = new URL(registryUrl, options.baseUrl || globalThis.location?.href || import.meta.url);
@@ -13,7 +16,7 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
     return response.arrayBuffer();
   };
   const json = bytes => JSON.parse(new TextDecoder().decode(bytes));
-  const registry = json(await fetchBytes(registryAddress));
+  const registry = options.registry ?? json(await fetchBytes(registryAddress));
   id ??= registry.default_dataset;
   const entry = registry.datasets?.[id];
   if (!entry) throw new Error(`数据集 ${id} 未登记`);
@@ -26,8 +29,7 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
   };
   const readJson = async relative => json(await bytes(relative));
   const loadTerrain = async descriptor => {
-    const header = await readJson(descriptor.header);
-    const buffer = await bytes(descriptor.data);
+    const [header, buffer] = await Promise.all([readJson(descriptor.header), bytes(descriptor.data)]);
     validateTerrainHeader(header, buffer.byteLength);
     if (header.file !== descriptor.data.split('/').at(-1)) throw new Error('Terrain header names a different data file');
     await verifySha256(buffer, header.sha256, descriptor.data, options.digest);
@@ -39,19 +41,40 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
     }
     return { header, values };
   };
-  const [spec, candidates, detectorModels, siteConditions, compiledManifest, terrainNear, terrainFar] = await Promise.all([
+  // Optional display profile: presentation only, with its own hash outside the authored package integrity (ADR-029).
+  const loadProfile = async () => {
+    if (!entry.display_profile) return null;
+    const buffer = await fetchBytes(new URL(entry.display_profile.path, base));
+    await verifySha256(buffer, entry.display_profile.sha256, entry.display_profile.path, options.digest);
+    return json(buffer);
+  };
+  const manifestRead = readJson(entry.compiled_manifest);
+  // The mesh of the scenario about to be shown starts loading as soon as the manifest names it.
+  const meshes = new Map();
+  const fetchMesh = (manifest, scenarioId) => {
+    if (!meshes.has(scenarioId)) {
+      const scenario = manifest.scenarios?.[scenarioId];
+      meshes.set(scenarioId, scenario ? bytes(`compiled/${scenario.glb}`) : Promise.reject(new Error(`Unknown compiled scenario ${scenarioId}`)));
+      meshes.get(scenarioId).catch(() => {});
+    }
+    return meshes.get(scenarioId);
+  };
+  if (options.scenarioId) manifestRead.then(manifest => fetchMesh(manifest, options.scenarioId), () => {});
+  const [spec, candidates, detectorModels, siteConditions, compiledManifest, terrainNear, terrainFar, profile] = await Promise.all([
     readJson(entry.spec),
     readJson(entry.deployment_candidates),
     readJson(entry.detector_models),
     readJson(entry.site_conditions),
-    readJson(entry.compiled_manifest),
+    manifestRead,
     loadTerrain(entry.terrain_near),
-    loadTerrain(entry.terrain_far)
+    loadTerrain(entry.terrain_far),
+    loadProfile()
   ]);
   const identity = validateBundle(spec, id, { candidates, siteConditions, compiledManifest });
   if (compiledManifest.manifest_version !== '0.3' || compiledManifest.frame?.name !== 'model_frame') throw new Error('Unsupported compiled manifest contract');
   if (compiledManifest.input.spec_file !== entry.spec || compiledManifest.input.spec_sha256 !== entry.integrity[entry.spec]) throw new Error('Manifest source spec does not match registry');
   const geometry = adaptDamSpecV07(spec);
+  if (options.scenarioId === null) fetchMesh(compiledManifest, geometry.scenarios.keys().next().value);
   for (const candidate of candidates.candidates) {
     if (!geometry.entities.has(candidate.host_entity_id) || candidate.binding !== false) throw new Error(`Invalid candidate ${candidate.id}`);
   }
@@ -70,18 +93,11 @@ export async function loadDataset(id = null, registryUrl = './datasets/registry.
   }
   const features = buildFeatureCatalogue({ entities: geometry.entities.values(), waterBodies: geometry.waterBodies.values(),
     vocabulary: spec.vocabulary, components: Object.values(compiledManifest.scenarios).flatMap(scenario => scenario.components) });
-  // Optional display profile: presentation only, with its own hash outside the authored package integrity (ADR-029).
-  let profile = null;
-  if (entry.display_profile) {
-    const buffer = await fetchBytes(new URL(entry.display_profile.path, base));
-    await verifySha256(buffer, entry.display_profile.sha256, entry.display_profile.path, options.digest);
-    profile = json(buffer);
-  }
   const recognitionItems = resolveRecognitionItems(profile, features, [...geometry.materials.keys()]), featureLayers = resolveFeatureLayerOptions(profile, features), axisLabels = resolveAxisLabels(profile);
   const loadCompiledScenario = async scenarioId => {
     const scenario = compiledManifest.scenarios[scenarioId];
     if (!scenario) throw new Error(`Unknown compiled scenario ${scenarioId}`);
-    const relative = `compiled/${scenario.glb}`, buffer = await bytes(relative);
+    const relative = `compiled/${scenario.glb}`, buffer = await fetchMesh(compiledManifest, scenarioId);
     await verifySha256(buffer, compiledManifest.outputs[scenario.glb], relative, options.digest);
     return { scenarioId, variables: scenario.variables, components: scenario.components, buffer };
   };

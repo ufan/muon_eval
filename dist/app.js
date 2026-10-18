@@ -1,18 +1,16 @@
 import { loadDataset } from './modules/dataset-loader.js';
 import { resolveApplicationSelection, selectionHref, APP_PAGES } from './modules/application-selection.js';
-import { createApplicationBackend } from './modules/application-backends.js';
-import { createAssessmentController, createLocalAssessmentPort } from './modules/assessment-controller.js';
-import { createCompiledSceneView } from './modules/compiled-scene-view.js';
-import { createProjectionCanvasView } from './modules/projection-canvas-view.js';
-import { createApplicationSelectionView } from './modules/application-selection-view.js';
-import { createViewportTools } from './modules/viewport-tools.js';
-import { createMainPage } from './modules/main-page.js';
-import { createDeploymentState } from './modules/deployment-state.js';
 
 async function main(){
  const response=await fetch('./datasets/registry.json');if(!response.ok)throw new Error('Dataset registry unavailable');
  const registry=await response.json(),selection=resolveApplicationSelection(registry,location.search);
- const dataset=await loadDataset(selection.datasetId),backend=await createApplicationBackend(dataset,selection);
+ // The dataset (and the mesh of the scenario to show) starts loading first; the view modules, all preloaded by
+ // index.html, are imported meanwhile instead of before anything starts (first-load latency).
+ const datasetLoad=loadDataset(selection.datasetId,'./datasets/registry.json',{registry,scenarioId:selection.scenarioId??null});datasetLoad.catch(()=>{});
+ const [{createApplicationBackend},{createAssessmentController,createLocalAssessmentPort},{createCompiledSceneView},{createProjectionCanvasView},{createApplicationSelectionView},{createViewportTools},{createMainPage},{createDeploymentState}]=await Promise.all([
+  import('./modules/application-backends.js'),import('./modules/assessment-controller.js'),import('./modules/compiled-scene-view.js'),import('./modules/projection-canvas-view.js'),
+  import('./modules/application-selection-view.js'),import('./modules/viewport-tools.js'),import('./modules/main-page.js'),import('./modules/deployment-state.js')]);
+ const dataset=await datasetLoad,backend=await createApplicationBackend(dataset,selection);
  const state=createDeploymentState({stations:backend.stations,environment:backend.environment});let page;
  const sceneView=createCompiledSceneView({dataset,runtime:backend.runtime,waterLayers:backend.waterLayers,features:dataset.features,featureLayers:dataset.featureLayers,onResize:()=>page?.constrainProjectionPanel(),onFeatureHover:id=>page?.hoverFeature(id),onFeaturePick:id=>page?.pickFeature(id),onCoveragePick:(ix,iy)=>page?.pickCoverage(ix,iy),onPlacePick:surface=>page?.placeStation(surface),onStationPick:id=>page?.pickStation(id),onPlaceCancel:()=>page?.placeCancelled(),onAimPick:point=>page?.aimAt(point),onStationDrag:station=>page?.dragStation(station)});
  const projectionView=createProjectionCanvasView({onHover:(data,x,y,options)=>sceneView.showProjectionPixel(data,x,y,options),onLeave:()=>sceneView.clearProjection(),onSideView:(data,x,y)=>sceneView.viewRaySideOn(data,x,y)});

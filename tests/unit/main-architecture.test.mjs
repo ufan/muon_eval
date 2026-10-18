@@ -61,7 +61,7 @@ test('controller contains input/assessment failures and cannot restart after dis
 
 test('major module import graph is acyclic and core/controller/state cannot import views or backends',async()=>{
  const root=new URL('../../dist/',import.meta.url),seen=new Set(),active=new Set();
- async function visit(url){assert.ok(!active.has(url.href),'Import cycle: '+url.href);if(seen.has(url.href))return;active.add(url.href);const source=await readFile(url,'utf8');for(const m of source.matchAll(/(?:from\s*|import\s*)['"]([^'"]+)['"]/g))if(m[1].startsWith('.'))await visit(new URL(m[1],url));active.delete(url.href);seen.add(url.href);}
+ async function visit(url){assert.ok(!active.has(url.href),'Import cycle: '+url.href);if(seen.has(url.href))return;active.add(url.href);const source=await readFile(url,'utf8');for(const m of source.matchAll(/(?:from\s*|import\s*|import\(\s*)['"]([^'"]+)['"]/g))if(m[1].startsWith('.'))await visit(new URL(m[1],url));active.delete(url.href);seen.add(url.href);}
  await visit(new URL('app.js',root));
  for(const name of ['compiled-main-assessment','assessment-controller','deployment-state','device-configuration','detector-pose','recognition-layers','feature-layers','plan-format','plan-store','workspace-format','workspace-store','workspace-state','workspace-import','candidate-results']){
   const source=await readFile(new URL('modules/'+name+'.js',root),'utf8');assert.doesNotMatch(source,/\bdocument\b|\bwindow\b|localStorage|THREE|from\s*['"][^'"]*(?:view|main-page|three|compiled-mesh-runtime)/);

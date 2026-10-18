@@ -182,3 +182,25 @@ test('actual HTTP loader verifies native assets and lazy scenario meshes', async
   corrupt = true;
   await assert.rejects(loadDataset(release, address, { digest: sha256 }), /SHA-256 mismatch/);
 });
+
+test('loading needs few request rounds: registry reused, files and the chosen scenario fetched in parallel', async () => {
+  // Every request takes one "round" (a fixed delay); sequential steps add up, parallel ones overlap.
+  const DELAY = 40, requested = [];
+  const fetch = async url => {
+    const path = resolveStaticPath(new URL(url).pathname);
+    requested.push(new URL(url).pathname.split('/').at(-1));
+    await new Promise(resolve => setTimeout(resolve, DELAY));
+    const bytes = await readFile(path);
+    return { ok: true, status: 200, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) };
+  };
+  const address = 'http://localhost/datasets/registry.json', registry = JSON.parse(await readFile(resolveStaticPath('/datasets/registry.json'), 'utf8'));
+  const started = Date.now();
+  const loaded = await loadDataset(release, address, { digest: sha256, fetch, registry, scenarioId: 'low' });
+  const mesh = await loaded.loadCompiledScenario('low');
+  const rounds = (Date.now() - started) / DELAY;
+  assert.equal(requested.includes('registry.json'), false, 'registry passed in, not fetched again');
+  assert.equal(requested.filter(name => name === 'scene_low.glb').length, 1, 'the prefetched scenario is fetched once');
+  assert.equal(new TextDecoder().decode(mesh.buffer.slice(0, 4)), 'glTF');
+  // Bundle files, terrain headers and data, the display profile in one round; the scenario mesh after the manifest.
+  assert.ok(rounds < 3.5, `${rounds.toFixed(1)} rounds`);
+});

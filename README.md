@@ -18,7 +18,7 @@ For local use, the bundled server serves `dist/` and the datasets directly and m
 npm run serve        # node scripts/serve.mjs [--port 8765] [--host 0.0.0.0 for the LAN]
 ```
 
-Open `http://127.0.0.1:8765/`. Any other static HTTP server also works once the datasets are copied into `dist/` (`node scripts/sync-datasets.mjs`, then for example `python3 -m http.server 8765 --directory dist`); such servers send no cache instructions, so hard-reload (Ctrl+Shift+R) after an update. Do not open `dist/index.html` directly: browsers block ES modules and JSON on `file://` pages. See [the deployment guide](docs/guides/DEPLOYMENT.md) for servers and static hosting.
+Open `http://127.0.0.1:8765/`. After changing the main app's imports, run `node scripts/module-preload.mjs --write` to refresh the module preload list in `dist/index.html` (a unit test fails while it is stale). Any other static HTTP server also works once the datasets are copied into `dist/` (`node scripts/sync-datasets.mjs`, then for example `python3 -m http.server 8765 --directory dist`); such servers send no cache instructions, so hard-reload (Ctrl+Shift+R) after an update. Do not open `dist/index.html` directly: browsers block ES modules and JSON on `file://` pages. See [the deployment guide](docs/guides/DEPLOYMENT.md) for servers and static hosting.
 
 ## Directory layout
 
