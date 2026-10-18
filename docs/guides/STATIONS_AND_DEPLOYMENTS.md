@@ -1,6 +1,6 @@
 # Stations, deployments and studies (left sidebar)
 
-User guide for the left sidebar of the planning app: keeping stations, grouping them into deployments, showing them in 3D, and sharing them as files. For reading the results of a station, see [Result interpretation](RESULT_INTERPRETATION.md); for the file format, see [Workspace format](../specs/WORKSPACE_FORMAT.md).
+User guide for the left sidebar of the planning app (the whole screen is covered in the [user guide](USER_GUIDE.md)): keeping stations, grouping them into deployments, showing them in 3D, and sharing them as files. For reading the results of a station, see [Result interpretation](RESULT_INTERPRETATION.md); for the file format, see [Workspace format](../specs/WORKSPACE_FORMAT.md).
 
 - [The idea in one minute](#the-idea-in-one-minute)
 - [Stations (我的点位)](#stations-我的点位)
